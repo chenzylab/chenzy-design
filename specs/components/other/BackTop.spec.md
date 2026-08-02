@@ -49,26 +49,29 @@ BackTop（回到顶部）是一个浮于页面右下角的悬浮按钮，当目�
 
 ### Props
 
+> 本表由 `packages/svelte/src/back-top/meta.ts` 真源生成（2026-07-30 重校）。此前本表列的 prop 多为 Semi 对齐前的旧名或已删除项（如 `value`→`activeKey`、`change`→`onChange`），改 prop 时请同步 meta.ts，勿手写「规划中」的 prop。
+
 | Prop | 类型 | 默认值 | 说明 |
-|---|---|---|---|
-| `target` | `() => HTMLElement \| Window \| string` | `() => window` | 滚动监听与回顶目标；string 视为选择器 |
-| `visibilityHeight` | `number` | `400` | 滚动超过该像素值（相对 target 顶部）显示按钮 |
-| `duration` | `number` | `450` | 回顶动画时长（ms）；`0` 表示瞬时 |
-| `bottom` | `number \| string` | `40` | 距底部偏移（number 视为 px） |
-| `right` | `number \| string` | `40` | 距右侧（RTL 下为左侧）偏移 |
-| `size` | `'small' \| 'default' \| 'large'` | `'default'` | 按钮尺寸 |
-| `visible` | `boolean` | `undefined` | 受控显隐；提供时由外部接管，内部不再依据阈值切换 |
-| `announceOnArrive` | `boolean` | `false` | 到顶后是否向屏幕阅读器播报 |
-| `class` | `string` | `''` | 透传根节点类名 |
-| `style` | `string` | `''` | 透传根节点行内样式 |
+| --- | --- | --- | --- |
+| target | `() => HTMLElement \| Window \| null` | `() => window` | 返回需要监听其滚动事件的元素对应 DOM 元素的函数（对齐 Semi） |
+| visibilityHeight | `number` | `400` | 出现 BackTop 需要达到的滚动高度(px) |
+| duration | `number` | `450` | 滚动到顶部的时间(ms) |
+| onClick | `(e: MouseEvent) => void` | `undefined` | 点击事件的回调函数 |
+| children | `Snippet` | `undefined` | 自定义按钮内容（替换默认 IconButton） |
+| style | `string` | `''` | 根节点内联样式 |
+| class | `string` | `''` | 根节点类名 |
+
+**事件**（回调 prop 形式，对齐 Semi）：
+
+| 事件 | 说明 |
+| --- | --- |
+| `onClick` | 按钮点击 |
 
 ### Events
 
-| Event | Payload | 说明 |
-|---|---|---|
-| `on:click` | `MouseEvent \| KeyboardEvent` | 用户触发回顶（点击或键盘）；可 `preventDefault` 阻止默认滚动 |
-| `on:visibleChange` | `{ visible: boolean }` | 按阈值导致的显隐变化（非受控模式触发） |
-| `on:scrollEnd` | `void` | 回顶动画完成（含 reduced-motion 瞬时完成） |
+| 事件 | 说明 |
+| --- | --- |
+| `onClick` | 按钮点击 |
 
 ### Slots
 
@@ -104,7 +107,7 @@ BackTop（回到顶部）是一个浮于页面右下角的悬浮按钮，当目�
 - **role / 语义**：根节点为原生 `<button type="button">`（首选；自动获得 button role 与键盘行为）。若用插槽渲染非按钮元素，则降级为 `role="button"` + `tabindex="0"`。
 - **aria**：`aria-label` 默认取 i18n `BackTop.ariaLabel`（"回到顶部"），可被插槽/prop 覆盖。隐藏态从 a11y 树移除（`visibility: hidden` + `aria-hidden` 由隐藏实现保证不可聚焦，使用 `tabindex` 移除或元素卸载）。
 - **键盘交互**：原生 button 自带 Enter / Space 触发。自定义元素时 core 的 `getTriggerProps` 显式处理 `keydown`（Enter、Space，且 Space 阻止默认页面滚动）。组件不抢占 Tab 顺序之外的焦点。
-- **焦点管理**：点击回顶后焦点保留在按钮（不强制移动焦点至页首，避免打断 SR 用户上下文）；可选 `announceOnArrive` 通过 `useLiveAnnouncer`（`polite`）播报 `BackTop.arrived`。
+- **焦点管理**：点击回顶后焦点保留在按钮（不强制移动焦点至页首，避免打断 SR 用户上下文）；到顶播报**未实现**（BackTop slice 只有 `ariaLabel` 一键，无 `arrived`；亦无 `announceOnArrive` prop）。
 - **对比度**：图标对背景 ≥ 4.5:1（`--cd-color-text-0` on `--cd-color-bg-2` 满足）；焦点环对相邻色 ≥ 3:1。
 - **reduced-motion**：`@media (prefers-reduced-motion: reduce)` 下进出场动画关闭，回顶使用瞬时 `scrollTo(0)`（不传 `behavior: 'smooth'`）。
 - **RTL**：偏移使用 `inset-inline-end` / `inline-end`，箭头图标方向不受影响（始终向上）。
@@ -114,10 +117,11 @@ BackTop（回到顶部）是一个浮于页面右下角的悬浮按钮，当目�
 
 用户可见文案零硬编码，经 i18n provider 注入。
 
-| i18n key | 默认（zh-CN） | 说明 |
-|---|---|---|
-| `BackTop.ariaLabel` | 回到顶部 | 按钮无障碍名称 |
-| `BackTop.arrived` | 已回到顶部 | `announceOnArrive` 时的 SR 播报 |
+> 本表由 `packages/locale/src/zh_CN.ts` 真源生成（2026-07-30 重校）。键名与键值都是 Semi 契约，勿手写「规划中」的键——历史上本表列过大量从未实现的键名，见 [[locale-dangling-keys-render-raw-key]]。
+
+| i18n key | 默认（zh-CN） |
+| --- | --- |
+| `BackTop.ariaLabel` | 回到顶部 |
 
 - 无日期/数字展示需求；若未来扩展"显示滚动百分比"等，需用 `Intl.NumberFormat` 格式化。
 - 文案随 locale 切换实时更新（响应式订阅 i18n store）。

@@ -12,7 +12,7 @@
   aria-label 供键盘 + AT 访问。
 -->
 <script lang="ts">
-  import { resolveCodeClassName } from '@chenzy-design/core';
+  import { resolveCodeClassName, resolveDefault } from '@chenzy-design/core';
   import Prism from 'prismjs';
   import { useLocale } from '../locale-provider/index.js';
 
@@ -58,11 +58,15 @@
   let {
     code = '',
     language = 'markup',
-    lineNumber = true,
-    defaultTheme = true,
+    lineNumber: lineNumberProp,
+    defaultTheme: defaultThemeProp,
     class: className = '',
     style = '',
   }: Props = $props();
+  // cdGlobal 全局默认 props（对齐 Semi semiGlobal.config.overrideDefaultProps）：
+  // 优先级 = 显式传值 > cdGlobal['CodeHighlight'] > 组件内置默认值。
+  const lineNumber = $derived(resolveDefault(lineNumberProp, 'CodeHighlight', 'lineNumber', true));
+  const defaultTheme = $derived(resolveDefault(defaultThemeProp, 'CodeHighlight', 'defaultTheme', true));
 
   const loc = useLocale();
 

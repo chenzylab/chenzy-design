@@ -27,29 +27,49 @@ IconButton 是**纯图标按钮**的便捷组件：等价于 `Button` 传 `icon`
 
 ### IconButton Props
 
-| 名称 | 类型 | 默认值 | 说明 |
+> 本表由 `packages/svelte/src/iconbutton/meta.ts` 真源生成（2026-07-30 重校）。此前本表列的 prop 多为 Semi 对齐前的旧名或已删除项（如 `value`→`activeKey`、`change`→`onChange`），改 prop 时请同步 meta.ts，勿手写「规划中」的 prop。
+
+| Prop | 类型 | 默认值 | 说明 |
 | --- | --- | --- | --- |
-| `icon` | `Snippet \| Component` | — | **必填**。图标内容。 |
-| `ariaLabel` | `string` | — | **必填**。可访问名（纯图标无文字，屏幕阅读器唯一名称来源）。dev 缺失时 error/warn。 |
-| `type` | `'primary' \| 'secondary' \| 'tertiary' \| 'warning' \| 'danger'` | `'secondary'` | 语义类型（对齐本库 Button 默认，非 Semi 的 primary）。 |
-| `theme` | `'solid' \| 'borderless' \| 'light' \| 'outline'` | `'light'` | 视觉变体。 |
-| `size` | `'small' \| 'default' \| 'large'` | `'default'` | 尺寸三档。 |
-| `circle` | `boolean` | `false` | 圆形按钮（复用新增的 Button circle）。 |
-| `disabled` | `boolean` | `false` | 禁用。 |
-| `loading` | `boolean` | `false` | 加载态（用 spin 图标替换）。 |
-| `colorful` | `boolean` | `false` | AI 多彩。 |
-| `noHorizontalPadding` | `boolean \| 'left' \| 'right' \| ('left'\|'right')[]` | `false` | 去水平内边距。 |
-| `htmlType` | `'button' \| 'reset' \| 'submit'` | `'button'` | 原生 type。 |
-| `onClick` | `(e: MouseEvent) => void` | — | 点击回调。 |
-| `class` / `style` | `string` | — | 根节点透传。 |
+| icon | `Snippet` | `undefined` | 图标内容（可选） |
+| children | `Snippet` | `undefined` | 文字内容（可选）；提供后非纯图标 |
+| aria-label | `string` | `undefined` | 可访问名（透传到 aria-label）；纯图标按钮建议提供 |
+| type | `'primary'\|'secondary'\|'tertiary'\|'warning'\|'danger'` | `primary` | 语义类型 |
+| theme | `'solid'\|'borderless'\|'light'\|'outline'` | `light` | 视觉变体 |
+| size | `'small'\|'default'\|'large'` | `default` | 尺寸三档 |
+| iconPosition | `'left'\|'right'` | `left` | 图标相对文字位置（透传给 Button） |
+| iconSize | `'inherit'\|'extra-small'\|'small'\|'default'\|'large'\|'extra-large'` | `undefined` | 图标尺寸（作用在图标元素上，对齐 Semi） |
+| iconStyle | `string` | `undefined` | 图标内联样式（作用在图标元素上，对齐 Semi） |
+| circle | `boolean` | `false` | 圆形按钮（复用 Button circle） |
+| disabled | `boolean` | `false` | 禁用 |
+| loading | `boolean` | `false` | 加载态（spin 图标替换） |
+| colorful | `boolean` | `false` | AI 多彩 |
+| block | `boolean` | `false` | 撑满容器宽度 |
+| noHorizontalPadding | `boolean\|'left'\|'right'\|('left'\|'right')[]` | `false` | 去水平内边距（仅 icon 时有效） |
+| htmlType | `'button'\|'submit'\|'reset'` | `button` | 原生 type |
+| contentClassName | `string` | `undefined` | 内容区自定义类名（透传给 Button） |
+| class | `string` | `undefined` | 根元素自定义类名 |
+| style | `string` | `undefined` | 根元素自定义内联样式 |
+
+**事件**（回调 prop 形式，对齐 Semi）：
+
+| 事件 | 说明 |
+| --- | --- |
+| `onclick` | disabled/loading 时不触发 |
+| `onmousedown` | 鼠标按下 |
+| `onmouseenter` | 鼠标移入 |
+| `onmouseleave` | 鼠标移出 |
 
 > 其余 Button props（`onmousedown`/`onmouseenter`/`onmouseleave`/`block` 等）原样转发。
 
 ### Events
 
-| 名称 | 载荷 | 说明 |
-| --- | --- | --- |
-| `onClick` | `MouseEvent` | 点击。 |
+| 事件 | 说明 |
+| --- | --- |
+| `onclick` | disabled/loading 时不触发 |
+| `onmousedown` | 鼠标按下 |
+| `onmouseenter` | 鼠标移入 |
+| `onmouseleave` | 鼠标移出 |
 
 ### Slots
 

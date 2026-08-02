@@ -1,38 +1,130 @@
 ---
-title: LocaleProvider 国际化
+title: LocaleProvider 多语言
 name: localeprovider
 category: other
-brief: 纯上下文注入组件，用于在组件树的某个子范围内覆盖当前语言环境（locale）与区域格式化策略（日期/数字/货币）。
+brief: 国际化组件，为组件提供多语言支持。
 ---
 
-## 使用场景
+<script>
+  import DemoBox from '$lib/components/DemoBox.svelte';
+  import Notice from '$lib/components/Notice.svelte';
 
-LocaleProvider 是一个纯上下文注入组件，用于在组件树的某个子范围内覆盖当前语言环境（locale）与区域格式化策略（日期/数字/货币）。它不渲染任何可见 DOM，仅通过 Svelte Context 向下传递 locale 包与 `Intl` 格式化器，供 DatePicker、Pagination、Table（空态/筛选）、Modal（确认/取消按钮）、Upload、Form 校验等组件消费可见文案。
+  import Basic from '../../demos/locale-provider/01-basic.svelte';
+  import basicSrc from '../../demos/locale-provider/01-basic.svelte?raw';
+  import CustomComponent from '../../demos/locale-provider/02-string-code.svelte';
+  import customComponentSrc from '../../demos/locale-provider/02-string-code.svelte?raw';
+  import AllComponents from '../../demos/locale-provider/03-nested-override.svelte';
+  import allComponentsSrc from '../../demos/locale-provider/03-nested-override.svelte?raw';
+  import RegisterCustom from '../../demos/locale-provider/04-register-custom.svelte';
+  import registerCustomSrc from '../../demos/locale-provider/04-register-custom.svelte?raw';
+</script>
 
-**与 ConfigProvider 的关系（核心定位）**：
-- `ConfigProvider` 是全局/大范围配置容器，承载 locale、theme、组件默认 props 等多维配置，通常包裹整个应用一次
-- `LocaleProvider` 是 ConfigProvider 的 locale 维度子集，专用于**局部覆盖**：例如整站为中文，但某个对账区块需强制 en-US
-- 当用户只需切换语言而无需其它配置时，使用 LocaleProvider；需要整体配置时用 ConfigProvider 并传 locale
+## 目前支持语言
 
-适用场景：
-- 多语言混排页面，某个子区块需要强制独立语种
-- 嵌入式 widget 需要与宿主页面语言不同
-- Storybook/测试中隔离 locale
-- SSR 时按请求注入 locale
+| 语言 | 语言包 |
+| --- | --- |
+| 简体中文 | `zh_CN`（亦可写 `zh-CN`） |
+| 英语（美） | `en_US`（亦可写 `en-US`） |
 
-## 何时使用
+<Notice type="primary" title="与 Semi 的差异">
 
-- 整站语言已由 ConfigProvider 设定，但局部区域（如对账表格、国际汇款流程）需强制不同语种
-- 需要在同一页面内并排展示不同语言的相同组件（对比演示场景）
-- 测试时需隔离特定语言包验证文案
+Semi 内置 57 个语言包，本库目前只内置 **zh_CN / en_US** 两个。
 
-就近覆盖（nearest-wins）：子组件消费 locale 时取离自己最近的 LocaleProvider/ConfigProvider，符合 Svelte context 的层叠直觉。
+需要其它语种时，用 `registerLocale(code, bundle)` 注册自己的语言包即可（见下方「注册自定义语言包」）——
+这是本库补充的能力，Semi 的 `locale` 只接受语言包对象、没有注册表。
 
-回退链（fallback chain）：`zh-HK` 缺失 key → 回退 `zh-CN` → 回退内置 `defaultLocale`（默认 `en-US`），保证永不出现裸 key。
+</Notice>
 
-## 无障碍
+## 已支持组件
 
-- 本组件无 DOM，不持有 role/aria 属性
-- **lang / dir 同步（关键）**：推荐宿主监听 `on:localeChange` 将 `lang`、`dir` 同步到对应子树根元素或 `<html>`，满足 WCAG 3.1.2 Language of Parts，屏幕阅读器据 `lang` 切换发音引擎
-- RTL：`direction` 推断并下传，消费组件使用逻辑属性（`margin-inline-start` 等）实现镜像；本组件保证语种与方向一致
-- locale 切换为纯文本替换，不移动/丢失焦点；实现保证 slot 内元素引用稳定（不重建子树），避免焦点丢失（WCAG 3.2 一致性）
+目前有以下组件存在内置默认文本，均已实现国际化多语言适配：
+
+AIChatDialogue、AIChatInput、Anchor、AudioPlayer、AutoComplete、Avatar、BackTop、Banner、Breadcrumb、Calendar、Carousel、Cascader、Chat、CodeHighlight、ColorPicker、Cropper、DatePicker、Feedback、Form、HotKeys、Image、Input、InputNumber、JsonViewer、List、Modal、Nav、Notification、Pagination、PinCode、Popconfirm、Popover、Rating、Select、SideSheet、SideBar、Slider、Spin、Steps、Table、Tabs、Tag、TagInput、TimePicker、Toast、Transfer、Tree、TreeSelect、Typography、Upload、UserGuide、VideoPlayer
+
+## 使用
+
+LocaleProvider 使用了 Svelte 的 context 上下文特性，你只需要在应用外围包裹一次即可全局生效。
+当需要切换语言时，直接切换 props 传入的 locale 即可。
+
+```jsx
+import { LocaleProvider, en_US } from '@chenzy-design/svelte';
+
+// 在 locale 中传入相应的语言包即可
+<LocaleProvider locale={en_US}>
+  <App />
+</LocaleProvider>;
+```
+
+## 代码示例
+
+### 国际化
+
+<DemoBox code={basicSrc}><Basic /></DemoBox>
+
+### 自定义国际化组件
+
+当你的自定义组件，也希望消费 LocaleProvider Context 中的 localeCode 或者读取具体某个组件的 i18n 文本 localeData 时，
+可以使用 `useLocale()` 获取（等价 Semi 的 `LocaleConsumer`：React 用 render-props，Svelte 用初始化期调用的 helper）。
+
+- `loc().component('TimePicker')` 取整片语言包（对应 Semi 的 `localeData`），可读嵌套/数组值；
+- `loc().t('X.y')` 按点号路径取单条，**支持语言包里自行注入的自定义键**（不必先在 `Locale` 类型中声明）；
+- `loc().code` 即当前生效的语言码（对应 Semi 的 `localeCode`）。
+
+<DemoBox code={customComponentSrc}><CustomComponent /></DemoBox>
+
+### 支持多语言的组件
+
+示例给出了目前所有支持多语言的组件。
+
+当你的网站有 RTL 适配需求时，推荐直接使用 ConfigProvider，除了可配置 locale 外，还可以同时配置 `direction='rtl'`；
+若无 RTL 适配需求，直接使用 LocaleProvider 即可。
+
+<DemoBox code={allComponentsSrc}><AllComponents /></DemoBox>
+
+### 注册自定义语言包
+
+<Notice type="primary" title="本库补充">
+Semi 的 `locale` 只接受语言包对象；本库额外提供 `registerLocale(code, bundle)` 注册表，
+注册后 `locale` 可直接传字符串码（内置的 `zh_CN` / `en_US` 也支持字符串写法）。
+</Notice>
+
+<DemoBox code={registerCustomSrc}><RegisterCustom /></DemoBox>
+
+## API 参考
+
+| 属性 | 说明 | 类型 | 默认值 |
+| --- | --- | --- | --- |
+| currency | 默认 ISO 4217 货币（如 `'CNY'`）用于 currency 风格 formatNumber；未设时继承父级 | string | - |
+| direction | 文本方向；`'auto'` 按语言包的 `rtl` 字段推断 | `'ltr'` \| `'rtl'` \| `'auto'` | `'auto'` |
+| fallback | 缺失 key 的回退语言包 | `Locale` | `en_US` |
+| inherit | 嵌套时是否深合并父级 LocaleProvider 的语言包（子覆盖父、未覆盖继承父）；`false` 则整体替换 | boolean | `true` |
+| locale | 语言包对象，或内置/已注册的字符串码（如 `'zh_CN'` / `'en-US'`）；未知码回退 `en_US` | `Locale` \| string | - |
+| onLocaleChange | locale / direction 变化时的通知回调（受控，不回写） | `(info: { locale: string; direction: Direction }) => void` | - |
+| timeZone | 默认 IANA 时区（如 `'Asia/Shanghai'`）注入 formatDate；未设时继承父级 | string | - |
+
+`children` 作为带参 snippet 时可直接拿到 locale 能力（本库补充，Semi 无对应用法）：
+
+| 参数 | 说明 | 类型 |
+| --- | --- | --- |
+| direction | 当前生效的文本方向 | `Direction` |
+| formatDate | 按当前 locale / timeZone 格式化日期 | `LocaleApi['formatDate']` |
+| formatNumber | 按当前 locale / currency 格式化数字 | `LocaleApi['formatNumber']` |
+| locale | 当前生效的语言码 | string |
+| t | 按点号路径取文案 | `LocaleApi['t']` |
+
+### 相关工具
+
+| 名称 | 说明 |
+| --- | --- |
+| `mergeLocale(parent, child)` | 深合并两个语言包（子覆盖父）。`child` 可携带自定义组件的键 |
+| `registerLocale(code, bundle)` | 把自定义语言包注册到字符串码（本库补充） |
+| `resolveLocale(input)` | 把字符串码解析成语言包；对象原样返回 |
+| `unregisterLocale(code)` | 注销已注册的语言包（主要供测试 teardown） |
+| `useLocale()` | 在组件初始化期取得稳定 getter，渲染期读 `loc()` 拿最新 LocaleApi |
+
+## Accessibility
+
+- 本组件无 DOM 输出，不持有 role / aria 属性，不打断辅助技术的可访问性树。
+- **lang / dir 同步**：推荐宿主监听 `onLocaleChange` 把 `lang`、`dir` 同步到对应子树根元素或 `<html>`，
+  满足 WCAG 3.1.2 Language of Parts，屏幕阅读器据 `lang` 切换发音引擎。
+- locale 切换为纯文本替换，不移动 / 丢失焦点。

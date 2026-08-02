@@ -3,7 +3,6 @@ title: Popover 气泡卡片
 name: popover
 category: show
 brief: 点击/鼠标移入元素，弹出气泡式的卡片浮层。
-docMode: inline
 ---
 
 <script>

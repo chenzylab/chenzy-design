@@ -31,8 +31,12 @@
   }
 </script>
 
-<NodeViewWrapper as="span" class="cd-ai-chat-input-select-slot-wrap">
+<!-- 类名对齐 Semi extension/selectSlot/index.tsx：select-slot-wrapper（外层）+
+     select-slot（Select 自身），两个都**无前缀**。本库原来外层叫
+     cd-ai-chat-input-select-slot-wrap，且 Select 上没挂 select-slot。 -->
+<NodeViewWrapper as="span" class="select-slot-wrapper">
   <Select
+    class="select-slot"
     size="small"
     optionList={options as never}
     value={value as never}
@@ -41,14 +45,42 @@
 </NodeViewWrapper>
 
 <style>
-  /* NodeViewWrapper 的 class 在运行时注入，用 :global 命中（避免 unused-selector）。 */
-  :global(.cd-ai-chat-input-select-slot-wrap) {
+  /* 逐条对齐 Semi aiChatInput.scss:570-596。本库原来只有三行自造样式
+     （inline-flex + 通用 spacing 外边距 + min-width:80px），
+     Semi 的底色/圆角/高度/内距/文本色/箭头色一条都没接。
+     NodeViewWrapper 与 Select 内部节点的 class 都在运行时注入，故一律 :global。 */
+  :global(.select-slot-wrapper) {
     display: inline-flex;
     vertical-align: baseline;
-    margin: 0 var(--cd-spacing-extra-tight);
+    margin: var(--cd-spacing-ai-chat-input-rich-text-select-slot-marginy)
+      var(--cd-spacing-ai-chat-input-rich-text-select-slot-marginx);
   }
 
-  :global(.cd-ai-chat-input-select-slot-wrap .cd-select) {
-    min-width: 80px;
+  :global(.select-slot) {
+    height: var(--cd-height-ai-chat-input-rich-text-select-slot);
+    padding: var(--cd-spacing-ai-chat-input-rich-text-select-slot-paddingy)
+      var(--cd-spacing-ai-chat-input-rich-text-select-slot-paddingx);
+    border-radius: var(--cd-radius-ai-chat-input-rich-text-select-slot);
+    background-color: var(--cd-color-ai-chat-input-rich-text-select-slot-bg);
+    font-size: var(--cd-font-size-regular);
+  }
+
+  /* Semi 用 .semi-select-selection 命中选中文本；本库 Select 里对应的是 -value。 */
+  :global(.select-slot .cd-select-value) {
+    color: var(--cd-color-ai-chat-input-rich-text-select-selection-text);
+    font-weight: bold;
+    margin-left: var(--cd-spacing-ai-chat-input-rich-text-select-selection-marginleft);
+  }
+
+  :global(.select-slot .cd-select-arrow) {
+    color: var(--cd-color-ai-chat-input-rich-text-select-slot-arrow);
+    width: var(--cd-width-ai-chat-input-rich-text-select-slot-arrow);
+  }
+
+  /* 展开/聚焦时不显描边（Semi &.semi-select-open / -focus / :focus 均 border-color: transparent）。 */
+  :global(.select-slot.cd-select-open),
+  :global(.select-slot.cd-select-focus),
+  :global(.select-slot:focus) {
+    border-color: transparent;
   }
 </style>

@@ -338,8 +338,8 @@
           onEnterPress={jump}
         />
       </span>
-      {#if loc().t('Pagination.jumpToSuffix')}
-        <span class="cd-page-quickjump-suffix">{loc().t('Pagination.jumpToSuffix')}</span>
+      {#if loc().t('Pagination.page')}
+        <span class="cd-page-quickjump-suffix">{loc().t('Pagination.page')}</span>
       {/if}
     </span>
   {/if}

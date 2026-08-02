@@ -3,7 +3,6 @@ title: HotKeys 快捷键
 name: hotkeys
 category: other
 brief: 用于方便用户自定义快捷键及相关操作。
-docMode: inline
 ---
 
 <script>

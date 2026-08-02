@@ -21,7 +21,7 @@ describe('SideBarContainer a11y', () => {
 
     // 关闭按钮 aria-label 来自 en_US locale（SideBar.close = "Close"）。
     const closeBtn = container.querySelector(
-      '.cd-sidebar-container-close',
+      '.cd-sidebar-container-header-closeBtn',
     ) as HTMLElement | null;
     expect(closeBtn?.getAttribute('aria-label')).toBe('Close');
 

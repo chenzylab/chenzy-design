@@ -10,8 +10,15 @@
   interface Props {
     onMessageSend?: (m: AIChatInputMessageContent) => void;
     initValue?: string[] | undefined;
+    showConfigure?: boolean;
+    onConfigureButtonClick?: (() => void) | undefined;
   }
-  let { onMessageSend, initValue }: Props = $props();
+  let {
+    onMessageSend,
+    initValue,
+    showConfigure = true,
+    onConfigureButtonClick,
+  }: Props = $props();
 
   const options = [
     { label: '文件系统', value: 'fs' },
@@ -21,6 +28,12 @@
 
 <AIChatInput defaultContent="<p>hi</p>" {onMessageSend}>
   {#snippet renderConfigureArea()}
-    <AIChatInputConfigureMcp field="mcp" {options} {initValue} />
+    <AIChatInputConfigureMcp
+      field="mcp"
+      {options}
+      {initValue}
+      {showConfigure}
+      {onConfigureButtonClick}
+    />
   {/snippet}
 </AIChatInput>

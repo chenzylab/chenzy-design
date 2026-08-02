@@ -3,7 +3,6 @@ title: Carousel 轮播图
 name: carousel
 category: show
 brief: 轮播图是一种媒体组件，可以在可视化应用中展示多张图片轮流播放的效果。
-docMode: inline
 ---
 
 <script>

@@ -42,37 +42,51 @@ SideSheet 含完整交互/键盘/焦点逻辑，采用 headless + 渲染分层�
 
 ### Props
 
-| 名称 | 类型 | 默认值 | 说明 |
-|---|---|---|---|
-| `open` | `boolean` | `false` | 受控显隐。配合 `on:openChange` 使用。 |
-| `placement` | `'left' \| 'right' \| 'top' \| 'bottom'` | `'right'` | 滑出方向（贴附边缘）。RTL 下 left/right 镜像。 |
-| `size` | `'small' \| 'default' \| 'large'` | `'default'` | 预设尺度（横向→宽度，纵向→高度）。 |
-| `width` | `number \| string` | — | 显式宽度（left/right 生效），覆盖 `size`。数字按 px。 |
-| `height` | `number \| string` | — | 显式高度（top/bottom 生效），覆盖 `size`。数字按 px。 |
-| `title` | `string` | — | 标题文案；为空且无 `title` slot 时不渲染 Header 标题。 |
-| `mask` | `boolean` | `true` | 是否显示遮罩并以模态方式呈现（锁滚动 + focus trap）。 |
-| `maskClosable` | `boolean` | `true` | 点击遮罩是否关闭（`mask=true` 时生效）。 |
-| `outsideClosable` | `boolean` | `false` | `mask=false` 时点击面板外部是否关闭。 |
-| `closeOnEsc` | `boolean` | `true` | 按 Esc 是否关闭（仅作用于浮层栈顶）。 |
-| `closable` | `boolean` | `true` | 是否在 Header 显示关闭按钮。 |
-| `keepDOM` / `lazyMount` | `boolean` | `lazyMount=true` | 首次打开前是否惰性挂载内容。 |
-| `destroyOnClose` | `boolean` | `false` | 关闭后是否销毁内部内容（释放表单/重内容资源）。 |
-| `getContainer` | `() => HTMLElement` | `() => document.body` | Portal 挂载容器。 |
-| `zIndex` | `number` | `1000` | 浮层基准层级（栈内自动递增）。 |
-| `disableScrollLock` | `boolean` | `false` | 强制不锁定背景滚动（即便 `mask=true`）。 |
-| `returnFocusTo` | `HTMLElement \| (() => HTMLElement)` | 触发元素 | 关闭后焦点返回目标。 |
-| `motionDisabled` | `boolean` | `false` | 关闭进出动效（独立于 reduced-motion）。 |
-| `class` / `bodyClass` / `maskClass` | `string` | — | 自定义类名钩子。 |
-| `ariaLabel` | `string` | — | 无可见标题时提供 `aria-label`（无障碍兜底）。 |
+> 本表由 `packages/svelte/src/side-sheet/meta.ts` 真源生成（2026-07-30 重校）。此前本表列的 prop 多为 Semi 对齐前的旧名或已删除项（如 `value`→`activeKey`、`change`→`onChange`），改 prop 时请同步 meta.ts，勿手写「规划中」的 prop。
+
+| Prop | 类型 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| visible | `boolean` | `false` | 面板是否可见（受控，不回写） |
+| placement | `'left'\|'right'\|'top'\|'bottom'` | `'right'` | 滑出位置 |
+| size | `'small'\|'medium'\|'large'` | `'small'` | 尺寸（448/684/920px），仅 left/right 生效 |
+| width | `number\|string` | `448` | left/right 宽度，数字按 px |
+| height | `number\|string` | `400` | top/bottom 高度，数字按 px |
+| title | `string` | `undefined` | 面板标题 |
+| titleSnippet | `Snippet` | `undefined` | 自定义标题区（覆盖 title）；对齐 Semi title(ReactNode) |
+| closable | `boolean` | `true` | 是否显示右上角关闭按钮 |
+| closeIcon | `Snippet\|null` | `IconClose` | 关闭按钮 icon |
+| closeOnEsc | `boolean` | `false` | 是否允许 Esc 关闭 |
+| mask | `boolean` | `true` | 是否显示遮罩；false 时允许操作外部区域 |
+| maskClosable | `boolean` | `true` | 是否允许点击遮罩关闭 |
+| disableScroll | `boolean` | `true` | 渲染在 body 层时是否禁止 body 滚动 |
+| keepDOM | `boolean` | `false` | 关闭时是否保留内部组件不销毁 |
+| getPopupContainer | `() => HTMLElement \| null` | `undefined` | 指定父级 DOM，弹层渲染至该 DOM |
+| zIndex | `number` | `1000` | 弹层 z-index |
+| motion | `boolean` | `true` | 是否允许动画 |
+| style | `string` | `undefined` | 面板根内联样式 |
+| bodyStyle | `string` | `undefined` | 内容区域内联样式 |
+| headerStyle | `string` | `undefined` | Header 区域内联样式 |
+| maskStyle | `string` | `undefined` | 遮罩内联样式 |
+| footer | `Snippet<[{ close: () => void }]>\|null` | `undefined` | Footer 操作区；提供 close() 关闭面板；未提供不渲染 |
+| children | `Snippet` | `undefined` | Body 主内容区（可滚动） |
+| aria-label | `string` | `undefined` | 无可见标题时提供 aria-label |
+| class | `string` | `undefined` | 根元素自定义类名 |
+| afterVisibleChange | `(isVisible: boolean) => void` | `undefined` | 展示/隐藏动画结束触发 |
+| onCancel | `(e: MouseEvent \| KeyboardEvent) => void` | `undefined` | 取消面板时的回调 |
+
+**事件**（回调 prop 形式，对齐 Semi）：
+
+| 事件 | 说明 |
+| --- | --- |
+| `onCancel` | 取消面板（关闭按钮 / 遮罩 / Esc），payload 为触发事件 |
+| `afterVisibleChange` | 面板展示/隐藏动画结束触发，payload 为当前是否可见 |
 
 ### Events
 
-| 事件 | payload | 说明 |
-|---|---|---|
-| `on:openChange` | `{ open: boolean; reason: 'esc' \| 'mask' \| 'outside' \| 'closeButton' \| 'programmatic' }` | 显隐意图变化（受控，需外部回写 `open`）。 |
-| `on:afterOpen` | `void` | 进入动效结束、内容完全可见后触发。 |
-| `on:afterClose` | `void` | 退出动效结束、DOM 卸载（如适用）后触发。 |
-| `on:cancel` | `{ reason }` | 用户主动取消（Esc/遮罩/外部/关闭按钮）的语义快捷事件。 |
+| 事件 | 说明 |
+| --- | --- |
+| `onCancel` | 取消面板（关闭按钮 / 遮罩 / Esc），payload 为触发事件 |
+| `afterVisibleChange` | 面板展示/隐藏动画结束触发，payload 为当前是否可见 |
 
 ### Slots
 
@@ -131,11 +145,11 @@ SideSheet 含完整交互/键盘/焦点逻辑，采用 headless + 渲染分层�
 
 - 用户可见文案零硬编码，全部经 i18n 解析。
 
-| i18n key | 默认（zh-CN） | 说明 |
-|---|---|---|
-| `SideSheet.closeAriaLabel` | 关闭 | 关闭按钮无障碍名。 |
-| `SideSheet.closeText` | 关闭 | Footer 默认取消按钮文案（若使用内置 footer）。 |
-| `SideSheet.confirmText` | 确定 | Footer 默认确认按钮文案（若使用内置 footer）。 |
+> 本表由 `packages/locale/src/zh_CN.ts` 真源生成（2026-07-30 重校）。键名与键值都是 Semi 契约，勿手写「规划中」的键——历史上本表列过大量从未实现的键名，见 [[locale-dangling-keys-render-raw-key]]。
+
+| i18n key | 默认（zh-CN） |
+| --- | --- |
+| `SideSheet.closeAriaLabel` | 关闭 |
 
 - 组件不内嵌日期/数字渲染；若内容含日期/数字，由业务侧使用 `Intl.DateTimeFormat` / `Intl.NumberFormat` 并传入当前 locale。
 - RTL 语言（ar/he）下方向镜像由 `dir` 驱动（见 §6）。

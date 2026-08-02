@@ -3,7 +3,6 @@ title: BackTop 回到顶部
 name: backtop
 category: other
 brief: 返回页面顶部的操作按钮。
-docMode: inline
 ---
 
 <script>

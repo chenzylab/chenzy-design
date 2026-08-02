@@ -86,7 +86,7 @@ HotKeys 用于**声明一组快捷键组合、绑定键盘监听、并渲染出�
 
 ## 7. 国际化
 
-- i18n key：`HotKeys.modifierLabels`（可选）—— 修饰键的平台/语言符号映射（Ctrl/⌃、Cmd/⌘、Alt/⌥、Shift/⇧），供跨平台/多语言显示。
+- i18n key：`HotKeys.ctrl` / `.meta` / `.alt` / `.shift` —— 修饰键的可读文字名（非 `modifierLabels` 映射对象）。Apple 平台由组件替换为 ⌘⌥⌃⇧ 符号，见 [[hotkeys-modifier-keys-capitalized]]。
 - 跨平台 Meta 显示（macOS ⌘ vs Windows Ctrl/Win）：本库提供平台检测 + 符号映射（超越 Semi 的「全交业务」）。
 - 键名本身（如 "K"）无需翻译。
 

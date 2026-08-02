@@ -71,4 +71,19 @@
     color: var(--cd-calendar-color-day-text-default);
     font-size: var(--cd-font-size-regular);
   }
+
+  /* —— RTL（对齐 Semi calendar/rtl.scss 的 .calendar-time 段）——
+     时间列整体翻到右侧：内边距、数字对齐方向、items 的 auto 外边距三处都要换边。 */
+  :global(.cd-rtl) .cd-calendar-time {
+    padding-right: 0;
+    padding-left: var(--cd-calendar-spacing-time-padding-right);
+  }
+  :global(.cd-rtl) .cd-calendar-time-items {
+    /* 正向是 `0 0 0 auto`（靠右）；RTL 改成 `0 auto 0 0`（靠左），对齐 Semi
+       `margin-left:0; margin-right:auto` */
+    margin: 0 auto 0 0;
+  }
+  :global(.cd-rtl) .cd-calendar-time-item {
+    text-align: left;
+  }
 </style>

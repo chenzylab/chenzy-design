@@ -27,7 +27,8 @@
     "perf:bench": "vitest bench --run",
     "perf:baseline": "size-limit --json > perf/baseline.json || true",
     "perf:check": "size-limit",
-    "verify": "pnpm lint && pnpm typecheck && pnpm test && pnpm build",
+    "check:semi": "pnpm --filter @chenzy-design/svelte check:lineheight && pnpm --filter @chenzy-design/svelte check:rtl-scope && pnpm --filter @chenzy-design/svelte check:token-refs && pnpm --filter @chenzy-design/docs check:anchors && pnpm --filter @chenzy-design/tokens check:semi-parity",
+    "verify": "pnpm lint && pnpm typecheck && pnpm check:semi && pnpm test && pnpm build",
     "changeset": "changeset",
     "version-packages": "changeset version",
     "release": "pnpm build && pnpm -r publish --access public --no-git-checks"

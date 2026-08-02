@@ -3,7 +3,6 @@ title: Anchor 锚点
 name: anchor
 category: navigation
 brief: 创建超链接导航栏。
-docMode: inline
 ---
 
 <script>

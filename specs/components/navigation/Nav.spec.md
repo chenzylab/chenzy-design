@@ -19,36 +19,58 @@
 
 ## 4. API
 ### 4.1 Nav Props
-| 名称 | 类型 | 默认 | 说明 |
-|---|---|---|---|
-| items | `NavItemDef[]` | `[]` | 导航项（itemKey/text/icon/items；含 items 即子导航）|
-| mode | `'vertical'\|'horizontal'` | `'vertical'` | 方向：侧边/顶部 |
-| selectedKeys | `NavKey[]` | — | 受控选中项 |
-| defaultSelectedKeys | `NavKey[]` | — | 默认选中项 |
-| openKeys | `NavKey[]` | — | 受控展开子导航（vertical 且未折叠）|
-| defaultOpenKeys | `NavKey[]` | — | 默认展开子导航 |
-| isCollapsed | `boolean` | — | 受控折叠态（仅 vertical）|
-| defaultIsCollapsed | `boolean` | `false` | 默认折叠态（仅 vertical）|
-| header | `{ logo?: Snippet; text?: string }` | — | 头部（logo + 文案）|
-| footer | `{ collapseButton?: boolean }` | — | 底部（收起按钮，仅 vertical）|
-| disabled | `boolean` | `false` | 整体禁用 |
-| inlineIndent | `number` | `24` | 子级缩进像素（透传 Menu）|
-| limitIndent | `boolean` | `true` | 仅一级缩进；false 时逐级缩进 |
+
+> 本表由 `packages/svelte/src/nav/meta.ts` 真源生成（2026-07-30 重校）。此前本表列的 prop 多为 Semi 对齐前的旧名或已删除项（如 `value`→`activeKey`、`change`→`onChange`），改 prop 时请同步 meta.ts，勿手写「规划中」的 prop。
+
+| Prop | 类型 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| items | `NavItemInput[]` | `[]` | 导航项列表，字段对齐 Semi：itemKey/text/icon/items（含 items 即子导航）。string 项取值作 text 与 itemKey |
+| mode | `'vertical'\|'horizontal'` | `'vertical'` | 导航方向：侧边/顶部 |
+| selectedKeys | `NavKey[]` | `undefined` | 受控选中项 key 数组 |
+| defaultSelectedKeys | `NavKey[]` | `undefined` | 默认选中项 key 数组 |
+| openKeys | `NavKey[]` | `undefined` | 受控展开子导航 key（vertical 且未折叠有效） |
+| defaultOpenKeys | `NavKey[]` | `undefined` | 默认展开子导航 key |
+| multiple | `boolean` | `false` | 多选模式（叠加选中，配合 onDeselect） |
+| isCollapsed | `boolean` | `undefined` | 受控折叠态（仅 vertical 有效） |
+| defaultIsCollapsed | `boolean` | `false` | 默认折叠态（仅 vertical 有效） |
+| header | `{ logo?: Snippet; text?: string }` | `undefined` | 头部配置（logo + 文案） |
+| footer | `{ collapseButton?: boolean }` | `undefined` | 底部配置（收起按钮，仅 vertical） |
+| limitIndent | `boolean` | `true` | 仅一级缩进；false 时逐级缩进（依赖 level+indent） |
 | toggleIconPosition | `'left'\|'right'` | `'right'` | 子导航展开箭头位置 |
-| expandIcon | `Snippet` | — | 自定义展开箭头图标 |
+| expandIcon | `Snippet` | `undefined` | 自定义展开箭头图标 |
 | subNavMotion | `boolean` | `true` | 子导航展开动画开关 |
-| subNavOpenDelay / subNavCloseDelay | `number` | — | 浮层子导航展开/关闭延迟 ms |
-| getPopupContainer | `() => HTMLElement` | — | 浮层挂载容器 |
-| renderWrapper | `Snippet` | — | 自定义导航项外层包裹 |
-| class / style / bodyStyle / ariaLabel | `string` | — | 透传 |
+| subNavOpenDelay | `number` | `0` | 浮层子导航展开延迟 ms（透传 Dropdown mouseEnterDelay） |
+| subNavCloseDelay | `number` | `100` | 浮层子导航关闭延迟 ms（透传 Dropdown mouseLeaveDelay） |
+| subDropdownProps | `NavDropdownProps` | `undefined` | Nav 级：透传给所有子导航浮层 Dropdown 的默认属性 |
+| tooltipShowDelay | `number` | `undefined` | 折叠态 tooltip 显示延迟 ms |
+| tooltipHideDelay | `number` | `undefined` | 折叠态 tooltip 隐藏延迟 ms |
+| getPopupContainer | `() => HTMLElement` | `undefined` | 浮层挂载容器 |
+| renderWrapper | `Snippet` | `undefined` | 自定义导航项外层包裹 |
+| renderIcon | `Snippet<[NavItemDef]>` | `undefined` | 数据驱动的项图标渲染钩子（本库扩展，Semi 无）：项未自带 icon 时按 item 渲染前置图标，用于 items 大量、图标随 item 变化的场景（如站点侧边栏按组件名取图标）。项自带 icon 优先 |
+| class | `string` | `undefined` | 根元素自定义类名 |
+| style | `string` | `undefined` | 根元素自定义内联样式 |
+| bodyStyle | `string` | `undefined` | 导航项列表容器样式（对齐 Semi bodyStyle） |
+
+**事件**（回调 prop 形式，对齐 Semi）：
+
+| 事件 | 说明 |
+| --- | --- |
+| `onSelect` | 选中导航项时触发（{itemKey,selectedKeys,selectedItems,domEvent,isOpen}） |
+| `onDeselect` | 多选下取消选中时触发 |
+| `onClick` | 点击任意导航项时触发（{itemKey,domEvent,isOpen}） |
+| `onOpenChange` | 展开/收起子导航时触发（{itemKey,openKeys,domEvent,isOpen}） |
+| `onCollapseChange` | 折叠态变化时触发 |
+
+**子组件**：`Nav.Header`、`Nav.Footer`、`Nav.Item`、`Nav.Sub`
 
 ### 4.2 Events
-| 事件 | 载荷 | 说明 |
-|---|---|---|
-| onSelect | `NavKey` | 选中导航项 |
-| onClick | `NavKey` | 点击任意导航项 |
-| onOpenChange | `NavKey[]` | 展开/收起子导航 |
-| onCollapseChange | `boolean` | 折叠态变化 |
+| 事件 | 说明 |
+| --- | --- |
+| `onSelect` | 选中导航项时触发（{itemKey,selectedKeys,selectedItems,domEvent,isOpen}） |
+| `onDeselect` | 多选下取消选中时触发 |
+| `onClick` | 点击任意导航项时触发（{itemKey,domEvent,isOpen}） |
+| `onOpenChange` | 展开/收起子导航时触发（{itemKey,openKeys,domEvent,isOpen}） |
+| `onCollapseChange` | 折叠态变化时触发 |
 
 ### 4.3 Nav.Header / Nav.Footer
 - **Nav.Header**：`logo?: Snippet`、`text?: string`、`class`、`style`。折叠时隐藏文案仅留 logo。

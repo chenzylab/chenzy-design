@@ -17,7 +17,7 @@
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
-  import { useId } from '@chenzy-design/core';
+  import { useId, resolveDefault } from '@chenzy-design/core';
   import { Tooltip, type Position } from '../tooltip/index.js';
   import { useLocale } from '../locale-provider/index.js';
 
@@ -123,10 +123,10 @@
     title,
     visible,
     defaultVisible = false,
-    trigger = 'hover',
-    position = 'bottom',
-    autoAdjustOverflow = true,
-    showArrow = false,
+    trigger: triggerProp,
+    position: positionProp,
+    autoAdjustOverflow: autoAdjustOverflowProp,
+    showArrow: showArrowProp,
     arrowPointAtCenter = true,
     arrowStyle,
     spacing,
@@ -136,14 +136,14 @@
     condition = true,
     clickToHide = false,
     keepDOM = false,
-    disableFocusListener = false,
+    disableFocusListener: disableFocusListenerProp,
     disabled = false,
-    motion = true,
+    motion: motionProp,
     getPopupContainer,
     zIndex,
-    closeOnEsc = true,
+    closeOnEsc: closeOnEscProp,
     guardFocus,
-    returnFocusOnClose = true,
+    returnFocusOnClose: returnFocusOnCloseProp,
     stopPropagation = false,
     rePosKey,
     class: className = '',
@@ -157,6 +157,16 @@
     triggerStyle = '',
     children,
   }: Props = $props();
+  // cdGlobal 全局默认 props（对齐 Semi semiGlobal.config.overrideDefaultProps）：
+  // 优先级 = 显式传值 > cdGlobal['Popover'] > 组件内置默认值。
+  const showArrow = $derived(resolveDefault(showArrowProp, 'Popover', 'showArrow', false));
+  const autoAdjustOverflow = $derived(resolveDefault(autoAdjustOverflowProp, 'Popover', 'autoAdjustOverflow', true));
+  const motion = $derived(resolveDefault(motionProp, 'Popover', 'motion', true));
+  const trigger = $derived(resolveDefault(triggerProp, 'Popover', 'trigger', 'hover'));
+  const position = $derived(resolveDefault(positionProp, 'Popover', 'position', 'bottom'));
+  const closeOnEsc = $derived(resolveDefault(closeOnEscProp, 'Popover', 'closeOnEsc', true));
+  const returnFocusOnClose = $derived(resolveDefault(returnFocusOnCloseProp, 'Popover', 'returnFocusOnClose', true));
+  const disableFocusListener = $derived(resolveDefault(disableFocusListenerProp, 'Popover', 'disableFocusListener', false));
 
   const loc = useLocale();
   const titleId = useId('cd-popover-title');

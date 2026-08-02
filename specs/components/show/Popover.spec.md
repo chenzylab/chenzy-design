@@ -53,45 +53,48 @@ Popover 是 M4 浮层体系的通用基座，Popconfirm/Dropdown/部分 Select �
 
 ### Props
 
-| 名称 | 类型 | 默认值 | 说明 |
-|---|---|---|---|
-| content | string \| Snippet | — | 浮层内容；可用 `content` slot 替代 |
-| open | boolean | — | 受控显隐；配合 `on:openChange` |
-| defaultOpen | boolean | false | 非受控初始显隐 |
-| trigger | 'hover' \| 'click' \| 'focus' \| 'custom' | 'hover' | 触发方式 |
-| position | Position（12 方位） | 'bottom' | 浮层相对触发器的方位 |
-| align | 'start' \| 'center' \| 'end' | 'center' | 主轴对齐微调 |
-| showArrow | boolean | true | 是否显示指向箭头 |
-| arrowPointAtCenter | boolean | false | 箭头是否指向触发器中心 |
-| spacing | number \| {x;y} | 8 | 浮层与触发器间距（px） |
-| mouseEnterDelay | number | 100 | hover 进入延迟（ms） |
-| mouseLeaveDelay | number | 100 | hover 离开延迟（ms） |
-| autoAdjustOverflow | boolean | true | 视口溢出时自动 flip/shift |
-| getPopupContainer | () => HTMLElement | () => body | 浮层挂载容器 |
-| zIndex | number | var(--cd-z-popover) | 层级 |
-| trapFocus | boolean | trigger==='click' | 是否陷入焦点 |
-| returnFocus | boolean | true | 关闭后焦点是否归还触发器 |
-| closeOnEsc | boolean | true | Esc 关闭 |
-| closeOnOutsideClick | boolean | true | 外部点击关闭 |
-| lockScroll | boolean | false | 打开时锁定背景滚动 |
-| destroyOnClose | boolean | false | 关闭时销毁内容 DOM |
-| rememberFocus | boolean | false | 重新打开时恢复上次焦点位置 |
-| stopPropagation | boolean | false | 阻断浮层内事件冒泡 |
-| disabled | boolean | false | 禁用触发 |
-| size | 'small' \| 'default' \| 'large' | 'default' | 内边距尺寸档位 |
-| motion | boolean \| MotionConfig | true | 动画开关/配置 |
-| class / style | string | — | 浮层根元素样式 |
+> 本表由 `packages/svelte/src/popover/meta.ts` 真源生成（2026-07-30 重校）。此前本表列的 prop 多为 Semi 对齐前的旧名或已删除项（如 `value`→`activeKey`、`change`→`onChange`），改 prop 时请同步 meta.ts，勿手写「规划中」的 prop。
+
+| Prop | 类型 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| content | `string \| Snippet<[{ initialFocusRef }]>` | `undefined` | 浮层内容；Snippet 可接收 { initialFocusRef } 入参，绑定到浮层内元素打开时自动聚焦（对齐 Semi content 函数） |
+| title | `string \| Snippet` | `undefined` | 标题，提供则渲染标题区与下边框 |
+| visible | `boolean` | `undefined` | 受控显隐（配合 trigger=custom） |
+| defaultVisible | `boolean` | `false` | 非受控初始显隐 |
+| trigger | `'hover'\|'click'\|'focus'\|'custom'\|'contextMenu'` | `'hover'` | 触发方式；custom 完全受控（仅 visible + onVisibleChange）；contextMenu 右键触发。click/custom → dialog role，hover/focus/contextMenu → tooltip role |
+| position | `'top'\|'topLeft'\|'topRight'\|'left'\|'leftTop'\|'leftBottom'\|'right'\|'rightTop'\|'rightBottom'\|'bottom'\|'bottomLeft'\|'bottomRight'\|'leftTopOver'\|'rightTopOver'` | `'bottom'` | 弹出方位（Semi 12 方位命名 + 2 Over） |
+| autoAdjustOverflow | `boolean` | `true` | 视口溢出时翻转到对侧 |
+| showArrow | `boolean` | `false` | 是否显示 SVG 小三角（对齐 Semi 默认 false） |
+| arrowPointAtCenter | `boolean` | `true` | 小三角是否指向元素中心（需 showArrow） |
+| arrowStyle | `{ borderColor?; backgroundColor?; borderOpacity? }` | `undefined` | 箭头颜色定制（border/bg/opacity） |
+| spacing | `number \| { x: number; y: number }` | `showArrow ? 10 : 4` | 浮层与触发器距离(px)，缺省按 showArrow 取 10 / 4（对齐 Semi SPACING_WITH_ARROW / SPACING） |
+| margin | `number \| { marginLeft; marginTop; marginRight; marginBottom }` | `0` | 计算溢出翻转时增加的冗余安全边距 |
+| mouseEnterDelay | `number` | `50` | hover 进入延迟(ms) |
+| mouseLeaveDelay | `number` | `50` | hover 离开延迟(ms) |
+| condition | `boolean` | `true` | false 时不响应 hover/click/focus 触发（custom 不受影响） |
+| clickToHide | `boolean` | `false` | 点击浮层及内部任一元素时自动关闭 |
+| keepDOM | `boolean` | `false` | 关闭时保留浮层 DOM 不销毁（--hidden 隐藏） |
+| disableFocusListener | `boolean` | `false` | hover 触发时不响应键盘 focus 显隐 |
+| disabled | `boolean` | `false` | 禁用触发 |
+| motion | `boolean` | `true` | 是否展示进出场动画，reduced-motion 退化 |
+| getPopupContainer | `() => HTMLElement \| null \| undefined` | `undefined` | 浮层挂载容器，缺省回退 ConfigProvider 全局，再回退 body |
+| zIndex | `number` | `undefined` | 浮层 z-index（缺省走 token --cd-z-popover = 1030） |
+| closeOnEsc | `boolean` | `true` | Esc 关闭浮层 |
+| guardFocus | `boolean` | `role==='dialog'` | 焦点处于浮层内时 Tab 是否循环（缺省随 dialog 模式） |
+| returnFocusOnClose | `boolean` | `true` | 关闭后焦点归还触发器（仅 guardFocus 时生效） |
+| stopPropagation | `boolean` | `false` | 阻止浮层上的点击事件冒泡 |
+| rePosKey | `string \| number` | `undefined` | 更新该值手动触发浮层重新定位 |
+| class | `string` | `''` | 浮层自定义类名 |
+| style | `string` | `''` | 浮层自定义内联样式 |
+| onVisibleChange | `(visible: boolean) => void` | `undefined` | 显隐切换回调 |
+| onClickOutSide | `(e: MouseEvent) => void` | `undefined` | 点击浮层与触发器外部的回调（仅 custom/click） |
+| onEscKeyDown | `(e: KeyboardEvent) => void` | `undefined` | 浮层展示时按 Esc 键的回调（与 closeOnEsc 相互独立） |
+| afterClose | `() => void` | `undefined` | 浮层完全关闭后的回调 |
+| children | `Snippet` | `undefined` | 触发元素（必填） |
 
 ### Events
 
-| 事件 | 载荷 | 说明 |
-|---|---|---|
-| openChange | `{ open: boolean }` | 显隐变化（受控同步入口） |
-| open | — | 浮层完成打开（动画结束） |
-| close | — | 浮层完成关闭 |
-| positionChange | `{ position: Position }` | flip/shift 后实际方位变化 |
-| clickOutside | `{ target: EventTarget }` | 点击浮层外部 |
-| escKeydown | — | 按下 Esc 触发关闭前 |
+> 本组件无事件回调 prop（meta.events 为空）。此前本表列的回调均未实现，已删。
 
 ### Slots
 
@@ -145,10 +148,11 @@ Popover 是 M4 浮层体系的通用基座，Popconfirm/Dropdown/部分 Select �
 
 容器组件自身用户可见文案极少；内置文案与日期/数字格式化交由内容使用方。需 i18n 的内置项：
 
-| i18n key | 用途 |
-|---|---|
-| Popover.close | 关闭按钮 `aria-label`（destroyOnClose/带关闭图标时） |
-| Popover.dialogLabel | dialog 模式无标题时的兜底 `aria-label` |
+> 本表由 `packages/locale/src/zh_CN.ts` 真源生成（2026-07-30 重校）。键名与键值都是 Semi 契约，勿手写「规划中」的键——历史上本表列过大量从未实现的键名，见 [[locale-dangling-keys-render-raw-key]]。
+
+| i18n key | 默认（zh-CN） |
+| --- | --- |
+| `Popover.dialogLabel` | 对话框 |
 
 - 浮层内业务文案零硬编码，由调用方通过 `content`/slot 注入。
 - 内容中的日期/数字一律使用 `Intl.DateTimeFormat`/`Intl.NumberFormat`。
@@ -157,7 +161,7 @@ Popover 是 M4 浮层体系的通用基座，Popconfirm/Dropdown/部分 Select �
 ## 8. 文案
 
 - 标题简短（名词/名词短语），正文一句话说清；遵循 content-guidelines 的句式与大小写规范。
-- 关闭按钮使用图标 + 可访问名称（`Popover.close`），不在视觉上放冗余"关闭"文字。
+- 关闭按钮使用图标 + 可访问名称（由调用方传入；Popover slice 只有 `dialogLabel` 一键），不在视觉上放冗余"关闭"文字。
 - 避免在 hover Popover 内放置需要精确操作的关键控件（指针易移出）。
 
 **危险操作文案（单列）**：Popover 作为 Popconfirm 容器时，危险确认按钮文案须具体且后果明确，例如"删除此项"而非"确定"；标题陈述后果（"删除后无法恢复"）。破坏性按钮用 `--cd-color-danger`，并保证非颜色可辨（图标/文案）。
@@ -205,7 +209,7 @@ Popover 是 M4 浮层体系的通用基座，Popconfirm/Dropdown/部分 Select �
 - [ ] 键盘：Esc 关闭、click 模式焦点陷入与循环、returnFocus 归还触发器。
 - [ ] 所有 Token 走 `--cd-popover-*` → Alias，无硬编码颜色/尺寸；暗色对比度 AA。
 - [ ] reduced-motion 与 RTL 适配通过；axe 无障碍零违规。
-- [ ] 用户可见文案零硬编码，提供 `Popover.close`/`Popover.dialogLabel` key；日期/数字走 Intl。
+- [ ] 用户可见文案零硬编码，提供 `Popover.dialogLabel` key（无标题时 dialog 的兜底可访问名）；日期/数字走 Intl。
 - [ ] 惰性挂载 + destroyOnClose 生效，关闭后监听器全部解绑（无泄漏）。
 - [ ] gzip 体积达标（svelte ≤3.5KB，core ≤4KB）。
 - [ ] 提供 `component.meta.ts`，schema/关系/a11y/token 完整。

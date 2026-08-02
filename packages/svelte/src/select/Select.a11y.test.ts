@@ -3,7 +3,7 @@
 //
 // 修复记录：根 `<div role="combobox">` 现经 ariaLabel/ariaLabelledby prop 或
 //   placeholder / locale Select.ariaLabel 回退获可访问名，axe aria-input-field-name 消除。
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { renderWithLocale, expectNoAxeViolations } from '../test-utils/a11y.js';
 import Select from './Select.svelte';
 
@@ -61,5 +61,28 @@ describe('Select a11y', () => {
     });
     expect(document.querySelector('[role="combobox"]')?.getAttribute('aria-label')).toBe('Pick a fruit');
     await expectNoAxeViolations(document.body);
+  });
+
+  // allowCreate 新建项的 DOM 对齐 Semi：`<span class="-create-tips">Create</span>` + 裸的输入值
+  // 两个节点。曾坑：本库把值插值进一整串（locale 键还叫 `Select.create`、值含 "{label}"），
+  // 与 Semi 的 createText（不含占位符）语义不符，且缺 `-create-tips` span 与其配套样式。
+  it('allowCreate：create-tips span 承载「创建」前缀，输入值为独立文本节点（对齐 Semi）', async () => {
+    renderWithLocale(Select, {
+      props: { optionList: options, defaultOpen: true, filter: true, allowCreate: true },
+    });
+    // searchPosition 默认 'trigger'（对齐 Semi），搜索框内联在触发器上；
+    // 用共享类 .cd-select-search 定位，不假定 trigger/dropdown 位置。
+    const search = document.querySelector('.cd-select-search') as HTMLInputElement;
+    expect(search).not.toBeNull();
+    search.value = 'Durian';
+    search.dispatchEvent(new Event('input', { bubbles: true }));
+
+    const createOpt = await vi.waitUntil(() => document.querySelector('.cd-select-option-create'));
+    const tips = createOpt.querySelector('.cd-select-create-tips');
+    // 前缀是独立 span，且文案为 locale 的 createText（en_US: 'Create'，不含占位符）
+    expect(tips?.textContent?.trim()).toBe('Create');
+    // 输入值不在 span 内，而是选项自身的文本
+    expect(tips?.textContent).not.toContain('Durian');
+    expect(createOpt.textContent).toContain('Durian');
   });
 });

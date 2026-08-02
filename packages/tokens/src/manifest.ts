@@ -222,6 +222,16 @@ export interface BuildManifestInput {
   /** alias light / dark（{ '--cd-xxx': value }）。 */
   aliasLight: Record<string, string>;
   aliasDark: Record<string, string>;
+  /**
+   * dark 主题的**全局色板**覆盖（{ '--cd-color-xxx': value }）。
+   *
+   * 必传：dark 下 Semi 与本库都是**整套色板反转**，语义层再指回色板。
+   * 早先 alias 抄的是字面值，dark 靠 aliasDark 逐条覆盖，漏掉色板层也看不出来；
+   * 改用 `ref()` 后语义色变成 `var(--cd-color-blue-5)`，若不把 dark 色板喂进来，
+   * `resolvedDark` 会顺着 light 色板解析（primary 在 dark 下算出 #0064fa 而非 #54a9ff）。
+   * 注：这只影响 manifest 的字面量记账，产物 CSS 一直是对的（dark 块重定义了色板）。
+   */
+  globalDark?: Record<string, string>;
   /** component token（含 TokenDef 元数据），key 不含前缀。 */
   component: TokenGroup;
 }
@@ -252,8 +262,12 @@ export function buildManifest(input: BuildManifestInput): { count: number; token
     litLight.set(e.name, e.value);
     litDark.set(e.name, e.value);
   }
+  // dark 覆盖顺序：先全局色板，再 alias（alias 指回色板，故色板必须先就位）。
+  for (const [name, value] of Object.entries(input.globalDark ?? {})) {
+    litDark.set(name, value);
+  }
   for (const [name, value] of Object.entries(input.aliasDark)) {
-    litDark.set(name, value); // dark 只覆盖 alias 层
+    litDark.set(name, value);
   }
 
   // 递归解析 var() 到字面量（防环，最多 10 跳）。

@@ -3,7 +3,6 @@ title: JsonViewer JSON 编辑器
 name: jsonviewer
 category: plus
 brief: 用于展示和编辑 JSON 数据。
-docMode: inline
 ---
 
 <script>

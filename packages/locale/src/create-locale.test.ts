@@ -7,8 +7,8 @@ import type { Locale } from './interface.js';
 describe('createLocale', () => {
   it('resolves a dot-path key from the active bundle', () => {
     const l = createLocale({ locale: zh_CN });
-    expect(l.t('Modal.okText')).toBe('确定');
-    expect(l.t('Modal.cancelText')).toBe('取消');
+    expect(l.t('Modal.confirm')).toBe('确定');
+    expect(l.t('Modal.cancel')).toBe('取消');
   });
 
   it('interpolates params', () => {
@@ -17,10 +17,10 @@ describe('createLocale', () => {
   });
 
   it('falls back to en_US for a key missing in the active bundle', () => {
-    // a sparse bundle missing Modal.okText → falls back to en_US
-    const sparse = { ...zh_CN, Modal: { cancelText: '取消', close: '关闭' } } as unknown as Locale;
+    // a sparse bundle missing Modal.confirm → falls back to en_US
+    const sparse = { ...zh_CN, Modal: { cancel: '取消', close: '关闭' } } as unknown as Locale;
     const l = createLocale({ locale: sparse });
-    expect(l.t('Modal.okText')).toBe(en_US.Modal.okText); // 'OK' / from en_US
+    expect(l.t('Modal.confirm')).toBe(en_US.Modal.confirm); // 'OK' / from en_US
   });
 
   it('returns the raw key when missing everywhere (never a blank)', () => {

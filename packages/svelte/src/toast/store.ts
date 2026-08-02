@@ -11,6 +11,7 @@
  */
 import {
   createToastStore,
+  getGlobalDefaults,
   type ToastStore,
   type ToastOptions,
   type ToastType,
@@ -50,7 +51,10 @@ export type SvelteToastOptions = Omit<ToastOptions, 'type'> & {
 type OptsOrString = SvelteToastOptions | string;
 
 function toOptions(input: OptsOrString): SvelteToastOptions {
-  return typeof input === 'string' ? { content: input } : input;
+  const own = typeof input === 'string' ? { content: input } : input;
+  // cdGlobal 全局默认 props（对齐 Semi：命令式入口读 semiGlobal 的 overrideDefaultProps.Toast
+  // 再与用户 options 合并）。用户显式传的键恒覆盖全局默认。
+  return { ...getGlobalDefaults('Toast'), ...own } as SvelteToastOptions;
 }
 
 /** 位置偏移 + zIndex，供 ToastContainer 读取注入 wrapper inline style。 */

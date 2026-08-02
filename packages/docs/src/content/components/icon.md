@@ -3,7 +3,6 @@ title: Icon 图标
 name: icon
 category: basic
 brief: 语义化的矢量图形。
-docMode: inline
 ---
 
 <script>

@@ -3,7 +3,6 @@ title: Form 表单
 name: form
 category: input
 brief: Form 是表单容器组件，负责承载并编排一组输入控件，提供字段注册、值收集、校验、错误展示与布局四大核心能力。
-docMode: inline
 ---
 
 <script>

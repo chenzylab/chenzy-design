@@ -6,7 +6,13 @@
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
-  import { MESSAGE_STATUS, type Message, type Metadata, type Content } from '@chenzy-design/core';
+  import {
+    MESSAGE_STATUS,
+    escapeHtmlInMarkdown,
+    type Message,
+    type Metadata,
+    type Content,
+  } from '@chenzy-design/core';
   import { IconBriefStroked } from '@chenzy-design/icons';
   import { MarkdownRender } from '../markdown-render/index.js';
   import ChatCode from './ChatCode.svelte';
@@ -21,6 +27,8 @@
     showBubble: boolean;
     markdownRenderProps?: Record<string, unknown> | undefined;
     renderChatBoxContent?: Snippet<[RenderContentProps]> | undefined;
+    /** 是否转义用户消息中的 HTML 标签（对齐 Semi escapeHtml，仅作用于 user 角色）。 */
+    escapeHtml?: boolean;
   }
 
   let {
@@ -32,9 +40,14 @@
     showBubble,
     markdownRenderProps,
     renderChatBoxContent,
+    escapeHtml = true,
   }: Props = $props();
 
-  const contentText = $derived(resolveText(message.content));
+  // 对齐 Semi chatBoxContent：仅 user 角色的消息做转义，助手输出的 markdown 原样渲染。
+  const shouldEscapeHtml = $derived(escapeHtml && isUser);
+  const contentText = $derived(
+    shouldEscapeHtml ? escapeHtmlInMarkdown(resolveText(message.content)) : resolveText(message.content),
+  );
   const contentAttachments = $derived(resolveAttachments(message.content));
 
   function resolveText(content: Message['content']): string {

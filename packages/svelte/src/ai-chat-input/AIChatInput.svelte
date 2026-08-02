@@ -23,6 +23,9 @@
     nextSuggestionIndex,
     referenceLabel,
     isImageReference,
+    isImageType,
+    getAttachmentType,
+    getContentType,
     skillLabel,
     getSkillSlotHTML,
     shouldOpenSkillPanel,
@@ -39,17 +42,52 @@
     type AIChatInputSkill,
     type AIChatInputConfigureValue,
   } from '@chenzy-design/core';
+  import {
+    IconArrowUp,
+    IconClose,
+    IconCode,
+    IconCrossStroked,
+    IconExcel,
+    IconFile,
+    IconMusic,
+    IconPaperclip,
+    IconPdf,
+    IconSendMsgStroked,
+    IconStop,
+    IconTemplateStroked,
+    IconVideo,
+    IconWord,
+  } from '@chenzy-design/icons';
+  import { Tooltip } from '../tooltip/index.js';
   import { useLocale } from '../locale-provider/index.js';
   import { Upload } from '../upload/index.js';
+  // 复用现有组件：Semi renderAttachment 用 Progress type=circle 显示上传进度，本库同样复用。
+  import { Progress } from '../progress/index.js';
+  // 对齐 Semi：三个浮层（建议/技能/模版）由同一个 Popover 承载，不再自绘绝对定位面板。
+  import { Popover } from '../popover/index.js';
+  import AIChatInputHorizontalScroller from './AIChatInputHorizontalScroller.svelte';
+  // Semi 把技能/建议单项拆成 skillItem.tsx / suggestionItem.tsx，本库同样拆分。
+  import AIChatInputSkillItem from './AIChatInputSkillItem.svelte';
+  import AIChatInputSuggestionItem from './AIChatInputSuggestionItem.svelte';
   import type { UploadFileItem } from '../upload/types.js';
   import { untrack } from 'svelte';
   import { setConfigureContext } from './configure-context.js';
+  // 纯读取侧，无 tiptap 依赖，故可静态 import（扩展本体仍随内核动态加载）。
+  import { isHotKeySendAllowed } from './status-storage.js';
+  // 编辑器内核装配与生命周期（对齐 Semi richTextInput.tsx 的拆分）。
+  // 本模块顶层只有 import type，内核仍在其内部动态 import。
+  import { mountRichTextInput } from './rich-text-input.svelte.js';
 
   interface Props {
     /** 初始内容（HTML 或纯文本，tiptap Content）。 */
     defaultContent?: string;
-    /** 占位文本（缺省走 locale AIChatInput.placeholder）。 */
+    /** 占位文本（对齐 Semi：无内置默认文案，不传则不显示）。 */
     placeholder?: string | undefined;
+    /**
+     * 仅选中技能（无其他内容）时是否仍显示 placeholder（对齐 Semi showPlaceholderWhenSkillOnly）。
+     * 开启后 placeholder 显示在 skill 后方。
+     */
+    showPlaceholderWhenSkillOnly?: boolean;
     /**
      * 是否可发送（对齐 Semi canSend）。未设置时按内容/附件推断；显式设置以此为准。
      */
@@ -76,8 +114,12 @@
     onStopGenerate?: (() => void) | undefined;
     /** 上传附件变化回调。 */
     onUploadChange?: ((attachments: AIChatInputAttachment[]) => void) | undefined;
-    /** 自定义发送/停止按钮区渲染（对齐 Semi renderActionArea 子集）。 */
-    renderActionArea?: Snippet<[{ canSend: boolean; generating: boolean }]> | undefined;
+    /**
+     * 自定义底部操作区渲染（对齐 Semi renderActionArea）：**整块替换**，
+     * 入参对齐 Semi ActionAreaProps —— `menuItem` 是默认的「上传 + 发送/停止」按钮组
+     * （渲染它即可保留内置能力），`className` 是默认容器类名（需自行挂到根节点上）。
+     */
+    renderActionArea?: Snippet<[{ menuItem: Snippet; className: string }]> | undefined;
     // —— 阶段 2 · 引用 ——
     /** 受控引用列表，渲染于编辑区上方 top area（对齐 Semi references）。 */
     references?: AIChatInputReference[];
@@ -92,8 +134,23 @@
     // —— 阶段 2 · 建议 ——
     /** 建议列表：聚焦空编辑区时弹出面板（对齐 Semi suggestions）。 */
     suggestions?: AIChatInputSuggestion[];
-    /** 自定义单条建议渲染（对齐 Semi renderSuggestionItem）。 */
-    renderSuggestionItem?: Snippet<[{ suggestion: AIChatInputSuggestion; active: boolean }]> | undefined;
+    /**
+     * 自定义单条建议渲染（对齐 Semi renderSuggestionItem）：**整项替换**，
+     * 入参逐字段对齐 Semi RenderSuggestionItemProps —— 消费方需自己渲染根节点并挂上
+     * className / onClick / onMouseEnter。
+     */
+    renderSuggestionItem?:
+      | Snippet<
+          [
+            {
+              suggestion: AIChatInputSuggestion;
+              className: string;
+              onClick: () => void;
+              onMouseEnter: () => void;
+            },
+          ]
+        >
+      | undefined;
     /**
      * 建议点击/选中回调。未提供时默认把建议文本 setContent 进编辑器。
      * 提供时以回调为准（不再默认插入）。
@@ -109,8 +166,22 @@
     skills?: AIChatInputSkill[];
     /** 触发技能面板的按键（对齐 Semi skillHotKey，默认 '/'）。 */
     skillHotKey?: string;
-    /** 自定义单条技能渲染（对齐 Semi renderSkillItem）。 */
-    renderSkillItem?: Snippet<[{ skill: AIChatInputSkill; active: boolean }]> | undefined;
+    /**
+     * 自定义单条技能渲染（对齐 Semi renderSkillItem）：**整项替换**，
+     * 入参逐字段对齐 Semi RenderSkillItemProps。
+     */
+    renderSkillItem?:
+      | Snippet<
+          [
+            {
+              skill: AIChatInputSkill;
+              className: string;
+              onClick: () => void;
+              onMouseEnter: () => void;
+            },
+          ]
+        >
+      | undefined;
     /** 技能选中回调。 */
     onSkillChange?: ((skill: AIChatInputSkill) => void) | undefined;
     /**
@@ -129,7 +200,11 @@
      * 其值发送时并入 MessageContent.setup。
      */
     renderConfigureArea?: Snippet | undefined;
-    /** 配置区初始值（对齐 Semi Configure defaultValue）。 */
+    /**
+     * 配置区初始值。**层级与 Semi 不同**：Semi 的 defaultValue 在 Configure 组件上
+     * （configure/index.tsx:19 `props.value || props.defaultValue`），本库的配置区
+     * 是由 AIChatInput 提供 context、没有独立的 Configure 容器组件，故提到父层。
+     */
     configureDefaultValue?: AIChatInputConfigureValue;
     /** 配置区变更回调（value 为全量，changed 为本次变更字段，对齐 Semi onConfigureChange）。 */
     onConfigureChange?: ((value: AIChatInputConfigureValue, changed: AIChatInputConfigureValue) => void) | undefined;
@@ -153,12 +228,30 @@
       | undefined;
     /** generating 从 false→true 时清空输入（对齐 Semi clearContentOnGenerating，默认 true）。 */
     clearContentOnGenerating?: boolean;
+    /**
+     * 清空输入时保留已选技能标记（对齐 Semi keepSkillAfterSend，默认 false）。
+     * true 时走 setContentWhileSaveTool('') 而非整体 clearContent。
+     */
+    keepSkillAfterSend?: boolean;
+    /** 模版浮层附加类名（对齐 Semi templatesCls）。 */
+    templatesCls?: string;
+    /** 模版浮层附加内联样式（对齐 Semi templatesStyle）。 */
+    templatesStyle?: string;
+    /** 上传按钮的 Tooltip 配置；传了才包 Tooltip（对齐 Semi uploadTipProps）。 */
+    uploadTipProps?: Record<string, unknown> | undefined;
     /** 编辑区聚焦回调。 */
     onFocus?: ((event: FocusEvent) => void) | undefined;
     /** 编辑区失焦回调。 */
     onBlur?: ((event: FocusEvent) => void) | undefined;
     /** 粘贴回调（携带粘贴的文件，对齐 Semi onPaste；不改变默认粘贴行为）。 */
     onPaste?: ((files: File[]) => void) | undefined;
+    /**
+     * 透传给承载建议/技能/模版浮层的 Popover（对齐 Semi popoverProps）。
+     * position 默认 bottomLeft、trigger 固定 custom（显隐由组件内部状态驱动，不可覆盖）。
+     */
+    popoverProps?: Record<string, unknown> | undefined;
+    /** 浮层宽度是否跟随触发器宽度（对齐 Semi dropdownMatchTriggerWidth，默认 true）。 */
+    dropdownMatchTriggerWidth?: boolean;
     /** 附加类名。 */
     class?: string;
     /** 内联样式。 */
@@ -168,6 +261,7 @@
   let {
     defaultContent = '',
     placeholder,
+    showPlaceholderWhenSkillOnly = false,
     canSend,
     generating = false,
     sendHotKey = 'enter',
@@ -204,9 +298,15 @@
     showUploadFile = true,
     renderUploadButton,
     clearContentOnGenerating = true,
+    keepSkillAfterSend = false,
+    templatesCls,
+    templatesStyle,
+    uploadTipProps,
     onFocus,
     onBlur,
     onPaste,
+    popoverProps,
+    dropdownMatchTriggerWidth = true,
     class: className = '',
     style,
   }: Props = $props();
@@ -216,7 +316,12 @@
   // tiptap editor 命令式实例：动态 import 内核后创建，store.subscribe 桥接进 runes。
   let editor = $state<Editor>();
   let isEmpty = $state(true);
-  let attachments = $state<AIChatInputAttachment[]>([]);
+  // 初值取 uploadProps.defaultFileList（对齐 Semi：
+  // `const defaultAttachment = props?.uploadProps?.defaultFileList ?? []`）。
+  // untrack：只吃初始值，后续变化归 Upload 的 onChange 驱动。
+  let attachments = $state<AIChatInputAttachment[]>(
+    untrack(() => (uploadProps?.defaultFileList as AIChatInputAttachment[] | undefined) ?? []),
+  );
   let editorHost = $state<HTMLDivElement>();
   let rootEl = $state<HTMLDivElement>();
 
@@ -247,7 +352,10 @@
     },
   });
 
-  const placeholderText = $derived(placeholder ?? loc().t('AIChatInput.placeholder'));
+  // 严格对齐 Semi：placeholder 原样透传，**无内置兜底文案**
+  // （Semi aiChatInput/index.tsx:637 直接 `placeholder={placeholder}`，defaultProps 未含该项，
+  //  且 Semi 的 AIChatInput locale 只有 template/configure/selected 三个键、无 placeholder）。
+  const placeholderText = $derived(placeholder ?? '');
 
   // 当前是否可发送（headless 判定；显式 canSend 优先）。
   const computedCanSend = $derived(
@@ -262,138 +370,106 @@
   const showTemplate = $derived(
     showTemplateButton && !!renderTemplate && !!currentSkill?.hasTemplate,
   );
+
+  // —— 承载三个浮层的 Popover（对齐 Semi render()：同一个 Popover + 内容分派）——
+  const showTemplatePanel = $derived(templateOpen && !!currentSkill && !!renderTemplate);
+  const popoverVisible = $derived(showTemplatePanel || showSkillPanel || showSuggestionPanel);
+  // class 逐条对齐 Semi：按当前显示的是哪种内容挂不同修饰类。
+  const popoverClass = $derived(
+    [
+      showSuggestionPanel && !showSkillPanel && !showTemplatePanel
+        ? 'cd-ai-chat-input-popover-suggestion'
+        : '',
+      showSkillPanel && !showTemplatePanel ? 'cd-ai-chat-input-popover-skill' : '',
+      showTemplatePanel ? 'cd-ai-chat-input-popover-template' : '',
+      // 模版浮层的附加类名（对齐 Semi templatesCls，只在模版态生效）。
+      showTemplatePanel && templatesCls ? templatesCls : '',
+    ]
+      .filter(Boolean)
+      .join(' '),
+  );
+
+  // dropdownMatchTriggerWidth（对齐 Semi setDropdownWidth）：浮层宽度跟随触发器。
+  // Semi 优先取 style.width 里的定值，否则取触发器实测宽度。
+  let popupWidth = $state<number | undefined>();
+  const popupWidthStyle = $derived(popupWidth === undefined ? '' : `width: ${popupWidth}px;`);
+
+  // rePosKey：值变化即让 Popover 重新定位（对齐 Semi reposPopover —— 输入内容变化会改变
+  // 触发器高度，模版这类高浮层必须跟着重算，否则会错位）。
+  let popupKey = $state(0);
+
+  $effect(() => {
+    if (!popoverVisible) return;
+    if (!dropdownMatchTriggerWidth) {
+      popupWidth = undefined;
+      return;
+    }
+    const el = untrack(() => rootEl);
+    if (!el) return;
+    // 触发器宽度会随窗口/内容变化，用 ResizeObserver 跟随（Semi 侧靠 setDropdownWidth
+    // 在每次打开时取一次 + reposPopover 节流重算，效果等价）。
+    const sync = (): void => {
+      popupWidth = el.offsetWidth;
+    };
+    sync();
+    const ro = new ResizeObserver(sync);
+    ro.observe(el);
+    return () => ro.disconnect();
+  });
   // top area 是否有内容（引用条 / topSlot / 附件列表），无则不渲染容器。
   const hasReferences = $derived(showReference && references.length > 0);
   const hasTopSlot = $derived(!!renderTopSlot);
   const hasAttachments = $derived(showUploadFile && attachments.length > 0);
 
-  // clearContentOnGenerating：generating false→true 边沿时清空输入（对齐 Semi）。
+  // clearContentOnGenerating：generating false→true 边沿时清空输入（对齐 Semi
+  // componentDidUpdate:215-220）。两处此前漏了：
+  //   · keepSkillAfterSend=true 时走 setContentWhileSaveTool('') 保留技能标记，
+  //     而不是整个清空（本库该方法早就有，只是没接上这个 prop）；
+  //   · 无论哪条分支，Semi 都会同时 clearAttachments()。
   let prevGenerating = untrack(() => generating);
   $effect(() => {
     const now = generating;
     if (clearContentOnGenerating && now && !untrack(() => prevGenerating)) {
-      editor?.commands.clearContent(true);
+      if (keepSkillAfterSend) {
+        setContentWhileSaveTool('');
+      } else {
+        editor?.commands.clearContent(true);
+      }
+      attachments = [];
     }
     prevGenerating = now;
   });
 
-  // —— tiptap 内核动态 import + editor 生命周期（体积约束：内核不进主 bundle）——
-  $effect(() => {
-    const host = editorHost;
-    if (!host) return;
-
-    let ed: Editor | undefined;
-    let destroyed = false;
-
-    // 动态 import 整个 editor 内核（gzip ~126KB）+ svelte-tiptap（NodeView 适配）+
-    // skillSlot 扩展工厂，像 JsonViewer/MarkdownRender 那样懒加载（内核不进主 bundle）。
-    void (async () => {
-      const [
-        tiptapCore,
-        { default: StarterKit },
-        { Placeholder },
-        { SvelteNodeViewRenderer },
-        { createSkillSlotExtension },
-        { createSelectSlotExtension },
-        { createInputSlotExtension },
-        pmState,
-        inputSlotPlugins,
-      ] = await Promise.all([
-        import('@tiptap/core'),
-        import('@tiptap/starter-kit'),
-        import('@tiptap/extensions'),
-        import('svelte-tiptap'),
-        import('./skill-slot-extension.js'),
-        import('./select-slot-extension.js'),
-        import('./input-slot-extension.js'),
-        import('@tiptap/pm/state'),
-        import('./input-slot-plugins.js'),
-      ]);
-      if (destroyed) return;
-
-      const { Editor: TiptapEditor, Node, mergeAttributes } = tiptapCore;
-      const { Plugin, PluginKey, TextSelection } = pmState;
-      const pmDeps = { Plugin, PluginKey, TextSelection } as never;
-      const inputSlotHandlePaste = inputSlotPlugins.makeHandlePaste(pmDeps);
-      // skillSlot / selectSlot / inputSlot 自定义节点始终注册（编辑器需能渲染/序列化这些节点，
-      // 且 inputSlot 的光标 plugin 需识别全部 isCustomSlot 节点）；是否用到另由 props/模版决定。
-      const skillSlot = createSkillSlotExtension(Node, mergeAttributes, SvelteNodeViewRenderer);
-      const selectSlot = createSelectSlotExtension(Node, mergeAttributes, SvelteNodeViewRenderer);
-      const inputSlot = createInputSlotExtension(
-        Node,
-        mergeAttributes,
-        SvelteNodeViewRenderer,
-        pmDeps,
-      );
-
-      ed = new TiptapEditor({
-        element: host,
-        extensions: [
-          StarterKit,
-          Placeholder.configure({ placeholder: placeholderText }),
-          skillSlot as never,
-          selectSlot as never,
-          inputSlot as never,
-          ...(extensions as never[]),
-        ],
-        content: defaultContent,
-        editorProps: {
-          attributes: {
-            role: 'textbox',
-            'aria-multiline': 'true',
-            'aria-label': loc().t('AIChatInput.editor'),
-          },
-          handleKeyDown: (_view, event) => handleEditorKeyDown(event),
-          // inputSlot 的粘贴/文本输入零宽锚点清理（对齐 Semi editorProps）；
-          // 粘贴时先抽取剪贴板文件交给 onPaste（不改变默认粘贴行为）。
-          handlePaste: (view, event) => {
-            const files = extractClipboardFiles(event as ClipboardEvent);
-            if (files.length > 0) onPaste?.(files);
-            return inputSlotHandlePaste(view, event);
-          },
-          handleTextInput: inputSlotPlugins.makeHandleTextInput(),
-          handleDOMEvents: {
-            // 聚焦编辑区且有建议项时弹出建议面板（对齐 Semi：点击/聚焦即开）+ onFocus 回调。
-            focus: (_view, event) => {
-              openSuggestions();
-              onFocus?.(event as FocusEvent);
-              return false;
-            },
-            blur: (_view, event) => {
-              onBlur?.(event as FocusEvent);
-              return false;
-            },
-            // IME 合成结束后清理 inputSlot 内残留零宽字符（延迟等 ProseMirror flush composition）。
-            compositionend: (view) => {
-              setTimeout(() => inputSlotPlugins.handleCompositionEndLogic(view), 60);
-              return false;
-            },
-          },
-        },
-        onCreate: ({ editor: created }) => {
-          isEmpty = created.isEmpty;
-          // 初次挂载补齐零宽锚点（若 defaultContent 含自定义节点）。
-          const tr = inputSlotPlugins.handleZeroWidthCharLogic(created.state);
-          if (tr) created.view.dispatch(tr);
-        },
-        onUpdate: ({ editor: updated }) => {
-          isEmpty = updated.isEmpty;
-          onContentChange?.({
-            text: updated.getText(),
-            html: updated.getHTML(),
-            json: updated.getJSON(),
-          });
-        },
-      });
-      editor = ed;
-    })();
-
-    return () => {
-      destroyed = true;
-      ed?.destroy();
-      editor = undefined;
-    };
-  });
+  // —— tiptap 内核装配与生命周期：拆到 rich-text-input.svelte.ts（对齐 Semi richTextInput.tsx）——
+  // ⚠️ 除 editorHost 外**一律走 getter**：直接把 props 值写进 options 会让它们成为本
+  // effect 的依赖，任何一次 prop 变化都会重建编辑器、丢掉用户已输入的内容
+  // （曾因此让 clearContentOnGenerating 用例变红：rerender 后编辑器重建，
+  // defaultContent 又被填回去了）。
+  $effect(() =>
+    mountRichTextInput({
+      getHost: () => editorHost,
+      getDefaultContent: () => defaultContent,
+      getPlaceholder: () => placeholderText,
+      getShowPlaceholderWhenSkillOnly: () => showPlaceholderWhenSkillOnly,
+      getEditorLabel: () => loc().t('AIChatInput.editor'),
+      getExtensions: () => extensions,
+      onKeyDown: handleEditorKeyDown,
+      onPasteFiles: (files) => onPaste?.(files),
+      // 聚焦编辑区且有建议项时弹出建议面板（对齐 Semi：点击/聚焦即开）+ onFocus 回调。
+      onFocus: (event) => {
+        openSuggestions();
+        onFocus?.(event);
+      },
+      onBlur: (event) => onBlur?.(event),
+      onEmptyChange: (v) => (isEmpty = v),
+      onContentChange: (payload) => {
+        onContentChange?.(payload);
+        // 内容变化会改变触发器高度，通知 Popover 重算位置（对齐 Semi reposPopover）。
+        popupKey += 1;
+      },
+      onEditorChange: (ed) => (editor = ed),
+    }),
+  );
 
   // 编辑区 keydown：建议面板可见时先拦截 ↑↓/Enter/Esc 用于面板导航（返回 true 阻断编辑器默认）；
   // 否则走发送快捷键判定（generating/IME 中不发送）。返回 true = 已处理，tiptap 停止默认行为。
@@ -459,6 +535,9 @@
     if (event.key !== 'Enter') return false;
     if (generating) return false;
     if (!isSendHotKey(event.key, event.shiftKey, sendHotKey)) return false;
+    // 自定义扩展可把 editor.storage.CdAIChatInput.allowHotKeySend 置 false 声明
+    // 「Enter 归我用」，此时不发送，避免热键冲突（对齐 Semi foundation.ts 同名判定）。
+    if (!isHotKeySendAllowed(editor)) return false;
     event.preventDefault();
     doSend();
     return true;
@@ -478,6 +557,24 @@
   }
 
   // —— 建议面板（阶段 2）——
+  // suggestions 变化即开/关面板（对齐 Semi componentDidUpdate：!isEqual(suggestions,prev)
+  // 时按 length>0 决定 show/hide）。没有这条，「按输入内容动态派生建议」这种用法
+  // 就必须先失焦再聚焦才看得到面板——Semi 文档的建议 demo 正是这种用法。
+  let prevSuggestionsKey = untrack(() => JSON.stringify(suggestions));
+  $effect(() => {
+    const key = JSON.stringify(suggestions);
+    if (key === prevSuggestionsKey) return;
+    prevSuggestionsKey = key;
+    untrack(() => {
+      if (suggestions.length > 0) {
+        suggestionOpen = true;
+        activeSuggestionIndex = -1;
+      } else {
+        closeSuggestions();
+      }
+    });
+  });
+
   function openSuggestions(): void {
     if (suggestions.length === 0) return;
     suggestionOpen = true;
@@ -574,22 +671,36 @@
     onUploadChange?.(attachments);
   }
 
-  // 从剪贴板事件抽取文件（供 onPaste + 粘贴上传）。
-  function extractClipboardFiles(e: ClipboardEvent): File[] {
-    const items = e.clipboardData?.items;
-    if (!items) return [];
-    const files: File[] = [];
-    for (const it of items) {
-      const f = it.getAsFile();
-      if (f) files.push(f);
+  /**
+   * 从附件列表移除一项（top area 附件列表删除按钮 + ref deleteUploadFile 共用）。
+   *
+   * ⚠️ 附件列表是本组件**自绘**的（Upload 传 `listType="none"`，只当触发器+上传管线），
+   * 所以删除**不会**走 Upload 内部的移除流程 —— 必须在这里显式兑现
+   * `uploadProps.beforeRemove` / `onRemove` 两个钩子，否则 Semi 文档里
+   * 「删除上传文件时会触发 onRemove 并遵循 beforeRemove」这条对本库就是假的。
+   *
+   * beforeRemove 支持返回 Promise（对齐 Semi 与本库 Upload 的签名）：
+   * 返回 false / resolve(false) 即中止删除。
+   */
+  async function removeAttachment(target: AIChatInputAttachment): Promise<void> {
+    const before = uploadProps?.['beforeRemove'] as
+      | ((file: unknown, fileList: unknown[]) => boolean | Promise<boolean>)
+      | undefined;
+    if (typeof before === 'function') {
+      const ok = await before(target, attachments);
+      if (ok === false) return;
     }
-    return files;
-  }
 
-  // 从附件列表移除一项（top area 附件列表删除按钮 + ref deleteUploadFile 共用）。
-  function removeAttachment(target: AIChatInputAttachment): void {
-    attachments = attachments.filter((a) => a.uid !== target.uid);
-    onUploadChange?.(attachments);
+    const next = attachments.filter((a) => a.uid !== target.uid);
+    attachments = next;
+
+    const onRemove = uploadProps?.['onRemove'] as
+      | ((currentFile: unknown, fileList: unknown[], currentFileItem: unknown) => void)
+      | undefined;
+    // 与本库 Upload 的 onRemove 同签名：(currentFile, fileList, currentFileItem)
+    onRemove?.(target['file'], next, target);
+
+    onUploadChange?.(next);
   }
 
   // —— ref 方法（对齐 Semi Methods）——
@@ -652,10 +763,56 @@
   }
   /** 从附件列表删除一项（对齐 Semi deleteUploadFile）。 */
   export function deleteUploadFile(attachment: AIChatInputAttachment): void {
-    removeAttachment(attachment);
+    // beforeRemove 可能是异步的；此处不等待（与点击删除按钮一致，属即发即忘）。
+    void removeAttachment(attachment);
+  }
+
+  /**
+   * 引用/附件类型 → 具名图标组件（逐条对齐 Semi `getIconByType`）。
+   * text 不出图标；file 与 word 共用 IconWord；未知类型兜底 IconFile。
+   */
+  function iconByType(type: string | undefined) {
+    switch (type) {
+      case 'text':
+        return null;
+      case 'file':
+      case 'word':
+        return IconWord;
+      case 'code':
+        return IconCode;
+      case 'excel':
+        return IconExcel;
+      case 'video':
+        return IconVideo;
+      case 'audio':
+        return IconMusic;
+      case 'pdf':
+        return IconPdf;
+      default:
+        return IconFile;
+    }
   }
 </script>
 
+<!--
+  整个输入框包在一个 Popover 里承载建议/技能/模版三个浮层（对齐 Semi render()）：
+  Semi 用**同一个** Popover + renderPopoverContent 按 visible 状态分派内容，
+  触发器是整个输入框、方位 bottomLeft、trigger='custom' 全受控。
+  此前本库是自绘的绝对定位面板（挂在编辑区内），既无法透传 popoverProps，
+  也不会像 Popover 那样自动 flip / 传送到 body。
+-->
+<Popover
+  position="bottomLeft"
+  {...popoverProps}
+  rePosKey={popupKey}
+  class={popoverClass}
+  {...showTemplatePanel && templatesStyle ? { style: templatesStyle } : {}}
+  wrapperClassName="cd-ai-chat-input-popover-trigger"
+  triggerStyle="display: block; width: 100%;"
+  visible={popoverVisible}
+  trigger="custom"
+  content={popoverContent}
+>
 <div
   class="cd-ai-chat-input {className}"
   class:cd-ai-chat-input-round={round}
@@ -673,15 +830,36 @@
             {#if renderReference}
               {@render renderReference(reference)}
             {:else}
-              <!-- chip 容器本身非交互（避免 nested-interactive）；名称按钮与删除按钮平级。 -->
+              <!--
+                结构对齐 Semi renderReference：前置 IconSendMsgStroked + .-reference-content
+                （内含图/图标 + name）+ .-reference-delete 三段。
+                与 Semi 的一处有意差异：Semi 把 onClick 挂在 -reference 根 div 上（键盘不可达，
+                其源码里也挂着 eslint-disable click-events-have-key-events），本库改为
+                -reference-content 用 button 承载点击，容器保持非交互避免 nested-interactive。
+              -->
               <div class="cd-ai-chat-input-reference">
+                <IconSendMsgStroked />
                 <button
                   type="button"
-                  class="cd-ai-chat-input-reference-main"
+                  class="cd-ai-chat-input-reference-content"
                   onclick={() => handleReferenceClick(reference)}
                 >
-                  {#if isImageReference(reference)}
-                    <img class="cd-ai-chat-input-reference-img" src={reference.url} alt="" />
+                  {#if reference.type !== 'text'}
+                    {#if isImageReference(reference)}
+                      <img
+                        class="cd-ai-chat-input-reference-img"
+                        src={reference.url}
+                        alt={reference.name}
+                      />
+                    {:else}
+                      {@const signIconType = getContentType(getAttachmentType(reference))}
+                      {@const RefIcon = iconByType(signIconType)}
+                      <span
+                        class="cd-ai-chat-input-ref-icon cd-ai-chat-input-ref-icon-{signIconType} cd-ai-chat-input-reference-icon"
+                      >
+                        {#if RefIcon}<RefIcon size="small" />{/if}
+                      </span>
+                    {/if}
                   {/if}
                   <span class="cd-ai-chat-input-reference-name">{referenceLabel(reference)}</span>
                 </button>
@@ -691,9 +869,7 @@
                   aria-label={loc().t('AIChatInput.deleteReference')}
                   onclick={(e) => handleReferenceDelete(reference, e)}
                 >
-                  <svg viewBox="0 0 24 24" width="12" height="12" fill="none" aria-hidden="true">
-                    <path d="M6 6l12 12M18 6 6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
-                  </svg>
+                  <IconCrossStroked size="small" />
                 </button>
               </div>
             {/if}
@@ -701,23 +877,61 @@
         </div>
       {/if}
       {#if hasAttachments}
-        <div class="cd-ai-chat-input-attachments">
+        <!--
+          附件区结构逐条对齐 Semi renderAttachment：HorizontalScroller 包裹，卡片内
+          「图片缩略图 或 类型图标」+ -content（name / `类型 大小` 两行）+ 上传中的环形进度
+          + hover 才显示的右上角删除钮。类型由 getContentType(getAttachmentType(item)) 推导。
+        -->
+        <AIChatInputHorizontalScroller>
           {#each attachments as attachment (attachment.uid)}
+            {@const signIconType = getContentType(getAttachmentType(attachment))}
+            {@const realType = getAttachmentType(attachment)}
+            {@const showPercent =
+              !(attachment.percent === 100 || attachment.percent === undefined) &&
+              attachment.status === 'uploading'}
             <div class="cd-ai-chat-input-attachment">
-              <span class="cd-ai-chat-input-attachment-name">{attachment.name ?? attachment.uid}</span>
+              {#if isImageType(attachment)}
+                <img
+                  class="cd-ai-chat-input-attachment-img"
+                  src={attachment.url}
+                  alt={attachment.name}
+                />
+              {:else}
+                {@const AttIcon = iconByType(signIconType)}
+                <!-- 附件图标：Semi getAttachmentIconByType 用 size='large'（引用处是 small）。 -->
+                <span
+                  class="cd-ai-chat-input-attachment-icon cd-ai-chat-input-ref-icon cd-ai-chat-input-ref-icon-{signIconType}"
+                >
+                  {#if AttIcon}<AttIcon size="large" />{/if}
+                </span>
+              {/if}
+              <div class="cd-ai-chat-input-attachment-content">
+                <div class="cd-ai-chat-input-attachment-content-name">{attachment.name}</div>
+                <div class="cd-ai-chat-input-attachment-content-size">
+                  {`${realType} ${attachment.size ?? ''}`}
+                </div>
+              </div>
+              {#if showPercent}
+                <Progress
+                  type="circle"
+                  width={30}
+                  class="cd-ai-chat-input-attachment-progress"
+                  percent={attachment.percent ?? 0}
+                  showInfo={false}
+                  aria-label="upload progress"
+                />
+              {/if}
               <button
                 type="button"
                 class="cd-ai-chat-input-attachment-delete"
                 aria-label={loc().t('AIChatInput.deleteAttachment')}
-                onclick={() => removeAttachment(attachment)}
+                onclick={() => void removeAttachment(attachment)}
               >
-                <svg viewBox="0 0 24 24" width="12" height="12" fill="none" aria-hidden="true">
-                  <path d="M6 6l12 12M18 6 6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
-                </svg>
+                <IconClose size="small" />
               </button>
             </div>
           {/each}
-        </div>
+        </AIChatInputHorizontalScroller>
       {/if}
       {#if hasTopSlot && topSlotPosition === 'bottom'}
         {@render renderTopSlot?.({ references, attachments })}
@@ -725,153 +939,156 @@
     </div>
   {/if}
 
-  <div class="cd-ai-chat-input-editor-wrap">
-    <div class="cd-ai-chat-input-editor" bind:this={editorHost}></div>
+  <!-- tiptap 挂载点。Semi 只有 -editor-content 这一层（richTextInput.tsx 的 EditorContent），
+       原来外面那层 -editor-wrap 只给了个 position:relative 且无绝对定位子元素，一并去掉。 -->
+  <div class="cd-ai-chat-input-editor-content" bind:this={editorHost}></div>
 
-    {#if showSuggestionPanel}
-      <div class="cd-ai-chat-input-suggestions" role="listbox" aria-label={loc().t('AIChatInput.suggestions')}>
-        {#each suggestions as suggestion, i (suggestionContent(suggestion) + i)}
-          <div
-            class="cd-ai-chat-input-suggestion"
-            class:cd-ai-chat-input-suggestion-active={i === activeSuggestionIndex}
-            role="option"
-            aria-selected={i === activeSuggestionIndex}
-            tabindex="-1"
-            onmousedown={(e) => {
-              // mousedown 而非 click：避免编辑器先 blur 触发 useDismiss 关闭面板。
-              e.preventDefault();
-              selectSuggestion(suggestion);
-            }}
-            onmouseenter={() => (activeSuggestionIndex = i)}
-          >
-            {#if renderSuggestionItem}
-              {@render renderSuggestionItem({ suggestion, active: i === activeSuggestionIndex })}
-            {:else}
-              {suggestionContent(suggestion)}
-            {/if}
-          </div>
-        {/each}
-      </div>
-    {/if}
-
-    {#if showSkillPanel}
-      <div class="cd-ai-chat-input-suggestions" role="listbox" aria-label={loc().t('AIChatInput.skills')}>
-        {#each skills as skill, i (skillLabel(skill) + i)}
-          <div
-            class="cd-ai-chat-input-suggestion"
-            class:cd-ai-chat-input-suggestion-active={i === activeSkillIndex}
-            role="option"
-            aria-selected={i === activeSkillIndex}
-            tabindex="-1"
-            onmousedown={(e) => {
-              e.preventDefault();
-              selectSkill(skill);
-            }}
-            onmouseenter={() => (activeSkillIndex = i)}
-          >
-            {#if renderSkillItem}
-              {@render renderSkillItem({ skill, active: i === activeSkillIndex })}
-            {:else}
-              {skillLabel(skill)}
-            {/if}
-          </div>
-        {/each}
-      </div>
-    {/if}
-
-    {#if templateOpen && currentSkill && renderTemplate}
-      <div class="cd-ai-chat-input-template">
-        {@render renderTemplate({ skill: currentSkill, setContent: applyTemplate })}
-      </div>
-    {/if}
-  </div>
-
-  <div class="cd-ai-chat-input-footer">
-    {#if renderConfigureArea}
-      <div class="cd-ai-chat-input-configure">
+  <!-- footer 结构逐条对齐 Semi renderFooter：左 configure、右 action（上传+发送同组）。
+       round 由 -footer-round 修饰类统一改各控件圆角（对齐 Semi &-footer-round）。 -->
+  <div class="cd-ai-chat-input-footer" class:cd-ai-chat-input-footer-round={round}>
+    <div class="cd-ai-chat-input-footer-configure">
+      {#if renderConfigureArea}
         {@render renderConfigureArea()}
-      </div>
-    {/if}
-    {#if showTemplate}
-      <button
-        type="button"
-        class="cd-ai-chat-input-template-btn"
-        class:cd-ai-chat-input-template-btn-active={templateOpen}
-        aria-expanded={templateOpen}
-        aria-label={loc().t('AIChatInput.template')}
-        onclick={toggleTemplate}
-      >
-        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" aria-hidden="true">
-          <path d="M4 5h16M4 12h16M4 19h10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
-        </svg>
-        <span>{loc().t('AIChatInput.template')}</span>
-      </button>
-    {/if}
-    {#if showUploadButton}
-      <!-- listType='none'：附件列表由本组件 top area 自绘（showUploadFile），Upload 仅做触发器+上传管线。 -->
-      <div class="cd-ai-chat-input-upload">
-        <Upload
-          listType="none"
-          multiple
-          {...uploadProps}
-          onChange={handleAttachmentChange}
-        >
-          {#if renderUploadButton}
-            {@render renderUploadButton({
-              openFileDialog: () => {},
-              disabled: generating,
-              attachments,
-            })}
-          {:else}
-            <span class="cd-ai-chat-input-upload-trigger" aria-label={loc().t('AIChatInput.upload')}>
-              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" aria-hidden="true">
-                <path
-                  d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M12 3v13m0-13-4 4m4-4 4 4"
-                  stroke="currentColor"
-                  stroke-width="1.6"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                />
-              </svg>
-            </span>
-          {/if}
-        </Upload>
-      </div>
-    {/if}
-
-    <div class="cd-ai-chat-input-action">
-      {#if renderActionArea}
-        {@render renderActionArea({ canSend: computedCanSend, generating })}
-      {:else}
+      {/if}
+      {#if showTemplate}
         <button
           type="button"
-          class="cd-ai-chat-input-send"
-          class:cd-ai-chat-input-send-stop={generating}
-          disabled={!generating && !computedCanSend}
-          onclick={handleActionClick}
-          title={generating ? loc().t('AIChatInput.stop') : loc().t('AIChatInput.send')}
-          aria-label={generating ? loc().t('AIChatInput.stop') : loc().t('AIChatInput.send')}
+          class="cd-ai-chat-input-template-btn"
+          class:cd-ai-chat-input-template-btn-active={templateOpen}
+          aria-expanded={templateOpen}
+          aria-label={loc().t('AIChatInput.template')}
+          onclick={toggleTemplate}
         >
-          {#if generating}
-            <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
-              <rect x="6" y="6" width="12" height="12" rx="2" fill="currentColor" />
-            </svg>
-          {:else}
-            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" aria-hidden="true">
-              <path
-                d="M12 20V5m0 0-6 6m6-6 6 6"
-                stroke="currentColor"
-                stroke-width="1.8"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-          {/if}
+          <IconTemplateStroked />
+          <span>{loc().t('AIChatInput.template')}</span>
         </button>
       {/if}
     </div>
+
+    <!--
+      对齐 Semi renderRightFooter：自定义渲染时**连外层容器一起交给用户**
+      （回传 className 让用户自己挂），并把默认的「上传 + 发送」两枚按钮作为
+      menuItem 回传，用户可在其前后加东西而非被迫整套重写。
+    -->
+    {#if renderActionArea}
+      {@render renderActionArea({
+        menuItem: actionMenuItem,
+        className: 'cd-ai-chat-input-footer-action',
+      })}
+    {:else}
+      <div class="cd-ai-chat-input-footer-action">
+        {@render actionMenuItem()}
+      </div>
+    {/if}
   </div>
 </div>
+</Popover>
+
+<!--
+  浮层内容：按 visible 状态分派模版 / 技能 / 建议（逐条对齐 Semi renderPopoverContent
+  的 if-else 优先级：template > skill > suggestion）。
+-->
+{#snippet popoverContent()}
+  {#if templateOpen && currentSkill && renderTemplate}
+    <div class="cd-ai-chat-input-template" style={popupWidthStyle}>
+      {@render renderTemplate({ skill: currentSkill, setContent: applyTemplate })}
+    </div>
+  {:else if showSkillPanel}
+    <div
+      class="cd-ai-chat-input-skill"
+      style={popupWidthStyle}
+      role="listbox"
+      aria-label={loc().t('AIChatInput.skills')}
+    >
+      {#each skills as skill, i (skillLabel(skill) + i)}
+        <AIChatInputSkillItem
+          {skill}
+          index={i}
+          isActive={i === activeSkillIndex}
+          {renderSkillItem}
+          onClick={selectSkill}
+          onMouseEnter={(idx) => (activeSkillIndex = idx)}
+        />
+      {/each}
+    </div>
+  {:else if showSuggestionPanel}
+    <div
+      class="cd-ai-chat-input-suggestion"
+      style={popupWidthStyle}
+      role="listbox"
+      aria-label={loc().t('AIChatInput.suggestions')}
+    >
+      {#each suggestions as suggestion, i (suggestionContent(suggestion) + i)}
+        <AIChatInputSuggestionItem
+          {suggestion}
+          index={i}
+          isActive={i === activeSuggestionIndex}
+          {renderSuggestionItem}
+          onClick={selectSuggestion}
+          onMouseEnter={(idx) => (activeSuggestionIndex = idx)}
+        />
+      {/each}
+    </div>
+  {/if}
+{/snippet}
+
+<!-- 默认操作按钮组（上传 + 发送/停止）。抽成 snippet 以便原样回传给 renderActionArea。 -->
+{#snippet actionMenuItem()}
+  {#if showUploadButton}
+    <!-- uploadTipProps 存在时给整个上传节点包一层 Tooltip（对齐 Semi index.tsx:558：
+         `uploadTipProps ? <Tooltip {...uploadTipProps}><span>{uploadNode}</span></Tooltip> : uploadNode`）。
+         此前本库完全没有这个 prop。 -->
+    {#if uploadTipProps}
+      <Tooltip {...uploadTipProps}>
+        <span>{@render uploadNode()}</span>
+      </Tooltip>
+    {:else}
+      {@render uploadNode()}
+    {/if}
+  {/if}
+
+  {#snippet uploadNode()}
+    <!-- listType='none'：附件列表由本组件 top area 自绘（showUploadFile），Upload 仅做触发器+上传管线。 -->
+    <Upload listType="none" multiple {...uploadProps} onChange={handleAttachmentChange}>
+      {#if renderUploadButton}
+        {@render renderUploadButton({
+          openFileDialog: () => {},
+          disabled: generating,
+          attachments,
+        })}
+      {:else}
+        <!-- ⚠️ 这里必须是 span 不能是 button：本库 Upload 的触发器外壳
+             `.cd-upload-add` 自带 role="button" tabindex="0"，再套一个真 button
+             会构成 nested-interactive（axe serious）。Semi 侧写的是 button，
+             因为它的 Upload 外壳不是交互元素 —— 属**框架实现差异**，
+             视觉与类名仍与 Semi 一致（-footer-action-button + -footer-action-upload）。 -->
+        <span
+          class="cd-ai-chat-input-footer-action-button cd-ai-chat-input-footer-action-upload"
+          aria-label={loc().t('AIChatInput.upload')}
+        >
+          <IconPaperclip />
+        </span>
+      {/if}
+    </Upload>
+  {/snippet}
+  <button
+    type="button"
+    class="cd-ai-chat-input-footer-action-button"
+    class:cd-ai-chat-input-footer-action-send={!generating}
+    class:cd-ai-chat-input-footer-action-stop={generating}
+    class:cd-ai-chat-input-footer-action-send-disabled={!generating && !computedCanSend}
+    disabled={!generating && !computedCanSend}
+    onclick={handleActionClick}
+    title={generating ? loc().t('AIChatInput.stop') : loc().t('AIChatInput.send')}
+    aria-label={generating ? loc().t('AIChatInput.stop') : loc().t('AIChatInput.send')}
+  >
+    {#if generating}
+      <IconStop />
+    {:else}
+      <IconArrowUp />
+    {/if}
+  </button>
+{/snippet}
 
 <style>
   .cd-ai-chat-input {
@@ -900,49 +1117,141 @@
     gap: var(--cd-ai-chat-input-gap);
   }
 
+  /* Semi: &-references —— @include font-size-small（12px + line-height 16px）+ text-2。 */
   .cd-ai-chat-input-references {
     display: flex;
     flex-wrap: wrap;
-    gap: var(--cd-ai-chat-input-gap);
+    margin-bottom: var(--cd-ai-chat-input-references-marginBottom);
+    font-size: var(--cd-font-size-small);
+    line-height: 16px;
+    color: var(--cd-ai-chat-input-references-text);
+    column-gap: var(--cd-ai-chat-input-references-columnGap);
+    row-gap: var(--cd-ai-chat-input-references-rowGap);
   }
 
-  /* —— 附件列表（showUploadFile，复用引用条 chip 视觉）—— */
-  .cd-ai-chat-input-attachments {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--cd-ai-chat-input-gap);
+  /* Semi 的引用条按条数自适应 1/2/3 列（本库此前完全没有这套规则，恒为内容宽度）：
+     1 条占满、2 条各半、3 条及以上各 1/3，宽度都减去一个列间距。 */
+  .cd-ai-chat-input-references > .cd-ai-chat-input-reference:only-child {
+    width: 100%;
   }
 
+  .cd-ai-chat-input-references > .cd-ai-chat-input-reference:nth-last-child(2):first-child,
+  .cd-ai-chat-input-references > .cd-ai-chat-input-reference:nth-child(2):nth-last-child(1) {
+    flex-basis: calc(50% - var(--cd-ai-chat-input-references-columnGap));
+    max-width: calc(50% - var(--cd-ai-chat-input-references-columnGap));
+  }
+
+  .cd-ai-chat-input-references > .cd-ai-chat-input-reference:nth-last-child(n + 3):nth-child(1),
+  .cd-ai-chat-input-references
+    > .cd-ai-chat-input-reference:nth-last-child(n + 3):nth-child(1)
+    ~ .cd-ai-chat-input-reference {
+    width: calc(33.333% - var(--cd-ai-chat-input-references-columnGap));
+  }
+
+  /* —— 附件卡片（showUploadFile）：逐条对齐 Semi aiChatInput.scss &-attachment —— */
   .cd-ai-chat-input-attachment {
-    display: inline-flex;
+    position: relative;
+    display: flex;
     align-items: center;
-    gap: var(--cd-spacing-extra-tight);
-    max-width: 100%;
-    padding: var(--cd-spacing-extra-tight) var(--cd-spacing-tight);
-    background: var(--cd-ai-chat-input-reference-bg);
-    color: var(--cd-ai-chat-input-reference-color);
-    border-radius: var(--cd-ai-chat-input-reference-radius);
-  }
-
-  .cd-ai-chat-input-attachment-name {
+    column-gap: var(--cd-ai-chat-input-attachment-columnGap);
+    border-radius: var(--cd-ai-chat-input-attachment-radius);
+    background: var(--cd-ai-chat-input-attachment-bg);
+    padding: var(--cd-ai-chat-input-attachment-padding);
+    width: var(--cd-ai-chat-input-attachment-width);
+    height: var(--cd-ai-chat-input-attachment-height);
     overflow: hidden;
-    text-overflow: ellipsis;
+    letter-spacing: 0;
+    flex-shrink: 0;
+  }
+
+  .cd-ai-chat-input-attachment-icon,
+  .cd-ai-chat-input-attachment-img {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    border-radius: 3px;
+    width: var(--cd-ai-chat-input-attachment-left-height);
+    height: var(--cd-ai-chat-input-attachment-left-height);
+  }
+
+  .cd-ai-chat-input-attachment-img {
+    object-fit: cover;
+  }
+
+  .cd-ai-chat-input-attachment-content {
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    align-items: flex-start;
+    width: var(--cd-ai-chat-input-attachment-content-width);
+  }
+
+  /* @include font-size-small 同时带 line-height:16px，别只搬 font-size。 */
+  .cd-ai-chat-input-attachment-content-name {
+    flex-shrink: 0;
+    width: var(--cd-ai-chat-input-attachment-content-width);
+    height: var(--cd-ai-chat-input-attachment-content-height);
+    overflow: hidden;
     white-space: nowrap;
-    font-size: var(--cd-font-size-regular);
+    text-overflow: ellipsis;
+    color: var(--cd-ai-chat-input-attachment-name-text);
+    font-size: var(--cd-font-size-small);
+    line-height: 16px;
+    font-weight: var(--cd-ai-chat-input-attachment-content-name-fontWeight);
   }
 
+  .cd-ai-chat-input-attachment-content-size {
+    display: flex;
+    flex-shrink: 0;
+    align-items: flex-start;
+    column-gap: var(--cd-ai-chat-input-attachment-content-size-columnGap);
+    color: var(--cd-color-text-2);
+    font-size: var(--cd-font-size-small);
+    line-height: 16px;
+    text-transform: uppercase;
+  }
+
+  /* Semi：删除钮默认 display:none，仅 hover 卡片时才显示在右上角。 */
   .cd-ai-chat-input-attachment-delete {
-    appearance: none;
-    border: none;
-    background: transparent;
-    cursor: pointer;
-    display: inline-flex;
-    padding: 0;
-    color: var(--cd-ai-chat-input-action-icon);
+    display: none;
   }
 
-  .cd-ai-chat-input-attachment-delete:hover {
-    color: var(--cd-ai-chat-input-action-icon-hover);
+  .cd-ai-chat-input-attachment:hover > .cd-ai-chat-input-attachment-delete {
+    cursor: pointer;
+    position: absolute;
+    top: 0;
+    right: 0;
+    border: none;
+    padding: 0;
+    background: var(--cd-ai-chat-input-attachment-delete-bg);
+    color: var(--cd-ai-chat-input-attachment-delete-icon);
+    border-radius: 50%;
+    width: var(--cd-ai-chat-input-attachment-delete-width);
+    height: var(--cd-ai-chat-input-attachment-delete-width);
+    font-size: var(--cd-ai-chat-input-attachment-content-delete-fontSize);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* 键盘可达：Semi 靠 hover 显示，纯键盘用户拿不到删除钮，故补 focus-within 同显。 */
+  .cd-ai-chat-input-attachment:focus-within > .cd-ai-chat-input-attachment-delete {
+    cursor: pointer;
+    position: absolute;
+    top: 0;
+    right: 0;
+    border: none;
+    padding: 0;
+    background: var(--cd-ai-chat-input-attachment-delete-bg);
+    color: var(--cd-ai-chat-input-attachment-delete-icon);
+    border-radius: 50%;
+    width: var(--cd-ai-chat-input-attachment-delete-width);
+    height: var(--cd-ai-chat-input-attachment-delete-width);
+    font-size: var(--cd-ai-chat-input-attachment-content-delete-fontSize);
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 
   .cd-ai-chat-input-attachment-delete:focus-visible {
@@ -950,69 +1259,120 @@
     outline-offset: 1px;
   }
 
+  /* Semi：&-attachment-progress.#{$prefix}-progress-circle 绝对居中在卡片上。 */
+  .cd-ai-chat-input-attachment :global(.cd-ai-chat-input-attachment-progress) {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+  }
+
+  /* Semi: &-reference { padding 8/12 + radius 6 + fill-0 + flex + column-gap 8 } */
   .cd-ai-chat-input-reference {
-    display: inline-flex;
-    align-items: center;
-    gap: var(--cd-spacing-extra-tight);
-    max-width: 100%;
-    padding: var(--cd-spacing-extra-tight) var(--cd-spacing-tight);
-    background: var(--cd-ai-chat-input-reference-bg);
-    color: var(--cd-ai-chat-input-reference-color);
+    padding: var(--cd-ai-chat-input-reference-paddingY)
+      var(--cd-ai-chat-input-reference-paddingX);
+    box-sizing: border-box;
     border-radius: var(--cd-ai-chat-input-reference-radius);
-    transition: background var(--cd-ai-chat-input-motion-duration) ease;
+    background: var(--cd-ai-chat-input-reference-bg);
+    flex-shrink: 1;
+    display: flex;
+    align-items: center;
+    column-gap: var(--cd-ai-chat-input-reference-columnGap);
   }
 
-  .cd-ai-chat-input-reference:hover {
-    background: var(--cd-ai-chat-input-reference-bg-hover);
-  }
+  /* Semi 的 -reference-content 是 span；本库用 button 承载点击（Semi 把 onClick 挂根 div，
+     键盘不可达），故额外重置按钮默认外观，视觉与 Semi 的 span 等价。 */
+  .cd-ai-chat-input-reference-content {
+    display: flex;
+    align-items: center;
+    flex-grow: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 
-  /* chip 内的名称按钮：无边框透明，负责图标+名称布局与点击。 */
-  .cd-ai-chat-input-reference-main {
     appearance: none;
     border: none;
     background: transparent;
     cursor: pointer;
-    display: inline-flex;
-    align-items: center;
-    gap: var(--cd-spacing-extra-tight);
     min-width: 0;
-    max-width: 100%;
     padding: 0;
     color: inherit;
     font: inherit;
+    text-align: start;
   }
 
-  .cd-ai-chat-input-reference-main:focus-visible {
+  .cd-ai-chat-input-reference-content:focus-visible {
     outline: 2px solid var(--cd-color-primary);
     outline-offset: 2px;
   }
 
   .cd-ai-chat-input-reference-img {
-    width: 20px;
-    height: 20px;
-    object-fit: cover;
-    border-radius: var(--cd-border-radius-small);
+    width: var(--cd-ai-chat-input-reference-icon-width);
+    height: var(--cd-ai-chat-input-reference-icon-width);
+    margin-right: var(--cd-ai-chat-input-reference-icon-marginRight);
+  }
+
+  /* Semi: &-reference-icon（与 -img 同宽高，另有 radius 2px）。 */
+  /* 文件类型图标：底色按类型分派（逐条对齐 Semi &-ref-icon 的七个子类）。
+     本库此前渲染了 -ref-icon-{type} 类名却没有任何对应样式 ——
+     七种类型全是同一个默认底色，token 也一条没建。 */
+  .cd-ai-chat-input-ref-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--cd-color-white);
+    flex-shrink: 0;
+  }
+  .cd-ai-chat-input-ref-icon-word {
+    background-color: var(--cd-color-ai-chat-input-ref-icon-word-bg);
+  }
+  .cd-ai-chat-input-ref-icon-pdf {
+    background-color: var(--cd-color-ai-chat-input-ref-icon-word-pdf);
+  }
+  .cd-ai-chat-input-ref-icon-code {
+    background-color: var(--cd-color-ai-chat-input-ref-icon-word-code);
+  }
+  .cd-ai-chat-input-ref-icon-excel {
+    background-color: var(--cd-color-ai-chat-input-ref-icon-word-excel);
+  }
+  .cd-ai-chat-input-ref-icon-video {
+    background-color: var(--cd-color-ai-chat-input-ref-icon-word-video);
+  }
+  .cd-ai-chat-input-ref-icon-audio {
+    background-color: var(--cd-color-ai-chat-input-ref-icon-word-audio);
+  }
+  .cd-ai-chat-input-ref-icon-unknown {
+    background-color: var(--cd-color-ai-chat-input-ref-icon-word-unknown);
+  }
+
+  .cd-ai-chat-input-reference-icon {
+    width: var(--cd-ai-chat-input-reference-icon-width);
+    height: var(--cd-ai-chat-input-reference-icon-width);
+    border-radius: var(--cd-ai-chat-input-reference-icon-radius);
+    margin-right: var(--cd-ai-chat-input-reference-icon-marginRight);
   }
 
   .cd-ai-chat-input-reference-name {
-    overflow: hidden;
+    display: inline-block;
     text-overflow: ellipsis;
-    white-space: nowrap;
-    font-size: var(--cd-font-size-regular);
+    overflow: hidden;
+    word-break: break-all;
   }
 
   .cd-ai-chat-input-reference-delete {
+    cursor: pointer;
+    padding: var(--cd-ai-chat-input-references-delete-padding);
+    border-radius: 50%;
+
     appearance: none;
     border: none;
     background: transparent;
-    cursor: pointer;
     display: inline-flex;
-    padding: 0;
-    color: var(--cd-ai-chat-input-action-icon);
+    color: inherit;
   }
 
   .cd-ai-chat-input-reference-delete:hover {
-    color: var(--cd-ai-chat-input-action-icon-hover);
+    background: var(--cd-ai-chat-input-reference-delete-bg);
   }
 
   .cd-ai-chat-input-reference-delete:focus-visible {
@@ -1020,50 +1380,10 @@
     outline-offset: 1px;
   }
 
-  /* —— 建议浮层面板（阶段 2）—— */
-  .cd-ai-chat-input-editor-wrap {
-    position: relative;
-  }
-
-  .cd-ai-chat-input-suggestions {
-    position: absolute;
-    left: 0;
-    right: 0;
-    top: calc(100% + var(--cd-spacing-extra-tight));
-    z-index: 10;
-    max-height: 270px;
-    overflow-y: auto;
-    padding: var(--cd-spacing-extra-tight);
-    background: var(--cd-ai-chat-input-suggestions-bg);
-    border-radius: var(--cd-ai-chat-input-suggestions-radius);
-    box-shadow: var(--cd-ai-chat-input-suggestions-shadow);
-  }
-
-  .cd-ai-chat-input-suggestion {
-    padding: var(--cd-spacing-tight);
-    border-radius: var(--cd-ai-chat-input-reference-radius);
-    color: var(--cd-ai-chat-input-suggestion-color);
-    cursor: pointer;
-  }
-
-  .cd-ai-chat-input-suggestion-active {
-    background: var(--cd-ai-chat-input-suggestion-bg-active);
-  }
-
-  /* —— 模版面板 / 按钮（阶段 3）—— */
-  .cd-ai-chat-input-template {
-    position: absolute;
-    left: 0;
-    right: 0;
-    top: calc(100% + var(--cd-spacing-extra-tight));
-    z-index: 10;
-    max-height: 500px;
-    overflow-y: auto;
-    padding: var(--cd-spacing-tight);
-    background: var(--cd-ai-chat-input-suggestions-bg);
-    border-radius: var(--cd-ai-chat-input-suggestions-radius);
-    box-shadow: var(--cd-ai-chat-input-suggestions-shadow);
-  }
+  /* 建议 / 技能 / 模版三个面板的样式已随「改由 Popover 承载」迁到组件外
+     （见文件末尾的 :global 段）——它们被 portal 到 body，scoped 规则匹配不到。
+     技能项 / 建议项的样式则随组件拆分迁到了 AIChatInputSkillItem.svelte /
+     AIChatInputSuggestionItem.svelte。 */
 
   .cd-ai-chat-input-template-btn {
     appearance: none;
@@ -1090,36 +1410,30 @@
     outline-offset: 2px;
   }
 
-  /* —— 配置区（阶段 4）—— */
-  .cd-ai-chat-input-configure {
-    display: inline-flex;
-    align-items: center;
-    gap: var(--cd-ai-chat-input-gap);
-    flex-wrap: wrap;
-  }
-
-  .cd-ai-chat-input-editor {
+  .cd-ai-chat-input-editor-content {
     min-height: var(--cd-ai-chat-input-editor-min-height);
     max-height: var(--cd-ai-chat-input-editor-max-height);
     overflow-y: auto;
     color: var(--cd-ai-chat-input-color);
-    font: inherit;
-    line-height: 1.5;
+    /* 对齐 Semi aiChatInput.scss:498-499（font-size + line-height 两条都是组件专属变量）。
+       原来写 `font: inherit` 会把字号一并继承外部，Semi 是显式 regular。 */
+    font-size: var(--cd-font-ai-chat-input-rich-text-fontsize);
+    line-height: var(--cd-ai-chat-input-rich-text-lineheight);
   }
 
   /* tiptap ProseMirror 编辑区：去默认 outline，占位符用 data 属性伪元素。 */
-  .cd-ai-chat-input-editor :global(.ProseMirror) {
+  .cd-ai-chat-input-editor-content :global(.ProseMirror) {
     outline: none;
     min-height: inherit;
     white-space: pre-wrap;
     word-break: break-word;
   }
 
-  .cd-ai-chat-input-editor :global(.ProseMirror p) {
+  .cd-ai-chat-input-editor-content :global(.ProseMirror p) {
     margin: 0;
   }
 
-  .cd-ai-chat-input-editor :global(.ProseMirror p.is-editor-empty:first-child::before) {
+  .cd-ai-chat-input-editor-content :global(.ProseMirror p.is-editor-empty:first-child::before) {
     content: attr(data-placeholder);
     float: left;
     height: 0;
@@ -1127,70 +1441,149 @@
     color: var(--cd-ai-chat-input-placeholder-color);
   }
 
+  /*
+    showPlaceholderWhenSkillOnly：段落里只有 skillSlot 时仍显示 placeholder，
+    且要排在 skill **后方**——故关掉 ::before（float:left 会跑到 skill 前），
+    改用 ::after 内联跟随。逐条对齐 Semi aiChatInput.scss:510-521。
+  */
+  .cd-ai-chat-input-editor-content
+    :global(.ProseMirror p.has-skill-slot.is-editor-empty:first-child::before) {
+    content: none;
+  }
+  .cd-ai-chat-input-editor-content
+    :global(.ProseMirror p.has-skill-slot.is-editor-empty:first-child::after) {
+    content: attr(data-placeholder);
+    display: inline;
+    height: 0;
+    margin-inline-start: var(--cd-spacing-ai-chat-input-skill-item-columngap);
+    pointer-events: none;
+    color: var(--cd-ai-chat-input-placeholder-color);
+  }
+
+  /* —— footer —— 逐条对齐 Semi aiChatInput.scss 的 &-footer 段 —— */
   .cd-ai-chat-input-footer {
     display: flex;
-    align-items: center;
     justify-content: space-between;
-    gap: var(--cd-ai-chat-input-gap);
-  }
-
-  .cd-ai-chat-input-upload {
-    display: inline-flex;
-  }
-
-  .cd-ai-chat-input-action {
-    display: inline-flex;
+    margin-top: var(--cd-spacing-ai-chat-input-footer-margintop);
     align-items: center;
-    gap: var(--cd-ai-chat-input-gap);
-    margin-inline-start: auto;
+    user-select: none;
+    -webkit-user-select: none;
   }
 
-  .cd-ai-chat-input-upload-trigger,
-  .cd-ai-chat-input-send {
-    appearance: none;
-    border: none;
-    cursor: pointer;
-    display: inline-flex;
+  /* Semi &-footer-round：统一把配置/操作各控件改成全圆角。
+     radio-button / mcp-trigger 渲染在子组件里，用 :global 打洞才够得着。 */
+  .cd-ai-chat-input-footer-round .cd-ai-chat-input-footer-action-button,
+  .cd-ai-chat-input-footer-round .cd-ai-chat-input-footer-action-upload,
+  .cd-ai-chat-input-footer-round .cd-ai-chat-input-template-btn,
+  .cd-ai-chat-input-footer-round :global(.cd-ai-chat-input-footer-configure-radio-button),
+  .cd-ai-chat-input-footer-round :global(.cd-ai-chat-input-footer-configure-mcp-trigger) {
+    border-radius: var(--cd-radius-ai-chat-input-footer-round);
+  }
+
+  /* Semi &-footer-configure：flex + column-gap 8px */
+  .cd-ai-chat-input-footer-configure {
+    display: flex;
+    align-items: center;
+    column-gap: var(--cd-spacing-ai-chat-input-footer-configure-columngap);
+  }
+
+  /* Semi &-footer-action：flex + column-gap 8px，内部 button 去默认样式 */
+  .cd-ai-chat-input-footer-action {
+    display: flex;
+    align-items: center;
+    column-gap: var(--cd-spacing-ai-chat-input-footer-action-columngap);
+  }
+  .cd-ai-chat-input-footer-action :global(button) {
+    padding: 0;
+    border: 0;
+    display: flex;
     align-items: center;
     justify-content: center;
-    padding: var(--cd-ai-chat-input-action-padding);
-    border-radius: var(--cd-ai-chat-input-action-radius);
-    transition:
-      color var(--cd-ai-chat-input-motion-duration) ease,
-      background var(--cd-ai-chat-input-motion-duration) ease;
   }
 
-  .cd-ai-chat-input-upload-trigger {
-    background: transparent;
-    color: var(--cd-ai-chat-input-action-icon);
+  /* Semi &-footer-action-button：32×32 + radius 8px */
+  .cd-ai-chat-input-footer-action-button {
+    width: var(--cd-width-ai-chat-input-footer-action-button);
+    height: var(--cd-height-ai-chat-input-footer-action-button);
+    cursor: pointer;
+    border-radius: var(--cd-radius-ai-chat-input-footer-action-button);
   }
 
-  .cd-ai-chat-input-upload-trigger:hover {
-    color: var(--cd-ai-chat-input-action-icon-hover);
+  /* Semi &-footer-action-send / -stop：同一组配色（primary 系） */
+  .cd-ai-chat-input-footer-action-send,
+  .cd-ai-chat-input-footer-action-stop {
+    background-color: var(--cd-color-ai-chat-input-footer-send-bg-default);
+    color: var(--cd-color-ai-chat-input-footer-send-text);
   }
-
-  .cd-ai-chat-input-send {
-    background: var(--cd-ai-chat-input-send-bg);
-    color: var(--cd-ai-chat-input-send-icon);
+  .cd-ai-chat-input-footer-action-send:hover:not(.cd-ai-chat-input-footer-action-send-disabled),
+  .cd-ai-chat-input-footer-action-stop:hover:not(.cd-ai-chat-input-footer-action-send-disabled) {
+    background-color: var(--cd-color-ai-chat-input-footer-send-bg-hover);
   }
-
-  .cd-ai-chat-input-send:hover:not(:disabled) {
-    background: var(--cd-ai-chat-input-send-bg-hover);
+  .cd-ai-chat-input-footer-action-send:active:not(.cd-ai-chat-input-footer-action-send-disabled),
+  .cd-ai-chat-input-footer-action-stop:active:not(.cd-ai-chat-input-footer-action-send-disabled) {
+    background-color: var(--cd-color-ai-chat-input-footer-send-bg-active);
   }
-
-  .cd-ai-chat-input-send-stop {
-    background: var(--cd-ai-chat-input-stop-bg);
-  }
-
-  .cd-ai-chat-input-send:disabled {
-    background: var(--cd-ai-chat-input-send-bg-disabled);
-    color: var(--cd-ai-chat-input-send-icon-disabled);
+  .cd-ai-chat-input-footer-action-send-disabled {
+    background-color: var(--cd-color-ai-chat-input-footer-send-bg-disabled);
     cursor: not-allowed;
   }
 
-  .cd-ai-chat-input-upload-trigger:focus-visible,
-  .cd-ai-chat-input-send:focus-visible {
+  /* Semi &-footer-action-upload */
+  .cd-ai-chat-input-footer-action-upload {
+    background: var(--cd-color-ai-chat-input-footer-upload-bg-default);
+    color: var(--cd-color-ai-chat-input-footer-upload-text);
+  }
+  .cd-ai-chat-input-footer-action-upload:hover {
+    background-color: var(--cd-color-ai-chat-input-footer-upload-bg-hover);
+  }
+  .cd-ai-chat-input-footer-action-upload:active {
+    background-color: var(--cd-color-ai-chat-input-footer-upload-bg-active);
+  }
+
+  .cd-ai-chat-input-footer-action-button:focus-visible {
     outline: 2px solid var(--cd-color-primary);
     outline-offset: 2px;
+  }
+
+  /* —— 浮层内容（建议 / 技能 / 模版）——
+     这三块被 Popover portal 到 body，已脱离本组件的 scope，故必须 :global 打洞。
+     定位/背景/圆角/阴影由 Popover 承担（对齐 Semi：其 scss 里这三者也**没有**
+     position/box-shadow，全交给 Popover）；这里只留 Semi 确有的那几条。 */
+
+  /* Semi: &-skill { padding + border-radius + overflow:scroll }，高度由内联 style 钉 */
+  :global(.cd-ai-chat-input-skill) {
+    padding: var(--cd-spacing-ai-chat-input-skill-paddingy)
+      var(--cd-spacing-ai-chat-input-skill-paddingx);
+    border-radius: var(--cd-radius-ai-chat-input-skill);
+    overflow: scroll;
+    max-height: 270px;
+  }
+
+  /* Semi: &-suggestion { overflow: scroll }，仅此一条 */
+  :global(.cd-ai-chat-input-suggestion) {
+    overflow: scroll;
+    max-height: 270px;
+  }
+
+  /* Semi renderTemplate 的容器只有内联 style（width + maxHeight 500），无独立 scss 规则 */
+  :global(.cd-ai-chat-input-template) {
+    max-height: 500px;
+    overflow-y: auto;
+  }
+
+  /* Semi: &-popover-suggestion { box-shadow: none } —— 建议浮层不要 Popover 的阴影 */
+  :global(.cd-ai-chat-input-popover-suggestion) {
+    box-shadow: none;
+  }
+
+  /* ⚠️ 触发器包裹层必须撑满宽度。
+     本库 Tooltip/Popover 会把触发器包进两层 span（外层 .cd-tooltip + 内层
+     .cd-tooltip-trigger），二者都是 inline-block —— 会把本组件这种块级输入框
+     **收缩成内容宽度**（实测 890px → 106px，整页每个实例都被压扁）。
+     Semi 侧 Popover 用 React.cloneElement 不加包裹层，没有这个问题。
+     外层由 triggerStyle 处理，内层只能从这里 :global 打洞。 */
+  :global(.cd-ai-chat-input-popover-trigger > .cd-tooltip-trigger) {
+    display: block;
+    width: 100%;
   }
 </style>

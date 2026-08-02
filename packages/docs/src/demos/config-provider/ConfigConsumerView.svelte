@@ -1,9 +1,15 @@
 <script lang="ts">
+  // 对齐 Semi 的 `<ConfigConsumer>{(value) => ...}</ConfigConsumer>`：
+  // React 用 render-props 拿 context 值，本库用 getConfigContext() —— 须在组件初始化期
+  // （`<script>` 顶层）调用，返回对象带 getter，故渲染期读到的始终是最新合并结果。
   import { getConfigContext, Text } from '@chenzy-design/svelte';
 
-  // 在 ConfigProvider 子树内的组件里，用 getConfigContext 手动获取合并后的全局配置
-  // （等价 Semi 的 ConfigConsumer）。须在组件初始化期（<script> 顶层）调用。
   const config = getConfigContext();
 </script>
 
-<Text code>{JSON.stringify(config)}</Text>
+<Text
+  ellipsis={{ showTooltip: { opts: { style: 'min-width: 1200px' } } }}
+  style="width: 600px"
+>
+  {JSON.stringify(config)}
+</Text>

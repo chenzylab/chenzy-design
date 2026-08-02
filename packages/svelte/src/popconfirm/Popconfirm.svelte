@@ -21,7 +21,7 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
   import { tick, untrack } from 'svelte';
-  import { useId } from '@chenzy-design/core';
+  import { useId, resolveDefault } from '@chenzy-design/core';
   import { IconAlertTriangle, IconClose } from '@chenzy-design/icons';
   import { Button } from '../button/index.js';
   import { useLocale } from '../locale-provider/index.js';
@@ -132,14 +132,14 @@
     icon,
     okText,
     cancelText,
-    okType = 'primary',
-    cancelType = 'tertiary',
+    okType: okTypeProp,
+    cancelType: cancelTypeProp,
     okButtonProps,
     cancelButtonProps,
-    showCloseIcon = true,
+    showCloseIcon: showCloseIconProp,
     position = 'bottomLeft',
-    trigger = 'click',
-    disabled = false,
+    trigger: triggerProp,
+    disabled: disabledProp,
     closeOnEsc = true,
     arrowPointAtCenter = false,
     showArrow = false,
@@ -147,10 +147,10 @@
     mouseEnterDelay = 50,
     mouseLeaveDelay = 50,
     getPopupContainer,
-    zIndex = 1030,
+    zIndex: zIndexProp,
     guardFocus,
     returnFocusOnClose = true,
-    stopPropagation = true,
+    stopPropagation: stopPropagationProp,
     rePosKey,
     class: className = '',
     style: styleExtra = '',
@@ -161,6 +161,15 @@
     onConfirm,
     onCancel,
   }: Props = $props();
+  // cdGlobal 全局默认 props（对齐 Semi semiGlobal.config.overrideDefaultProps）：
+  // 优先级 = 显式传值 > cdGlobal['Popconfirm'] > 组件内置默认值。
+  const stopPropagation = $derived(resolveDefault(stopPropagationProp, 'Popconfirm', 'stopPropagation', true));
+  const trigger = $derived(resolveDefault(triggerProp, 'Popconfirm', 'trigger', 'click'));
+  const disabled = $derived(resolveDefault(disabledProp, 'Popconfirm', 'disabled', false));
+  const okType = $derived(resolveDefault(okTypeProp, 'Popconfirm', 'okType', 'primary'));
+  const cancelType = $derived(resolveDefault(cancelTypeProp, 'Popconfirm', 'cancelType', 'tertiary'));
+  const zIndex = $derived(resolveDefault(zIndexProp, 'Popconfirm', 'zIndex', 1030));
+  const showCloseIcon = $derived(resolveDefault(showCloseIconProp, 'Popconfirm', 'showCloseIcon', true));
 
   const loc = useLocale();
   const titleId = useId('cd-popconfirm-title');

@@ -300,7 +300,11 @@
     );
   }
 
-  const placeholderText = $derived(placeholder ?? loc().t('TimePicker.placeholder'));
+  // 占位按 type 分派（对齐 Semi TimeInput 的 `locale.placeholder[type]`）：
+  // 范围模式用 timeRange（「请选择时间范围」），单选用 time。
+  const placeholderText = $derived(
+    placeholder ?? loc().t(isRange ? 'TimePicker.placeholder.timeRange' : 'TimePicker.placeholder.time'),
+  );
 
   const displayText = $derived.by(() => {
     if (isRange) {
@@ -486,8 +490,8 @@
   );
 
   // range 两端 header 的默认文案（对齐 Semi defaultHeaderMap = { 0: locale.begin, 1: locale.end }）。
-  const beginHeader = $derived(loc().t('TimePicker.rangeStart'));
-  const endHeader = $derived(loc().t('TimePicker.rangeEnd'));
+  const beginHeader = $derived(loc().t('TimePicker.begin'));
+  const endHeader = $derived(loc().t('TimePicker.end'));
 
   /** 数组形态按面板取值，非数组原样返回（单选场景数组无意义，取 [0] 兜底）。 */
   function pickPanelSlot(

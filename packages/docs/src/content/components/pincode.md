@@ -3,7 +3,6 @@ title: PinCode 验证码输入框
 name: pincode
 category: input
 brief: 用于便捷直观地输入验证码。
-docMode: inline
 ---
 
 <script>

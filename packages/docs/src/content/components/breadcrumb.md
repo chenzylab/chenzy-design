@@ -3,7 +3,6 @@ title: Breadcrumb 面包屑
 name: breadcrumb
 category: navigation
 brief: 面包屑是用户界面中的一种辅助导航，可以显示当前页面在层级架构中的位置，并能返回之前的页面。
-docMode: inline
 ---
 
 <script>

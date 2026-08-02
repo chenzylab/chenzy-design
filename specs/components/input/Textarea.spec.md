@@ -44,42 +44,63 @@ Textarea 是多行文本输入控件，用于采集较长的、可换行的用�
 
 ### Props
 
-| 名称 | 类型 | 默认值 | 说明 |
-|---|---|---|---|
-| `value` | `string` | `''` | 受控值，配合 `on:change` |
-| `defaultValue` | `string` | `''` | 非受控初始值 |
-| `placeholder` | `string` | `''` | 占位提示，i18n 由调用方提供 |
-| `rows` | `number` | `3` | 初始可见行数（autosize 关闭时为固定行数） |
-| `autosize` | `boolean \| { minRows?: number; maxRows?: number }` | `false` | 自适应高度；对象形式约束最小/最大行数 |
-| `size` | `'small' \| 'default' \| 'large'` | `'default'` | 尺寸 |
-| `status` | `'default' \| 'warning' \| 'error'` | `'default'` | 校验态 |
-| `disabled` | `boolean` | `false` | 禁用 |
-| `readonly` | `boolean` | `false` | 只读 |
-| `showCount` | `boolean` | `false` | 显示字符计数 |
-| `maxCount` | `number` | `undefined` | 计数上限（用于计数展示与超限提示） |
-| `maxLength` | `number` | `undefined` | 原生硬性长度限制（截断输入） |
-| `countGraphemes` | `boolean` | `false` | 按视觉字符（Intl.Segmenter）计数而非 UTF-16 length |
-| `showClear` | `boolean` | `false` | 显示清除按钮（非空且聚焦/hover 时） |
-| `autoFocus` | `boolean` | `false` | 挂载后自动聚焦 |
-| `name` | `string` | `undefined` | 表单字段名 |
-| `id` | `string` | 自动生成 | 关联 label/aria |
-| `resize` | `'none' \| 'vertical' \| 'both'` | `'none'` | 原生手动调整把手（autosize 时建议 none） |
-| `validateStatus` | 同 `status` | — | Form 注入别名（兼容） |
-| `class` | `string` | `''` | 透传根类名 |
+> 本表由 `packages/svelte/src/input/meta.ts` 真源生成（2026-07-30 重校）。此前本表列的 prop 多为 Semi 对齐前的旧名或已删除项（如 `value`→`activeKey`、`change`→`onChange`），改 prop 时请同步 meta.ts，勿手写「规划中」的 prop。
+
+| Prop | 类型 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| value | `string` | `undefined` | 受控值；提供则为受控 |
+| defaultValue | `string` | `''` | 非受控初始值 |
+| size | `'small'\|'default'\|'large'` | `'default'` |  |
+| disabled | `boolean` | `false` |  |
+| readonly | `boolean` | `false` |  |
+| placeholder | `string` | `undefined` |  |
+| showClear | `boolean` | `false` | 有内容且 hover/focus 时展示清除按钮（对齐 Semi showClear） |
+| maxLength | `number` | `undefined` | 原生 maxlength（getValueLength 存在时不下发，改由 JS 按可见长度截断） |
+| minLength | `number` | `undefined` | 最小长度，下发原生 minlength 触发校验（getValueLength 存在时按可见长度换算，对齐 Semi） |
+| validateStatus | `'default'\|'warning'\|'error'\|'success'` | `'default'` | 校验状态，仅影响展示样式（对齐 Semi validateStatus；success 合法但无特殊样式） |
+| mode | `'password'` | `undefined` | 输入框模式，password 启用密码显隐按钮（对齐 Semi mode） |
+| type | `string` | `'text'` | 原生 input type，透传（对齐 Semi type，可为 number/email/search 等） |
+| prefix | `Snippet \| string` | `undefined` | 前缀标签（输入框内左侧）；字符串直接渲染，Snippet 自定义（对齐 Semi） |
+| suffix | `Snippet \| string` | `undefined` | 后缀标签（输入框内右侧）；字符串直接渲染，Snippet 自定义（对齐 Semi） |
+| insetLabel | `Snippet \| string` | `undefined` | 内嵌标签（与 prefix 同槽，对齐 Semi insetLabel） |
+| insetLabelId | `string` | `undefined` | 内嵌标签容器 id（对齐 Semi insetLabelId） |
+| clearIcon | `Snippet` | `undefined` | 自定义清除图标（showClear 有值时替换默认图标，对齐 Semi） |
+| addonBefore | `Snippet \| string` | `undefined` | 前置标签（如 "https://"） |
+| addonAfter | `Snippet \| string` | `undefined` | 后置标签（如 ".com"） |
+| borderless | `boolean` | `false` | 无边框模式（对齐 Semi borderless） |
+| getValueLength | `(value: string) => number` | `undefined` | 自定义字符计数函数，替代默认长度（存在时接管 maxLength 校验） |
+| hideSuffix | `boolean` | `false` | 清除按钮与后缀并存时隐藏后缀（对齐 Semi hideSuffix） |
+| style | `string` | `undefined` | 根容器内联样式（对齐 Semi style） |
+| class | `string` | `undefined` | 根容器自定义类名（对齐 Semi className） |
+| inputStyle | `string` | `undefined` | input 元素内联样式（对齐 Semi inputStyle） |
+| preventScroll | `boolean` | `false` | 调用 focus() 时传入 { preventScroll }（对齐 Semi） |
+| autoFocus | `boolean` | `false` | 组件挂载时自动聚焦（对齐 Semi） |
+| composition | `boolean` | `false` | 输入法模式：开启后 IME 未确认期间不触发 onChange，确认后触发一次（对齐 Semi） |
+| name | `string` | `undefined` |  |
+| id | `string` | `undefined` | 透传到原生 <input id>，供 <label for> 精确关联 |
+| aria-label | `string` | `undefined` |  |
+| ariaLabelledby | `string` | `undefined` | 对齐 Semi aria-labelledby |
+| ariaDescribedby | `string` | `undefined` | 关联说明/错误文本 |
+| ariaErrormessage | `string` | `undefined` | 对齐 Semi aria-errormessage |
+| ariaRequired | `boolean` | `undefined` | 必填语义（Form.Field required 透传）：输出 aria-required |
+| onChange | `(value: string, e: Event) => void` | `undefined` | 内容变化（对齐 Semi：第二参为原生事件） |
+| onInput | `(value: string, e: Event) => void` | `undefined` |  |
+| onClear | `(e: MouseEvent) => void` | `undefined` | 点击清除按钮（对齐 Semi：透传鼠标事件） |
+| onEnterPress | `(e: KeyboardEvent) => void` | `undefined` | 回车按下（composition 中不触发） |
+| onFocus | `(e: FocusEvent) => void` | `undefined` |  |
+| onBlur | `(e: FocusEvent) => void` | `undefined` |  |
+| onKeyDown | `(e: KeyboardEvent) => void` | `undefined` | 透传原生 keydown（对齐 Semi） |
+| onKeyUp | `(e: KeyboardEvent) => void` | `undefined` |  |
+| onKeyPress | `(e: KeyboardEvent) => void` | `undefined` |  |
+| onCompositionStart | `(e: CompositionEvent) => void` | `undefined` |  |
+| onCompositionEnd | `(e: CompositionEvent) => void` | `undefined` |  |
+| onCompositionUpdate | `(e: CompositionEvent) => void` | `undefined` |  |
+
+**子组件**：`TextArea`、`InputGroup`
 
 ### Events
 
-| 事件 | payload | 说明 |
-|---|---|---|
-| `change` | `{ value: string }` | 值变更（composition 结束后触发） |
-| `input` | `{ value: string; event: InputEvent }` | 每次输入（含 IME 中间态） |
-| `focus` | `FocusEvent` | 获得焦点 |
-| `blur` | `FocusEvent` | 失去焦点 |
-| `clear` | `void` | 点击清除按钮，值被清空 |
-| `enterPress` | `{ value: string; event: KeyboardEvent }` | 按下 Enter（含修饰键信息，供「Ctrl+Enter 提交」场景） |
-| `resize` | `{ height: number }` | autosize 高度变化（节流） |
-| `compositionStart` | `CompositionEvent` | IME 开始 |
-| `compositionEnd` | `CompositionEvent` | IME 结束 |
+> 本组件无事件回调 prop（meta.events 为空）。此前本表列的回调均未实现，已删。
 
 ### Slots
 
@@ -124,7 +145,7 @@ Textarea 是多行文本输入控件，用于采集较长的、可换行的用�
   - `status=error` 时 textarea `aria-invalid=true`；warning 不设 `aria-invalid`（非阻断）。
   - `disabled` 用原生 `disabled`；`readonly` 用原生 `readonly`（保留可聚焦与朗读）。
 - **计数器**：计数器节点 `aria-hidden=false` 且仅文本；超限/接近上限通过 `useLiveAnnouncer` 以 `aria-live=polite` 播报「已输入 X / 上限 Y，超出 Z 字」，避免每字符刷屏（去抖播报）。计数器本身不抢焦点。
-- **键盘交互**：Enter 换行（默认）；`enterPress` 暴露修饰键以便外部实现 Ctrl/⌘+Enter 提交；Tab 正常移焦（textarea 内不捕获 Tab）；清除按钮可 Tab 到达并 Enter/Space 触发，`aria-label` 来自 i18n `Textarea.clear`。
+- **键盘交互**：Enter 换行（默认）；`enterPress` 暴露修饰键以便外部实现 Ctrl/⌘+Enter 提交；Tab 正常移焦（textarea 内不捕获 Tab）；清除按钮可 Tab 到达并 Enter/Space 触发，`aria-label` 由调用方传入（locale 无 `Textarea.clear` 键）。
 - **对比度**：文本/占位/计数/边框颜色均经 Token 保证 ≥ 4.5:1（占位与计数作为辅助文本仍满足 AA）；聚焦环对比度 ≥ 3:1。
 - **reduced-motion**：`prefers-reduced-motion: reduce` 时关闭高度过渡（`--cd-textarea-transition: 0ms`），autosize 直接跳变。
 - **RTL**：`dir=rtl` 时占位/文本起始对齐翻转，清除按钮与计数器位置镜像（footer 使用逻辑属性 `padding-inline`），resize 把手保持原生行为。
@@ -134,19 +155,19 @@ Textarea 是多行文本输入控件，用于采集较长的、可换行的用�
 - 用户可见文案零硬编码，全部经 i18n provider 注入；日期/数字（计数显示）用 `Intl.NumberFormat` 本地化（千分位等）。
 - 计数显示格式由 `Textarea.countFormat` 模板控制（如 `{count} / {maxCount}`），便于 RTL/语序适配。
 
-| i18n key | 默认（en） | 说明 |
-|---|---|---|
-| `Textarea.clear` | `Clear` | 清除按钮 aria-label |
-| `Textarea.countFormat` | `{count} / {maxCount}` | 计数显示模板 |
-| `Textarea.countOnly` | `{count}` | 无上限时计数模板 |
-| `Textarea.overLimitAnnounce` | `Exceeded by {over} characters` | 超限播报 |
-| `Textarea.nearLimitAnnounce` | `{remaining} characters remaining` | 接近上限播报 |
+> 本表由 `packages/locale/src/zh_CN.ts` 真源生成（2026-07-30 重校）。键名与键值都是 Semi 契约，勿手写「规划中」的键——历史上本表列过大量从未实现的键名，见 [[locale-dangling-keys-render-raw-key]]。
+
+| i18n key | 默认（zh-CN） |
+| --- | --- |
+| `Textarea.countFormat` | {count} / {maxCount} |
+| `Textarea.countOnly` | {count} |
+| `Textarea.overLimitAnnounce` | 已超出 {over} 个字符 |
 
 ## 8. 文案
 
 - 遵循 content-guidelines：占位符用简短引导短语而非完整句（如「描述你的问题」），不以标点结尾；计数器用纯数字 + 模板，不加多余说明。
 - placeholder 不承载必填/校验信息（这些由 label/帮助文案表达）。
-- **危险操作文案（单列）**：清除按钮会丢弃当前全部输入，属破坏性操作。其 aria-label 用明确动词 `Textarea.clear`（"Clear"/"清空")；若内容较长（如 > 200 字符），建议宿主在清除前用 Popconfirm 二次确认，确认文案示例：「清空全部内容？此操作无法撤销。」（确认按钮 "清空"，取消 "保留"）。组件本身只发 `clear` 事件，不内建确认。
+- **危险操作文案（单列）**：清除按钮会丢弃当前全部输入，属破坏性操作。其 aria-label 应用明确动词（"Clear"/"清空"，由调用方传入；locale 无 `Textarea.clear` 键）；若内容较长（如 > 200 字符），建议宿主在清除前用 Popconfirm 二次确认，确认文案示例：「清空全部内容？此操作无法撤销。」（确认按钮 "清空"，取消 "保留"）。组件本身只发 `clear` 事件，不内建确认。
 
 ## 9. 性能（Perf Budget）
 

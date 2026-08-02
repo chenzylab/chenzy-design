@@ -48,20 +48,31 @@ Radio 同时提供受控（传 `value`）与非受控（传 `defaultValue`）两
 
 ### 4.1 Props — Radio
 
+> 本表由 `packages/svelte/src/radio/meta.ts` 真源生成（2026-07-30 重校）。此前本表列的 prop 多为 Semi 对齐前的旧名或已删除项（如 `value`→`activeKey`、`change`→`onChange`），改 prop 时请同步 meta.ts，勿手写「规划中」的 prop。
+
 | Prop | 类型 | 默认值 | 说明 |
-|---|---|---|---|
-| `value` | `string \| number \| boolean` | — | 该选项代表的值（在 Group 内用于匹配选中） |
-| `checked` | `boolean` | `false` | 单独使用时的受控选中态（Group 内忽略，由 Group 接管） |
-| `defaultChecked` | `boolean` | `false` | 单独使用时的非受控初始选中态 |
-| `disabled` | `boolean` | `false` | 禁用本项（Group 的 disabled 优先级更高） |
-| `size` | `'small' \| 'default' \| 'large'` | 继承 Group 或 `'default'` | 尺寸 |
-| `type` | `'default' \| 'button' \| 'card' \| 'pureCard'` | 继承 Group 或 `'default'` | 渲染形态 |
-| `name` | `string` | 继承 Group | 原生表单 name |
-| `addonClass` / `addonStyle` | `string` | — | label 文本容器的扩展类/样式 |
-| `extra` | `string` | — | 卡片型下的辅助说明文本（i18n 由调用方传入） |
-| `mode` | `'advanced' \| ''` | `''` | `advanced`：已选中项再次点击可取消（`onChange(false)`，对齐 Semi） |
-| `autoFocus` | `boolean` | `false` | 挂载时自动聚焦 |
-| `preventScroll` | `boolean` | `false` | 命令式 `focus()` / autoFocus 时阻止滚动文档 |
+| --- | --- | --- | --- |
+| value | `string \| number \| boolean` | `—` | 选项值（必填） |
+| checked | `boolean` | `undefined` | 独立使用时受控选中 |
+| defaultChecked | `boolean` | `false` |  |
+| disabled | `boolean` | `false` |  |
+| type | `'default'\|'button'\|'card'\|'pureCard'` | `继承 Group 或 default` | button/card/pureCard 用 role=radio 容器 + aria-checked |
+| name | `string` | `undefined` |  |
+| extra | `string` | `undefined` | 辅助说明，aria-describedby 关联 |
+| children | `Snippet` | `undefined` | 标签内容 |
+| onChange | `(e: RadioChangeEvent) => void` | `undefined` | 对齐 Semi：回调收到合成事件，e.target.{checked,value} |
+| addonId | `string` | `undefined` | 内容容器 id，用作 input 的 aria-labelledby |
+| addonClassName | `string` | `undefined` | 内容容器附加 class |
+| addonStyle | `string` | `undefined` | 内容容器内联样式 |
+| autoFocus | `boolean` | `false` | 挂载时自动聚焦 |
+| extraId | `string` | `undefined` | 自定义 extra 元素 id（默认由 fieldId 派生） |
+| mode | `'advanced'\|''` | `''` | advanced：再次点击选中项可取消（onChange(e.target.checked=false)） |
+| class | `string` | `undefined` | 根元素附加 class（对齐 Semi className） |
+| style | `string` | `undefined` | 根元素内联样式 |
+| onMouseEnter | `(e: MouseEvent) => void` | `undefined` |  |
+| onMouseLeave | `(e: MouseEvent) => void` | `undefined` |  |
+| aria-label | `string` | `undefined` | 无障碍标签 |
+| preventScroll | `boolean` | `false` | autoFocus 时阻止滚动 |
 
 ### 4.2 Props — RadioGroup
 
@@ -72,21 +83,16 @@ Radio 同时提供受控（传 `value`）与非受控（传 `defaultValue`）两
 | `name` | `string` | 自动生成 | 同组互斥的原生 name；缺省用 `useId` |
 | `options` | `Array<{label, value, disabled?, extra?}>` | — | 数据驱动渲染（与默认 slot 二选一） |
 | `disabled` | `boolean` | `false` | 整组禁用 |
-| `size` | `'small' \| 'default' \| 'large'` | `'default'` | 整组尺寸 |
+> 注：`size` **未实现**（2026-07-30 重校）——RadioGroup 对齐 Semi 后只有 `buttonSize`（仅 `type='button'` 生效）。
 | `type` | `'default' \| 'button' \| 'card' \| 'pureCard'` | `'default'` | 整组形态 |
 | `buttonSize` | `'small' \| 'middle' \| 'large'` | — | `type='button'` 时的尺寸（对齐 Semi；`middle→default` 映射，优先于 size，仅 button 生效） |
 | `direction` | `'horizontal' \| 'vertical'` | `'horizontal'` | 排列方向（也决定方向键语义） |
-| `status` | `'default' \| 'warning' \| 'error'` | `'default'` | 校验态 |
+> 注：`status` **未实现**（校验态由 Form.Field 承担）。
 | `aria-label` / `aria-labelledby` | `string` | — | 组无可见标题时的可访问名称 |
 
 ### 4.3 Events
 
-| 事件 | 载荷 (`event.detail`) | 触发组件 | 说明 |
-|---|---|---|---|
-| `on:change` | `{ value, nativeEvent }` | RadioGroup | 选中值变化（受控/非受控均派发） |
-| `on:change` | `{ checked, value, nativeEvent }` | Radio（单独使用） | 单项选中态变化 |
-| `on:focus` | `FocusEvent` | Radio | 获得焦点（roving 移动时） |
-| `on:blur` | `FocusEvent` | Radio | 失去焦点 |
+> 本组件无事件回调 prop（meta.events 为空）。此前本表列的回调均未实现，已删。
 
 > 约定：受控输入统一 `value + on:change`；本组件无浮层，故无 `open/openChange`。
 

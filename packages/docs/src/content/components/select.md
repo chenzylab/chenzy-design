@@ -3,7 +3,6 @@ title: Select 选择器
 name: select
 category: input
 brief: 用户可以通过 Select 选择器从一个选项集合中去选中一个或多个选项，并呈现最终选择结果。
-docMode: inline
 ---
 
 <script>

@@ -3,7 +3,6 @@ title: Progress 进度条
 name: progress
 category: feedback
 brief: 用于展示用户操作的当前进度和状态，一般在操作耗时较长时使用。也可用来表示任务/对象的完成度。
-docMode: inline
 ---
 
 <script>

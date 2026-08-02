@@ -33,14 +33,24 @@ DOM 渲染 + scroll/rAF 命令式绑定（+ cleanup）。wheel 滚动落定 debo
 
 ### ScrollList（容器）
 
-| 名称 | 类型 | 默认值 | 说明 |
-|------|------|--------|------|
-| header | `Snippet \| string` | — | 头部 addon |
-| footer | `Snippet \| string` | — | 底部 addon |
-| bodyHeight | `number \| string` | — | body 高度；数字按 px |
-| class | `string` | — | 根节点类名 |
-| style | `string` | — | 根节点内联样式 |
-| children | `Snippet` | — | 列内容：若干 `<ScrollItem>` |
+> 本表由 `packages/svelte/src/scroll-list/meta.ts` 真源生成（2026-07-30 重校）。此前本表列的 prop 多为 Semi 对齐前的旧名或已删除项（如 `value`→`activeKey`、`change`→`onChange`），改 prop 时请同步 meta.ts，勿手写「规划中」的 prop。
+
+| Prop | 类型 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| header | `Snippet \| string` | `undefined` | 头部 addon（对齐 Semi header） |
+| footer | `Snippet \| string` | `undefined` | 底部 addon（对齐 Semi footer） |
+| bodyHeight | `number \| string` | `undefined` | body 高度；数字按 px（对齐 Semi bodyHeight） |
+| class | `string` | `undefined` | 根节点类名（对齐 Semi className） |
+| style | `string` | `undefined` | 根节点内联样式（对齐 Semi style） |
+| children | `Snippet` | `undefined` | 列内容：若干 <ScrollItem> |
+
+**事件**（回调 prop 形式，对齐 Semi）：
+
+| 事件 | 说明 |
+| --- | --- |
+| `onSelect` | 选中项变化（wheel 滚动落定/点击、normal 点击）；载荷 {...item, value, index, type} |
+
+**子组件**：`ScrollItem`
 
 ### ScrollItem（列）
 
@@ -56,7 +66,7 @@ DOM 渲染 + scroll/rAF 命令式绑定（+ cleanup）。wheel 滚动落定 debo
 | onSelect | `(data: ScrollItemSelectPayload) => void` | — | 选中回调，data 含 `{...item, value, index, type}` |
 | class | `string` | — | 列样式类名 |
 | style | `string` | — | 列内联样式 |
-| ariaLabel | `string` | — | 列无障碍标签 |
+| `aria-label` | `string` | — | 列无障碍标签（连字符形态，非驼峰 `ariaLabel`） |
 
 `ScrollItemData`：`{ value: unknown; text?: string; disabled?: boolean; transform?: (value, text) => string }`
 

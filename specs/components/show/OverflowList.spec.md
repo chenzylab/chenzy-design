@@ -51,28 +51,41 @@ OverflowList 是一个「溢出折叠列表」容器：在水平（或垂直）�
 
 ### Props
 
+> 本表由 `packages/svelte/src/overflow-list/meta.ts` 真源生成（2026-07-30 重校）。此前本表列的 prop 多为 Semi 对齐前的旧名或已删除项（如 `value`→`activeKey`、`change`→`onChange`），改 prop 时请同步 meta.ts，勿手写「规划中」的 prop。
+
 | Prop | 类型 | 默认值 | 说明 |
-|---|---|---|---|
-| `items` | `T[]` | `[]` | 数据源数组；配合 `renderItem` 渲染。也可直接用默认 slot 传子项（slot 模式下忽略此项）。 |
-| `renderMode` | `'collapse' \| 'scroll'` | `'collapse'` | 折叠模式或滚动模式。 |
-| `overflowDirection` | `'start' \| 'end'` | `'end'` | 折叠节点固定方向；`start` 从头折叠，`end` 从尾折叠。 |
-| `direction` | `'horizontal' \| 'vertical'` | `'horizontal'` | 主轴方向。 |
-| `minVisibleItems` | `number` | `0` | 最少始终可见项数；低于则不折叠宁可溢出。 |
-| `alwaysVisibleIndexes` | `number[]` | `[]` | 永不折叠的项索引（boundary items，如面包屑首/尾）。 |
-| `threshold` | `number` | `8` | 折叠/展开滞后阈值（px），防边界抖动。 |
-| `size` | `'small' \| 'default' \| 'large'` | `'default'` | 影响折叠节点与 gap 的 token。 |
-| `gap` | `number \| string` | `--cd-overflow-list-gap` | 子项间距，覆盖 token。 |
-| `collapseFrom` | `'start' \| 'end'` | `'end'` | （别名兼容 Semi）等价 `overflowDirection`，二者取后设者。 |
-| `class` | `string` | `''` | 根节点自定义类名。 |
-| `style` | `string` | `''` | 根节点内联样式。 |
+| --- | --- | --- | --- |
+| items | `T[]` | `[]` | 数据驱动的渲染项；scroll 模式要求每项含 key（或提供 itemKey） |
+| renderMode | `'collapse'\|'scroll'` | `'collapse'` | 渲染模式：collapse 折叠（默认）/ scroll 滚动 |
+| collapseFrom | `'start'\|'end'` | `'end'` | collapse 模式折叠方向：end 尾部（默认）/ start 头部 |
+| minVisibleItems | `number` | `0` | collapse 模式最小可见项数目 |
+| threshold | `number` | `0.75` | scroll 模式触发溢出回调的 IntersectionObserver 阈值 |
+| itemKey | `string\|number\|((item: T) => string\|number)` | `undefined` | 取项 key：字段名或函数；缺省取 item.key |
+| visibleItemRenderer | `Snippet<[item: T, index: number]>` | `undefined` | 可见项渲染模板（对齐 Semi visibleItemRenderer） |
+| overflowRenderer | `Snippet<[overflowItems: T[]]>` | `undefined` | 溢出项渲染模板（对齐 Semi overflowRenderer）。collapse 收全部溢出项；scroll 分别收 [头部溢出, 尾部溢出] 二次调用渲染在两端 |
+| onOverflow | `(overflowItems: T[]) => void` | `undefined` | collapse 模式溢出项变化回调（去重） |
+| onIntersect | `(res: Record<string, IntersectionObserverEntry>) => void` | `undefined` | scroll 模式相交状态回调 |
+| onVisibleStateChange | `(visibleState: Map<string, boolean>) => void` | `undefined` | scroll 模式可见状态变化回调 |
+| wrapperClass | `string` | `''` | scroll 模式滚动 wrapper 类名（对齐 Semi wrapperClassName） |
+| wrapperStyle | `string` | `''` | scroll 模式滚动 wrapper 内联样式（对齐 Semi wrapperStyle） |
+| style | `string` | `''` | 根节点内联样式 |
+| class | `string` | `''` | 根节点附加类名 |
+
+**事件**（回调 prop 形式，对齐 Semi）：
+
+| 事件 | 说明 |
+| --- | --- |
+| `onOverflow` | collapse 模式溢出项变化时回调，携带 overflowItems |
+| `onIntersect` | scroll 模式各项相交状态回调，携带 { key: IntersectionObserverEntry } |
+| `onVisibleStateChange` | scroll 模式可见状态 Map 变化回调 |
 
 ### Events
 
-| Event | payload | 说明 |
-|---|---|---|
-| `on:overflowChange` | `{ overflowCount: number; visibleCount: number; overflowItems: T[] }` | 可见/折叠数量发生变化时触发（去重，仅在结果实际变化时）。 |
-| `on:visibleChange` | `{ visibleItems: T[] }` | 可见项集合变化时触发。 |
-| `on:scroll` | `{ index: number; position: 'start' \| 'end' \| number }` | 仅 `scroll` 模式，滚动定位完成后触发。 |
+| 事件 | 说明 |
+| --- | --- |
+| `onOverflow` | collapse 模式溢出项变化时回调，携带 overflowItems |
+| `onIntersect` | scroll 模式各项相交状态回调，携带 { key: IntersectionObserverEntry } |
+| `onVisibleStateChange` | scroll 模式可见状态 Map 变化回调 |
 
 > 命令式方法（实例 API，非事件）：`recalculate()`、`scrollToIndex(i)`、`scrollToStart()`、`scrollToEnd()`、`getOverflowItems()`。
 
@@ -128,13 +141,7 @@ OverflowList 是一个「溢出折叠列表」容器：在水平（或垂直）�
 
 用户可见文案零硬编码，全部走 i18n key（格式 `OverflowList.field`）。数字用 `Intl.NumberFormat` 本地化（`+N` 的 N）。
 
-| i18n key | 默认（zh-CN） | 默认（en） | 用途 |
-|---|---|---|---|
-| `OverflowList.moreLabel` | `+{count}` | `+{count}` | 折叠节点默认标签 |
-| `OverflowList.moreAriaLabel` | `显示其余 {count} 项` | `Show {count} more items` | 折叠节点 aria-label |
-| `OverflowList.collapsedAnnouncement` | `已折叠 {count} 项` | `{count} items collapsed` | LiveAnnouncer 宣告 |
-| `OverflowList.scrollStart` | `滚动到开头` | `Scroll to start` | 滚动起始锚点 aria-label |
-| `OverflowList.scrollEnd` | `滚动到末尾` | `Scroll to end` | 滚动结束锚点 aria-label |
+> **本组件不消费 locale**（2026-07-30 重校）：`OverflowList` 的 .svelte 里 `useLocale` 出现 0 次，所有用户可见文案由调用方经 props 传入。此前本节列的整张 i18n 键表从未被实现，已随「悬空键清理」把 `OverflowList` slice 整片从 `packages/locale` 删除，见 [[locale-dangling-keys-render-raw-key]]。`+N` 标签与折叠项可访问名当前由组件内联生成/调用方传入。
 
 - `{count}` 经 `Intl.NumberFormat(locale)` 格式化后插值。
 - 复数形态（en 的 item/items）通过 ICU MessageFormat `plural` 处理。

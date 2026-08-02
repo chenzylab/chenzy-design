@@ -210,6 +210,7 @@ export {
   type CompileToHastOptions,
   type UnifiedPluginEntry,
 } from './markdown-render.js';
+export { escapeHtmlInMarkdown } from './escape-html.js';
 export {
   createToastStore,
   type ToastStore,
@@ -282,6 +283,15 @@ export {
   type OnBreakpointScreensCallback,
   type OnBreakpointChangeCallback,
 } from './config-provider.js';
+export {
+  cdGlobal,
+  getGlobalDefaultProp,
+  getGlobalDefaults,
+  resolveDefault,
+  resetGlobalConfig,
+  type GlobalConfig,
+  type ComponentDefaultProps,
+} from './global-config.js';
 export {
   toIANA,
   isValidTimezoneIANAString,
@@ -570,6 +580,12 @@ export {
   type OutputMessage,
   type OutputText,
   type Reasoning,
+  dialogueFileIconType,
+  dialogueFileRealType,
+  type DialogueFileIconType,
+  type DialogueStep,
+  type DialogueStepAction,
+  type StepsContentItem,
   type Annotation,
   type ToolCallContentItem,
   type InputMessage,
@@ -625,6 +641,11 @@ export {
   nextSuggestionIndex,
   referenceLabel,
   isImageReference,
+  isImageType,
+  getAttachmentType,
+  getContentType,
+  AI_CHAT_INPUT_PIC_PREFIX,
+  AI_CHAT_INPUT_PIC_SUFFIX,
   skillLabel,
   getSkillSlotHTML,
   getSelectSlotHTML,

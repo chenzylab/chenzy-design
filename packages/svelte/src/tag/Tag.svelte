@@ -473,48 +473,77 @@
     多彩标签字重更重。
   */
   .cd-tag-colorful {
-    --ct: linear-gradient(
-      120deg,
-      var(--cd-tag-colorful-from) 0%,
-      var(--cd-tag-colorful-via) 52%,
-      var(--cd-tag-colorful-to) 100%
-    );
-    --ct-solid: var(--cd-tag-colorful-via);
-    --ct-fill: var(--ct-solid);
-    --ct-text: var(--cd-tag-colorful-via);
     font-weight: var(--cd-tag-colorful-font-weight);
   }
-  .cd-tag-colorful.cd-tag-gradient {
-    --ct-fill: var(--ct);
-  }
-  /* solid：多彩实心 + 白字 */
+  /* solid：AI 紫实心 + 白字；gradient 时换成 AI 通用渐变（Semi $..._solid_gradient-bg） */
   .cd-tag-colorful.cd-tag-solid {
-    background: var(--ct-fill);
-    color: var(--cd-color-white);
+    background: var(--cd-tag-colorful-solid-bg);
+    color: var(--cd-tag-colorful-solid-text);
     border-color: transparent;
   }
-  /* light：浅多彩底 + 紫字 */
+  .cd-tag-colorful.cd-tag-gradient.cd-tag-solid {
+    background: var(--cd-tag-colorful-solid-gradient-bg);
+  }
+  /* light：AI 紫最浅底 + AI 紫字；gradient 时底改 ai-general-0（0 档渐变） */
   .cd-tag-colorful.cd-tag-light {
-    background: color-mix(in srgb, var(--ct-text) 12%, var(--cd-color-bg-0));
-    color: var(--ct-text);
+    background: var(--cd-tag-colorful-light-bg);
+    color: var(--cd-tag-colorful-light-text);
     border-color: transparent;
   }
   .cd-tag-colorful.cd-tag-gradient.cd-tag-light {
-    background: linear-gradient(
-      120deg,
-      color-mix(in srgb, var(--cd-tag-colorful-from) 14%, transparent) 0%,
-      color-mix(in srgb, var(--cd-tag-colorful-via) 14%, transparent) 52%,
-      color-mix(in srgb, var(--cd-tag-colorful-to) 14%, transparent) 100%
-    );
+    background: var(--cd-tag-colorful-light-gradient-bg);
   }
-  /* ghost：透明 + 紫边框（gradient 用渐变边框）+ 紫字 */
+  /* ghost：白底 + AI 紫字 + AI 渐变描边（Semi ghost-bg 是 white，非 transparent） */
   .cd-tag-colorful.cd-tag-ghost {
-    background: transparent;
-    border-color: var(--ct-text);
-    color: var(--ct-text);
+    background: var(--cd-tag-colorful-ghost-bg);
+    border-color: var(--cd-tag-colorful-ghost-border);
+    color: var(--cd-tag-colorful-ghost-text);
+  }
+  /* gradient 下文字用渐变裁切（对齐 Semi content { background-clip: text }） */
+  .cd-tag-colorful.cd-tag-gradient.cd-tag-light :global(.cd-tag-content),
+  .cd-tag-colorful.cd-tag-gradient.cd-tag-ghost :global(.cd-tag-content) {
+    background: var(--cd-tag-colorful-light-gradient-text);
+    background-clip: text;
+    -webkit-background-clip: text;
+    color: transparent;
   }
   .cd-tag-colorful.cd-tag-gradient.cd-tag-ghost {
     border-color: transparent;
-    border-image: var(--ct) 1;
+    border-image: var(--cd-tag-colorful-ghost-border) 1;
+  }
+
+  /* —— RTL（逐条对齐 Semi tag/rtl.scss）——
+     前后缀图标、关闭叉、头像的物理内外边距整体换边；
+     closable / avatar 的四值 padding 左右互换。 */
+  :global(.cd-rtl) .cd-tag {
+    direction: rtl;
+  }
+  :global(.cd-rtl) .cd-tag-prefix-icon {
+    padding-right: 0;
+    padding-left: var(--cd-tag-prefix-icon-padding-right);
+  }
+  :global(.cd-rtl) .cd-tag-suffix-icon {
+    padding-left: 0;
+    padding-right: var(--cd-tag-suffix-icon-padding-left);
+  }
+  :global(.cd-rtl) .cd-tag-close {
+    padding-left: 0;
+    padding-right: var(--cd-tag-close-padding-left);
+  }
+  :global(.cd-rtl) .cd-tag-closable {
+    padding: var(--cd-tag-closable-padding-top) var(--cd-tag-closable-padding-left)
+      var(--cd-tag-closable-padding-bottom) var(--cd-tag-closable-padding-right);
+  }
+  :global(.cd-rtl) .cd-tag-avatar-square :global(.cd-avatar),
+  :global(.cd-rtl) .cd-tag-avatar-circle :global(.cd-avatar) {
+    margin-right: 0;
+    margin-left: var(--cd-tag-avatar-margin-right);
+  }
+  :global(.cd-rtl) .cd-tag-avatar-square {
+    padding: 0 0 0 var(--cd-tag-avatar-square-padding-x);
+  }
+  :global(.cd-rtl) .cd-tag-avatar-circle {
+    padding: var(--cd-tag-avatar-circle-padding-y) var(--cd-tag-avatar-circle-padding-left)
+      var(--cd-tag-avatar-circle-padding-y) var(--cd-tag-avatar-circle-padding-x);
   }
 </style>

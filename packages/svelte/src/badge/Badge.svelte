@@ -171,12 +171,12 @@
   }
 
   /* RTL：镜像水平平移（inset-inline 已处理锚点，transform 的 x 需翻向） */
-  :global([dir='rtl']) .cd-badge-rightTop,
-  :global([dir='rtl']) .cd-badge-rightBottom {
+  :global(.cd-rtl) .cd-badge-rightTop,
+  :global(.cd-rtl) .cd-badge-rightBottom {
     transform: translate(-50%, var(--cd-badge-ty));
   }
-  :global([dir='rtl']) .cd-badge-leftTop,
-  :global([dir='rtl']) .cd-badge-leftBottom {
+  :global(.cd-rtl) .cd-badge-leftTop,
+  :global(.cd-rtl) .cd-badge-leftBottom {
     transform: translate(50%, var(--cd-badge-ty));
   }
   .cd-badge-rightTop,

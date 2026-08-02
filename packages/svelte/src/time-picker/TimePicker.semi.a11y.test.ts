@@ -182,4 +182,37 @@ describe('TimePicker 对齐 Semi', () => {
     expect(footers).toContain('start footer');
     expect(footers).toContain('end footer');
   });
+
+  // 占位按 type 分派（对齐 Semi TimeInput 的 `locale.placeholder[type]`）。
+  // 曾坑：locale 的 TimePicker.placeholder 是扁平单串，range 模式也显示「请选择时间」，
+  // 与 Semi 的「请选择时间范围」不符；已按 Semi 拆成 placeholder.time / placeholder.timeRange。
+  it('单选占位取 placeholder.time（中英各自解析）', () => {
+    const en = renderWithLocale(TimePicker, { props: {} });
+    expect(
+      (en.container.querySelector('.cd-time-picker-input input') as HTMLInputElement).placeholder,
+    ).toBe('Select time');
+    const zh = renderWithLocale(TimePicker, { props: {}, locale: 'zh_CN' });
+    expect(
+      (zh.container.querySelector('.cd-time-picker-input input') as HTMLInputElement).placeholder,
+    ).toBe('请选择时间');
+  });
+
+  it('range 占位取 placeholder.timeRange（与单选那一条不同）', () => {
+    const en = renderWithLocale(TimePicker, { props: { type: 'timeRange' } });
+    expect(
+      (en.container.querySelector('.cd-time-picker-input input') as HTMLInputElement).placeholder,
+    ).toBe('Select a time range');
+    const zh = renderWithLocale(TimePicker, { props: { type: 'timeRange' }, locale: 'zh_CN' });
+    expect(
+      (zh.container.querySelector('.cd-time-picker-input input') as HTMLInputElement).placeholder,
+    ).toBe('请选择时间范围');
+  });
+
+  it('显式传 placeholder 时优先于 locale 分派', () => {
+    const { container } = renderWithLocale(TimePicker, {
+      props: { type: 'timeRange', placeholder: '自定义占位' },
+    });
+    const input = container.querySelector('.cd-time-picker-input input') as HTMLInputElement;
+    expect(input.placeholder).toBe('自定义占位');
+  });
 });

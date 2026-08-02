@@ -36,22 +36,41 @@ Avatar 主体为**纯展示组件**，可省 core；但图片加载状态机与 
 
 ### Props（Avatar）
 
+> 本表由 `packages/svelte/src/avatar/meta.ts` 真源生成（2026-07-30 重校）。此前本表列的 prop 多为 Semi 对齐前的旧名或已删除项（如 `value`→`activeKey`、`change`→`onChange`），改 prop 时请同步 meta.ts，勿手写「规划中」的 prop。
+
 | Prop | 类型 | 默认值 | 说明 |
-|------|------|--------|------|
-| `src` | `string` | — | 图片地址；加载失败自动降级 |
-| `srcset` | `string` | — | 响应式图片源集，透传给 `<img>` |
-| `alt` | `string` | — | 图片替代文本，也用于无 children 时的文字降级（取首字符） |
-| `shape` | `'circle' \| 'square'` | `'circle'` | 形状 |
-| `size` | `'extra-small' \| 'small' \| 'default' \| 'large' \| 'extra-large' \| number` | `'default'` | 尺寸，数字为自定义像素 |
-| `color` | `'auto' \| string` | `'grey'` | 文字头像背景色，`auto` 按内容哈希取色 |
-| `status` | `'default' \| 'warning' \| 'error'` | `'default'` | 校验/异常态，影响描边与 dot |
-| `dot` | `boolean` | `false` | 是否显示右下角状态点 |
-| `dotColor` | `string` | — | 状态点颜色（覆盖 status 推导值） |
-| `gap` | `number` | `3` | 文字内容与边缘最小间距(px)，用于缩放计算 |
-| `border` | `boolean \| { color?: string; width?: number }` | `false` | 描边（Group 内默认开启） |
-| `loading` | `'eager' \| 'lazy'` | `'lazy'` | `<img>` 原生懒加载策略 |
-| `href` | `string` | — | 提供时整个头像渲染为可点击链接 `<a>` |
-| `class` | `string` | — | 透传根类名 |
+| --- | --- | --- | --- |
+| src | `string` | `undefined` | 图片地址；加载失败自动降级 |
+| srcSet | `string` | `undefined` | 响应式图片源集 |
+| alt | `string` | `undefined` | a11y 文本，也作文字降级来源 |
+| shape | `'circle'\|'square'` | `'circle'` |  |
+| size | `'extra-extra-small'\|'extra-small'\|'small'\|'default'\|'medium'\|'large'\|'extra-large'\|number\|string` | `'medium'` | 7 档枚举映射 token，number/合法 width 值内联 |
+| color | `'amber'\|'blue'\|'cyan'\|'green'\|'grey'\|'indigo'\|'light-blue'\|'light-green'\|'lime'\|'orange'\|'pink'\|'purple'\|'red'\|'teal'\|'violet'\|'yellow'\|'white'` | `'grey'` | 16 档语义色 + white；图片头像不上色；也可用 style 自定义 |
+| border | `boolean \| { color?: string; motion?: boolean }` | `false` | 额外描边环：true 用默认主色；对象可定制 color 并用 motion 开启呼吸动画 |
+| contentMotion | `boolean` | `false` | 头像内容区域动效 |
+| gap | `number` | `3` | 字符头像距左右两侧像素(用于自适应缩放) |
+| hoverMask | `Snippet` | `undefined` | hover 时头像内容覆盖层(无默认样式) |
+| topSlot | `{ render?; gradientStart?: string; gradientEnd?: string; text?; textColor?: string; className?: string; style?: string }` | `undefined` | 顶部渐变标记(仅 circle 且枚举尺寸) |
+| bottomSlot | `{ render?; shape?: 'circle'\|'square'; text?; bgColor?: string; textColor?: string; className?: string; style?: string }` | `undefined` | 底部圆形/方形标记(仅枚举尺寸) |
+| imgAttr | `Record<string, unknown>` | `undefined` | 额外传给 img 的原生属性 |
+| onError | `() => boolean\|void` | `undefined` | img 加载失败回调；返回 false 关闭默认降级 |
+| onClick | `(e: MouseEvent\|KeyboardEvent) => void` | `undefined` | 单击回调；提供时头像可聚焦并响应键盘 Enter(对齐 Semi clickable) |
+| onMouseEnter | `(e: MouseEvent) => void` | `undefined` |  |
+| onMouseLeave | `(e: MouseEvent) => void` | `undefined` |  |
+| class | `string` | `undefined` | 附加类名(对齐 Semi className) |
+| style | `string` | `undefined` | 内联样式(对齐 Semi style) |
+| children | `Snippet` | `undefined` | 文字/图标内容 |
+
+**事件**（回调 prop 形式，对齐 Semi）：
+
+| 事件 | 说明 |
+| --- | --- |
+| `click` | onClick：头像被点击或键盘 Enter 激活 |
+| `mouseenter` | onMouseEnter |
+| `mouseleave` | onMouseLeave |
+| `error` | onError：图片加载失败 |
+
+**子组件**：`AvatarGroup`
 
 ### Props（AvatarGroup）
 
@@ -62,17 +81,16 @@ Avatar 主体为**纯展示组件**，可省 core；但图片加载状态机与 
 | `maxCount` | `number` | — | 最多展示数，超出折叠为 `+N` |
 | `overlapFrom` | `'start' \| 'end'` | `'start'` | 层叠压盖方向（start=前压后） |
 | `renderMore` | `(restNumber: number) => any` | — | 自定义溢出头像渲染（Snippet/函数） |
-| `overflowTrigger` | `'click' \| 'hover' \| 'none'` | `'none'` | 溢出头像触发浮层列出剩余成员的方式 |
+| `overflowTrigger`（**未实现**） | `'click' \| 'hover' \| 'none'` | `'none'` | 溢出头像触发浮层列出剩余成员的方式 |
 
 ### Events
 
-| Event | Payload | 说明 |
-|-------|---------|------|
-| `on:click` | `MouseEvent` | 头像点击（无 `href` 时） |
-| `on:error` | `Event` | 图片加载失败（降级触发后派发） |
-| `on:load` | `Event` | 图片加载成功 |
-| `on:mouseenter` / `on:mouseleave` | `MouseEvent` | 悬浮，供外部驱动 Tooltip |
-| `on:openChange` *(Group)* | `boolean` | 溢出浮层显隐变化（一致性 open + on:openChange 约定） |
+| 事件 | 说明 |
+| --- | --- |
+| `click` | onClick：头像被点击或键盘 Enter 激活 |
+| `mouseenter` | onMouseEnter |
+| `mouseleave` | onMouseLeave |
+| `error` | onError：图片加载失败 |
 
 ### Slots
 
@@ -124,13 +142,12 @@ Avatar 主体为**纯展示组件**，可省 core；但图片加载状态机与 
 
 用户可见文案零硬编码，经 i18n provider 注入。数字用 `Intl.NumberFormat`。
 
-| i18n key | 默认文案（zh-CN / en） | 用途 |
-|----------|------------------------|------|
-| `Avatar.imageFallbackAlt` | 头像 / Avatar | img 无 alt 时的兜底替代文本 |
-| `Avatar.changeCover` | 更换头像 / Change | hover cover 默认文案 |
-| `AvatarGroup.label` | 成员头像组 / Avatar group | group 容器 aria-label |
-| `AvatarGroup.restNumber` | 还有 {count} 位 / {count} more | `+N` 折叠头像 aria-label |
-| `AvatarGroup.expandMore` | 展开全部成员 / Show all members | 溢出浮层 trigger 描述 |
+> 本表由 `packages/locale/src/zh_CN.ts` 真源生成（2026-07-30 重校）。键名与键值都是 Semi 契约，勿手写「规划中」的键——历史上本表列过大量从未实现的键名，见 [[locale-dangling-keys-render-raw-key]]。
+
+| i18n key | 默认（zh-CN） |
+| --- | --- |
+| `Avatar.moreAlt` | 还有 {count} 个 |
+| `Avatar.groupLabel` | 头像组 |
 
 - `+N` 中的数字经 `Intl.NumberFormat(locale)` 格式化（大数分隔符按区域）。
 - `restNumber` 使用 ICU 占位 `{count}`，支持复数变体（en: `{count, plural, one {# more} other {# more}}`）。

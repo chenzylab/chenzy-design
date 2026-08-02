@@ -21,7 +21,7 @@
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
-  import { useId, useDismiss } from '@chenzy-design/core';
+  import { useId, useDismiss, resolveDefault } from '@chenzy-design/core';
   import { useLocale } from '../locale-provider/index.js';
   import { floating } from '../_floating/use-floating.js';
   import Input from '../input/Input.svelte';
@@ -122,7 +122,7 @@
   let {
     value,
     defaultValue = '',
-    data = [],
+    data: dataProp,
     defaultOpen = false,
     placeholder = '',
     'aria-label': ariaLabel,
@@ -130,16 +130,16 @@
     insetLabel,
     insetLabelId,
     size: sizeProp,
-    validateStatus = 'default',
+    validateStatus: validateStatusProp,
     disabled: disabledProp,
-    defaultActiveFirstOption = false,
+    defaultActiveFirstOption: defaultActiveFirstOptionProp,
     onSearch,
-    loading = false,
+    loading: loadingProp,
     onChange,
     onSelect,
-    onSelectWithObject = false,
+    onSelectWithObject: onSelectWithObjectProp,
     onDropdownVisibleChange,
-    dropdownMatchSelectWidth = true,
+    dropdownMatchSelectWidth: dropdownMatchSelectWidthProp,
     getPopupContainer,
     dropdownClassName,
     dropdownStyle,
@@ -149,20 +149,32 @@
     emptyContent,
     prefix,
     suffix,
-    showClear = false,
+    showClear: showClearProp,
     clearIcon,
     onBlur,
     onFocus,
     onClear,
-    autoFocus = false,
-    position = 'bottomLeft',
+    autoFocus: autoFocusProp,
+    position: positionProp,
     autoAdjustOverflow = true,
     onKeyDown,
     class: className = '',
     style = '',
-    maxHeight = 300,
+    maxHeight: maxHeightProp,
     zIndex,
   }: Props = $props();
+  // cdGlobal 全局默认 props（对齐 Semi semiGlobal.config.overrideDefaultProps）：
+  // 优先级 = 显式传值 > cdGlobal['AutoComplete'] > 组件内置默认值。
+  const position = $derived(resolveDefault(positionProp, 'AutoComplete', 'position', 'bottomLeft'));
+  const data = $derived(resolveDefault(dataProp, 'AutoComplete', 'data', []));
+  const showClear = $derived(resolveDefault(showClearProp, 'AutoComplete', 'showClear', false));
+  const onSelectWithObject = $derived(resolveDefault(onSelectWithObjectProp, 'AutoComplete', 'onSelectWithObject', false));
+  const defaultActiveFirstOption = $derived(resolveDefault(defaultActiveFirstOptionProp, 'AutoComplete', 'defaultActiveFirstOption', false));
+  const dropdownMatchSelectWidth = $derived(resolveDefault(dropdownMatchSelectWidthProp, 'AutoComplete', 'dropdownMatchSelectWidth', true));
+  const loading = $derived(resolveDefault(loadingProp, 'AutoComplete', 'loading', false));
+  const maxHeight = $derived(resolveDefault(maxHeightProp, 'AutoComplete', 'maxHeight', 300));
+  const validateStatus = $derived(resolveDefault(validateStatusProp, 'AutoComplete', 'validateStatus', 'default'));
+  const autoFocus = $derived(resolveDefault(autoFocusProp, 'AutoComplete', 'autoFocus', false));
 
   // InputGroup 组级默认（size/disabled）：显式 prop 始终优先，否则回退组级，再回退组件默认。
   const group = getInputGroupContext();

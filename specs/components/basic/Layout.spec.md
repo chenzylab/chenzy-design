@@ -8,14 +8,14 @@ Layout 是页面级骨架容器，用于快速搭建「页头 / 侧边栏 / 主�
 
 - `Layout`（根容器，承载整体方向与背景）
 - `Layout.Header`（页头，通常固定高度，可吸顶 sticky）
-- `Layout.Sider`（侧边栏，可折叠 collapsible，支持响应式断点自动收起）
+- `Layout.Sider`（侧边栏，`<aside>` 语义容器 + 响应式断点回调；**不内置折叠**，见 §4.2）
 - `Layout.Content`（主体内容区，自动撑满剩余空间）
 - `Layout.Footer`（页脚）
 
 核心解决两个排版问题：
 
 1. **方向自动推断**：`Layout` 默认 `flex-direction: column`；当其直接子节点中存在 `Layout.Sider` 时，自动切换为 `row`，无需用户手动指定 `hasSider`（同时保留 `hasSider` 显式逃生口以规避 SSR 首帧无法读取 slot 内容的问题）。
-2. **侧边栏折叠**：`Sider` 提供受控/非受控折叠、宽度过渡动画、断点响应、自定义触发器。
+2. **响应式断点**：`Sider` 只提供 `breakpoint` + `onBreakpoint` 回调；折叠/宽度过渡/触发器均不内置。
 
 非目标：不负责导航逻辑（交给 `Nav`/`Menu`）、不负责栅格（交给 `Grid`/`Row`/`Col`）、不负责响应式断点之外的复杂自适应。
 
@@ -23,7 +23,7 @@ Layout 是页面级骨架容器，用于快速搭建「页头 / 侧边栏 / 主�
 
 ## 2. 设计语义
 
-- **结构层级**：`Layout` 是布局原语，`Sider` 是其中唯一带交互（折叠）的成员。整体视觉上无边框、无阴影，仅由背景色（`--cd-color-bg-*`）区分层次。
+- **结构层级**：`Layout` 是布局原语，五个成员均为纯语义容器（`Sider` 亦不带折叠交互）。整体视觉上无边框、无阴影，仅由背景色（`--cd-color-bg-*`）区分层次。
 - **方向**：纵向（Header→Content→Footer）为默认信息流；含 Sider 时为「侧栏 + 纵向主体」的复合 row 结构。
 - **吸附**：Header/Footer 支持 `sticky`，Sider 支持 `sticky` 固定（高度跟随视口）。
 - **折叠收起**：Sider 折叠为「宽度从 `width` 收窄到 `collapsedWidth`」的连续动画（默认 200ms），而非整体抽屉移出，保持上下文连续性。
@@ -54,27 +54,50 @@ Layout 是页面级骨架容器，用于快速搭建「页头 / 侧边栏 / 主�
 
 #### Props
 
-| 名称 | 类型 | 默认值 | 说明 |
-|---|---|---|---|
-| hasSider | `boolean` | `undefined` | 是否含侧栏（控制 flex 方向）。缺省时自动检测子节点；SSR 场景建议显式传入。仅 `Layout` 根有效 |
-| tagName | `'div' \| 'section' \| 'main' \| 'header' \| 'footer' \| 'aside'` | 见说明 | 渲染标签。Header→`header`、Footer→`footer`、Content→`main`、Sider→`aside`、Layout→`section` |
-| class | `string` | `''` | 透传类名 |
-| style | `string` | `''` | 透传内联样式（叠加在派生样式之后，可覆盖） |
-| ariaLabel | `string` | `undefined` | 可访问性标签（透传根元素 aria-label，对齐 Semi ≥2.3.0） |
-| role | `string` | `undefined` | 可访问性 role（透传根元素，覆盖默认语义） |
+> 本表由 `packages/svelte/src/layout/meta.ts` 真源生成（2026-07-30 重校）。此前本表列的 prop 多为 Semi 对齐前的旧名或已删除项（如 `value`→`activeKey`、`change`→`onChange`），改 prop 时请同步 meta.ts，勿手写「规划中」的 prop。
+
+| Prop | 类型 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| Layout.class | `string` | `''` | 根元素自定义类名 |
+| Layout.style | `string` | `undefined` | 根元素自定义内联样式 |
+| Layout.hasSider | `boolean` | `undefined` | 表示子元素里有 Sider，一般不用指定；可用于 SSR 避免样式闪动 |
+| Layout.aria-label | `string` | `undefined` | 可访问性标签 |
+| Layout.role | `string` | `undefined` | 可访问性 role |
+| Layout.Header.class | `string` | `''` | 根元素自定义类名 |
+| Layout.Header.style | `string` | `undefined` | 根元素自定义内联样式 |
+| Layout.Header.aria-label | `string` | `undefined` | 可访问性标签 |
+| Layout.Header.role | `string` | `undefined` | 可访问性 role |
+| Layout.Footer.class | `string` | `''` | 根元素自定义类名 |
+| Layout.Footer.style | `string` | `undefined` | 根元素自定义内联样式 |
+| Layout.Footer.aria-label | `string` | `undefined` | 可访问性标签 |
+| Layout.Footer.role | `string` | `undefined` | 可访问性 role |
+| Layout.Content.class | `string` | `''` | 根元素自定义类名 |
+| Layout.Content.style | `string` | `undefined` | 根元素自定义内联样式 |
+| Layout.Content.aria-label | `string` | `undefined` | 可访问性标签 |
+| Layout.Content.role | `string` | `undefined` | 可访问性 role（覆盖默认 main 语义） |
+| Layout.Sider.breakpoint | `('xs'\|'sm'\|'md'\|'lg'\|'xl'\|'xxl')[]` | `undefined` | 触发响应式布局的断点数组 |
+| Layout.Sider.onBreakpoint | `(screen, matched: boolean) => void` | `undefined` | 触发响应式布局断点时的回调 |
+| Layout.Sider.class | `string` | `''` | 根元素自定义类名 |
+| Layout.Sider.style | `string` | `undefined` | 根元素自定义内联样式 |
+| Layout.Sider.aria-label | `string` | `undefined` | 可访问性标签，描述该 Sider 作用 |
+| Layout.Sider.role | `string` | `undefined` | 可访问性 role |
+
+**事件**（回调 prop 形式，对齐 Semi）：
+
+| 事件 | 说明 |
+| --- | --- |
+| `onBreakpoint` | Sider 命中 / 解除响应式断点时触发，(screen, matched) |
+
+**子组件**：`Layout`、`Layout.Header`、`Layout.Footer`、`Layout.Content`、`Layout.Sider`
 
 #### Header / Footer 额外 Props
 
-| 名称 | 类型 | 默认值 | 说明 |
-|---|---|---|---|
-| sticky | `boolean` | `false` | 是否吸顶（Header）/吸底（Footer） |
-| height | `string \| number` | Header `60`，Footer `auto` | 高度，number 视为 px |
+> **无额外 Props**（2026-07-30 重校）：Header / Footer 与 Layout 一样只有 `class` / `style` / `aria-label` / `role`。
+> 此前本表列的 `sticky` / `height` 从未实现——吸顶/高度请由调用方经 `style` 或自有 CSS 承担。
 
 #### Content 额外 Props
 
-| 名称 | 类型 | 默认值 | 说明 |
-|---|---|---|---|
-| padding | `string \| number \| boolean` | `false` | 内边距，`true` 使用默认 token 值 |
+> **无额外 Props**：Content 只有 `class` / `style` / `aria-label` / `role`。此前本表列的 `padding` 从未实现。
 
 ### 4.2 Layout.Sider
 
@@ -82,26 +105,22 @@ Layout 是页面级骨架容器，用于快速搭建「页头 / 侧边栏 / 主�
 
 | 名称 | 类型 | 默认值 | 说明 |
 |---|---|---|---|
-| collapsed | `boolean` | `undefined` | 受控折叠态。配合 `on:change` 使用 |
-| defaultCollapsed | `boolean` | `false` | 非受控初始折叠态 |
-| collapsible | `boolean` | `false` | 是否显示默认折叠触发器 |
-| width | `string \| number` | `200` | 展开宽度，number 视为 px |
-| collapsedWidth | `string \| number` | `60` | 折叠后宽度，`0` 表示完全收起（隐藏触发器外形需自定义） |
-| breakpoint | `'xs' \| 'sm' \| 'md' \| 'lg' \| 'xl' \| 'xxl'` | `undefined` | 命中断点时自动折叠 |
-| reverseArrow | `boolean` | `false` | 触发器箭头方向反转（用于右置 Sider） |
-| sticky | `boolean` | `false` | 固定侧栏，高度随视口 |
-| placement | `'left' \| 'right'` | `'left'` | 侧栏位置，影响触发器箭头与边框侧 |
-| style | `string` | `undefined` | 透传内联样式（叠加在宽度样式之后，可覆盖） |
-| ariaLabel | `string` | `undefined` | 可访问性标签，描述该 Sider 作用（透传 aside aria-label） |
-| role | `string` | `undefined` | 可访问性 role（透传根元素） |
-| trigger | `Slot \| null` | 默认箭头 | 自定义触发器；`null` 隐藏触发器 |
+| `breakpoint` | `'xs'\|'sm'\|'md'\|'lg'\|'xl'\|'xxl'` | `undefined` | 触发响应式回调的断点 |
+| `onBreakpoint` | `(screen: string, matched: boolean) => void` | `undefined` | 命中/解除断点时触发 |
+| `class` | `string` | `undefined` | 类名 |
+| `style` | `string` | `undefined` | 内联样式 |
+| `aria-label` | `string` | `undefined` | 无障碍标签（透传 `<aside>`） |
+| `role` | `string` | `undefined` | 覆盖默认 landmark 语义 |
+
+> **Sider 不内置折叠能力**（2026-07-30 重校，逐条核 `layout/meta.ts`）：此前本表列的 `collapsed` /
+> `defaultCollapsed` / `collapsible` / `width` / `collapsedWidth` / `reverseArrow` / `sticky` /
+> `placement` / `trigger` **全部从未实现**。折叠侧边栏用 Nav 承担（Semi 的 Layout.Sider 同样只是语义容器）。
 
 #### Events
 
-| 事件 | 载荷 (`event.detail`) | 触发时机 |
-|---|---|---|
-| change | `{ collapsed: boolean; trigger: 'click' \| 'breakpoint' }` | 折叠态变化（统一受控事件） |
-| breakpoint | `{ matched: boolean; breakpoint: string }` | 断点匹配状态变化 |
+| 事件 | 说明 |
+| --- | --- |
+| `onBreakpoint` | Sider 命中 / 解除响应式断点时触发，(screen, matched) |
 
 > 命名遵循一致性约定：折叠态视为受控值，使用 `collapsed` + `on:change`（语义等价于 value+on:change）。
 

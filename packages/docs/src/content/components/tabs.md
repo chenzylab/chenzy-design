@@ -3,7 +3,6 @@ title: Tabs 标签页
 name: tabs
 category: navigation
 brief: 选项卡切换组件，用于让用户在不同的视图中进行切换。
-docMode: inline
 ---
 
 <script>

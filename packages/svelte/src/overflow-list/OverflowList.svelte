@@ -25,6 +25,7 @@
       scroll: [overflow[0]] .cd-overflow-list-scroll-wrapper{ 可见项* } [overflow[1]]
 -->
 <script lang="ts" generics="T extends Record<string, any>">
+  import { resolveDefault } from '@chenzy-design/core';
   import type { Snippet } from 'svelte';
   import { untrack } from 'svelte';
 
@@ -35,10 +36,10 @@
 
   let {
     items = [],
-    renderMode = 'collapse',
-    collapseFrom = 'end',
-    minVisibleItems = 0,
-    threshold = 0.75,
+    renderMode: renderModeProp,
+    collapseFrom: collapseFromProp,
+    minVisibleItems: minVisibleItemsProp,
+    threshold: thresholdProp,
     itemKey,
     visibleItemRenderer,
     overflowRenderer,
@@ -85,6 +86,13 @@
     /** 根节点附加类名 */
     class?: string;
   } = $props();
+
+  // cdGlobal 全局默认 props（对齐 Semi semiGlobal.config.overrideDefaultProps）：
+  // 优先级 = 显式传值 > cdGlobal['OverflowList'] > 组件内置默认值。
+  const renderMode = $derived(resolveDefault(renderModeProp, 'OverflowList', 'renderMode', 'collapse'));
+  const collapseFrom = $derived(resolveDefault(collapseFromProp, 'OverflowList', 'collapseFrom', 'end'));
+  const minVisibleItems = $derived(resolveDefault(minVisibleItemsProp, 'OverflowList', 'minVisibleItems', 0));
+  const threshold = $derived(resolveDefault(thresholdProp, 'OverflowList', 'threshold', 0.75));
 
   const isScroll = $derived(renderMode === 'scroll');
 

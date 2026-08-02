@@ -48,26 +48,44 @@ Tag 默认是**纯展示**组件，但提供两种可交互形态：
 
 ### Props
 
-| 名称 | 类型 | 默认值 | 说明 |
-|------|------|--------|------|
-| `type` | `'light' \| 'solid' \| 'ghost'` | `'light'` | 填充形态 |
-| `color` | `'grey' \| 'primary' \| 'success' \| 'warning' \| 'danger' \| string` | `'grey'` | 语义色或调色板色名 |
-| `size` | `'small' \| 'default' \| 'large'` | `'default'` | 尺寸 |
-| `shape` | `'square' \| 'circle'` | `'square'` | 圆角形态 |
-| `closable` | `boolean` | `false` | 是否可关闭 |
-| `visible` | `boolean` | `true` | 受控显隐（关闭后由外部置 false 移除） |
-| `checkable` | `boolean` | `false` | 是否为可选中 chip |
-| `checked` | `boolean` | `false` | 选中态（受控，配合 `on:change`） |
-| `disabled` | `boolean` | `false` | 禁用，阻断关闭/选中交互 |
-| `prefixIcon` | `Snippet \| Component` | — | 前置图标 |
-| `suffixIcon` | `Snippet \| Component` | — | 后置图标（与 closable 互不冲突，关闭图标始终最右） |
-| `avatarSrc` | `string` | — | 头像型 Tag 的图片地址 |
-| `avatarShape` | `'square' \| 'circle'` | `'square'` | 头像形状 |
-| `closeIcon` | `Snippet \| Component` | 内置 X | 自定义关闭图标 |
-| `tagKey` | `string \| number` | — | 在 TagGroup 中的稳定标识 |
-| `ariaLabel` | `string` | — | 透传根元素可访问名（`aria-label`）；`children` 为图标/纯符号（如 `+N`）无有意义文本时用它给整枚 Tag 命名，省去外层再套 `span` 承载 |
-| `class` | `string` | — | 透传根类名 |
-| `style` | `string` | — | 透传根内联样式 |
+> 本表由 `packages/svelte/src/tag/meta.ts` 真源生成（2026-07-30 重校）。此前本表列的 prop 多为 Semi 对齐前的旧名或已删除项（如 `value`→`activeKey`、`change`→`onChange`），改 prop 时请同步 meta.ts，勿手写「规划中」的 prop。
+
+| Prop | 类型 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| type | `'light'\|'solid'\|'ghost'` | `'light'` | 视觉风格 |
+| color | `'amber'\|'blue'\|'cyan'\|'green'\|'grey'\|'indigo'\|'light-blue'\|'light-green'\|'lime'\|'orange'\|'pink'\|'purple'\|'red'\|'teal'\|'violet'\|'yellow'\|'white'` | `'grey'` | 语义色，对齐 Semi 16 色板 + white |
+| size | `'small'\|'default'\|'large'` | `'default'` | default 与 small 同高 |
+| shape | `'square'\|'circle'` | `'square'` | circle 用胶囊圆角 |
+| closable | `boolean` | `false` | 尾部关闭按钮 |
+| visible | `boolean` | `undefined` | 受控显隐；受控时不回写，仅 onClose 通知 |
+| colorful | `boolean` | `false` | AI 多彩标签：蓝→紫渐变，字重更重 |
+| gradient | `boolean` | `false` | 渐变色，仅 colorful=true 时生效 |
+| avatarSrc | `string` | `undefined` | 头像型 Tag 的图片地址 |
+| avatarShape | `'square'\|'circle'` | `'square'` | 头像形状 |
+| tagKey | `string\|number` | `undefined` | 在 TagGroup 中的稳定标识 |
+| prefixIcon | `Snippet` | `undefined` | 前置图标 |
+| suffixIcon | `Snippet` | `undefined` | 后置图标（关闭图标始终最右） |
+| children | `Snippet` | `undefined` | 标签内容 |
+| contentAlign | `'ellipsis' \| 'center'` | `'ellipsis'` | 内容对齐：ellipsis 纯文本单行省略号左对齐；center 含富内容（图标等）flex 垂直居中 |
+| onClose | `(tagChildren, e, tagKey) => void` | `undefined` | 关闭回调；在回调内 e.preventDefault() 阻止默认隐藏 |
+| onClick | `(e) => void` | `undefined` | 单击回调；传入后标签变可交互(role=button/可聚焦/Enter 激活) |
+| onMouseEnter | `(e) => void` | `undefined` | 鼠标进入回调 |
+| onKeyDown | `(e) => void` | `undefined` | 键盘事件回调（内部处理后触发） |
+| tabIndex | `number` | `undefined` | 可交互 Tag 的 tabIndex（TagInput 内用 -1） |
+| aria-label | `string` | `undefined` | 透传根元素可访问名（aria-label） |
+| class | `string` | `undefined` | 透传根类名 |
+| style | `string` | `undefined` | 透传根内联样式 |
+
+**事件**（回调 prop 形式，对齐 Semi）：
+
+| 事件 | 说明 |
+| --- | --- |
+| `onClose` | 关闭按钮点击（tagChildren, e, tagKey） |
+| `onClick` | 标签点击（clickable 时） |
+| `onMouseEnter` | 鼠标进入 |
+| `onKeyDown` | 键盘按下 |
+
+**子组件**：`TagGroup`、`SplitTagGroup`
 
 **TagGroup 专属 Props**
 
@@ -78,17 +96,16 @@ Tag 默认是**纯展示**组件，但提供两种可交互形态：
 | `showPopover` | `boolean` | `false` | `+N` 是否 hover 展开剩余项 |
 | `popoverProps` | `PopoverProps` | — | 透传溢出浮层配置 |
 | `size` | `'small' \| 'default' \| 'large'` | `'default'` | 统一下发各子 Tag 尺寸 |
-| `spacing` | `number` | `8` | 标签间距(px) |
+> 注：`spacing` **未实现**（2026-07-30 重校）——TagGroup 间距由 CSS 承担，无此 prop。
 
 ### Events
 
-| 事件 | payload | 说明 |
-|------|---------|------|
-| `on:close` | `{ tagKey?, originalEvent: MouseEvent \| KeyboardEvent, preventDefault() }` | 点击关闭图标触发；调用 `preventDefault()` 可阻止默认移除/`visibleChange` |
-| `on:visibleChange` | `boolean` | `visible` 受控变更（关闭动画结束后） |
-| `on:change` | `boolean` | checkable Tag 选中态变更（受控约定，等价 Semi `onChange`） |
-| `on:click` | `MouseEvent` | 整体点击（非 closable 区域） |
-| TagGroup `on:plusClick` | `MouseEvent` | 点击 `+N` 溢出标记触发 |
+| 事件 | 说明 |
+| --- | --- |
+| `onClose` | 关闭按钮点击（tagChildren, e, tagKey） |
+| `onClick` | 标签点击（clickable 时） |
+| `onMouseEnter` | 鼠标进入 |
+| `onKeyDown` | 键盘按下 |
 
 > 命名遵循全局约定：选中用 `checked + on:change`；显隐用 `visible + on:visibleChange`（Tag 无浮层，故不用 open/openChange，复用 visible 语义更贴切，TagGroup 溢出浮层走 Popover 的 `open/openChange`）。
 
@@ -147,7 +164,7 @@ Tag 默认是**纯展示**组件，但提供两种可交互形态：
 - 键盘：`Space`/`Enter` 切换选中；焦点可见环用 `--cd-tag-focus-ring`，对比度 ≥ 3:1。
 
 **TagGroup**
-- `+N` 为 `<button>`，`aria-label` 用 i18n `TagGroup.restCount`（插值数量）；展开 popover 后剩余项可读。
+- `+N` 为 `<button>`，`aria-label` 用 i18n `TagGroup.restTagsAriaLabel`（插值 `{count}`）；展开 popover 后剩余项可读。
 
 **通用**
 - 对比度：solid 态文字/底 ≥ 4.5:1（小字号），light 态文字/底 ≥ 4.5:1，焦点/边框 ≥ 3:1。调色板色需在亮/暗主题双向校验。
@@ -158,12 +175,11 @@ Tag 默认是**纯展示**组件，但提供两种可交互形态：
 
 用户可见文案零硬编码，全部经 i18n。
 
-| i18n key | 默认值（zh / en） | 用途 |
-|----------|-------------------|------|
-| `Tag.closeAriaLabel` | `移除 {label}` / `Remove {label}` | closable 关闭按钮无障碍名 |
-| `Tag.checkedAriaLabel` | `{label}，已选中` / `{label}, selected` | checkable 读屏补充（可选） |
-| `TagGroup.restCount` | `还有 {count} 项` / `{count} more` | `+N` 无障碍名与 tooltip |
-| `TagGroup.restPopoverTitle` | `更多标签` / `More tags` | 溢出浮层标题 |
+> 本表由 `packages/locale/src/zh_CN.ts` 真源生成（2026-07-30 重校）。键名与键值都是 Semi 契约，勿手写「规划中」的键——历史上本表列过大量从未实现的键名，见 [[locale-dangling-keys-render-raw-key]]。
+
+| i18n key | 默认（zh-CN） |
+| --- | --- |
+| `TagGroup.restTagsAriaLabel` | 还有 {count} 个标签 |
 
 - Tag 文本内容由调用方提供，不强制翻译；组件仅负责自身控制类文案。
 - 若 Tag 内展示数字/日期（业务自定义内容），建议调用方用 `Intl.NumberFormat` / `Intl.DateTimeFormat`，组件不内置格式化。

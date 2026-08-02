@@ -493,6 +493,16 @@ export {
   type OnBreakpointScreensCallback,
   type OnBreakpointChangeCallback,
 } from './config-provider/index.js';
+// cdGlobal 全局默认 props（对齐 Semi 从 semi-ui 导出 semiGlobal）。
+export {
+  cdGlobal,
+  getGlobalDefaults,
+  getGlobalDefaultProp,
+  resolveDefault,
+  resetGlobalConfig,
+  type GlobalConfig,
+  type ComponentDefaultProps,
+} from '@chenzy-design/core';
 export {
   ResizeObserver,
   resize,
@@ -536,15 +546,16 @@ export {
   SideBarContainer,
   SideBarAnnotation,
   SideBarCodeContent,
-  SideBarMcpConfigure,
+  SideBarMCPConfigure,
   SideBarFileContent,
+  SideBarCodeItem,
   SideBarFileItem,
   sideBarMeta,
   type SideBarOption,
   type SideBarMode,
   type SideBarAnnotationItem,
   type SideBarAnnotationGroup,
-  type SideBarMcpOption,
+  type SideBarMCPOption,
   type CodeItemProps,
   type FileItemProps,
   type SideBarImageUploadOptions,

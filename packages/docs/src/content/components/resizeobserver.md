@@ -3,7 +3,6 @@ title: ResizeObserver 尺寸监听
 name: resizeobserver
 category: other
 brief: 无渲染尺寸监听工具组件，封装浏览器原生 ResizeObserver，监听元素盒模型尺寸变化并抛出归一化尺寸。
-docMode: inline
 ---
 
 <script>

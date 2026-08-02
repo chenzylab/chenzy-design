@@ -3,7 +3,6 @@ title: AutoComplete 自动完成
 name: autocomplete
 category: input
 brief: 输入框自动填充。
-docMode: inline
 ---
 
 <script>

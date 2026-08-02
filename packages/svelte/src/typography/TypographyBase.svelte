@@ -879,4 +879,24 @@
     vertical-align: middle;
     color: var(--cd-color-typography-copied-icon-success);
   }
+
+  /* —— RTL（对齐 Semi typography/rtl.scss）——
+     前置图标与复制/已复制按钮的单侧外边距换边。
+     ⚠️ `-ellipsis-expand` 只清 margin-left 不补 margin-right ——
+     Semi 源码在此处**显式注释掉了** `margin-right: 8px`（原样保留其取舍，不擅自补）。 */
+  :global(.cd-rtl) :global(.cd-typography) {
+    direction: rtl;
+  }
+  :global(.cd-rtl) :global(.cd-typography-icon) {
+    margin-right: auto;
+    margin-left: var(--cd-spacing-typography-iconprefix-marginright);
+  }
+  :global(.cd-rtl) :global(.cd-typography-ellipsis-expand) {
+    margin-left: auto;
+  }
+  :global(.cd-rtl) :global(.cd-typography-action-copy),
+  :global(.cd-rtl) :global(.cd-typography-action-copied) {
+    margin-left: auto;
+    margin-right: var(--cd-spacing-typography-copyicon-marginleft);
+  }
 </style>

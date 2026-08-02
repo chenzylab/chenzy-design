@@ -153,4 +153,6 @@ export const dataDisplayTokens = {
 
   // —— motion ——
   'motion-timeline-head-custom-transform': { value: 'translate(-50%, -50%)', category: 'animation', label: '自定义节点位移', usage: '时间轴自定义图标节点位移（Semi $motion-timeline_head_custom-transform）' },
+  // RTL 下节点挂在轴的另一侧，X 位移取正（Semi 为此单列了一个 -rtl 变量，本库镜像之）
+  'motion-timeline-head-custom-transform-rtl': { value: 'translate(50%, -50%)', category: 'animation', label: '自定义节点位移（RTL）', usage: 'RTL 下时间轴自定义图标节点位移（Semi $motion-timeline_head_custom-transform-rtl）' },
 } satisfies TokenGroup;

@@ -3,7 +3,6 @@ title: InputNumber 数字输入框
 name: inputnumber
 category: input
 brief: 通过鼠标或键盘，输入范围内的数值，与 Input 不同的是它带有针对数字场景的步进器操作区，配合 Parser 使用可以展示更复杂的内容格式。
-docMode: inline
 ---
 
 <script>

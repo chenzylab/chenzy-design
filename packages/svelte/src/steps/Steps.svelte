@@ -636,4 +636,65 @@
   .cd-steps-nav.cd-steps-small :global(.cd-steps-item .cd-steps-item-title) {
     font-size: var(--cd-font-size-small);
   }
+
+  /* —— RTL（逐条对齐 Semi steps/rtl.scss）——
+     三种形态（默认 / basic / nav）各自声明 direction；
+     item 与 content 的外边距、basic 的标题内边距与连接线位置整体换边。 */
+  :global(.cd-rtl) .cd-steps,
+  :global(.cd-rtl) .cd-steps-basic,
+  :global(.cd-rtl) .cd-steps-nav {
+    direction: rtl;
+  }
+
+  /* 默认形态：item 右外边距 → 左；content 左外边距 → 右 */
+  :global(.cd-rtl)
+    .cd-steps:not(.cd-steps-basic):not(.cd-steps-nav)
+    :global(.cd-steps-item) {
+    margin-right: auto;
+    margin-left: var(--cd-spacing-steps-item-marginright);
+  }
+  :global(.cd-rtl)
+    .cd-steps:not(.cd-steps-basic):not(.cd-steps-nav)
+    :global(.cd-steps-item:last-child) {
+    margin-left: 0;
+  }
+  :global(.cd-rtl)
+    .cd-steps:not(.cd-steps-basic):not(.cd-steps-nav)
+    :global(.cd-steps-item-content) {
+    margin-left: auto;
+    margin-right: var(--cd-spacing-steps-item-content-marginleft);
+  }
+
+  /* basic 水平：item 左内边距 → 右；标题右内边距 → 左；连接线 left:100% → right:100% */
+  :global(.cd-rtl) .cd-steps-basic.cd-steps-horizontal :global(.cd-steps-item) {
+    padding-left: 0;
+    padding-right: var(--cd-spacing-steps-basic-item-paddingleft);
+  }
+  :global(.cd-rtl) .cd-steps-basic.cd-steps-horizontal :global(.cd-steps-item:first-child) {
+    padding-right: 0;
+  }
+  :global(.cd-rtl) .cd-steps-basic :global(.cd-steps-item-title) {
+    padding-right: 0;
+    padding-left: var(--cd-spacing-steps-basic-item-title-paddingright);
+  }
+  :global(.cd-rtl)
+    .cd-steps-basic.cd-steps-horizontal.cd-steps-hasline
+    :global(.cd-steps-item-title::after) {
+    left: auto;
+    right: 100%;
+  }
+  :global(.cd-rtl)
+    .cd-steps-basic.cd-steps-horizontal
+    :global(.cd-steps-item:last-child .cd-steps-item-title) {
+    padding-left: 0;
+  }
+  /* basic 的图标列外边距换边 */
+  :global(.cd-rtl) .cd-steps-basic :global(.cd-steps-item-left) {
+    margin-right: 0;
+    margin-left: var(--cd-spacing-steps-basic-item-left-marginright);
+  }
+  /* vertical：Semi 直接清零外边距 */
+  :global(.cd-rtl) .cd-steps-basic.cd-steps-vertical :global(.cd-steps-item) {
+    margin: 0;
+  }
 </style>

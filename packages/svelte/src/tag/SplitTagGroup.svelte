@@ -59,4 +59,30 @@
     border-top-right-radius: var(--cd-tag-radius-circle);
     border-bottom-right-radius: var(--cd-tag-radius-circle);
   }
+
+  /* —— RTL —— 分裂标签的 1px 间隙换到左侧；首末圆角随视觉顺序互换。
+     （direction:rtl 会让 first/last-child 在视觉上左右调转，
+       故圆角规则也要跟着换边，否则圆角落在中缝上。） */
+  :global(.cd-rtl) .cd-tag-split {
+    direction: rtl;
+  }
+  :global(.cd-rtl) .cd-tag-split :global(> .cd-tag) {
+    margin-right: 0;
+    margin-left: var(--cd-tag-split-gap);
+  }
+  :global(.cd-rtl) .cd-tag-split :global(> .cd-tag:last-child) {
+    margin-left: 0;
+  }
+  :global(.cd-rtl) .cd-tag-split :global(> .cd-tag:first-child) {
+    border-radius: 0 var(--cd-tag-radius) var(--cd-tag-radius) 0;
+  }
+  :global(.cd-rtl) .cd-tag-split :global(> .cd-tag:last-child) {
+    border-radius: var(--cd-tag-radius) 0 0 var(--cd-tag-radius);
+  }
+  :global(.cd-rtl) .cd-tag-split :global(> .cd-tag-circle:first-child) {
+    border-radius: 0 var(--cd-tag-radius-circle) var(--cd-tag-radius-circle) 0;
+  }
+  :global(.cd-rtl) .cd-tag-split :global(> .cd-tag-circle:last-child) {
+    border-radius: var(--cd-tag-radius-circle) 0 0 var(--cd-tag-radius-circle);
+  }
 </style>

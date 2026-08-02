@@ -46,19 +46,24 @@ Collapse（折叠面板）用于把一组内容区域分组收纳，通过点击
 
 ### Props — Collapse
 
-| 属性 | 类型 | 默认值 | 说明 |
-|---|---|---|---|
-| `activeKey` | `string \| string[]` | — | 受控展开项 key。accordion 模式建议传 string，多选传 string[] |
-| `defaultActiveKey` | `string \| string[]` | — | 非受控初始展开项 |
-| `accordion` | `boolean` | `false` | 手风琴模式，至多展开一个面板 |
-| `size` | `'small' \| 'default' \| 'large'` | `'default'` | 尺寸 |
-| `expandIconPosition` | `'left' \| 'right'` | `'right'` | 展开箭头位置 |
-| `bordered` | `boolean` | `true` | 是否显示分隔线/外边框 |
-| `keepDOM` | `boolean` | `true` | 收起时是否保留 Content DOM（false 等价 destroyOnHide） |
-| `lazyRender` | `boolean` | `false` | 首次展开前不渲染 Content |
-| `motion` | `boolean` | `true` | 是否启用展开/收起动画 |
-| `disabled` | `boolean` | `false` | 整体禁用所有面板 |
-| `class` / `style` | `string` | — | 透传根节点 |
+> 本表由 `packages/svelte/src/collapse/meta.ts` 真源生成（2026-07-30 重校）。此前本表列的 prop 多为 Semi 对齐前的旧名或已删除项（如 `value`→`activeKey`、`change`→`onChange`），改 prop 时请同步 meta.ts，勿手写「规划中」的 prop。
+
+| Prop | 类型 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| accordion | `boolean` | `false` | 手风琴模式，每次只允许展开一个面板 |
+| activeKey | `string\|string[]` | `undefined` | 受控属性，当前展开的面板 key（仅 onChange 不回写） |
+| class | `string` | `undefined` | 样式类名 |
+| clickHeaderToExpand | `boolean` | `true` | 点击 Header 展开收起，否则只响应点击箭头 |
+| collapseIcon | `Snippet` | `IconChevronUp` | 自定义折叠图标（展开态显示） |
+| defaultActiveKey | `string\|string[]` | `undefined` | 初始化选中面板的 key |
+| expandIcon | `Snippet` | `IconChevronDown` | 自定义展开图标（收起态显示） |
+| expandIconPosition | `'left'\|'right'` | `right` | 展开图标位置 |
+| keepDOM | `boolean` | `false` | 是否保留隐藏的面板 DOM 树，默认销毁 |
+| lazyRender | `boolean` | `false` | 配合 keepDOM，为 true 时挂载时不渲染内容 |
+| motion | `boolean` | `true` | 是否开启动画 |
+| style | `string` | `undefined` | 内联 CSS 样式 |
+| onChange | `(activeKey: string[], event: MouseEvent) => void` | `undefined` | 切换面板的回调 |
+| children | `Snippet` | `undefined` | 内嵌 <Collapse.Panel> 列表 |
 
 ### Props — Collapse.Panel
 
@@ -74,12 +79,7 @@ Collapse（折叠面板）用于把一组内容区域分组收纳，通过点击
 
 ### Events
 
-| 事件 | 载荷（detail） | 触发时机 |
-|---|---|---|
-| `on:change` | `{ activeKey: string \| string[], key: string, expanded: boolean }` | 任一面板展开/收起后（受控同步源） |
-| `on:expand` | `{ key: string }` | 某面板被展开 |
-| `on:collapse` | `{ key: string }` | 某面板被收起 |
-| `on:headerClick` | `{ key: string, event: MouseEvent }` | Header 被点击（含 disabled 拦截前，可用于埋点） |
+> 本组件无事件回调 prop（meta.events 为空）。此前本表列的回调均未实现，已删。
 
 ### Slots / Snippets
 

@@ -52,37 +52,40 @@ Transfer（穿梭框）用于在两组数据集合之间移动条目，实现"�
 
 ### Props
 
-| 名称 | 类型 | 默认值 | 说明 |
-|---|---|---|---|
-| value | `(string \| number)[]` | `[]` | 受控：已选项的 key 数组 |
-| defaultValue | `(string \| number)[]` | `[]` | 非受控初始已选 key |
-| dataSource | `TransferItem[]` | `[]` | 全量数据源，`TransferItem = { key; label; disabled?; ...rest }` |
-| type | `'list' \| 'groupList' \| 'treeList'` | `'list'` | 数据形态：平铺 / 分组 / 树 |
-| treeProps | `{ filterTreeNode?; defaultExpandedKeys?; expandAll? }` | - | `type='treeList'` 时透传给内部树：`filterTreeNode` 自定义搜索匹配、`defaultExpandedKeys` 初始展开、`expandAll` 默认全展开 |
-| filter | `boolean \| ((input, item) => boolean)` | `true` | 是否启用搜索及自定义过滤逻辑 |
-| onSearch | `(input: string, panel: 'source'\|'selected') => void` | - | 远程搜索回调（启用即视为受控搜索） |
-| searchPlaceholder | `string` | i18n | 搜索框占位（可见文案，走 i18n 默认） |
-| size | `'small' \| 'default' \| 'large'` | `'default'` | 尺寸 |
-| status | `'default' \| 'warning' \| 'error'` | `'default'` | 校验态 |
-| disabled | `boolean` | `false` | 整体禁用 |
-| draggable | `boolean` | `false` | 已选栏是否可拖拽排序 |
-| virtualize | `false \| { itemSize: number; height: number }` | `false` | 虚拟化配置（大数据） |
-| oneWay | `boolean` | `false` | 单向模式：已选栏仅展示与移除 |
-| showPanelTitle | `boolean` | `true` | 是否显示栏头标题与计数 |
-| emptyContent | `{ left?: Snippet; right?: Snippet; search?: Snippet }` | - | 空态自定义 |
-| loading | `boolean` | `false` | 加载态（远程） |
-| className / style | `string` | - | 容器透传 |
+> 本表由 `packages/svelte/src/transfer/meta.ts` 真源生成（2026-07-30 重校）。此前本表列的 prop 多为 Semi 对齐前的旧名或已删除项（如 `value`→`activeKey`、`change`→`onChange`），改 prop 时请同步 meta.ts，勿手写「规划中」的 prop。
+
+| Prop | 类型 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| style | `string` | `undefined` | 根容器内联样式（对齐 Semi style） |
+| class | `string` | `undefined` | 根容器自定义类名（对齐 Semi className） |
+| value | `(string\|number)[]` | `undefined` | 受控已选 key 数组；提供则为受控 |
+| defaultValue | `(string\|number)[]` | `[]` | 非受控初始已选 key |
+| dataSource | `TransferItem[] \| TransferGroup[] \| TransferTreeNode[]` | `[]` | 平铺条目（key/label/disabled/group）、分组结构 {title, children}[]，或树结构 {key,label,children}[]（treeList）；树模式下源面板内嵌复用 Tree 组件，仅叶子可迁移到平铺目标面板，已迁移叶子在源树置灰 |
+| type | `'list'\|'groupList'\|'treeList'` | `'list'` | 数据形态：平铺/分组/树（对齐 Semi type） |
+| filter | `boolean \| ((input, item) => boolean)` | `true` | 是否显示本地搜索框，或传自定义匹配函数（对齐 Semi filter） |
+| disabled | `boolean` | `false` |  |
+| draggable | `boolean` | `false` | 右侧已选列可鼠标拖拽重排（HTML5 DnD）；新顺序经 reorder 纯函数算出仅通过 onChange 通知，受控 value 不回写 |
+| virtualize | `{ height?: number; width?: number\|string; itemSize: number }` | `undefined` | 右侧已选列虚拟化（对齐 Semi VirtualizeProps，仅右侧生效；draggable 时禁用） |
+| onSearch | `(input: string) => void` | `undefined` | 远程搜索：提供后切远程模式，本地不再过滤，由父按 input 更新 dataSource（对齐 Semi 单参签名） |
+| loading | `boolean` | `false` | 远程加载中：源面板显示加载态 |
+| onChange | `(values: (string\|number)[], items: TransferItem[]) => void` | `undefined` | 选中变更（对齐 Semi）：回传 (values, items) 两参 |
+| emptyContent | `{ left?: Snippet\|string; right?: Snippet\|string; search?: Snippet\|string }` | `undefined` | 自定义空态（对齐 Semi） |
+| inputProps | `object` | `undefined` | 透传给搜索框 Input 的额外参数 |
+| treeProps | `Omit<TreeProps, "value"\|"onChange">` | `undefined` | type=treeList 时透传给内部 Tree 组件的全部属性（对齐 Semi） |
+| showPath | `boolean` | `false` | type=treeList 时右侧已选项显示完整路径（renderSelectedItem 参数含 fullPath） |
+| pagination | `{ pageSize?: number; currentPage?: number; defaultCurrentPage?: number; onPageChange?: (page) => void }` | `undefined` | 左侧面板分页（仅 list/groupList；pageSize 默认 10） |
+| onSelect | `(item: TransferItem) => void` | `undefined` | 勾选单项时回调 |
+| onDeselect | `(item: TransferItem) => void` | `undefined` | 取消勾选单项时回调 |
+| renderSourceItem | `Snippet<[{item, onChange, checked}]>` | `undefined` | 自定义左侧条目渲染 |
+| renderSelectedItem | `Snippet<[{item, onRemove, sortableHandle, fullPath}]>` | `undefined` | 自定义右侧条目渲染（含 sortableHandle / fullPath） |
+| renderSourceHeader | `Snippet<[{num, showButton, allChecked, onAllClick, leafOnlyNum}]>` | `undefined` | 自定义左侧面板头部 |
+| renderSelectedHeader | `Snippet<[{num, showButton, onClear}]>` | `undefined` | 自定义右侧面板头部 |
+| renderSourcePanel | `Snippet<[SourcePanelProps]>` | `undefined` | 完全自定义左侧面板 |
+| renderSelectedPanel | `Snippet<[SelectedPanelProps]>` | `undefined` | 完全自定义右侧面板 |
 
 ### Events
 
-| 事件 | payload | 说明 |
-|---|---|---|
-| on:change | `{ value: Key[]; items: TransferItem[] }` | 已选集合变化（移动/拖拽/移除） |
-| on:search | `{ input: string; panel: 'source'\|'selected' }` | 搜索框输入变化（防抖后） |
-| on:select | `{ panel: 'source'\|'selected'; checkedKeys: Key[] }` | 某栏勾选项变化 |
-| on:moveToSelected | `{ keys: Key[] }` | 条目移入已选栏 |
-| on:moveToSource | `{ keys: Key[] }` | 条目移回候选栏 |
-| on:dragEnd | `{ value: Key[] }` | 已选栏拖拽排序完成（draggable 时） |
+> 本组件无事件回调 prop（meta.events 为空）。此前本表列的回调均未实现，已删。
 
 ### Methods
 
@@ -160,21 +163,24 @@ Transfer（穿梭框）用于在两组数据集合之间移动条目，实现"�
 
 用户可见文案零硬编码，全部走 i18n key；数字（计数）用 `Intl.NumberFormat` 本地化。
 
-| i18n key | 默认（zh-CN） | 说明 |
-|---|---|---|
-| Transfer.searchPlaceholder | 搜索 | 搜索框占位 |
-| Transfer.sourceTitle | 候选项 | 左栏标题 |
-| Transfer.selectedTitle | 已选项 | 右栏标题 |
-| Transfer.itemUnit | 项 | 计数单位 |
-| Transfer.countSelected | {selected}/{total} 项 | 栏头计数（用 Intl 格式化数字） |
-| Transfer.selectAll | 全选 | 全选 checkbox 辅助标签 |
-| Transfer.clear | 清空 | 已选栏清空操作 |
-| Transfer.moveToSelected | 移动到已选 | 右向按钮 aria-label |
-| Transfer.moveToSource | 移回候选 | 左向按钮 aria-label |
-| Transfer.empty | 暂无数据 | 空态 |
-| Transfer.searchEmpty | 无匹配结果 | 过滤空态 |
-| Transfer.movedAnnounce | 已移动 {count} 项 | live 播报 |
-| Transfer.loading | 加载中 | 远程加载态 |
+> 本表由 `packages/locale/src/zh_CN.ts` 真源生成（2026-07-30 重校）。键名与键值都是 Semi 契约，勿手写「规划中」的键——历史上本表列过大量从未实现的键名，见 [[locale-dangling-keys-render-raw-key]]。
+
+| i18n key | 默认（zh-CN） |
+| --- | --- |
+| `Transfer.placeholder` | 搜索 |
+| `Transfer.titleSource` | 源 |
+| `Transfer.emptyLeft` | 暂无数据 |
+| `Transfer.emptySearch` | 无搜索结果 |
+| `Transfer.emptyRight` | 暂无内容，可从左侧勾选 |
+| `Transfer.clear` | 清空 |
+| `Transfer.selectAll` | 全选 |
+| `Transfer.clearSelectAll` | 取消全选 |
+| `Transfer.total` | 总个数：{total} |
+| `Transfer.selected` | 已选个数：{total} |
+| `Transfer.moveToRight` | 移到右侧 |
+| `Transfer.remove` | 移除 |
+| `Transfer.dragSort` | 拖拽排序 |
+| `Transfer.loading` | 加载中… |
 
 计数与百分比一律 `Intl.NumberFormat(locale)`；无日期场景。
 

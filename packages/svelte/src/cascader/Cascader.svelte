@@ -31,6 +31,7 @@
     nextRovingIndex,
     type TreeNodeData,
     type CascaderFlatPath,
+    resolveDefault,
   } from '@chenzy-design/core';
   import { SvelteMap, SvelteSet } from 'svelte/reactivity';
   import type { Snippet } from 'svelte';
@@ -226,34 +227,34 @@
   let {
     value,
     defaultValue,
-    treeData = [],
+    treeData: treeDataProp,
     open: openProp,
-    defaultOpen = false,
-    multiple = false,
+    defaultOpen: defaultOpenProp,
+    multiple: multipleProp,
     size: sizeProp,
     validateStatus = 'default',
     placeholder,
     disabled: disabledProp,
-    changeOnSelect = false,
-    leafOnly = false,
+    changeOnSelect: changeOnSelectProp,
+    leafOnly: leafOnlyProp,
     filterTreeNode,
-    filterLeafOnly = true,
-    displayProp = 'label',
-    separator = ' / ',
+    filterLeafOnly: filterLeafOnlyProp,
+    displayProp: displayPropProp,
+    separator: separatorProp,
     maxTagCount,
     emptyContent,
-    zIndex = 1030,
+    zIndex: zIndexProp,
     getPopupContainer,
     loadData,
     displayRender,
     onChange,
-    'aria-label': ariaLabel = 'Cascader',
+    'aria-label': ariaLabelProp,
     ariaLabelledby,
     ariaDescribedby,
     ariaErrormessage,
     ariaRequired,
     class: className = '',
-    borderless = false,
+    borderless: borderlessProp,
     prefix,
     insetLabel,
     insetLabelId,
@@ -261,7 +262,7 @@
     clearIcon,
     expandIcon,
     arrowIcon,
-    motion = true,
+    motion: motionProp,
     mouseEnterDelay = 50,
     mouseLeaveDelay = 50,
     autoAdjustOverflow = true,
@@ -273,30 +274,30 @@
     onBlur,
     onFocus,
     preventScroll = false,
-    stopPropagation = true,
+    stopPropagation: stopPropagationProp,
     topSlot,
     bottomSlot,
-    searchPosition = 'trigger',
+    searchPosition: searchPositionProp,
     searchPlaceholder,
-    treeNodeFilterProp = 'label',
+    treeNodeFilterProp: treeNodeFilterPropProp,
     filterRender,
     filterSorter,
     onSearch,
-    remote = false,
+    remote: remoteProp,
     virtualizeInSearch,
-    autoMergeValue = true,
-    checkRelation = 'related',
+    autoMergeValue: autoMergeValueProp,
+    checkRelation: checkRelationProp,
     onChangeWithObject = false,
     max,
     onExceed,
-    showRestTagsPopover = false,
+    showRestTagsPopover: showRestTagsPopoverProp,
     restTagsPopoverProps,
-    showClear: showClearProp = false,
+    showClear: showClearProp,
     keyMaps,
-    clickToSelect = false,
-    enableLeafClick = false,
-    disableStrictly = false,
-    showNext = 'click',
+    clickToSelect: clickToSelectProp,
+    enableLeafClick: enableLeafClickProp,
+    disableStrictly: disableStrictlyProp,
+    showNext: showNextProp,
     onClear,
     onLoad,
     onSelect,
@@ -304,6 +305,33 @@
     onListScroll,
     triggerRender,
   }: Props = $props();
+  // cdGlobal 全局默认 props（对齐 Semi semiGlobal.config.overrideDefaultProps）：
+  // 优先级 = 显式传值 > cdGlobal['Cascader'] > 组件内置默认值。
+  const borderless = $derived(resolveDefault(borderlessProp, 'Cascader', 'borderless', false));
+  const leafOnly = $derived(resolveDefault(leafOnlyProp, 'Cascader', 'leafOnly', false));
+  const stopPropagation = $derived(resolveDefault(stopPropagationProp, 'Cascader', 'stopPropagation', true));
+  const motion = $derived(resolveDefault(motionProp, 'Cascader', 'motion', true));
+  const defaultOpen = $derived(resolveDefault(defaultOpenProp, 'Cascader', 'defaultOpen', false));
+  const zIndex = $derived(resolveDefault(zIndexProp, 'Cascader', 'zIndex', 1030));
+  // showClear 的全局默认在下方与「禁用/有选中」条件合并计算（见 hasSelection 处）。
+  const showClearResolved = $derived(resolveDefault(showClearProp, 'Cascader', 'showClear', false));
+  const changeOnSelect = $derived(resolveDefault(changeOnSelectProp, 'Cascader', 'changeOnSelect', false));
+  const disableStrictly = $derived(resolveDefault(disableStrictlyProp, 'Cascader', 'disableStrictly', false));
+  const autoMergeValue = $derived(resolveDefault(autoMergeValueProp, 'Cascader', 'autoMergeValue', true));
+  const multiple = $derived(resolveDefault(multipleProp, 'Cascader', 'multiple', false));
+  const filterLeafOnly = $derived(resolveDefault(filterLeafOnlyProp, 'Cascader', 'filterLeafOnly', true));
+  const showRestTagsPopover = $derived(resolveDefault(showRestTagsPopoverProp, 'Cascader', 'showRestTagsPopover', false));
+  const separator = $derived(resolveDefault(separatorProp, 'Cascader', 'separator', ' / '));
+  const treeNodeFilterProp = $derived(resolveDefault(treeNodeFilterPropProp, 'Cascader', 'treeNodeFilterProp', 'label'));
+  const displayProp = $derived(resolveDefault(displayPropProp, 'Cascader', 'displayProp', 'label'));
+  const treeData = $derived(resolveDefault(treeDataProp, 'Cascader', 'treeData', []));
+  const showNext = $derived(resolveDefault(showNextProp, 'Cascader', 'showNext', 'click'));
+  const enableLeafClick = $derived(resolveDefault(enableLeafClickProp, 'Cascader', 'enableLeafClick', false));
+  const clickToSelect = $derived(resolveDefault(clickToSelectProp, 'Cascader', 'clickToSelect', false));
+  const ariaLabel = $derived(resolveDefault(ariaLabelProp, 'Cascader', 'aria-label', 'Cascader'));
+  const searchPosition = $derived(resolveDefault(searchPositionProp, 'Cascader', 'searchPosition', 'trigger'));
+  const checkRelation = $derived(resolveDefault(checkRelationProp, 'Cascader', 'checkRelation', 'related'));
+  const remote = $derived(resolveDefault(remoteProp, 'Cascader', 'remote', false));
 
   // InputGroup 组级默认（size/disabled）：显式 prop 始终优先，否则回退组级，再回退组件默认。
   const group = getInputGroupContext();
@@ -706,7 +734,7 @@
   const hasSelection = $derived(
     multiple ? checkedLeafPaths.length > 0 : selectedChain.length > 0,
   );
-  const showClear = $derived(showClearProp && !disabled && hasSelection);
+  const showClear = $derived(showClearResolved && !disabled && hasSelection);
 
   // 单条路径回显文本：有 displayRender 走自定义（仍传 label 链 + 节点链）；
   // 否则按 displayProp 取 label 或 value 链，用 separator 连接。

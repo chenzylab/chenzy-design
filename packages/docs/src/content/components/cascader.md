@@ -3,7 +3,6 @@ title: Cascader 级联选择
 name: cascader
 category: input
 brief: 用于选择多级分类下的某个选项。
-docMode: inline
 ---
 
 <script>

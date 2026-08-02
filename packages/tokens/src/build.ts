@@ -7,7 +7,7 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { palette, paletteDark } from './global/color.js';
+import { palette, paletteDark, aiGeneralGradients } from './global/color.js';
 import * as scales from './global/scales.js';
 import { aliasLight, aliasDark } from './alias/index.js';
 import { componentTokens } from './components/index.js';
@@ -30,6 +30,8 @@ function vars(group: Record<string, string | { value: string }>, category = ''):
 
 const globalVars = [
   ...vars(palette, 'color'),
+  // AI general 各档渐变：由停靠点组合而成，必须排在停靠点之后（同 Semi 顺序）
+  ...vars(aiGeneralGradients, 'color'),
   ...vars(scales.spacing, 'spacing'),
   ...vars(scales.radius, 'border-radius'),
   ...vars(scales.fontSize, 'font-size'),
@@ -142,14 +144,19 @@ console.log('[tokens] built dist/tokens.css');
 
 // --- DSM manifest（结构化 token 元数据，供可视化编辑器消费）---
 // 把各 group 展开成带前缀的 { '--cd-xxx': value } map（复用与 vars() 相同的前缀规则）。
-function toMap(group: Record<string, string>, category = ''): Record<string, string> {
+function toMap(
+  group: Record<string, string | { value: string; css?: string }>,
+  category = '',
+): Record<string, string> {
   const cat = category ? `${category}-` : '';
   const out: Record<string, string> = {};
-  for (const [k, v] of Object.entries(group)) out[`${PREFIX}${cat}${k}`] = v;
+  // 走 tokenValue：alias 层的 TokenRef 要取 css（var(...)），不是字面值。
+  for (const [k, v] of Object.entries(group)) out[`${PREFIX}${cat}${k}`] = tokenValue(v);
   return out;
 }
 const globalMap: Record<string, string> = {
   ...toMap(palette, 'color'),
+  ...toMap(aiGeneralGradients, 'color'),
   ...toMap(scales.spacing, 'spacing'),
   ...toMap(scales.radius, 'border-radius'),
   ...toMap(scales.fontSize, 'font-size'),
@@ -165,7 +172,8 @@ const globalMap: Record<string, string> = {
 const manifest = buildManifest({
   global: globalMap,
   aliasLight: toMap(aliasLight),
-  aliasDark: toMap(aliasDark as Record<string, string>),
+  aliasDark: toMap(aliasDark),
+  globalDark: toMap(paletteDark, 'color'),
   component: componentTokens as TokenGroup,
 });
 writeFileSync(

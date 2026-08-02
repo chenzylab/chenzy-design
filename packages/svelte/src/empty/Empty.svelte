@@ -184,10 +184,10 @@
   }
 
   /* RTL：镜像 semi-foundation/empty/rtl.scss */
-  :global([dir='rtl']) .cd-empty {
+  :global(.cd-rtl) .cd-empty {
     direction: rtl;
   }
-  :global([dir='rtl']) .cd-empty-horizontal .cd-empty-content {
+  :global(.cd-rtl) .cd-empty-horizontal .cd-empty-content {
     margin-left: auto;
     margin-right: var(--cd-spacing-empty-content-horizontal-marginleft);
   }

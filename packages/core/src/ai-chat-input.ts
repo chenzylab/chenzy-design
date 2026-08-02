@@ -23,16 +23,32 @@ export interface AIChatInputAttachment {
   status?: string;
   size?: string | number;
   url?: string;
-  type?: 'file' | 'directory';
+  /**
+   * 类型标记。对齐 Semi：这里**不是**枚举，而是「后缀或 mime 尾段」——
+   * getAttachmentType 优先取本字段，缺省时才从 name 后缀 / fileInstance.type 推导。
+   */
+  type?: string;
+  /** 原始 File（Upload 透传），用于按 mime 判定图片与推导类型。 */
+  fileInstance?: { type?: string };
+  /** 上传进度百分比（配合 status='uploading' 显示环形进度）。 */
+  percent?: number;
   [key: string]: unknown;
 }
 
 /**
  * 引用块（阶段 2 渲染于编辑区上方 top area）。对齐 Semi Reference：
- * type='text' 时显示 content，其它类型显示 name；图片类型（type='image' 或 url 是图）显示缩略图。
+ * type='text' 时显示 content，其它类型显示 name；图片按 isImageType 判定后显示缩略图。
  */
 export interface AIChatInputReference {
-  type: string;
+  /**
+   * 类型标记。**可选**：缺省时由 getAttachmentType 从 name 后缀推导
+   * （如 `飞书文档.docx` → docx → word 图标）。
+   *
+   * Semi 的 TS 声明把它写成必填，但其官方 demo 的引用项大多不带 type、纯靠后缀推导
+   * （其 demo 是无类型 JSX，编译期查不出来）。本库按**实际契约**声明为可选，
+   * 否则用户照着 Semi 文档写就会被类型报错。
+   */
+  type?: string;
   id: string;
   /** type='text' 时的文本内容。 */
   content?: string;
@@ -40,6 +56,8 @@ export interface AIChatInputReference {
   name?: string;
   /** 图片/文件的 URL（图片类型用作缩略图 src）。 */
   url?: string;
+  /** 原始 File，用于按 mime 判定图片与推导类型（与附件共用 isImageType/getAttachmentType）。 */
+  fileInstance?: { type?: string };
   [key: string]: unknown;
 }
 
@@ -207,11 +225,75 @@ export function referenceLabel(ref: AIChatInputReference): string {
   return ref.name ?? ref.id;
 }
 
-/** 该引用是否应按图片渲染（type='image' 或 url 以常见图片扩展名结尾）。 */
+/** 图片 mime 前缀（对齐 Semi strings.PIC_PREFIX）。 */
+export const AI_CHAT_INPUT_PIC_PREFIX = 'image/';
+
+/** 按图片处理的后缀白名单（对齐 Semi strings.PIC_SUFFIX_ARRAY，逐条一致，不含 svg）。 */
+export const AI_CHAT_INPUT_PIC_SUFFIX = ['png', 'jpg', 'jpeg', 'gif', 'bmp', 'webp'];
+
+/**
+ * 取附件/引用的类型标记（对齐 Semi getAttachmentType）：
+ * 显式 type 优先，其次取 name 的后缀，再退到 fileInstance.type 的尾段，最后 'UNKNOWN'。
+ */
+export function getAttachmentType(item: AIChatInputAttachment | AIChatInputReference): string {
+  const { type, name, fileInstance } = item;
+  if (type) return type;
+  const suffix = name?.split('.').pop();
+  return suffix ?? fileInstance?.type?.split('/').pop() ?? 'UNKNOWN';
+}
+
+/**
+ * 是否按图片渲染（对齐 Semi isImageType）：fileInstance.type 以 image/ 开头，
+ * 或 name 的后缀命中图片白名单。
+ *
+ * 注意与 Semi 一致地**只看 name 不看 url**，且白名单不含 svg。
+ */
+export function isImageType(item: AIChatInputAttachment | AIChatInputReference): boolean {
+  const { name, fileInstance } = item;
+  const suffix = name?.split('.').pop();
+  return (
+    Boolean(fileInstance?.type?.startsWith(AI_CHAT_INPUT_PIC_PREFIX)) ||
+    (suffix !== undefined && AI_CHAT_INPUT_PIC_SUFFIX.includes(suffix))
+  );
+}
+
+/**
+ * 后缀 → 图标分类（对齐 Semi getContentType，逐条照搬）。
+ *
+ * `ts` 在 Semi 的 Map 里出现两次（code 与 video），Map 后写覆盖前写故实际取 'video'。
+ * 这是 Semi 的既定行为，作为契约照搬，不"修正"。
+ */
+export function getContentType(type: string): string {
+  return AI_CHAT_INPUT_CONTENT_TYPE_MAP.get(type) ?? 'unknown';
+}
+
+const AI_CHAT_INPUT_CONTENT_TYPE_MAP = new Map<string, string>([
+  // 文档
+  ['docx', 'word'], ['doc', 'word'], ['txt', 'word'], ['epub', 'word'], ['mobi', 'word'],
+  // 代码
+  ['js', 'code'], ['ts', 'code'], ['jsx', 'code'], ['tsx', 'code'], ['java', 'code'],
+  ['py', 'code'], ['c', 'code'], ['cpp', 'code'], ['go', 'code'], ['rust', 'code'],
+  ['php', 'code'], ['sql', 'code'], ['html', 'code'], ['css', 'code'], ['scss', 'code'],
+  ['less', 'code'], ['md', 'code'], ['json', 'code'],
+  // 表格 / 演示
+  ['xlsx', 'excel'], ['xls', 'excel'], ['pptx', 'ppt'], ['ppt', 'ppt'],
+  // 视频
+  ['mp4', 'video'], ['mkv', 'video'], ['avi', 'video'], ['mov', 'video'], ['wmv', 'video'],
+  ['prores', 'video'], ['flv', 'video'], ['ts', 'video'], ['webm', 'video'], ['3gp', 'video'],
+  // 音频
+  ['flac', 'audio'], ['wav', 'audio'], ['alac', 'audio'], ['ape', 'audio'], ['mp3', 'audio'],
+  ['aac', 'audio'], ['ogg', 'audio'], ['wma', 'audio'], ['m4a', 'audio'], ['amr', 'audio'],
+  ['midi', 'audio'],
+  // 图片
+  ['png', 'image'], ['jpg', 'image'], ['jpeg', 'image'], ['gif', 'image'], ['bmp', 'image'],
+  ['webp', 'image'],
+  // pdf
+  ['pdf', 'pdf'],
+]);
+
+/** 该引用是否应按图片渲染。对齐 Semi：引用与附件共用 isImageType。 */
 export function isImageReference(ref: AIChatInputReference): boolean {
-  if (ref.type === 'image') return true;
-  const url = ref.url ?? '';
-  return /\.(png|jpe?g|gif|bmp|webp|svg)(\?|#|$)/i.test(url);
+  return isImageType(ref);
 }
 
 // ————————————————————————————————————————————————————————————————
@@ -230,6 +312,11 @@ export interface AIChatInputSkill {
   value?: string;
   /** 是否有配套模版（选中后展示模版按钮）。 */
   hasTemplate?: boolean;
+  /**
+   * 技能项前置图标（对齐 Semi `Skill.icon?: ReactNode`）。
+   * core 是无框架层，故此处只声明为未知；Svelte 侧按 Snippet 渲染。
+   */
+  icon?: unknown;
   [key: string]: unknown;
 }
 
@@ -339,13 +426,9 @@ export function removeConfigureField(
 // 阶段 5 · Adapter 桥（AIChatInput → AIChatDialogue / OpenAI API）
 // ————————————————————————————————————————————————————————————————
 
-/**
- * 附件是否应按图片处理。Attachment.type 是 'file'|'directory'（非 mime），故按
- * name/url 的图片扩展名判定。
- */
+/** 附件是否应按图片处理。与渲染层共用 Semi 的 isImageType，避免两套判定漂移。 */
 function isImageAttachment(att: AIChatInputAttachment): boolean {
-  const s = `${att.url ?? ''} ${att.name ?? ''}`;
-  return /\.(png|jpe?g|gif|bmp|webp|svg)(\?|#|\s|$)/i.test(s);
+  return isImageType(att);
 }
 
 /**

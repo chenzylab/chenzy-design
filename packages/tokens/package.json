@@ -28,6 +28,8 @@
   ],
   "scripts": {
     "build": "tsx src/build.ts && tsc -p tsconfig.json",
+
+    "check:semi-parity": "node scripts/check-semi-variable-parity.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "a11y:contrast": "tsx src/contrast-check.ts"
   },

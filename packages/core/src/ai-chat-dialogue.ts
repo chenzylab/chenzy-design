@@ -91,6 +91,33 @@ export interface ToolCallContentItem extends CommonContentItem {
   [x: string]: unknown;
 }
 
+/**
+ * 步骤块里的单条动作（对齐 Semi foundation.ts `Action`）。
+ * icon 由渲染层提供（Snippet/组件），此处只管数据。
+ */
+export interface DialogueStepAction {
+  status?: string;
+  summary?: string;
+  description?: string;
+  icon?: unknown;
+}
+
+/** 单个步骤（对齐 Semi foundation.ts `Step`）。status='completed' 显示完成图标，否则显示 loading。 */
+export interface DialogueStep {
+  type?: string;
+  status?: string;
+  summary?: string;
+  actions?: DialogueStepAction[];
+}
+
+/**
+ * 步骤内容块（对齐 Semi MESSAGE_ITEM_TYPE.STEPS = 'steps'）：
+ * 一组可展开的步骤，每步下挂若干 action。
+ */
+export interface StepsContentItem extends CommonContentItem {
+  steps?: DialogueStep[];
+}
+
 /** 兜底：任意自定义块（对齐 Semi CustomObject）。 */
 export type CustomContentItem = { type?: string; [key: string]: unknown };
 
@@ -100,6 +127,7 @@ export type ContentItem =
   | OutputMessage
   | ToolCallContentItem
   | Reasoning
+  | StepsContentItem
   | CustomContentItem;
 
 // —— Message ——
@@ -276,6 +304,48 @@ export function chatCompletionToMessage(chatCompletion: ChatCompletionObject): A
 /** 判定 ContentItem 的展示类型（供渲染层分派）。 */
 export function contentItemType(item: ContentItem): string {
   return (item as CommonContentItem).type ?? 'unknown';
+}
+
+// —— 文件卡片类型分类（逐条镜像 Semi aiChatDialogue/constants.ts）——
+// 注意与 ai-chat-input 的 getContentType 是**两套**：那边覆盖 60+ 后缀、返回
+// word/code/excel/ppt/video/audio/image/pdf；这里只有 6 类，且分类边界不同
+// （如 txt 在这里算 word、ts 在这里算 code）。Semi 两处也是各写各的，不复用。
+export const DIALOGUE_DOCUMENT_TYPES = ['doc', 'docx', 'txt', 'word'];
+export const DIALOGUE_IMAGE_TYPES = ['jpeg', 'jpg', 'png', 'gif'];
+export const DIALOGUE_PDF_TYPES = ['pdf'];
+export const DIALOGUE_EXCEL_TYPES = ['excel', 'xlsx', 'xls'];
+export const DIALOGUE_CODE_TYPES = ['json', 'js', 'ts', 'jsx', 'tsx'];
+export const DIALOGUE_VIDEO_TYPES = ['mp4', 'avi', 'mov', 'wmv', 'flv', 'mkv'];
+
+/** 文件卡片的图标分类（对齐 Semi renderFileIcon 的 if-else 顺序）。 */
+export type DialogueFileIconType = 'word' | 'image' | 'pdf' | 'excel' | 'code' | 'video' | 'default';
+
+/**
+ * 取文件卡片的图标分类。**顺序与 Semi 的 if-else 一致**（document → image → pdf →
+ * excel → code → video → default），不要改成 Map 查表：分类列表之间没有重叠，
+ * 但顺序是 Semi 的既定契约。
+ */
+export function dialogueFileIconType(type: string | undefined): DialogueFileIconType {
+  if (type === undefined) return 'default';
+  if (DIALOGUE_DOCUMENT_TYPES.includes(type)) return 'word';
+  if (DIALOGUE_IMAGE_TYPES.includes(type)) return 'image';
+  if (DIALOGUE_PDF_TYPES.includes(type)) return 'pdf';
+  if (DIALOGUE_EXCEL_TYPES.includes(type)) return 'excel';
+  if (DIALOGUE_CODE_TYPES.includes(type)) return 'code';
+  if (DIALOGUE_VIDEO_TYPES.includes(type)) return 'video';
+  return 'default';
+}
+
+/**
+ * 取文件的真实类型标记（对齐 Semi FileAttachment）：
+ * 优先 filename 后缀，缺省时退到 fileInstance.type 的尾段。
+ */
+export function dialogueFileRealType(file: {
+  filename?: string;
+  fileInstance?: { type?: string };
+}): string | undefined {
+  const suffix = file.filename?.split('.').pop();
+  return suffix ?? file.fileInstance?.type?.split('/').pop();
 }
 
 /** 规范化 Message.content 为 ContentItem[]（string → 单个 output_text 块）。 */

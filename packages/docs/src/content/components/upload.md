@@ -3,7 +3,6 @@ title: Upload 上传
 name: upload
 category: input
 brief: 文件选择上传。
-docMode: inline
 ---
 
 <script>

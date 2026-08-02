@@ -3,7 +3,6 @@ title: Avatar 头像
 name: avatar
 category: show
 brief: 头像，支持图片或字符展示。
-docMode: inline
 ---
 
 <script>

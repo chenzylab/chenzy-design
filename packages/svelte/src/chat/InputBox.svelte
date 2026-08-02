@@ -138,7 +138,12 @@
     if (files && files.length > 0) uploadApi?.addFiles(Array.from(files));
   }
 
-  const placeholderText = $derived(placeholder ?? loc().t('Chat.placeholder'));
+  // 严格对齐 Semi：placeholder 原样透传，**无内置兜底文案**
+  // （Semi API 表默认值为 `-`，inputBox/index.tsx 直接 `placeholder={placeholder}`，
+  //  且 Semi 的 Chat locale 里根本没有 placeholder 键）。
+  // 本库原先兜底到一个自造的 Chat 占位 locale 键，会让未传该 prop 时凭空多出
+  // 「输入消息」占位符，与 Semi 视觉不符；现已连键一并删除。
+  // （注释里别写出完整的 loc().t 调用形式——locale-coverage 闸门按文本扫描引用，会误报悬空键。）
 </script>
 
 {#if renderInputArea}
@@ -203,12 +208,20 @@
 {/snippet}
 {#snippet inputNode()}
   <div class="cd-chat-inputBox-inputArea">
-    <!-- rows=1 确保初始单行（对齐 Semi textAutoSize minRows:1/maxRows:5；本库 autosize 初始高度取 rows）。 -->
+    <!--
+      严格对齐 Semi（chat/inputBox/index.tsx:14,107）：只传
+      `autosize={{ minRows: 1, maxRows: 5 }}`，**不传 rows**。
+      实测 Semi 官网该 textarea `rows=4`（TextArea 默认值）、无内联 height、
+      计算高 90px = 4×20px 行高 + 10px 纵向 padding —— 即 Semi 的初始框是 4 行高，
+      autosize 只在输入时增高、不会收缩到 minRows。
+      本库原先显式 `rows={1}` 会让初始框收成 31px 单行，文字贴着顶部、
+      与 Semi 视觉不符（用户反馈「输入内容未垂直居中」的根因）。
+    -->
     <TextArea
       class="cd-chat-inputBox-textarea"
       value={content}
-      placeholder={placeholderText}
-      rows={1}
+      placeholder={placeholder ?? ''}
+      aria-label={loc().t('Chat.editor')}
       autosize={{ minRows: 1, maxRows: 5 }}
       onInput={handleInput}
       onKeyDown={handleKeydown}
@@ -244,7 +257,9 @@
   >
     {#if dragUpload && dragActive}
       <div class="cd-chat-dropArea" aria-hidden="true">
-        <span class="cd-chat-dropArea-text">{loc().t('Chat.upload')}</span>
+        <!-- 对齐 Semi：拖拽遮罩用专用 dropAreaText（「将文件放到这里」），
+             原先误用 Chat.upload（那是上传按钮的 aria-label「上传附件」）。 -->
+        <span class="cd-chat-dropArea-text">{loc().t('Chat.dropAreaText')}</span>
       </div>
     {/if}
     <div class="cd-chat-inputBox-inner">
@@ -298,11 +313,23 @@
   .cd-chat-inputBox-inputArea :global(.cd-input-textarea-wrapper) {
     flex-grow: 1;
   }
-  .cd-chat-inputBox-inputArea :global(.cd-input-textarea-wrapper),
-  .cd-chat-inputBox-inputArea :global(.cd-input-textarea-wrapper:hover),
-  .cd-chat-inputBox-inputArea :global(.cd-input-textarea-wrapper:focus-within) {
+  /*
+    对齐 Semi：输入框视觉全部由外层 -container 承担（Semi 的 -container 只有静态 border，
+    无 hover / focus 规则），内层 TextArea 必须压平成透明无边框。
+
+    ⚠️ 特异性：Input 自带 `.cd-input-textarea-wrapper.svelte-xxx:hover/:focus-within` 是 (0,3,0)，
+    而本处 `.cd-chat-inputBox-inputArea.svelte-xxx .cd-input-textarea-wrapper` 只有 (0,2,0)，
+    直接写会被 Input 自己的态样式盖过 —— 表现为 hover 变底色、聚焦冒出蓝框，与 Semi 不符。
+    用 Semi 原样的 `:not(#neverExistElement)`（永不存在的 id 选择器）抬到 (1,2,0) 压过它。
+    同 [[wrapper-owns-visual-inner-input-flattened]]。
+  */
+  .cd-chat-inputBox-inputArea :global(.cd-input-textarea-wrapper:not(#neverExistElement)),
+  .cd-chat-inputBox-inputArea :global(.cd-input-textarea-wrapper:hover:not(#neverExistElement)),
+  .cd-chat-inputBox-inputArea
+    :global(.cd-input-textarea-wrapper:focus-within:not(#neverExistElement)) {
     border: none;
     background-color: transparent;
+    box-shadow: none;
   }
 
   /* —— clearButton（对齐 Semi -clearButton：圆形 48px + 大图标） —— */
@@ -361,5 +388,12 @@
   }
   .cd-chat-dropArea-text {
     font-size: var(--cd-chat-dropArea-text-font-size);
+  }
+
+  /* —— RTL（对齐 Semi chat/rtl.scss）——
+     发送按钮的箭头正向是 rotate(45deg)（指右上），RTL 下改 rotate(225deg) 指左上，
+     与 Semi 取值完全一致。 */
+  :global(.cd-rtl) .cd-chat-inputBox-sendButton-icon {
+    transform: rotate(225deg);
   }
 </style>

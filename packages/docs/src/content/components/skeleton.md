@@ -3,7 +3,6 @@ title: Skeleton 骨架屏
 name: skeleton
 category: feedback
 brief: 在需要等待加载内容的位置提供的占位组件。
-docMode: inline
 ---
 
 <script>

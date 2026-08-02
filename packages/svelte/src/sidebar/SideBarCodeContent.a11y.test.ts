@@ -5,7 +5,8 @@
 // 不测内核真实语法高亮/JSON DOM（那部分留给 Playwright）。
 import { describe, it, expect, vi } from 'vitest';
 import { renderWithLocale } from '../test-utils/a11y.js';
-import SideBarCodeContent, { type CodeItemProps } from './SideBarCodeContent.svelte';
+import SideBarCodeContent from './SideBarCodeContent.svelte';
+import type { CodeItemProps } from './SideBarCodeItem.svelte';
 
 const CC = SideBarCodeContent as unknown as Parameters<typeof renderWithLocale>[0];
 
@@ -27,13 +28,13 @@ const CODES: CodeItemProps[] = [
 describe('SideBarCodeContent — 渲染 / 分流', () => {
   it('遍历 codes 渲染折叠面板，头部显示 name', () => {
     const { container } = renderWithLocale(CC, { props: { codes: CODES } });
-    const root = container.querySelector('.cd-sidebar-code-content');
+    const root = container.querySelector('.cd-sidebar-collapse-code');
     expect(root).toBeTruthy();
     // 两个折叠面板。
     const items = container.querySelectorAll('.cd-collapse-item');
     expect(items.length).toBe(2);
     // 头部 name 文本。
-    const texts = [...container.querySelectorAll('.cd-sidebar-code-content-head-text')].map(
+    const texts = [...container.querySelectorAll('.cd-sidebar-collapse-header-text')].map(
       (n) => n.textContent,
     );
     expect(texts).toEqual(['config.json', 'main.ts']);
@@ -44,7 +45,7 @@ describe('SideBarCodeContent — 渲染 / 分流', () => {
       props: { codes: [{ key: 'only-key', content: 'x' }] as CodeItemProps[] },
     });
     expect(
-      container.querySelector('.cd-sidebar-code-content-head-text')?.textContent,
+      container.querySelector('.cd-sidebar-collapse-header-text')?.textContent,
     ).toBe('only-key');
   });
 
@@ -66,7 +67,7 @@ describe('SideBarCodeContent — 渲染 / 分流', () => {
 
   it('空 codes 渲染空折叠列表，不抛错', () => {
     const { container } = renderWithLocale(CC, { props: { codes: [] } });
-    expect(container.querySelector('.cd-sidebar-code-content')).toBeTruthy();
+    expect(container.querySelector('.cd-sidebar-collapse-code')).toBeTruthy();
     expect(container.querySelectorAll('.cd-collapse-item').length).toBe(0);
   });
 });
@@ -76,7 +77,7 @@ describe('SideBarCodeContent — 交互回调', () => {
     const onExpand = vi.fn();
     const { container } = renderWithLocale(CC, { props: { codes: CODES, onExpand } });
     const btn = container.querySelector(
-      '.cd-sidebar-code-content-expand',
+      '.cd-sidebar-collapse-header-expand-btn',
     ) as HTMLElement | null;
     expect(btn).toBeTruthy();
     btn!.click();
@@ -88,7 +89,7 @@ describe('SideBarCodeContent — 交互回调', () => {
 
   it('展开按钮 aria-label / title 走 i18n（en_US SideBar.expand = "Expand"）', () => {
     const { container } = renderWithLocale(CC, { props: { codes: CODES } });
-    const btn = container.querySelector('.cd-sidebar-code-content-expand');
+    const btn = container.querySelector('.cd-sidebar-collapse-header-expand-btn');
     expect(btn?.getAttribute('aria-label')).toBe('Expand');
     expect(btn?.getAttribute('title')).toBe('Expand');
   });
@@ -107,5 +108,37 @@ describe('SideBarCodeContent — 交互回调', () => {
     expect(onChange.mock.calls[0]?.[0]).toContain('cfg');
     // 受控：DOM 未回写，仍无展开项。
     expect(container.querySelector('.cd-collapse-item-active')).toBeNull();
+  });
+});
+
+// 折叠头图标。Semi widget/code.tsx:62/68 用的是具名图标（IconCodeStroked /
+// IconFullScreenStroked），且图标**直接放在 -header-content 里**，没有 -header-icon
+// 这层包裹。本库原来两处都是手写 svg，且多包了一层 span。
+describe('SideBarCodeContent — 折叠头图标（对齐 Semi）', () => {
+  const codes = [{ key: 'a', name: 'a.ts', content: 'const a = 1' }];
+
+  // 注：这条的「反向断言」无法用「加回一层 span」来验红 —— Svelte 编译器会把
+  // 没有任何 CSS 规则引用的 class 直接从产物里剥掉，加回去也渲染不出来。
+  // 正向断言（图标是 -header-content 的直接子节点）可验红，见下一条。
+  it('图标直接在 -header-content 下，无 -header-icon 包裹层', () => {
+    const { container } = renderWithLocale(CC, { props: { codes } });
+    const head = container.querySelector('.cd-sidebar-collapse-header-content');
+    expect(head, '折叠头应渲染').not.toBeNull();
+    expect(head!.querySelector('svg'), '应有图标').not.toBeNull();
+    // 正向断言：图标容器是 -header-content 的**直接子节点**（Semi 的结构）。
+    const firstEl = head!.firstElementChild;
+    expect(firstEl?.querySelector('svg') ?? firstEl, '首个子节点应是图标本身').not.toBeNull();
+    expect(firstEl?.classList.contains('cd-icon'), '首个子节点应是具名图标组件').toBe(true);
+    expect(
+      container.querySelector('.cd-sidebar-collapse-header-icon'),
+      '-header-icon 是本库自造的包裹层，Semi 没有',
+    ).toBeNull();
+  });
+
+  it('展开按钮内是图标（非手写 svg 的 path 串）', () => {
+    const { container } = renderWithLocale(CC, { props: { codes } });
+    const btn = container.querySelector('.cd-sidebar-collapse-header-expand-btn');
+    expect(btn, '展开按钮应渲染').not.toBeNull();
+    expect(btn!.querySelector('svg')).not.toBeNull();
   });
 });

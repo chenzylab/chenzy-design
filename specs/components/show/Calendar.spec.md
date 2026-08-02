@@ -59,41 +59,47 @@ Calendar 是一个面向"事件展示与排程"场景的日历组件，区别于
 
 ### Props
 
+> 本表由 `packages/svelte/src/calendar/meta.ts` 真源生成（2026-07-30 重校）。此前本表列的 prop 多为 Semi 对齐前的旧名或已删除项（如 `value`→`activeKey`、`change`→`onChange`），改 prop 时请同步 meta.ts，勿手写「规划中」的 prop。
+
 | Prop | 类型 | 默认值 | 说明 |
-|---|---|---|---|
-| `value` | `Date` | `new Date()` | 当前展示锚点日期（受控）。配合 `on:change`。 |
-| `defaultValue` | `Date` | `new Date()` | 非受控初始锚点日期。 |
-| `mode` | `'month' \| 'week' \| 'day' \| 'range'` | `'month'` | 视图模式（受控）。配合 `on:modeChange`。 |
-| `events` | `CalendarEvent[]` | `[]` | 事件数据。`{ key, start, end, allDay?, title, category?, color?, disabled? }`。 |
-| `weekStartsOn` | `0\|1\|2\|3\|4\|5\|6` | 由 locale 决定 | 一周起始日（0=周日）。 |
-| `displayValue` | `[Date, Date]` | — | range 模式下显式可视范围。 |
-| `dayRange` | `[number, number]` | `[0, 24]` | week/day 时间轴起止小时。 |
-| `markWeekend` | `boolean` | `true` | 是否弱化高亮周末列。 |
-| `disabledDate` | `(date: Date) => boolean` | — | 禁用某些日期格交互。 |
-| `minDate` / `maxDate` | `Date` | — | 可导航边界。 |
-| `showCurrentTimeIndicator` | `boolean` | `true` | week/day 显示当前时间红线。 |
-| `maxEventsPerDay` | `number` | `3` | month 视图每格最多展示条数，超出折叠为 `+N`。 |
-| `scrollToTime` | `Date \| number` | 当前时刻 | week/day 初始滚动定位时刻。 |
-| `timeZone` | `string` | 本地时区 | IANA 时区，影响所有日期换算。 |
-| `locale` | `string` | 全局 locale | 覆盖语言/区域格式。 |
-| `weekendDays` | `number[]` | `[0,6]` | 视为周末的日序。 |
-| `loading` | `boolean` | `false` | 数据加载中遮罩。 |
-| `virtual` | `boolean` | `false` | 大事件量启用事件层虚拟化。 |
-| `class` / `style` | `string` | — | 透传根节点。 |
+| --- | --- | --- | --- |
+| displayValue | `Date` | `new Date()` | 展示锚点日期（决定展示的天/周/月） |
+| range | `[Date, Date]` | `undefined` | mode='range' 时必传，左闭右开 [start, end) |
+| header | `Snippet` | `undefined` | 自定义头部内容（对齐 Semi header；缺省不渲染头部） |
+| events | `CalendarEvent[]` | `[]` | 事件列表（key 必填且唯一） |
+| mode | `'day' \| 'week' \| 'month' \| 'range'` | `'week'` | 视图模式 |
+| showCurrTime | `boolean` | `true` | 显示当前时间红线（日/周/多日视图，当天列） |
+| weekStartsOn | `0\|1\|2\|3\|4\|5\|6` | `0` | 一周起始(0=周日) |
+| scrollTop | `number` | `400` | 日/周视图默认滚动区高度（px） |
+| markWeekend | `boolean` | `false` | 区分周末列（灰底） |
+| minEventHeight | `number` | `Number.MIN_SAFE_INTEGER` | 日/周/多日视图事件块最小高度（px） |
+| width | `number \| string` | `undefined` | 日历整体宽度 |
+| height | `number \| string` | `600` | 日历整体高度 |
+| class | `string` | `undefined` | 根节点自定义类名（对齐 Semi className） |
+| style | `string` | `undefined` | 根节点内联样式（对齐 Semi style：合并在 height/width 之后，可覆盖二者） |
+| onClick | `(e: Event, date: Date) => void` | `undefined` | 点击日期格（对齐 Semi function(e, date)）：日/周视图精确到半小时，月视图精确到日 |
+| onClose | `(e: Event) => void` | `undefined` | 月视图 +N 卡片关闭回调（对齐 Semi function(e)） |
+| onMoreClick | `(e: Event, date: Date, remaining: number) => void` | `undefined` | 月视图点「还有 N 项」回调（对齐 Semi function(e, date, remaining)） |
+| renderTimeDisplay | `(hour: number) => unknown` | `undefined` | 自定义日/周视图时间文案（返回字符串即可） |
+| renderDateDisplay | `Snippet<[Date]>` | `undefined` | 自定义 week/range 视图日期表头（接收 date 的 Snippet，对齐 Semi ReactNode） |
+| dateGridRender | `(dateString: string, date: Date) => Snippet \| null \| undefined` | `undefined` | 自定义单元格/列额外内容（dateString = date.toString()，对齐 Semi） |
+| allDayEventsRender | `(events: CalendarEvent[]) => Snippet \| null \| undefined` | `undefined` | 自定义顶部全天区渲染 |
+
+**事件**（回调 prop 形式，对齐 Semi）：
+
+| 事件 | 说明 |
+| --- | --- |
+| `onClick` | 点击日期格（日/周半小时、月日） |
+| `onMoreClick` | 月视图点「还有 N 项」 |
+| `onClose` | 月视图 +N 卡片关闭 |
 
 ### Events
 
-| Event | payload | 说明 |
-|---|---|---|
-| `on:change` | `{ value: Date }` | 锚点日期变化（翻页/跳转/today）。 |
-| `on:modeChange` | `{ mode: CalendarMode }` | 视图模式切换。 |
-| `on:dateClick` | `{ date: Date, nativeEvent }` | 点击空白日格/时间槽。 |
-| `on:dateDblClick` | `{ date: Date }` | 双击空白槽（常用于新建事件入口）。 |
-| `on:eventClick` | `{ event: CalendarEvent, nativeEvent }` | 点击事件块。 |
-| `on:eventMouseEnter` / `on:eventMouseLeave` | `{ event }` | 事件 hover（用于 tooltip 联动）。 |
-| `on:rangeChange` | `{ start: Date, end: Date }` | 可视范围变化（用于按需拉取事件）。 |
-| `on:focusDateChange` | `{ date: Date }` | 键盘焦点格变化。 |
-| `on:moreClick` | `{ date: Date, events: CalendarEvent[] }` | 点击 `+N more`。 |
+| 事件 | 说明 |
+| --- | --- |
+| `onClick` | 点击日期格（日/周半小时、月日） |
+| `onMoreClick` | 月视图点「还有 N 项」 |
+| `onClose` | 月视图 +N 卡片关闭 |
 
 ### Slots
 
@@ -160,22 +166,15 @@ Calendar 是一个面向"事件展示与排程"场景的日历组件，区别于
 - `weekStartsOn` 默认从 locale 推导（`Intl.Locale().weekInfo`，缺失时降级周一/周日规则）。
 - 数字（`+N more` 的 N、年份）用 `Intl.NumberFormat`。
 
-| i18n key | 默认（en） | 说明 |
-|---|---|---|
-| `Calendar.today` | "Today" | 回到今天按钮 |
-| `Calendar.prev` | "Previous" | 上一页（aria-label） |
-| `Calendar.next` | "Next" | 下一页（aria-label） |
-| `Calendar.modeMonth` | "Month" | 视图切换 |
-| `Calendar.modeWeek` | "Week" | 视图切换 |
-| `Calendar.modeDay` | "Day" | 视图切换 |
-| `Calendar.allDay` | "All day" | 全天事件行标题 |
-| `Calendar.moreCount` | "+{count} more" | 溢出折叠（带参数复数） |
-| `Calendar.morePopoverTitle` | "Events on {date}" | `+N` 弹层标题 |
-| `Calendar.weekNumber` | "Wk {n}" | 周序号（可选列） |
-| `Calendar.noEvents` | "No events" | 空态 |
-| `Calendar.loading` | "Loading events…" | 加载态（aria） |
-| `Calendar.eventTimeRange` | "{start} – {end}" | 事件 aria 时间范围 |
-| `Calendar.gridLabel` | "Calendar, {range}" | grid 的 aria-label |
+> 本表由 `packages/locale/src/zh_CN.ts` 真源生成（2026-07-30 重校）。键名与键值都是 Semi 契约，勿手写「规划中」的键——历史上本表列过大量从未实现的键名，见 [[locale-dangling-keys-render-raw-key]]。
+
+| i18n key | 默认（zh-CN） |
+| --- | --- |
+| `Calendar.allDay` | 全天 |
+| `Calendar.AM` | 上午{time}时 |
+| `Calendar.PM` | 下午{time}时 |
+| `Calendar.remaining` | 还有 {count} 项 |
+| `Calendar.datestring` | 日 |
 
 复数处理通过 `Intl.PluralRules` 区分 `moreCount` 的单复数。
 

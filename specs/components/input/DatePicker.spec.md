@@ -45,80 +45,88 @@ DatePicker 是一个日期/时间选择组件，通过输入框触发浮层日�
 > 说明：单点选择（`type=date|dateTime|month|year`）由 `DatePicker` 提供；日期区间选择（`type=dateRange|dateTimeRange|monthRange`）由配套的 **`RangePicker`** 提供（双面板），其 API 见下文「RangePicker」小节，权威元数据见 `packages/svelte/src/date-picker/range-meta.ts`。下表为 `DatePicker`（单点）Props，权威元数据见 `packages/svelte/src/date-picker/meta.ts`。
 
 ### Props（DatePicker）
+
+> 本表由 `packages/svelte/src/date-picker/meta.ts` 真源生成（2026-07-30 重校）。此前本表列的 prop 多为 Semi 对齐前的旧名或已删除项（如 `value`→`activeKey`、`change`→`onChange`），改 prop 时请同步 meta.ts，勿手写「规划中」的 prop。
+
 | Prop | 类型 | 默认值 | 说明 |
-|---|---|---|---|
-| `type` | `'date'\|'dateTime'\|'month'\|'year'` | `'date'` | 选择形态（区间形态见 RangePicker） |
-| `value` | `Date \| Date[] \| null` | — | 受控值（`multiple` 时为 `Date[]`） |
-| `defaultValue` | `Date \| null` | `null` | 非受控初始值 |
-| `defaultPickerValue` | `Date \| Date[]` | — | 面板初始定位日期（非受控，不改选中值）；仅无选中值时 seed 面板游标显示的月/年 |
-| `open` | `boolean` | — | 受控浮层显隐 |
-| `defaultOpen` | `boolean` | `false` | 非受控初始显隐 |
-| `format` | `string` | 由 type+locale 推导 | 显示/解析格式（token 串 `YYYY/MM/DD/HH/mm/ss`）；传后触发器变可键入文本框，解析走 `formatDate/parseDateString`，不传沿用 Intl 显示 |
-| `placeholder` | `string` | `'请选择日期'` | 占位文案 |
-| `size` | `'small'\|'default'\|'large'` | `'default'` | 触发器尺寸 |
-| `density` | `'default'\|'compact'` | `'default'` | `compact` 时面板更紧凑 |
-| `status` | `'default'\|'warning'\|'error'` | `'default'` | 校验态 |
-| `disabled` | `boolean` | `false` | 禁用 |
-| `borderless` | `boolean` | `false` | 无边框模式 |
-| `clearable` | `boolean` | `true` | 是否可清除 |
-| `showClear` | `boolean` | `true` | 是否显示清除按钮（受 `clearable` 控制） |
-| `multiple` | `boolean` | `false` | 多选（仅 `type=date`），`value` 变为 `Date[]` |
-| `max` | `number` | — | `multiple=true` 时最多选择数量 |
-| `disabledDate` | `(date: Date) => boolean` | — | 禁用日期判定 |
-| `disabledTime` | `(date: Date) => { disabledHours?:()=>number[]; disabledMinutes?:(h:number)=>number[]; disabledSeconds?:(h:number,m:number)=>number[] }` | — | 禁用时间（dateTime） |
-| `disabledTimePicker` | `boolean` | `false` | 禁止时间选择 |
-| `hideDisabledOptions` | `boolean` | `false` | 隐藏被禁用的时间选项（默认仅置灰） |
-| `showSecond` | `boolean` | `true` | dateTime：是否显示秒列 |
-| `needConfirm` | `boolean` | `false` | dateTime 时需点确认才写入 |
-| `weekStart` | `0\|1\|2\|3\|4\|5\|6` | `0` | 一周起始日（0=周日 … 6=周六） |
-| `weekStartsOn` | `0\|1\|2\|3\|4\|5\|6` | — | `weekStart` 别名（`weekStart` 优先） |
-| `startYear` | `number` | — | 年份滚轮最小年 |
-| `endYear` | `number` | — | 年份滚轮最大年 |
-| `yearAndMonthOpts` | `{ yearCyclic?:boolean; monthCyclic?:boolean }` | — | 透传给年月 ScrollList 的参数 |
-| `autoSwitchDate` | `boolean` | `true` | 年月滚轮里选完年/月后自动切回日期网格视图（仅 date/dateTime） |
-| `insetInput` | `boolean` | `false` | 在面板顶部内嵌可编辑输入框（仅 date/dateTime）：date 一个日期框，dateTime 日期框+时间框；与面板选择双向同步 |
-| `presets` | `{ label: string; value: Date \| (() => Date) }[]` | — | 快捷选项 |
-| `presetPosition` | `'left'\|'right'\|'top'\|'bottom'` | `'bottom'` | 快捷选项列表位置 |
-| `rangeSeparator` | `string` | `'~'` | 范围日期分隔符 |
-| `locale` | `string` | `'zh-CN'` | locale 标识 |
-| `timeZone` | `string` | 系统 | IANA 时区标识（当前实现：仅显示格式化层注入 `Intl { timeZone }`，不做完整跨时区值转换，底层 `Date` 绝对时刻不变） |
-| `autoFocus` | `boolean` | `false` | 挂载时自动聚焦 |
-| `preventScroll` | `boolean` | `false` | 聚焦时阻止滚动 |
-| `inputReadOnly` | `boolean` | `false` | 输入框 readonly 属性 |
-| `inputStyle` | `CSSProperties \| string` | — | 输入框内联样式 |
-| `prefix` | `Snippet \| string` | — | 触发器前缀内容，渲染在 input 左侧 |
-| `insetLabel` | `string \| Snippet` | — | 内嵌标签：浮入触发器左侧的常驻标签（纯展示，不影响值/解析） |
-| `insetLabelId` | `string` | — | `insetLabel` 的 id，经 `aria-labelledby` 关联触发器 combobox（仅 `insetLabel` 存在时生效） |
-| `clearIcon` | `Snippet` | — | 自定义清除按钮图标 |
-| `ariaLabel` | `string` | — | 触发器 aria-label |
-| `renderDate` | `Snippet<[{ day: number; fullDate: string }]>` | — | 自定义日期单元格内容 |
-| `renderFullDate` | `Snippet<[{ day: number; fullDate: string; dayStatus: DayStatus }]>` | — | 完全自定义日期格子 |
-| `triggerRender` | `Snippet<[{ value: Date \| Date[] \| null; placeholder: string }]>` | — | 完全自定义触发器 |
-| `topSlot` / `bottomSlot` | `Snippet` | — | 面板顶部 / 底部额外区域 |
-| `leftSlot` / `rightSlot` | `Snippet` | — | 面板左侧 / 右侧额外区域 |
-| `position` | `string` | `'bottomLeft'` | 浮层弹出位置 |
-| `autoAdjustOverflow` | `boolean` | `true` | 浮层自动调整位置防溢出 |
-| `spacing` | `number` | — | 触发器与浮层间距 |
-| `getPopupContainer` | `() => HTMLElement` | — | 浮层挂载容器 |
-| `dropdownClassName` | `string` | — | 下拉浮层 className |
-| `dropdownStyle` | `CSSProperties \| string` | — | 下拉浮层样式 |
-| `dropdownMargin` | `number \| { x?: number; y?: number }` | — | 浮层溢出冗余值 |
-| `zIndex` | `number` | `1030` | 浮层 z-index |
-| `motion` | `boolean` | `true` | 面板展开动画，false 时添加 `cd-datepicker`（关闭动画由 motion prop 控制，无独立修饰类） |
-| `stopPropagation` | `boolean` | `true` | 阻止浮层点击事件冒泡 |
-| `class` | `string` | `''` | 根节点自定义类名（对齐 Semi className） |
-| `style` | `string` | — | 根节点内联样式 |
-| `onChange` | `(value: Date \| Date[] \| null, dateString: string) => void` | — | 值变化回调；参数顺序由 `onChangeWithDateFirst` 控制（默认 value-first） |
-| `onChangeWithDateFirst` | `boolean` | `true` | `true`→`onChange(value, dateString)`（默认，value-first）；`false`→`onChange(dateString, value)` |
-| `onOpenChange` | `(open: boolean) => void` | — | 浮层显隐变化 |
-| `onParseError` | `(e: { text: string }) => void` | — | 手动键入解析失败 |
-| `onPanelChange` | `(e: { panelDate: Date }) => void` | — | 可见年月切换 |
-| `onPresetClick` | `(e: { preset }) => void` | — | 点击快捷选项 |
-| `onClear` | `(e: {}) => void` | — | 点击清除 |
-| `onConfirm` | `(e: { value: Date \| null }) => void` | — | 点击确认按钮 |
-| `onCancel` | `(date: Date \| Date[] \| null, dateStr: string) => void` | — | 点击取消按钮 |
-| `onClickOutSide` | `(e: MouseEvent) => void` | — | 点击外部关闭时触发 |
-| `onFocus` / `onBlur` | `(e: FocusEvent) => void` | — | 触发器焦点 |
+| --- | --- | --- | --- |
+| type | `'date'\|'dateRange'\|'year'\|'month'\|'monthRange'\|'dateTime'\|'dateTimeRange'` | `'date'` | 对齐 Semi TYPE_SET：单组件靠 type 承载 7 种形态（含 3 range） |
+| value | `Date \| Date[] \| [Date\|null, Date\|null] \| null` | `undefined` | 单选 Date；multiple 为 Date[]；range 为 [start,end] 元组 |
+| defaultValue | `Date \| Date[] \| [Date\|null, Date\|null] \| null` | `null` |  |
+| open | `boolean` | `undefined` |  |
+| defaultOpen | `boolean` | `false` |  |
+| placeholder | `string` | `'请选择日期'` |  |
+| size | `'small'\|'default'\|'large'` | `'default'` |  |
+| validateStatus | `'default'\|'warning'\|'error'` | `'default'` | 校验态（对齐 Semi validateStatus） |
+| disabled | `boolean` | `false` |  |
+| disabledDate | `(date: Date, options?: { rangeStart: string; rangeEnd: string; rangeInputFocus: "rangeStart" \| "rangeEnd" \| false }) => boolean` | `undefined` |  |
+| disabledTime | `(date: Date) => { disabledHours?: () => number[]; disabledMinutes?: (hour: number) => number[]; disabledSeconds?: (hour: number, minute: number) => number[] }` | `undefined` |  |
+| presets | `Array<PresetType \| (() => PresetType)>` | `[]` | 快捷选项（对齐 Semi）：每项 { text, start, end }，start/end 支持 Date/时间戳/日期串或返回它们的函数 |
+| locale | `Partial<Locale['DatePicker']>` | `undefined` | 局部覆盖 DatePicker 文案（对齐 Semi locale）：只给要改的字段，未给的回退 LocaleProvider |
+| localeCode | `string` | `undefined` | 覆盖 BCP 47 语言代码（对齐 Semi localeCode）：驱动月份/星期的 Intl 本地化；未传回退 LocaleProvider |
+| dateFnsLocale | `import('date-fns').Locale` | `undefined` | date-fns locale（对齐 Semi dateFnsLocale）：驱动日期解析/格式化的本地化 |
+| startDateOffset | `(date: Date) => Date` | `undefined` | 单击范围选择（周选择）：与 endDateOffset 同提供，单击某日即选定 [startDateOffset(clicked), endDateOffset(clicked)]；仅 dateRange/dateTimeRange |
+| endDateOffset | `(date: Date) => Date` | `undefined` | 单击范围选择的结束偏移 |
+| syncSwitchMonth | `boolean` | `false` | range 双面板同步翻月（对齐 Semi） |
+| rangeSeparatorNode | `Snippet \| string` | `undefined` | range 起止输入框之间的自定义分隔节点 |
+| timePickerOpts | `{ showSecond?: boolean; use12Hours?: boolean }` | `undefined` | 透传给内部时间列的配置（对齐 Semi timePickerOpts） |
+| defaultPickerValue | `Date \| Date[]` | `undefined` | 面板初始定位日期（非受控，不改选中值）；仅无选中值时 seed 面板游标显示的月/年 |
+| timeZone | `string` | `undefined` | 按 IANA 时区显示（仅格式化层注入 Intl { timeZone }；不做完整跨时区值转换，底层 Date 绝对时刻不变） |
+| format | `string` | `undefined` |  |
+| onChange | `(value: Date \| Date[] \| [Date\|null, Date\|null] \| null, dateString: string) => void` | `undefined` | 值变化回调；第二参 dateString 为格式化字符串（range 用 rangeSeparator 连接），参数顺序由 onChangeWithDateFirst 控制 |
+| onOpenChange | `(open: boolean) => void` | `undefined` |  |
+| onPanelChange | `(date: Date \| Date[], dateString: string \| string[]) => void` | `undefined` | 面板年/月切换回调（对齐 Semi） |
+| onPresetClick | `(item: Preset, e?: MouseEvent) => void` | `undefined` | 点击快捷选项（对齐 Semi (item, e)） |
+| onClear | `(e: MouseEvent) => void` | `undefined` | 点清除按钮回调 |
+| onConfirm | `(value, dateString: string) => void` | `undefined` | needConfirm 时点确认（对齐 Semi） |
+| onFocus | `(e: FocusEvent) => void` | `undefined` |  |
+| onBlur | `(e: FocusEvent) => void` | `undefined` |  |
+| insetLabel | `string \| Snippet` | `undefined` | 内嵌标签：浮入触发器左侧的常驻标签（纯展示，不影响值/解析） |
+| insetLabelId | `string` | `undefined` | insetLabel 的 id，经 aria-labelledby 关联触发器 combobox（仅 insetLabel 存在时生效） |
+| rangeSeparator | `string` | `' ~ '` | 范围日期分隔符（对齐 Semi DEFAULT_SEPARATOR_RANGE） |
+| autoSwitchDate | `boolean` | `true` | 年月滚轮（PANEL_YAM）里选完年/月后自动切回日期网格视图（仅 type=date/dateTime） |
+| autoAdjustOverflow | `boolean` | `true` | 浮层自动调整位置防溢出 |
+| insetInput | `boolean` | `false` | 在面板顶部内嵌可编辑输入框（仅 type=date/dateTime）：date 一个日期框，dateTime 日期框+时间框；与面板选择双向同步，键入解析复用 formatDate/parseDateString |
+| position | `string` | `'bottomLeft'` | 浮层弹出位置 |
+| spacing | `number` | `undefined` | 触发器与浮层间距 |
+| getPopupContainer | `() => HTMLElement` | `undefined` | 浮层挂载容器 |
+| weekStartsOn | `0\|1\|2\|3\|4\|5\|6` | `0` | 一周起始日（0=周日 … 6=周六） |
+| onCancel | `(value, dateString: string) => void` | `undefined` | needConfirm 时点取消（对齐 Semi） |
+| onChangeWithDateFirst | `boolean` | `true` | true→onChange(value, dateString)（默认，value-first）；false→onChange(dateString, value) |
+| onClickOutSide | `() => void` | `undefined` | 点击外部关闭时触发 |
+| borderless | `boolean` | `false` | 无边框模式 |
+| density | `'default' \| 'compact'` | `'default'` | compact 时面板更紧凑 |
+| prefix | `Snippet \| string` | `undefined` | 触发器前缀内容，渲染在 input 左侧 |
+| clearIcon | `Snippet` | `undefined` | 自定义清除按钮图标 |
+| showClear | `boolean` | `true` | 是否显示清除按钮（对齐 Semi 单一 showClear） |
+| inputReadOnly | `boolean` | `false` | 输入框 readonly 属性 |
+| inputStyle | `CSSProperties \| string` | `undefined` | 输入框内联样式 |
+| autoFocus | `boolean` | `false` | 挂载时自动聚焦 |
+| dropdownClassName | `string` | `undefined` | 下拉浮层 className |
+| dropdownStyle | `CSSProperties \| string` | `undefined` | 下拉浮层样式 |
+| dropdownMargin | `number \| { x?: number; y?: number }` | `undefined` | 浮层溢出冗余值 |
+| zIndex | `number` | `1030` | 浮层 z-index |
+| motion | `boolean` | `true` | 面板展开动画，false 时添加 cd-date-picker-no-motion |
+| preventScroll | `boolean` | `false` | 聚焦时阻止滚动 |
+| stopPropagation | `boolean` | `true` | 阻止浮层点击事件冒泡 |
+| topSlot | `Snippet` | `undefined` | 面板顶部额外区域 |
+| bottomSlot | `Snippet` | `undefined` | 面板底部额外区域 |
+| leftSlot | `Snippet` | `undefined` | 面板左侧额外区域 |
+| rightSlot | `Snippet` | `undefined` | 面板右侧额外区域 |
+| multiple | `boolean` | `false` | 多选（仅 type='date'），value 变为 Date[] |
+| max | `number` | `undefined` | multiple=true 时最多选择数量 |
+| startYear | `number` | `undefined` | 年份滚轮最小年 |
+| endYear | `number` | `undefined` | 年份滚轮最大年 |
+| renderDate | `Snippet<[{ day: number; fullDate: string }]>` | `undefined` | 自定义日期单元格内容 |
+| renderFullDate | `Snippet<[{ day: number; fullDate: string; dayStatus: DayStatus }]>` | `undefined` | 完全自定义日期格子 |
+| triggerRender | `Snippet<[{ value: Date \| Date[] \| [Date\|null, Date\|null] \| null; placeholder: string }]>` | `undefined` | 完全自定义触发器 |
+| hideDisabledOptions | `boolean` | `false` | 隐藏禁止的时间选项 |
+| disabledTimePicker | `boolean` | `false` | 禁止时间选择 |
+| needConfirm | `boolean` | `undefined` | 需点击确认才写入（dateTimeRange 默认 true，其它默认 false，对齐 Semi） |
+| presetPosition | `'left'\|'right'\|'top'\|'bottom'` | `'bottom'` | 快捷选项列表位置 |
+| yearAndMonthOpts | `{ yearCyclic?: boolean; monthCyclic?: boolean } \| Record<string, unknown>` | `undefined` | 透传给年月 ScrollList 的参数 |
+| class | `string` | `''` | 根节点自定义类名（对齐 Semi className） |
+| style | `string` | `undefined` | 根节点内联样式 |
 
 ### Methods
 
@@ -153,13 +161,13 @@ DatePicker 是一个日期/时间选择组件，通过输入框触发浮层日�
 | `defaultValue` | `[Date\|null, Date\|null] \| null` | `null` | 非受控初始区间 |
 | `startPlaceholder` | `string` | `'开始日期'` | 起始占位 |
 | `endPlaceholder` | `string` | `'结束日期'` | 结束占位 |
-| `maxRange` | `number` | — | 范围最大跨度（天），超出置灰禁用（monthRange 不适用） |
+| `maxRange`（**已删除**，Semi 无此 prop 且本库零实现） | `number` | — | 范围最大跨度（天），超出置灰禁用（monthRange 不适用） |
 | `needConfirm` | `boolean` | — | 需点确认才提交（dateTimeRange 默认 true，dateRange 默认 false） |
 | `startDateOffset` | `(date: Date) => Date` | — | 单击范围选择（如周选择）：与 `endDateOffset` 同时提供后，单击某日即选定 `[startDateOffset(clicked), endDateOffset(clicked)]`，一步完成；仅 dateRange/dateTimeRange 生效 |
 | `endDateOffset` | `(date: Date) => Date` | — | 单击范围选择的结束偏移；与 `startDateOffset` 同时提供才生效 |
 | `presets` | `{ label: string; value: [Date, Date] \| (() => [Date, Date]) }[]` | — | 快捷区间列表：点击直接选定整段 `[start, end]`（自动排序）；needConfirm 时进 pending 缓冲否则直接提交并关面板 |
 | `presetPosition` | `'left'\|'right'\|'top'\|'bottom'` | `'bottom'` | 快捷区间列表位置 |
-| `weekStart` | `0 \| 1` | `0` | 一周起始日 |
+| `weekStartsOn` | `0 \| 1` | `0` | 一周起始日 |
 | `position` | `string` | `'bottomLeft'` | 浮层弹出位置 |
 | `autoAdjustOverflow` | `boolean` | `true` | 浮层自动调整位置防溢出 |
 | `spacing` | `number` | — | 触发器与浮层间距（px） |
@@ -235,23 +243,70 @@ DatePicker 是一个日期/时间选择组件，通过输入框触发浮层日�
 - RTL：`ar`、`he` 等自动镜像。
 
 i18n keys：
-| key | 含义 |
-|---|---|
-| `DatePicker.placeholder` | 单日期占位 |
-| `DatePicker.rangePlaceholderStart` | 范围起始占位 |
-| `DatePicker.rangePlaceholderEnd` | 范围结束占位 |
-| `DatePicker.dialogLabel` | 浮层 aria-label「选择日期」 |
-| `DatePicker.now` | 「此刻」按钮 |
-| `DatePicker.today` | 「今天」 |
-| `DatePicker.confirm` | 确认按钮 |
-| `DatePicker.clear` | 清除按钮 aria-label |
-| `DatePicker.selectTime` | 切换到时间选择 |
-| `DatePicker.selectDate` | 切换回日期选择 |
-| `DatePicker.prevMonth` / `nextMonth` | 导航箭头 aria-label |
-| `DatePicker.prevYear` / `nextYear` | 年导航 aria-label |
-| `DatePicker.parseError` | 输入解析失败提示 |
-| `DatePicker.maxRangeExceeded` | 超出最大跨度提示 |
-| `DatePicker.rangeAnnounce` | 范围结果朗读模板（含 {start}{end}{days}） |
+
+> 本表由 `packages/locale/src/zh_CN.ts` 真源生成（2026-07-30 重校）。键名与键值都是 Semi 契约，勿手写「规划中」的键——历史上本表列过大量从未实现的键名，见 [[locale-dangling-keys-render-raw-key]]。
+
+| i18n key | 默认（zh-CN） |
+| --- | --- |
+| `DatePicker.placeholder.date` | 请选择日期 |
+| `DatePicker.placeholder.dateTime` | 请选择日期及时间 |
+| `DatePicker.placeholder.dateRange` | ['开始日期', '结束日期'] |
+| `DatePicker.placeholder.dateTimeRange` | ['开始日期', '结束日期'] |
+| `DatePicker.placeholder.monthRange` | ['开始月份', '结束月份'] |
+| `DatePicker.today` | 今天 |
+| `DatePicker.clear` | 清除 |
+| `DatePicker.prevMonth` | 上个月 |
+| `DatePicker.nextMonth` | 下个月 |
+| `DatePicker.prevYear` | 上一年 |
+| `DatePicker.nextYear` | 下一年 |
+| `DatePicker.prevDecade` | 上十年 |
+| `DatePicker.nextDecade` | 下十年 |
+| `DatePicker.triggerLabel` | 选择日期 |
+| `DatePicker.startPlaceholder` | 开始日期 |
+| `DatePicker.endPlaceholder` | 结束日期 |
+| `DatePicker.rangeTriggerLabel` | 选择日期范围 |
+| `DatePicker.switchYearMonth` | 快速选择年月 |
+| `DatePicker.backToDate` | 返回 |
+| `DatePicker.yearColumnLabel` | 年份 |
+| `DatePicker.monthColumnLabel` | 月份 |
+| `DatePicker.selectDate` | 选择日期 |
+| `DatePicker.selectTime` | 选择时间 |
+| `DatePicker.monthText` | ${year}年 ${month} |
+| `DatePicker.localeFormatToken.FORMAT_SWITCH_DATE` | yyyy-MM-dd |
+| `DatePicker.months.1` | 1月 |
+| `DatePicker.months.2` | 2月 |
+| `DatePicker.months.3` | 3月 |
+| `DatePicker.months.4` | 4月 |
+| `DatePicker.months.5` | 5月 |
+| `DatePicker.months.6` | 6月 |
+| `DatePicker.months.7` | 7月 |
+| `DatePicker.months.8` | 8月 |
+| `DatePicker.months.9` | 9月 |
+| `DatePicker.months.10` | 10月 |
+| `DatePicker.months.11` | 11月 |
+| `DatePicker.months.12` | 12月 |
+| `DatePicker.fullMonths.1` | 1 |
+| `DatePicker.fullMonths.2` | 2 |
+| `DatePicker.fullMonths.3` | 3 |
+| `DatePicker.fullMonths.4` | 4 |
+| `DatePicker.fullMonths.5` | 5 |
+| `DatePicker.fullMonths.6` | 6 |
+| `DatePicker.fullMonths.7` | 7 |
+| `DatePicker.fullMonths.8` | 8 |
+| `DatePicker.fullMonths.9` | 9 |
+| `DatePicker.fullMonths.10` | 10 |
+| `DatePicker.fullMonths.11` | 11 |
+| `DatePicker.fullMonths.12` | 12 |
+| `DatePicker.weeks.Mon` | 一 |
+| `DatePicker.weeks.Tue` | 二 |
+| `DatePicker.weeks.Wed` | 三 |
+| `DatePicker.weeks.Thu` | 四 |
+| `DatePicker.weeks.Fri` | 五 |
+| `DatePicker.weeks.Sat` | 六 |
+| `DatePicker.weeks.Sun` | 日 |
+| `DatePicker.footer.confirm` | 确定 |
+| `DatePicker.footer.cancel` | 取消 |
+| `DatePicker.presets` | 快捷选择 |
 
 ## 8. 文案
 

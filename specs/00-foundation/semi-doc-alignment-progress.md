@@ -1,8 +1,82 @@
 # Semi 文档整页对齐 — 进度清单（TODO）
 
 > 配合 `semi-doc-alignment-sop.md` 使用。**做完一个就在此勾选并写一行要点**，新会话读此文件即知进度，免重新排查。
-> 判真基准：以 md frontmatter 是否有 `docMode: inline` 为准（`grep -l "docMode: inline" packages/docs/src/content/components/*.md`），别只信本文件——本文件可能滞后。
+> **判真基准（务必用这条，别数本文件条目）**：分母是 `components.json` 的 **84** 个组件，
+> 不是本清单的条目数。**必须逐个核 md 是否存在**，一条命令：
+>
+> ```bash
+> node -e '
+> const fs=require("fs");
+> const j=JSON.parse(fs.readFileSync("packages/svelte/dist/components.json","utf8"));
+> const miss=Object.values(j.components).filter(m=>
+>   !fs.existsSync(`packages/docs/src/content/components/${m.name.toLowerCase()}.md`));
+> console.log(`${84-miss.length}/84 有 md，缺 ${miss.length}:`, miss.map(m=>m.name).join(", "));
+> '
+> ```
+>
+> ⚠️ **为什么强调这条**：旧基准写的是「md 页数应为 71」，而 71 正是本清单**自己列出的条目数** ——
+> 分子分母同源，于是永远显示 100%，**把 13 个从没进过清单的组件整个藏了起来**（详见下方「❌ 未开始」）。
+> 同理，历史条目里的 `grep -l "docMode: inline"` 也只能证明「已列出的都转了 inline」，
+> 证明不了「所有组件都有页」。**别只信本文件——本文件可能滞后，以上面的对账命令为准。**
+>
+> 当前真实进度：**84/84**（2026-07-31 补齐最后 13 个页，对账命令实测「84/84 有 md，缺 0」）。
+> （`docMode` 开关连同旧双 tab 渲染路径已在收尾清理中整体删除，md 现在是唯一渲染路径。）
 > 铁律见 SOP：demo 严格复刻 Semi（不简化、布局用本库 `<Space>`）、正文逐字抄 Semi 别顺手规整、API 表 `{}` 用反引号、**每个交互 demo 真机点击验证**（点了没反应先排 scrollY+dpr 坐标偏移，非组件 bug）。
+
+## ✅ 已完成：补齐 13 个从未建过的文档页（2026-07-30 发现 → 2026-07-31 清零）
+
+**这 13 个此前从未进过本清单**，导致「71/71 完成」看似 100% 实则 71/84。
+发现经过：用户让删 85 份无消费方的 `demos.ts`，动手前核对时发现
+demo `.svelte` 有 869 个而 md 只引用 743 个，顺藤摸出这批组件根本没有 md。
+
+**当前状态（真机实测 `/components/chat` 等）**：路由返回 200 但**页面是坏的** ——
+`ContentComponent` 为 null，正文区只剩页面自动补渲染的「设计变量」表，
+**0 个 demo、TOC 仅 1 项**，头部简介退化成 `components.json` 里给 AI 看的长技术说明（非 brief）。
+
+**成因**：旧双 tab 路径下这些页靠 `+page.ts` 的 `demos.ts` glob 渲染 demo；
+2026-07-30 收尾清理删掉该 glob 后，它们没有 md 可兜底 → 直接坏掉。
+**即：这是收尾清理引入的回归，不是历史遗留的空白页。**
+
+⚠️ **`demos.ts` 因此暂不能删** —— 这 13 份是重建 md 所需 demo 标题/说明的唯一来源
+（其余 72 份对应的页已有 md，删之无害，但要删就等这 13 个补完一起删，别分两次）。
+
+组件层大多早已对齐 Semi（见 [[plus-components-align-semi-batch]] / [[chat-align-semi-named-icons-and-scope]]），
+**缺的是文档页这一环**；demo `.svelte` 共 101 个都在，可直接复用。
+13 个在 Semi 侧**全部有蓝本**，无「Semi 无此页」的情况：
+
+| 组件 | category | 本库 demo | Semi 蓝本 | Semi ### 段 |
+|---|---|---|---|---|
+| Resizable | basic | 16 | `content/basic/resizable` | 18 |
+| AIChatDialogue | ai | 12 | `content/ai/aiChatDialogue` | 18 |
+| AIChatInput | ai | 8 | `content/ai/aiChatInput` | 18 |
+| SideBar | ai | 8 | `content/ai/sidebar` | 14 |
+| VideoPlayer | plus | 10 | `content/plus/videoPlayer` | 12 |
+| Chat | plus | 9 | `content/plus/chat` | 10 |
+| Feedback | feedback | 7 | `content/feedback/feedback` | 9 |
+| MarkdownRender | plus | 7 | `content/plus/markdownrender` | 7 |
+| Cropper | show | 5 | `content/show/cropper` | 8 |
+| Collapsible | show | 8 | `content/show/collapsible` | 6 |
+| DragMove | plus | 4 | `content/plus/dragMove` | 6 |
+| AudioPlayer | plus | 3 | `content/plus/audioPlayer` | 6 |
+| CodeHighlight | plus | 4 | `content/plus/codehighlight` | 5 |
+
+待办（按 SOP 逐个整页对齐，demo 数少的先做找手感）：
+
+- [x] codehighlight — inline 单页对齐 Semi（使用场景 / 代码演示：如何引入·基本用法(js+CSS 两块)·支持其他语言·自定义主题 / API）。**双向点名**：Semi `semi-ui/codeHighlight`(index.tsx) + `semi-foundation/codeHighlight`(scss/constants/variables) → 本库单目录，scss 内联进 `<style>`，无漏拆。**demo 逐字比对 Semi 源码：01/02/03 三个 code 字面量逐字节一致**（含 Semi 原文里 `'react"` 这个引号笔误也照留）。**04-custom-theme 是本库超集**（Semi 该章节只有文字无 demo）——保留并在正文用引用块写明理由（展示关闭默认主题后按正文默认色渲染），符合 SOP「超集须删或写明理由」。**设计变量章节不渲染是对的**：Semi `codeHighlight/variables.scss` 是空文件，本库亦无 `code-highlight` token 前缀，两边同为无 token。真机逐 demo 实测：4 块语言类分别 javascript/css/vala/javascript、行号行数 8/12/20/5 与源码行数一致、着色片段 42/43/107/31（vala 靠 onMount 动态 import `prism-vala.js` 生效）、第 4 块 `defaultTheme=false` 文字色 rgb(55,65,81) vs 默认块 rgb(135,30,158) 确有差异、无溢出、TOC 5 项、无 SSR 500。
+- [x] audioplayer — inline 单页对齐 Semi（代码演示：如何引入·基本用法·隐藏工具栏·主题 / API 参考：AudioPlayer + AudioInfo 两表 / 设计变量）。**双向点名**：`audioSlider.tsx`→`AudioSlider.svelte`；Semi `utils.ts`(formatTime) 与 `foundation.ts` 的框架无关逻辑落在 `@chenzy-design/core` 的 `audio-player.ts`（对齐 SOP 的 foundation→core 映射），无漏拆。**demo 按 Semi 源码逐字段修正 3 处**：①01 字符串形态 Semi 用的是 **audio2** 而非 audio1；②标题全部改回 Semi 原文（`音频标题` / `音频标题1` / `音频标题2`，原为自造的 Audio One/Two）；③布局由自造 `flex+gap:24` 改为 Semi 的 `width:100%` + 每个实例 `marginTop:10`；另 03-theme 去掉本库自加的 `autoPlay={false}`（Semi 该 demo 未传，默认值 false 与 Semi 一致，已核源码 `autoPlay = false`）。真机逐 demo 实测：6 个实例的标题/封面/主题/工具栏逐项对齐（#5 无工具栏、#6 为 light、数组形态才有上一首/下一首）、全部 `autoplay=false` 未自动播放；**播放按钮真机验证生效**（点击后 `audio.paused` true→false、`networkState=2 LOADING` 证明确在拉流）；设计变量章节自动渲染 10 行。
+- [x] dragmove — inline 单页对齐 Semi（使用场景 / 代码演示：如何引入·基本用法·限制拖动范围·自定义触发拖动的元素·自定义拖动后的位置处理 / API）。**4 个 demo 全部按 Semi 源码重写**（原 demo 偏离较大：01 是 140×72 灰卡+中文文案 vs Semi 80×80 主色方块+`Drag me`；02 缺 300×300 grey-2 容器与 `Constrainer` 标签；03 用标题栏当把手 vs Semi 用 `IconTransparentStroked` 图标；04 用 transform 平移 vs Semi 的「碰右边界改 right 定位 + 点击切换 60/100px 宽度」）。**修 API 表 1 处错标**：`constrainer='parent'` 我原标「本库补充」，实为 **Semi 自己就支持**（`semi-ui/dragMove/index.ts:75` 有 `constrainer === 'parent'` 分支 + propTypes `oneOf(['parent'])`），已改回。**发现并修一个真问题 + 沉淀为使用约定**：照搬 Semi 把 `position:absolute` 写在子元素上会让方块**溢出 DemoBox**——真因是 Semi 用 cloneElement 无包裹层、absolute 归方块，而本库 core 强制 absolute 的是 `.cd-drag-move` **包裹层**；子元素再 absolute 会脱离包裹层→包裹层塌成 `0×0`→DemoBox 只剩 88px。改为「初始 top/left 写在 `<DragMove style>`、子元素保持静态」后实测包裹层恢复 80×80、零溢出。已写进 md 注意事项第 3 条 + 记忆 [[dragmove-absolute-on-wrapper-not-child]]。顺带查明 **DragMove 不暴露 `ref`/`bind:ref`**（我一度写 `bind:ref` 会静默失效），demo04 改用 `e.target.closest('.cd-drag-move')` 取元素。真机实测：4 个 demo 全渲染（3 个 Constrainer 容器 + 图标把手 + 点击改宽度提示语）、拖拽真实生效且 **clamp 精确**（300 容器内 80 方块拖到极限停在 220 = 300−80）。
+- [x] collapsible — inline 单页对齐 Semi（使用场景 / 代码演示：如何引入·基本用法·自定义动画时间·嵌套使用·自定义折叠高度 + 本库补 3 段 / API 参考 / Accessibility·ARIA / FAQ）。**双向点名**无漏拆（Semi `animation.scss`+`collapsible.scss`→内联 `<style>`）。**Semi 只有 4 个 demo，本库 8 个**：多出的 fade / keepDOM / lazyRender 三段对应 **Semi 有 API 但没配示例**的 prop，保留并在正文用引用块写明「本库补充」；第 8 个 aria demo 挂在 Accessibility 章节下（Semi 该处本就有一段代码示例，本库改成可运行 demo）。四个 Semi 对应 demo 逐字核过：列表文案、`collapseHeight={60}`、遮罩渐变、`+ Show More`、`defaultValue={250}`+`<br/>`、嵌套结构均与 Semi 一致。13 个 prop 与 Semi API 表逐条对上。**类名核对**：Semi `semi-collapsible-wrapper` ↔ 本库 `cd-collapsible-wrapper` 一致；本库内层多一个 `cd-collapsible-content` 类（Semi 内层 div 无 class、只有内联 `overflow:hidden`+id），属样式承载方式差异，无害。**真机验证遇 hidden 冻结并判真**：后台标签下点 Toggle 后内容 DOM 渲染了（4 个 li）但 wrapper 高度恒 `0px`、收起也不卸载——判真法挂裸 `ResizeObserver` 探针实测 **fired=0**（而裸元素 offsetHeight 读得到 77px），证明是**浏览器冻结 RO 投递**、非组件问题（组件靠 RO 测内容高度撑开 wrapper；无高度变化→无 transition→无 transitionend→不卸载，链路自洽）。已把该现象写进 md FAQ（Semi 原 FAQ 只提了 `display:none` 的同源情况）。**因此补 browser project 用例**（真实 chromium、标签可见）断言「展开撑到 120px、收起归零并卸载」，并故意把 `isOpen` 写死验证该用例会红（非空转）。⚠️ 建夹具时一度用 `duration={0}` 导致收起不卸载，查 Semi 源码确认 **`duration=0` + `motion=true` 时 0ms 过渡不派发 transitionend、Semi 完全同构**（`semi-ui/collapsible/index.tsx:133/137/186`），属该组合固有行为非缺陷，夹具改回默认时长。
+- [x] cropper — inline 单页对齐 Semi（使用场景 / 代码演示：如何引入·基本用法·自定义裁切框比例·受控旋转缩放·裁切框设置·实时预览 / API / Methods）。**双向点名**无漏拆（Semi `foundation.ts`+`utils.ts` 的框架无关逻辑落 core）。19 个 prop 与 Semi API 表逐条对上，`getCropperCanvas` 已 `export function` 暴露。**demo 按 Semi 源码修正 2 类偏差**：①**图片资源**——本库 5 个 demo 各用不同的 `picsum.photos` 随机图，Semi 全部用同一张 `lf3-static.bytednsdoc.com/.../other/image.png`（实测 HTTP 200 / 375KB 可达），已统一；②**容器与结果图尺寸**——本库自造 `width:100%/height:300px` + 结果图 `max-height:240px`，改为 Semi 原值 `550×300 margin:20` + 结果图 `height:400`。真机逐 demo 实测：5 个实例图片全部加载（naturalSize 720×400）；**`getCropperCanvas` 真机验证**点「裁切」产出 `data:image` 且尺寸 400×400；**shape 切换**实测裁切框 `border-radius` 由 `0px`→`50%`；**`aspectRatio={3/4}`** 实测裁切框 225×300 = 比例 0.750 与期望完全一致；**`showResizeBox` 开关**实测角点数 8→0→8。⚠️ 两次差点误判：先用 `[class*="resize"]` 查调整块得 0，实际类名是 `cd-cropper-box-corner`；demo01 角点数为 4 而非 8 是因为前一步测试把它切到了 `round` 形态（该形态本就只有 4 个中点），非缺陷。
+- [x] markdownrender — inline 单页对齐 Semi（使用场景 / 代码演示：如何引入·基本用法·修改元素样式·仅纯 Markdown·添加自定义组件·添加插件（Semi 同样只有文字无 demo）/ API）。**双向点名**：Semi `components/` ↔ 本库 `components/`，无漏拆。**核心能力差异已在正文用 Notice 写明**：Semi 支持 Markdown + **MDX**（依赖 React `jsx/run-time`），**Svelte 生态无 jsx-runtime 故本库不支持 MDX**，`format` 仅接受 `'md'`、管线改用 unified（见 [[markdown-render-svelte-no-mdx-use-unified]]）；正文里插自定义组件改用 `components` 注册标签替代 MDX 正文 JSX。顺带说明这带来的**好处**：纯 md 模式下 `<` `{` 无需转义（Semi mdx 模式必须转义，并为此单列了「仅纯 Markdown」一节）。API 表 8 个 prop 逐条核源码（`format` 默认值实测 `resolveDefault(..., 'md')` 与文档一致）。真机逐 demo 实测：demo01 GFM 全渲染（表格1/列表7/加粗1/删除线1/链接1/分割线1）、demo02 h2 覆盖生效、demo03 h1 覆盖为主色 rgb(0,100,250) 且正文含未转义的 `{}` `<>`、demo04 自定义组件按钮渲染并**点击真的触发 JS**（反馈文案「点击了 MyButton（1 次）」）。**修一个真问题**：`MyButton.svelte` 原样照搬了 Semi 的 `alert('点击了 MyButton')`——**alert 是模态对话框，会阻塞页面全部后续脚本与自动化**，真机点击后直接把标签页冻死（CDP `Runtime.evaluate` 45s 超时、只能关标签重开）。改为就地文字反馈（`data-testid="click-feedback"` + 计数），演示目的（点击触发 JS 事件）完全等价且可验证。同 avatar demo 早先去 alert 的处理，见 [[demo-no-alert-blocks-automation]]。
+- [x] feedback — inline 单页对齐 Semi（代码演示：如何引入·基本使用·文字类型·单选反馈·多选反馈·自定义反馈内容·模态对话框形式·反馈完成提示 / API 参考 FeedbackProps）。**7 个 demo 与 Semi 7 段一一对应、无缺无超**；组件此前已破坏性重写对齐（见 [[feedback-semi-rewrite-and-shell-width-override]]），本轮 demo 逐段核对说明文字后照 Semi 措辞写正文。API 表逐 prop 核源码，并保留 Semi 的「mode=modal 额外支持 ModalProps / mode=popup 额外支持 SideSheetProps」说明（链接指向本库对应页锚点）。`renderContent` 在本库是 `Snippet<[Snippet]>`（接收已渲染的默认内容），custom 内容走 `children`，已在正文与 API 表标注该差异。真机逐 demo 实测：4 种 type 各自渲染正确（emoji 4 个 / textarea 1 个 / radio 3 个 / checkbox 3 个，标题分别为「您对本产品的评分是？/建议是？/您的身份是/您最常使用以下哪些产品？」）；custom 态正文渲染且**提交按钮实测 disabled=true**（演示 `okButtonProps.disabled`）；`mode="modal"` 实测产出 `.cd-modal` 而非 sidesheet 且内含 4 个 emoji；**完成提示流程真机走通**（点 emoji→提交后面板文案由「您对本产品的建议是？…」切为「感谢您的反馈」）。⚠️ 验证踩坑：批量「开→关」循环里关闭步骤没生效，导致 4 个 sidesheet 叠着、我每次都在量第一个，一度误判「type 不生效」——**改为一次性打开后逐个 sidesheet 分别量**才得到正确结果；判真法是先数 `.cd-sidesheet` 个数确认没叠加。
+- [x] chat — inline 单页对齐 Semi（使用场景 / 代码演示：如何引入·基本用法·消息状态·动态更新数据·清除上下文·自定义渲染会话框·完全自定义会话框·自定义渲染输入框·提示信息·自定义提示信息渲染 / API + RoleConfig·Metadata·Message·Content·Methods 五张子表）。**9 个 demo 与 Semi 9 段一一对应**；组件层此前已对齐（见 [[chat-align-semi-named-icons-and-scope]]）。4 个 Methods（resetMessage/scrollToBottom/clearContext/sendMessage）与 Semi 完全一致。**按 SOP 步骤 4「能力缺口就补全」补 5 个 Semi 有而本库缺的 prop**（不是标注差异绕过）：①**`escapeHtml`**（真能力缺口，非样式糖）——照搬 Semi `semi-foundation/utils/escapeHtml.ts` 到 `core/src/escape-html.ts`（保留围栏代码块与行内代码、仅转义其外的 `<`），`ChatBoxContent` 按 Semi 语义**仅对 user 角色**转义，Chat→ChatBox→ChatBoxContent 三层接线；新增 7 条 core 单测。②③④⑤ `inputBoxCls`/`inputBoxStyle`/`hintCls`/`hintStyle` —— 子组件 `InputBox`/`Hint` 本就支持 class/style，只是 Chat 从未暴露，补透传即可。**meta.ts 同步补 5 条**（API 契约真源）并重建。**Semi 仍有 2 项未采用并已在正文写明理由**：`chatBoxRenderConfig`（只是把 5 个 renderChatBox* 收进一个对象，本库统一走扁平 snippet）、`customMarkDownComponents`（本库经 `markdownRenderProps.components` 传）。真机逐 demo 实测：9 个 Chat 实例全渲染（15 条消息）、#2 有 loading 三点动画、#4 有清除上下文按钮、#8 提示项 10 个、#6 `renderFullChatBox` 正确**替换掉默认 chatBox 外壳**（故按 `.cd-chat-chatBox` 计数为 0 是预期，实测渲染出「助手/这是一条完全自定义布局的消息。」）；**发送链路真机走通**（输入→点发送→消息 3→5、输入框清空、末条为 mock 回复）；**新补的 escapeHtml 真机验证**：发送「试试 `<AgentChat />` 标签」实测标签完整保留（修前被 Markdown 当 HTML 吞掉），且行内代码 `` `<code>` `` 仍被渲染成 `.cd-markdown-render-simple-code`、裸 `<div>` 文本保留。⚠️ 三个验证踩坑：(a) 改完 svelte src **必须 rebuild svelte dist + 清 vite 缓存**，否则 docs 吃旧 dist、escapeHtml 看着"没生效"（同 [[change-core-src-must-rebuild-dist-before-svelte-test]]）；(b) 发送按钮不是 `[...buttons].pop()`（末尾是代码块的「复制」），要按 `.cd-chat-inputBox-sendButton` 精确取；(c) 行内代码渲染成 `<span class="cd-markdown-render-simple-code">` 而非 `<code>`，按 `querySelector('code')` 判会误报。
+- [x] videoplayer — inline 单页对齐 Semi（代码演示：如何引入·基本用法·设置菜单栏功能·循环播放·快进快退·播放速率·音量设置·清晰度切换·章节标记·主题·使用 ref 控制 / API + Marker 子表）。**10 个 demo 与 Semi 10 段一一对应、顺序一致**；视频源本就与 Semi 同一份 CDN 资源（`vchart-show-video.mp4` + 480p），无需改。**双向点名**：`ErrorSvg.tsx`→`ErrorSvg.svelte`、`videoProgress.tsx`→`VideoProgress.svelte`、`utils.ts` 逻辑落 core，无漏拆。API 逐 prop 核源码全覆盖。两处如实标注：①Semi 的 `forwardRef` 是 React ref 转发，Svelte 无此概念，本库为 `videoRef` 回调（挂载时回传原生 video 元素），已在正文与 API 表说明；②**Semi API 表自身有笔误**——`defaultPlaybackRate` 写了两行，第二行描述是「默认视频清晰度」，实为 `defaultQuality`，本库表按真实语义写。真机逐 demo 实测：10 个 demo 全渲染共 11 个 video（demo10 双视频同步）；**播放真机验证生效**（点播放后 `paused` false、`currentTime` 1.38s→2.38s 持续推进、按钮 aria 由「播放」翻为「暂停」）；**主题实测**（demo9 `cd-videoPlayer-wrapper-light` 背景 rgb(230,232,234) vs demo1 dark rgb(46,50,56)）；**controlsList 实测**（demo2 控件 3 个 vs 默认 6 个）；**markers 实测**（`-progress-markers` 容器内 4 段 slider）。⚠️ 两次选择器踩坑：根类名是 `cd-videoPlayer`（**camelCase 镜像 Semi**，不是 `cd-video-player`），theme 挂在 `-wrapper-{theme}` 而非根节点；播放按钮要按 `aria-label='播放'` 取而非取第一个 button。
+- [x] sidebar — inline 单页对齐 Semi（使用场景 / 代码演示：如何引入·基础容器·可伸缩·主视图 Options 切换·详情返回·参考来源·代码展示·MCP 配置·富文本编辑器·**侧边信息栏（新增）** / API 参考：SideBar·SideBarContainer·SideBarMCPConfigure(+McpOption)·SideBarAnnotation(+AnnotationItem)·SideBarCodeContent(+CodeItemProps)·SideBarFileContent(+FileItemProps) 共 6 张主表 + 4 张子表）。**按 SOP 步骤 4 补齐 5 个 Semi 有而本库缺的 prop**——源码 `SideBar.svelte:5` 原注释写着「detail 里 code/file 的具体渲染留给 P4/P5」，正是「把真缺口标注掉」的情形，已当场补齐：`detailContent`（新增 `SideBarDetailContent` 类型；mode='code' 按 isJson 分流 JsonViewer/CodeHighlight，'file' 走 SideBarFileItem 可编辑富文本，对齐 Semi `renderDetail`）、`fileEditable`、`imgUploadProps`、`onFileContentChange`、`onDetailContentCopy`（含内置详情头：返回按钮 + `detailContent.name` + 复制按钮，对齐 Semi `renderHeader`）。**locale 补 2 键**：`SideBar.copySuccess`（Semi 同名）+ `SideBar.copy`（本库补充，Semi 该按钮无 aria-label 会被 axe 判 critical）。meta.ts 同步补 5 条。**新增 demo09「侧边信息栏」**覆盖内置详情渲染路径（原 8 个 demo 全走 `renderDetailContent` 自定义路径，新补的能力无人覆盖=未测代码）。**两处结构差异已在正文用 Notice 写明**：①Semi 把浮层壳与主壳合成一个 `Sidebar`，本库拆 `SideBarContainer` + `SideBar` 两层分别导出（内嵌场景无需绕过容器）；②MCP 面板 Semi 用 radio 二选一切列表，本库改并列双列表。真机逐 demo 实测：9 个 demo 全部打开且内容各不相同（基础容器/可伸缩/Options 图标 tab ⚙❝▤/详情路由/参考来源含视频卡 12:34 YouTube/代码预览带行号/MCP 已激活 3-4 双列表/富文本可编辑 README/内置详情），`role="dialog"` 与拖拽把手 `role="separator"` 均在；**新增路径实测**详情头标题 `tool_call.json`、复制按钮存在、JsonViewer 渲染、返回按钮回主视图。**补 browser project 用例**钉住内置详情渲染 + 复制回调，并故意断开回调验证会红。⚠️ 验证踩坑两则：(a) 批量「开→关」循环里关闭没生效导致 20 个容器叠加、我一直在量第一个（同 feedback 那轮），改为一次性打开后逐个量；(b) **复制回调实测 `res=false` 不是 bug**——`navigator.clipboard.writeText` 要求文档聚焦，CDP 后台标签与 headless chromium 均抛 `NotAllowedError: Document is not focused`，组件按预期捕获并如实回传 false，故用例只断言「回调触发 + 内容正确」不断言 res=true。
+- [x] resizable — inline 单页对齐 Semi（代码演示：如何引入·单个组件基本使用·控制伸缩方向·锁定横纵比·受控宽高·设置缩放值·根据元素限制元素宽高·自定义边角 handler 样式·允许阶段性调整宽高·组合组件基本使用·嵌套使用·动态方向 / API 参考：Resizable·ResizeGroup·ResizeItem·ResizeHandler 四张表）。Semi 13 个 demo 段，本库 16 个 demo 按段归并挂载（部分段挂 2 个 demo 展示不同侧面）。四个组件的 prop 逐条核源码，Semi 全部覆盖；本库超集（`ratio`/`lockAspectRatioExtraWidth/Height`/`boundsByDirection`/`handleWrapperClass/Style`、ResizeHandler 的 `disabled`/`onResizeStart`）在表中标注「本库补充」。真机实测：16 个预览区渲染 12 个单体 Resizable + 6 个 Group + 15 个 Item + 9 个 Handler；**单体拖拽实测** 240px 拖 120px → 360px（精确等于位移）；**分栏拖拽实测**左面板 394→465、右面板 172→102（此消彼长）。**补齐该组件从零测试**：此前 `packages/svelte/src/resizable/` **完全没有测试文件**，而拖拽正是其核心能力——新增 `Resizable.kbd.test.ts`（browser project）覆盖单体拖拽按位移增宽 + maxWidth clamp（拖 400px 停在 480）、分栏拖拽两侧此消彼长，并把 `enable.right` 关掉验证会红。⚠️ 三处验证踩坑：(a) 单体把手类名是 **`cd-resizable-resizableHandler`（camelCase，与 Semi `resizableHandler.tsx:79` 同名）**，按 `[class*="handle"]` 查不到；(b) 分栏夹具**必须给 ResizeGroup 确定高度**，否则面板塌陷、宽度量不准（docs demo 同样写法）；(c) **ResizeGroup 在 onMount 后延后一帧才分配 flex-basis**，直接读会拿到未分配前的塌陷宽度（实测 12px），用例须先 poll 等初始布局落定。
+- [x] aichatinput — inline 单页对齐 Semi（代码演示：如何引入·基本用法·消息发送·富文本输入区·引用·配置区域·操作区域·自定义上传按钮与底部按钮形状·建议·技能及模版·自定义渲染顶部区域·自定义扩展·接入对话 / API 参考）。Semi 13 个 demo 段本库原只有 8 个 demo，**按缺口新建 3 个 demo**：`09-action-area`（renderActionArea 自定义右下角操作区，snippet 参数带 canSend/generating）、`10-upload-button-round`（renderUploadButton 仅自定义按钮 UI + round 圆角/方形切换，两段合并）、`11-top-slot`（renderTopSlot + topSlotPosition top/bottom 切换）；富文本输入区与自定义扩展两段 Semi 亦无可运行 demo（纯文字 + 代码块），照 Semi 处理。API 表逐 prop 核源码。**四处差异如实标注**：`immediatelyRender`（tiptap React SSR 专用，本库全程动态 import 仅客户端实例化故无需）、`dropdownMatchTriggerWidth`/`popoverProps`（本库建议/技能面板不经 Popover 承载）、**`showPlaceholderWhenSkillOnly` 已于 2026-07-31 补齐**（原标注为待办 #15，现已实现）：新建 `placeholder-extension.ts` 自造 Placeholder 扩展替换 tiptap 官方插件（官方把「段落含 skillSlot」判为非空，导致选中技能后占位符立即消失，无扩展点可改），逐条对齐 Semi `richTextInput.tsx` 的 `isDocActuallyEmpty`/`isParagraphActuallyEmpty`/`paragraphHasSkillSlot`——忽略 skillSlot 与零宽字符判空、命中时加 `has-skill-slot` 类；CSS 对齐 Semi `aiChatInput.scss:510-521` 关掉 `::before` 改用 `::after` 让占位符排在技能后方。**按「token 名/值/公式对齐」规则新建 token** `--cd-spacing-ai-chat-input-skill-item-columngap: 8px`（镜像 Semi `$spacing-aiChatInput_skill_item-columnGap`），而非写死间距。新增 demo12 并列对照两种行为；补 8 条纯函数单测 + 2 条 browser e2e，并**关掉该 prop 验证 e2e 会红**。真机实测：开启实例插入 skillSlot 后段落 class 为 `is-empty is-editor-empty has-skill-slot`、`::before` content 为 `none`、`::after` content 为 `"输入消息"` 且 `margin-inline-start: 8px`；默认实例 class 被清空、占位符消失。真机实测：13 个 h3 章节齐全、11 个预览区各含一个 AIChatInput 实例（tiptap 编辑器全部实例化）；新增三 demo 逐个验证——操作区渲染「草稿/发送」自定义按钮、上传按钮渲染「添加附件」、顶部区渲染「自定义顶部区 + 引用 2 条」；**两个开关真机切换生效**：`round` 实测 true↔false 且根节点 class `cd-ai-chat-input-round` 真的增删、`topSlotPosition` 实测 top↔bottom。⚠️ 建 demo 时两处类型踩坑（typecheck 抓出）：`onMessageSend` 载荷字段是 `inputContents` 不是 `content`；`AIChatInputReference` 显示名字段是 `name` 不是 `label`。
+- [x] aichatdialogue — inline 单页对齐 Semi（代码演示：如何引入·基本用法·消息状态·消息展示·引用·选择·提示·自定义渲染提示·自定义渲染会话框·自定义渲染消息内容·消息数据转换 / API 参考 + RoleConfig·Metadata·Message·Reference·Methods 五张子表）。**本库 12 个 demo 已覆盖 Semi 全部 10 个 demo 段**（流式数据转换、消息编辑为本库补充，正文用 Notice 标注）；4 个 Methods（selectAll/deselectAll/scrollToBottom/scrollToTop）与 Semi 完全一致。**按 SOP 步骤 4 补齐 6 个 Semi 有而本库缺的 prop**：①**`escapeHtml`**（复用 chat 那轮建的 core `escapeHtmlInMarkdown`，ContentItemRenderer 按 Semi 语义仅对 user 角色转义）；②**`onAnnotationClick` + annotation 渲染**（真能力缺口，非只补回调——`Annotation` 类型 core 早有、adapter 也解析，但**从未渲染**；照 Semi `dialogueContent.tsx:243` 过滤 `file_citation`/`container_file_citation` 后渲染成正文上方可点击来源徽标）；③**`onMessageShare` + 分享按钮**（对齐 Semi `dialogueAction.tsx:168` shareNode，仅在传了回调时渲染；locale 补 `AIChatDialogue.share`）；④`disabledFileItemClick`；⑤⑥`hintCls`/`hintStyle`。meta.ts 同步补 6 条。**新增 demo13 覆盖新补能力**（原 12 个 demo 无一触及，等于未测代码）。真机实测：10 段 + 5 张 API 表齐全、13 个预览区、26 条消息、推理块 2 / 工具调用块 1；**新能力逐项验真**——annotation 渲染 2 条（传入 3 条，`file_citation` 正确被过滤）、分享按钮 2 个（仅传了回调的实例有）、用户消息 `<AgentChat />` 标签完整显示未被吞；**两个回调真机点击生效**（「点击引用标注：2 条」/「分享消息：u1」）。
+
+---
 
 ## ✅ 已完成（29 = 28 inline + 1 特殊处理：iconbutton 删页；判真：`grep -l "docMode: inline"` = 28）
 
@@ -37,7 +111,7 @@
 
 ---
 
-## ⏳ 待办（2；判真：`grep -l "docMode: inline"` = 69 页已 inline）
+## ✅ 已完成 71 个（**不是 71/71，是 71/84**；判真用文件头的对账命令，别数本节条目）
 
 ### 优先批 A：源码近期已破坏性对齐 Semi（文档对齐风险小，优先做）
 > 依据 MEMORY.md 记忆，这些组件源码已对齐 Semi，文档 demo 能力大概率齐备。
@@ -105,8 +179,20 @@
 - [x] layout — inline 单页 + 13 段严格复刻 Semi（概述 5 组件清单 + Notice 注意事项 / 代码演示：如何引入·三行布局·左侧边栏·右侧边栏·侧边栏布局·响应式布局 / 布局示例：顶部导航·顶部导航-侧边·侧边导航 / API 参考 Layout·Layout.Sider·responsive map / Accessibility ARIA）。md 原是纯文字页 0 demo→接线 inline（原「使用场景/注意事项/何时使用/响应式/无障碍」自造章节按 Semi 章节顺序 + 措辞逐字重写，注意事项改用 `<Notice type="primary">` 对齐 Semi）。8 个 demo 与 Semi 8 个代码块一一对应，基础 5 个（01-05）早已逐字对齐无需改。**三个布局示例 demo 破坏性重写对齐 Semi**（原自造：手写 4 色方块 svg 当 logo、nav item 全缺图标、footer 手写 svg、文案改成本库自述、skeleton rows 3 vs 2、内容区高 260 vs 376）：①06/07/08 手写 svg 全换 Semi 同款具名图标（IconSemiLogo/IconBytedanceLogo/IconHome/IconLive/IconSetting/IconHistogram/IconBell/IconHelpCircle，八个本库全有）见 [[consumer-icon-refs-must-align-semi]]；②补回 Semi 有而本库漏的 Bell/HelpCircle 两个 borderless Button；③文案/年份逐字回到 Semi 原文（`Hi, Bytedance dance dance.` ×2、Copyright © 2023/2023/2019 ByteDance、header text 'Semi Design'）；④尺寸对齐（内容区 376px、SkeletonParagraph rows=2、去掉自加的 border-radius/overflow:hidden、Nav 去掉自加的 width:100%）。**API 全齐无缺口**（逐 prop 核五个组件：Layout/Header/Content/Footer 共用 class/style/ariaLabel/role + Layout 独有 hasSider；Sider 另有 breakpoint/onBreakpoint）；responsive map 六档实测与 Semi 逐值一致。**本库差异**（md 标注）：①通用无障碍 prop 用驼峰 `ariaLabel`（Semi 是 `aria-label`）；②~~Nav children 语义不同~~ → **已改为真对齐（用户驳回「标注差异」的取巧做法）**：见下方「Nav children 真缺口修复」。**语义标签与 Semi 完全一致**（实测双方源码：Layout→`section`、Header→`header`、Content→`main`、Footer→`footer`、Sider→`aside`）——我一度在 md 里写成「Semi 全用 div + role」，核 `semi-ui/layout/index.tsx` 的 `htmlTag` 映射后发现是我记错，已更正（又一例「别凭印象写差异，必核源码」）。**Nav children 真缺口修复**（本轮由用户驳回后补做）：Semi demo 07 把「模版推荐/所有模版/我的模版」作为 Nav 直接 children 夹在 Header 与 Footer 之间；本库原实现把 children 当成「声明式 `<Nav.Item>` 注册宿主」塞进 `<div hidden style="display:none">`，且**仅 `!items.length` 时才挂载**——既传 items 又传任意 children 时该内容被整个丢弃。我最初图省事把这组文字并入 footerSlot 并在 md/demo 标注「本库差异」，用户指出「改，跟 semi 对齐」，遂核 Semi `navigation/index.tsx:429-434` 真实结构：Semi 先从 children 里**分拣出 Nav.Header/Nav.Footer** 归入 headers/footers，**其余 children 原样渲染在 `<ul>` 内、`{itemElems}` 之后**（`<ul>{itemElems}{children}</ul>`）。照此改：删掉 hidden 宿主 div，改为在 ul 内 items 之后 `{#if children}{@render children()}{/if}`——`<Nav.Item>/<Nav.Sub>` 经 context 注册后自身本就不产 DOM（渲染在 ul 内无副作用），任意内容则原样可见渲染，两种用法同一出口，且不再受 items 是否存在影响。同步更新 children 的 prop 注释与 meta 两处描述。demo 07 恢复 Semi 原样（children 直接写在 `<Nav>` 内），md 删掉那段「本库差异」说明。新增 1 条测试（NavChildrenFixture：items 与任意 children 并存时 children 可见渲染、且 DOM 顺序在最后一个 menuitem 之后）。SSR HTML 实测确认文字落在 `<ul class="cd-nav__list">` 内 items 之后、全站 `div[hidden]` 宿主 0 个；真机截图确认可见渲染（64×20）。nav 19 测试过、全库 213 文件 2045 passed 无回归。**nav 文件结构双向点名（同轮补做，用户追问「拆了吗」后落实——最初我又想记一句「属结构债待单独一轮」绕过，同属被驳回的那类取巧）**：按 SOP「文件目录结构对齐」逐个点名 Semi `semi-ui/navigation/` + `semi-foundation/navigation/` 共 13 个文件。①**补漏拆的逻辑层**：新建 `nav-foundation.ts`（对齐 Semi `foundation.ts` + `NavItem.ts`：`normalizeNavItems`/`hasSubNav`/`collectNavItemsByKeys`/`collectAncestorKeys` 从 `types.ts` 迁出——原先类型与纯逻辑混在一个文件，`types.ts` 从 166 行收敛到 114 行只留类型）；新建 `constants.ts`（对齐 Semi `constants.ts` 的 strings/numbers 两组：MODE_*/TOGGLE_ICON_*/DEFAULT_LOGO_ICON_SIZE/四个延迟数值+DEFAULT_SUBNAV_MAX_HEIGHT），Nav.svelte 的 `subNavOpenDelay=0`/`subNavCloseDelay=100`/`tooltipShowDelay=0`/`tooltipHideDelay=100` 四个魔数与 2 处 `mode === 'vertical'` 字面量改用常量。cssClasses 组不镜像（本库 class 前缀由各 .svelte 内联书写，见 [[prefixcls-blocked-by-scoped-global-style-arch]]）。②**子组件文件名去掉多余 `Nav` 前缀对齐 Semi 原名**（SOP：文件名保持 Semi 的 PascalCase）：`NavHeader→Header`、`NavFooter→Footer`、`NavItem→Item`、`NavSub→SubNav`、`NavCollapseButton→CollapseButton`（git mv 保留历史）；**公开导出名不动**（`NavHeader`/`NavItem`/`NavSub`/`NavFooter` 是 `packages/svelte/src/index.ts` 的公开 API，改名属破坏性变更且与文件结构对齐无关），import 处用本地别名衔接。③**本库特有文件已定性**：`NavItemRender`/`NavPopupNode`/`NavSubPopup` 对应 Semi `Item.tsx`/`SubNav.tsx` 内部的渲染分支（React 靠 cloneElement/递归 render 在单文件内分流，Svelte 需拆成独立组件），属合理拆分非自造超集；`OpenIconTransition.tsx` 在 Semi 是 **0 行空文件**，无需镜像；Semi `itemFoundation.ts`/`subNavFoundation.ts` 的职责（单项/子导航的选中·展开态机）在本库由 Nav.svelte 的 rune 状态 + context 承担（Svelte 无 adapter 层），已在 `nav-foundation.ts` 头注释写明映射关系。重构后 nav 19 测试过、全库 213 文件 2045 passed、svelte/docs typecheck 0 err、lint 0 warning、docs 站侧边栏（自身即 Nav 消费方，113 个 nav item）真机正常。
 
 真机验证：13 章节全渲染、14 个 Layout / 6 个 Sider 语义标签逐类计数正确（section 14 / header 8 / main 8 / footer 8 / aside 6）、Notice 块 + 两张 API 表渲染、三个布局示例截图逐项对照 Semi（logo/图标导航/Bell+Help/YJ 头像/面包屑/骨架/页脚 logo+版权）、demo 中已无任何手写 svg rect（0 个）、`onBreakpoint('md', true)` console 实测触发。⚠️ **真机验证踩坑**：`resize_window` 把窗口从 1200→700 后 `matchMedia('(min-width:768px)').matches` 确实翻成 false，但 `change` 事件**一次都没投递**，看似 onBreakpoint 解除分支失效；**判真法：在同页现场 `addEventListener('change')` 挂一个裸探针，它同样 fired=0**，证明是 CDP 标签不投递 media query change（同 [[resizeobserver-frozen-in-hidden-tab]] 家族），非组件 bug；改用单测覆盖。新增 2 条测试（断点跨越 命中→解除→再命中 双向回调、卸载时解绑 media query 不泄漏），layout 9 测试全过。svelte/docs typecheck 0 err、lint --max-warnings=0 通过、体积 layout 1.72<2。
-- [ ] configprovider
-- [ ] localeprovider — 文档站顶层套 LocaleProvider 见 [docs-page-align-semi]
+- [x] configprovider — inline 单页 + 按 Semi 章节顺序整页复刻（使用场景 / ConfigProvider / 代码演示：如何引入·基本用法 timeZone·手动获取值·响应式断点监听含 Notice+两小节·RTL·LTR / 全局浮层容器（本库补充）/ API 参考 + 时区标识 + FAQ / **cdGlobal** / Accessibility）。**四个 demo 重写严格复刻 Semi**：01 时区 GMT -11..+14 逐时列表 + `<h5 style="margin:10px">Select Time Zone:</h5>` 骨架逐字；02 手动获取值复用同一套 Select+两 picker 再插 ConfigConsumer 等价物（`getConfigContext()`）；03 responsiveMap 定义在模块级（引用比较，inline 新对象会触发重注册）+ BreakpointView 只打印 screens JSON（对齐 Semi BreakpointSubscriber）；04 RTL 大 demo 复刻 Semi 五段（Buttons/Input/Navigation/Display/Feedback，60 个组件实例、icon 全用本库具名图标）。**补齐 Semi semiGlobal 等价能力**（见下方 cdGlobal 条）。⚠️ **真机验证揪出两处「文档写了但实现没有」**：①我的 06 demo 原设计成「点按钮实时切换全局配置」，真机点击后状态文字变了但**已挂载的 Button 类名不变** —— 根因 `cdGlobal` 是普通对象（非 `$state`），`$derived` 不会因它变化而重算；核 Semi 后确认**Semi 的 Proxy 同样不触发重渲染**，故这是 demo 设计错误而非机制缺陷，已改为「模块顶层一次性赋值」并在 md 补「生效时机」Notice（同时改掉我原先写错的「入口处后赋值也生效」措辞）。②demo 原用 `Select.placeholder` 演示，但本库 Select 的 placeholder **无解构默认值**（走 `?? loc().t('Select.placeholder')` 的 locale 兜底），故未被接线；改用真接线的 `Select.borderless`。真机复验四项全过：Button 未传 theme 呈 `cd-button-solid`、显式 borderless 不受影响、Select 未传呈 `cd-select-borderless`、显式 `borderless={false}` 不受影响。**RTL 覆盖面如实标注**：`direction='rtl'` 正确注入 `.cd-rtl` 方向作用域（与 Semi `.semi-rtl` 同构、实测包裹 60 个组件），但镜像样式**本库只有 Layout/Space/Grid.Col 三个实现**（Semi 侧 61 个组件各带 rtl.scss），已在 md 用 warning Notice 写明「不是配置未生效，是本库尚未补齐」，勿当 bug 排查。真机验证：6 个 h2 + 12 个 h3 章节全渲染、断点 demo 实测 `{"xs":false,"sm":true,"md":true,"lg":true,"xl":true,"xxl":false}`、ConfigConsumer 打印 `{"direction":"ltr","timeZone":"GMT+08:00"}`、RTL 按钮真机点击后 `.cd-rtl` 出现且含五段、无 SSR 500。三包 typecheck 0 err、lint 0 warning、全库 180 文件 2037 passed。
+- [x] localeprovider — inline 单页 + 按 Semi 章节顺序整页复刻（目前支持语言 / 已支持组件 / 使用 / 代码示例：国际化·自定义国际化组件·支持多语言的组件·注册自定义语言包（本库补充）/ API 参考 + 相关工具 / Accessibility）。**三个 demo 重写严格复刻 Semi**：01 两个 LocaleProvider 并列各包一个 `Pagination`（去掉原本的切换按钮，照 Semi 直接并列对比）；02 复刻 `LocaleConsumer` 双场景 —— 读内置组件文本（`TimePicker.begin`）+ 读自定义组件注入的键（`ComponentA.customKey` = semi/design/dsm），本库用 `useLocale()` 映射 React 的 render-props；03 复刻「支持多语言的组件」大 demo（顶部 Select 切语言 + 14 个组件分段：Pagination/Modal/Select/Cascader/DatePicker×4/TimePicker×2/TreeSelect/Table/Table-Empty/List-Empty/Calendar/Typography×2/Transfer/Form/Nav）。**补齐 2 处真缺口**：①`PartialLocale` 类型封闭在 `keyof Locale`，用户无法给**自己的组件**注入 i18n 键（Semi 靠对象 spread 天然支持）—— 新增 `LocaleWithCustom` 类型并放宽 `mergeLocale` 的 child 约束（注意不能直接给 `PartialLocale` 加索引签名，那会让 `Locale` 自身不可赋值、把内部 `mergeLocale(parent.resolved, own)` 打红）；②**Select 的 `prefix`/`suffix` 只接受 Snippet**，而 Semi 是 `ReactNode`（Semi 该 demo 正是 `prefix='切换语言'` 传字符串）—— 放宽为 `Snippet | string` 并按本库 `insetLabel` 的同款分派渲染。**顺带修 demo 引用已删键**：04 原写 `Empty.noData`，而 Empty slice 已在悬空键清理中整片删除（Empty 不消费 locale），改用真实存在的 `Pagination.total` / `Select.emptyText`。真机验证：6 个 h2 + 5 个 h3 全渲染、6 张表、无 SSR 500；demo01 两语言并列实测 `10 pages in total` / `10 / page` 对 `共 10 页` / `10 条/页`；demo02 六行逐字对上 Semi（`zh-CN : 开始时间` / `en-US : Start Time` / `en-GB : Start Time` / `zh-CN : semi` / `en-US : design` / `en-GB : dsm`）；demo03 十四段组件全部渲染（Table/Calendar/Transfer/Form/Nav 等 DOM 均在）。✅ **【2026-07-30 已结案】原记的「demo03 语言切换 Select 点了 value 不变」是误报，组件与 demo 都没问题。**
+两个测量错误叠加造成的假象：
+① **CDP 标签 `document.hidden=true` 时合成点击完全不投递** —— 同页挂裸 `<button>` 探针实测**收到 0 次点击**，
+即当时根本没有任何点击到达页面，"点了没反应"测的是环境不是组件（同 [[resizeobserver-frozen-in-hidden-tab]] 家族）。
+② 本页有 **7 个 listbox**（14 个组件多数带下拉），我当时按 `document.querySelector('[role="listbox"]')`
+取到的是 **Pagination 的页码浮层**而非语言浮层 —— 必须用触发器自己的 `aria-controls` 反查，别全局取首个。
+**判真做法**：绕开合成鼠标，用 `aria-controls` 定位到本 Select 的浮层后派发完整指针序列
+（pointerdown→mousedown→pointerup→mouseup→click），实测触发器变「英语（美）」、
+Provider 子树 Pagination 文案同步变 `pages in total`，链路完全正常。
+另新增 browser project 用例 `demo03 拓扑（Select 在 Provider 外）` 按 demo 原样复刻
+（旧夹具是 Select 在 Provider 内的简化版，证明力不足），并**故意断开 onChange 验证该用例会红**（非空转）。三包 typecheck 0 err、lint 0 warning、全库 180 文件 2037 passed。~~**至此 71/71 页全部 inline，Semi 文档整页对齐清单完成。**~~
+**【2026-07-30 更正】此结论有误**：71 是本清单自己列出的条目数，而组件真实总数是 84 ——
+还有 13 个组件从未进过清单、也从未建过文档页（见上方「❌ 未开始」）。真实进度是 **71/84**。
 - [x] resizeobserver — **Semi 无此文档页**（用户拍板保留页转 inline 并标注差异，2026-07-29，同 virtuallist 先例）。核对 Semi 源码：`semi-ui/resizeObserver/` 有目录、被 Table/Tabs/Tooltip/TextArea/Collapsible/Tree/Chat/Cropper/JsonViewer 等**十余个组件消费**，但**不从 `semi-ui/index.ts` 导出、也无文档页**（纯内部实现细节，同 iconbutton 形态）；本库同样有十余个内部消费方，但**已公开导出**（`ResizeObserver` 组件 + `resize` action + `createResizeObserver`）且 Svelte 生态缺对应轮子，故保留本页。**md 原是纯文字页 0 demo→接线 inline**（原「使用场景/何时使用/无障碍」自造章节重写），正文顶部两个引用块标注**定位差异**（Semi 内部 vs 本库公开）与**渲染差异**（Semi 用 `React.cloneElement` 把 ref 挂到唯一子元素、自身不产生 DOM；Svelte 无法向 snippet 注入 ref，故包裹元素免不了；但 **2026-07-30 新增 `observeChild`** 后观测目标可落到 children 首个元素本身，尺寸语义与 Semi 的「直接观测 child」一致——手法同本库 Dropdown 处理 cloneElement 语义）。**补真缺口 `observerProperty`**（对齐 Semi ObserverProperty：'width'|'height'|'all'，设为单维度时逐 target 记忆上次上报值、另一维度单独变化不回调）——core `resize-observer.ts` 加类型 + `formerPropertyValue` Map 过滤（照搬 Semi 同名机制，首次见到的 target 一律放行）+ unobserve/disconnect 清 Map 防泄漏；组件与 action 双双透传（action 的重建判据也补上）；三处 barrel 补导出类型。**Semi `delayTick` 是死 prop**：声明 + defaultProps 齐全但全仓库**从未被读取**，本库不实现（节流由 throttle/debounce 承担），已在 md 标注。新增 2 demo（05-observe-parent / 06-observer-property）对齐两个 Semi 同名能力，删无消费方的 BasicDemo.svelte（旧稿）。3 张 API 表（ResizeObserver 16 prop / CDResizeEntry 4 字段 / resize action 8 参数）+ createResizeObserver 说明逐 prop 核源码。**真机验证踩坑（关键）**：CDP 标签 `document.hidden=true` 时**原生 ResizeObserver 投递被完全冻结**——所有 demo 读数恒为 `0 × 0`、回调 0 次，一度像组件 bug；**判真法：在同页面手搓一个裸 `new ResizeObserver` 也 fired=0**，证明是标签冻结非组件问题（与 rAF 冻结同源但更隐蔽：即便主动改元素尺寸也不投递）。切到真前台（`document.hidden=false`）后全部恢复：基础 278×28、响应式在 454px 显示「宽屏（横向）」、**observeParent 读到父容器 294×114（非自身）**、observerProperty 双向验证（只改宽 → width 侧回调 1→2 而 height 侧保持 1；改高 → height 侧 1→2）。新增 6 条测试（core 4 条：width/height 过滤、默认 all 无回归、多目标逐 target 独立记忆；组件 2 条：observerProperty 透传 core、默认 all 无回归）。⚠️ 测试踩坑：桩回调用 `let x: T|null = null` 会被 TS 在赋值后**窄化成 never**（构造器内的写入它看不到）致 5 个 typecheck error，改「容器对象 + `fire()` 辅助函数」解。core+svelte+docs typecheck 0 err、**全库 213 文件 2042 passed**（core 改动波及十余消费方，故跑全量）、lint --max-warnings=0 通过、体积 resize-observer 1.09<1.2。
 - [x] hotkeys — inline 单页 + 6 段严格复刻 Semi（如何引入/说明/基本用法/自定义内容 content·render 两代码块/阻止默认事件/修改监听挂载 DOM）。**5 demo 从零重写**（原本库自造：Space+Text 说明块 + 计数器 UI，全不匹配 Semi 的「裸 HotKeys + Modal」骨架）；逐字复刻 Semi 数据（hotKeys 组合 Ctrl+Shift+A/B、Ctrl+R、Meta/Ctrl+S、Control+q，Modal title="Dialog" + 文案 `This is the Modal opened by hotkey: {hotKeys.join('+')}.`）。**修 2 个真 bug（逐行核 Semi index.tsx 才暴露，typecheck/单测全绿仍藏）**：①**onClick prop 完全缺失**——Semi 两个渲染分支都把 onClick 挂在根 div 上，本库 Props 无此声明；补 prop + 挂根节点 + meta 补录。②**render 分支丢根节点**——Semi 的 render 分支**同样**套 `div.semi-hotKeys`（故 class/style/onClick 在自定义渲染下照常生效），本库直接裸渲染 snippet 致三者全部失效；改为两分支共用根 div，仅内部内容不同（render===null 时整体不渲染，保留「只监听不显示」语义）。③顺带修 **meta a11y notes 陈旧**（写着 `<kbd>` 语义 / `aria-keyshortcuts` / 分隔符 aria-hidden，而组件实际是 span 且无任何 aria——meta 早于「严格对齐 Semi 改用 span」的重写，属「文档骗人」同类），改为如实描述。**本库既定差异（2026-07-30 用户拍板保留）**：修饰键**显示文本**走 i18n（`HotKeys.ctrl/meta/alt/shift`）且 Apple 平台显示 `⌘⌥⌃⇧` 符号，Semi 直接把 hotKeys 数组原样渲染。判定为**真实体验改进而非实现偏差**：macOS 用户看到 ⌘ 而非「Meta」，且只改显示不影响监听匹配；Semi 自己也要靠 content prop 让用户手写 `['Ctrl','Shift','B']` 来绕过这个粗糙默认值。content prop 仍可完全接管显示；二者都可用 content 覆盖，且显示文本不影响监听匹配。demo 05 用 `Input.getInputElement()` 映射 Semi 的 `inputRef.current`（typecheck 揪出返回 `HTMLElement|undefined` 与 prop 的 `|null` 不符，补 `?? null`）。API 表 11 prop + 静态属性 HotKeys.Keys 表逐 prop 核源码。**真机逐 demo 键盘验证**（真实 computer key，非 JS dispatch）：Ctrl+Shift+A 弹 Modal 且文案 `Control+Shift+A.`✓、Ctrl+Shift+B（content 段）✓、Ctrl+S 被 preventDefault 接管弹 Modal 而非浏览器保存对话框✓、**getListenerTarget 局部监听双向验证**（焦点在 body 按 Ctrl+Q **不**弹=正确隔离、焦点在 input 内按 Ctrl+Q 弹出`Control+q.`）✓、render 段 Tag 渲染在 `.cd-hotKeys` 根节点**内部**（印证根节点修复）✓、TOC 9 项全收 + 无 SSR 500✓。⚠️ 踩坑：(a) API 表 `Record<string, string>` 裸尖括号断 SSR 500，且 **`&#x3C;`/`&lt;` 实体同样会被解码后当 Svelte 组件**——只有反引号包整型有效（同 [[inline-md-table-braces-angles-break-ssr]]）；(b) 真机点 input 用裸坐标连续两次落空（focus 仍在 BODY），改 `find` 拿 ref 后 ref 点击一次命中（同 [[real-click-coord-drift-use-ref-not-coords]]）。新增 2 条回归测试（onClick 点击根节点触发、render 分支仍套根 div 且 class/style/onClick 生效 + 默认键位提示不再渲染）。svelte/docs typecheck 0 err、hotkeys 13 测试过、lint --max-warnings=0 通过、体积 hotkeys 1.57<1.85。
 - [x] lottie — inline 单页 + 6 段严格复刻 Semi（如何引入/基本用法 path·animationData 两代码块/Params 其他常用参数/获取当前动画实例/获取全局 Lottie/API）。**lottie.md 原是纯文字页 0 demo→接线 inline**（原「使用场景/Params 常用参数/获取动画实例与全局 Lottie/无障碍」自造章节，改按 Semi 章节顺序 + 措辞逐字重写）；4 个 demo 早已高质量对齐 Semi（同款 bytednsdoc `lottie_demo.json` 资源、300×300、fetch 演示 animationData 并注明实际项目应 import），无需改。组件 API 逐 prop 核 Lottie.svelte 后确认**无缺口**（Semi 文档 API 表漏列 width/height，但其 propTypes 与 wrapperStyle 实有，本库一致——以源码为准非文档）。~~**本库既定差异**：Semi 用静态方法 `Lottie.getLottie`，Svelte 组件无法挂静态方法故走具名导出~~ → **2026-07-30 已补齐真静态方法**：原结论错了——Svelte 组件本身是函数，`index.ts` 用 `Object.assign` 即可挂静态成员（本仓 `HotKeys.Keys`/`Tabs.Pane`/`Form.Field` 早就这么做）。现 `Lottie.getLottie()` 与 Semi 1:1（仍保留等价具名导出），md/demo/meta/spec 全部同步，真机 console 确认静态方法调用命中。真机验证（**必前台激活标签**：CDP 标签 `document.hidden=true` 时 rAF 冻结，两次 transform 快照完全相同是假象，切前台后 4 个动画 matrix 全部变化=真在播）：4 个 `.cd-lottie` 均渲染 300×300 真 SVG（55 个 g 节点，含 demo 02 fetch 到的 animationData）✓、椰子树动画逐帧推进✓、console 三条回调全命中（具名导出 getLottie / getLottie prop / getAnimationInstance 返回真 AnimationItem）✓、7 章节 + 两张表 + TOC 全收 + 无 SSR 500✓。设计变量章节不渲染是**正确**的（组件零 token，严格对齐 Semi 的无样式 `.semi-lottie`）。⚠️ 踩坑同 hotkeys：`Promise<LottiePlayer>` 裸尖括号断 SSR 500，反引号包整型修复。docs typecheck 0 err、lint 0 warning。
@@ -139,8 +225,193 @@
 - **ResizeObserver 定位**：Semi 是内部组件（不导出、无文档页），本库公开导出，故保留文档页（用户拍板，同 virtuallist 先例）。
 - **Semi `delayTick` 死 prop**：Semi 声明后从未读取，本库不实现（节流由 throttle/debounce 承担）。
 
-## 收尾（全部 71 完成后，独立一次做，勿中途碰）
-见 SOP「关于 docMode（收尾清理）」：反转 +page.svelte 默认走 inline、删 meta 驱动双 tab 分支、逐个 md 删 docMode 行、评估旧 demos.ts/meta API 渲染去留、根级 typecheck + 全页抽验。
+## ✅ 第二轮对齐（① ② ③ 已全部完成，2026-07-31）
+
+文档整页对齐只解决了「每页讲什么、demo 长什么样、API 表写什么」；渲染层与样式层的对齐
+攒到第二轮统一重跑。三项均已清零：
+
+| | 内容 | 结果 |
+|---|---|---|
+| ① | class 命名 / DOM 结构 | BEM 残留实测 **0** |
+| ② | RTL 覆盖面 | 3 → **49 个组件**；查出三类死代码共 30+ 处 |
+| ③ | token 名/值/公式 | 缺失 **0** / 不一致 **0** / 已核实例外 3 |
+
+**新增四道长期闸门**（全在 `pnpm check:semi`）：
+`check:lineheight`（字号↔行高绑定）、`check:rtl-scope`（三类 RTL 死写法）、
+`check:anchors`（md 锚点）、`check:semi-parity`（Semi 运行时变量名/值/公式）。
+
+> 贯穿三项的同一条教训：**很多"已经做了"的对齐其实从没生效** ——
+> 语义色抄值断了换肤链路、RTL 选择器压根不匹配、闸门口径拿编译期常量当运行时契约。
+> 判据一律是**真机实测**（双侧对比 computed 值 / 真实布局坐标），不是读代码。
+
+### 待办（已全部完成）
+
+- [x] **①（前置）全库重跑对齐：class 命名 / DOM 结构 / 子类层级** ——
+  已于 PR #664（commit `c6e3dfe7`）分六批清零，见该提交内各批说明。
+  实测判据：全库 `cd-*` 的 BEM（`__` / `--`）残留 **0 处**
+  （扫描 svelte/icons/docs/core 的 .svelte + .ts）。
+  连带修出一处折平撞车（DialogueBox 的 `-error` 与错误文案 span 同名 → 改 `-is-error`），
+  该问题**测试全绿也发现不了**，是靠脚本比对「折平后是否与既有类同名」检出的。
+
+- [x] **② 补齐 RTL 覆盖面** —— 已完成（2026-07-31，分 4 批提交）。
+  从「只有 Layout / Space / Grid.Col 三个实现」到 **49 个组件目录**已实现镜像。
+  详细数据与决策见 [rtl-gap-tracker.md](./rtl-gap-tracker.md)。
+
+  #### 最大的收获不是补样式，是查出**三种「写了但从来没生效」的死代码**
+
+  | 写法 | 为何不匹配 | 本库曾有 |
+  |---|---|---|
+  | `:dir(rtl)` | 只认 HTML `dir` 属性，不认 CSS `direction` | Carousel 整段 |
+  | `[dir='rtl']` | ConfigProvider 不设 `dir`，整页 `[dir]` 实测为 **0** | **28 处 / 8 个组件** |
+  | `portal-rtl` | **Semi 上游死代码**（51 处引用、0 处赋值） | Layout / Space |
+
+  第二类害得最狠：AvatarGroup 整套层叠镜像（8 档尺寸）、Banner 关闭按钮与图标换边、
+  Badge 四方位 transform 翻向**全部静默失效**，而 typecheck / 单测 / a11y 一路全绿。
+  已建闸门 `check:rtl-scope` 三种形态都拦（挂进 `pnpm check:semi`，均双向验红）。
+
+  #### 三条被推翻的旧结论
+
+  1. 「class 不同构、命中率 40-50%」是 ① 之前测的；重测为 **83%**，阻断点已消除；
+  2. 「1067 处物理属性」严重高估 —— 剔掉左右同值的 padding（互换=空操作）
+     与 `translateX(-50%)` 居中用法后，**真缺口约 230 处**；
+  3. cropper / resizable / jsonViewer / videoPlayer 在 **Semi 侧没有 rtl.scss**
+     （媒体画布类镜像反而错），约 30 处「缺口」是伪的。
+
+  #### 刻意不做的两类（与 Semi 现状一致）
+
+  - **浮层类**（Modal / Dropdown / Toast / Notification / Tooltip / Select…）：
+    Portal 到 body 取不到作用域；Semi 为此留的 `portal-rtl` 从未被赋值。
+    用户 2026-07-31 拍板：**对齐 Semi 就行，他是死代码我们就不搬**。
+  - **媒体与画布类**：Semi 侧同样无 rtl.scss。
+
+  两条已写进 configprovider.md（原 warning「只有三个布局组件实现」已改为如实说明）。
+
+- [x] **③ token 名/值/公式对齐 Semi 变量** —— 已清零（commit `ec024d95`）。
+  **闸门已挂进 `pnpm check:semi`**：缺失 0 / 不一致 0 / 已核实例外 3。
+
+  #### ⚠️ 先纠正一个错误口径：原「缺失 2058 条」绝大多数是伪缺口
+
+  闸门最初拿 `semi-foundation/<组件>/variables.scss` 共 3678 条逐条要求本库建同名 token。
+  **这个口径是错的**，实测证据（Semi 官网 + 其 805 KB 生产 CSS）：
+
+  - 生产 CSS 里 `--semi-*` **组件级变量出现 0 次**；
+  - `$font-checkbox_label-lineHeight: 20px` 的编译产物是字面量 `line-height:20px`，
+    不是 `var(--semi-font-checkbox-label-lineheight)`；
+  - 页面实测 `--semi-color-primary` / `--semi-grey-9` **有值**，
+    而 `--semi-color-checkbox-label-text-default` **无值**。
+
+  即那 3359 条带下划线的变量是 **SCSS 编译期常量**，编译后就地展开、不进运行时，
+  外部根本无法用 CSS 变量覆盖。要求本库为它们各建一个 `--cd-*`，
+  等于凭空造出 Semi 并不存在的契约。
+
+  **真正的运行时契约**只有 `semi-theme-default/scss/` 的
+  `_palette.scss` + `global.scss`（本库比对到 340 条）。闸门已按此重写。
+
+  > 教训：**先确认「参照物真的存在」，再拿它当分母。**
+  > 同类错误在本文件开头也犯过一次（拿清单自己的条目数当分母 → 71/71 实为 71/84）。
+
+  #### 清掉的真问题
+
+  1. **换肤链路在语义层是断的**（本轮最重要的一个）。
+     Semi `--semi-color-primary: rgba(var(--semi-blue-5), 1)` 运行时真的指向色板；
+     本库 `'color-primary': palette['blue-5']` 看着是引用，实为**取值**，
+     产物 `--cd-color-primary: #0064fa` 引用关系已丢。
+     **双侧真机实测**：覆盖 `--semi-blue-5` → Semi primary 跟随；
+     覆盖 `--cd-color-blue-5` → 本库 primary 纹丝不动。
+     已新增 `ref()` 声明引用，98 条语义色改为引用形态；
+     色板+透明度的条目改用 `color-mix` 复合同一色板变量（沿用 tag.ts/chat.ts 惯例）。
+  2. **整段缺失的运行时变量**（92 → 0）：AI 色板（`ai-purple-0..9` +
+     `ai-general-<档>-<停靠点>`，并补回 Semi 的中间层 `ai-general-0..9` 渐变——
+     本库原先把三层压成一条死值）、vchart `color-data-0..19`、
+     `color-default` 三档、AI 场景渐变背景各三档。
+  3. **5 个组件 token 在用近似色**：Semi 明写 `var(--semi-color-default)` 处
+     （tag 方形头像底 / jsonViewer 容器背景与搜索选项 hover / videoPlayer notification 文字），
+     本库因缺该 token 而用 `fill-0`/`fill-1`/`grey-0` 顶替 ——
+     **`fill-*` 是半透明叠加、`default` 是不透明灰**，非白底上渲染结果不同，属真实视觉偏差。
+  4. **manifest `resolvedDark` 一直是错的**：`litDark` 只覆盖 alias 层、从不喂 dark 色板。
+     改 ref 后该记账错误会传染到语义色，遂补 `globalDark` 入参修正
+     （产物 CSS 一直是对的，只是 manifest 记账错）。
+
+  #### 已核实的 3 条例外（闸门内置，各注明理由）
+
+  - `--cd-color-white` / `--cd-color-black`：Semi 存裸三元组故需 `rgba(var(...),1)`，
+    本库色板本身即完整颜色，再指向自己会**自引用成环**；
+  - `--cd-color-ai-background-top-hover`：**Semi 上游 bug** ——
+    `global.scss:143/272` 把「激活态」也命名成 `-hover`（注释明写激活态），
+    激活值覆盖了悬浮值。本库按其注释拆成 `-hover` / `-active` 两档。
+
+  #### 验证
+
+  **对比度逐条比对改前改后：24 条 ratio 全部逐字节相同**（4.68/2.47/7.30…），
+  只有显示字符串从字面值变成引用形式 —— 证明**颜色零漂移**；
+  visual project 7 条截图回归全过（像素级零变化）；
+  新增 5 条 ref 测试并**故意改回字面值确认 4 条会红**（非空转）。
+
+  遗留（已登记，属可见视觉变化故单独一轮）：Tag 的 `tag-colorful-from/via/to`
+  仍是自造色 `#4d6bff/#7b5cff/#a64dff`，Semi 实际用 `ai-purple` / `ai-general` 系列；
+  AI 色板已补齐，可直接改指。
+
+### 已在文档轮顺带完成的对齐（不必重做）
+
+locale 键名/键值对齐 Semi、spec 的 locale 键表与 API 表按真源重写、cdGlobal（对齐 semiGlobal）
+接齐 24 声明式组件 + 2 命令式入口。详见各条目内的记录与 MEMORY.md。
+
+## ✅ 收尾清理（已完成 2026-07-30）
+
+SOP「关于 docMode（收尾清理）」5 步，执行结果：
+
+1. **`+page.svelte` 只剩 inline 一条路径**：删掉 `{:else}` 双 tab 分支（原 309–520 行）、
+   `inlineDoc` / `activeTab` / `tocSections` 状态、整条 meta 派生链
+   （`subComponents`/`configObjects`/`methods`/`apgRef`/`a11y*`/`usageHints`/`relatedComponents`/
+   `allDemos`/`headDemos`/`sceneDemos`/`hasA11y`/`hasContent`/`importCode`/`demoList`）、
+   5 个随之失效的 import（`componentsJson`/`DemoEntry`/`ApiTable`/`DemoBox`/`CodeBlock`）
+   与 34 个失效 CSS 规则块（`.tabs`/`.tab`/`.api-table`/`.a11y-*`/`.related*` 等）。**830 → 318 行**。
+2. **`+page.ts` 去掉 demo 装配**：删 `docMode` 读取、`demoModules` glob、返回值里的 `demos`、
+   `nameToDir` import 与导出的 `DemoEntry` 接口（各 `demos.ts` 本就各自局部定义）。**60 → 34 行**，
+   `load` 现返回 `{ meta, Content, ContentEn, brief }`。
+3. **71 个 md 全删 `docMode: inline` 行**；`grep -rn "docMode" packages/docs/src packages/svelte/src` 零命中。
+4. **旧 `demos.ts` 去留 → ✅ 2026-07-31 已全部删除（84 份）**。
+   最初以为 85 份全无消费方，实际其中 13 份是 13 个「无 md」组件仅存的 demo 数据源；
+   补完那 13 个页（84/84 归零）后才删，删后 866 个 demo `.svelte` 全部由 md 直接 import。
+   连带删掉遗留重复目录 `demos/pin-code/`（8 个 demo，零引用；现役是 `demos/pincode/`），
+   并修正 `component-dir.ts` 里 `pincode → 'pin-code'` 的陈旧映射。
+   ⚠️ 教训：判「无消费方」不能只 grep import ——
+   `.svelte` demo 数与 md 引用数的差额本身就是信号（当时 869 vs 743 牵出 13 个缺页）。
+5. **验证全绿**：docs `svelte-check` 0 error / 0 warning；根级 `pnpm lint`（`--max-warnings=0`）干净；
+   `pnpm -r typecheck` 无 ERROR；`vitest --project unit --project dom` **2037 passed / 5 skipped**；
+   `--project browser` **43 passed**；`pnpm perf:size` 无超标；**docs 生产构建通过**（84 组件页 + 84 设计页预渲染）。
+   真机（清 vite 缓存后重启 dev）抽验 12 页全 200，
+   button 页实测：残留 tab 元素 **0**、TOC 17 项、demo 17 个、标题锚点 22 个且 TOC 目标均可解析、
+   6 个 h2 章节齐全、设计变量表自动渲染；icon 页（`pageHead` 裸渲染这条特殊路径）940 列表格 / 481 图标正常。
+
+### 收尾期间发现并修复的两个真问题（dev 模式不暴露，只在生产构建/全量扫描下现形）
+
+**① 删 tab 栏连带删掉了 `/design/components/[name]` 的唯一入口 → 生产构建失败。**
+`designUrl` 原本只被 tab 栏那个「设计」链接消费；删掉双 tab 路径后链接消失，
+SvelteKit 爬虫再也发现不了该路由，prerender 报
+`marked as prerenderable, but were not prerendered`，**构建直接非零退出**。
+`pnpm dev` / `svelte-check` / 单测全绿，只有 `pnpm build` 会暴露。两处修复：
+
+- `design/components/[name]/+page.ts` 补 **显式 `entries()`**（从 `components.json` 枚举），
+  路由不再依赖别处链接被爬到；
+- `components/[name]/+page.svelte` 把「设计文档」外链**移到头部简介下方**（`.design-link`，
+  样式承接原 `.tab-link`）——否则该页对用户彻底不可达，是真实功能回归而不只是构建问题。
+
+> 教训：删 UI 元素前先查它是不是某条 prerender 路由的唯一入口。
+> **文档站改动必须跑 `pnpm build`，dev 绿不代表构建绿。**
+
+**② 8 处 md 锚点断链**（我此前手写锚点时按直觉拼的，没按插件真实产物）。
+`kit.prerender.handleMissingId` 设为 `'warn'`（因 demo 内示例锚点会误报），
+真断链被淹在警告里；跨页断链更是连警告都不出。写脚本按 `makeAnchorId` 规则全量校验 71 份 md 后修复：
+
+| 原写法 | 正确 | 说明 |
+|---|---|---|
+| `#modalmethod` | `#modal-methodaaaaaa` | `Modal.method()` 的 `.`→`-`、`()`→`aaa`×2 |
+| `#API-参考` / `#API_参考` | `#api-参考` | 要小写 |
+| `#占位图插画_建设中_` | `#占位图插画aaa建设中aaa` | `()`→`aaa`，不是 `_` |
+
+`aaa` 不是笔误：`makeAnchorId` 逐字节对齐 Semi，Semi 就是把 `(` 和 `)` 各替换成 `aaa`。
+校验脚本见 SOP「锚点断链全量校验」，**改完 md 锚点应跑一次**。
 
 ## 英文 md
 每个中文 md 完成后，`<name>.en.md` 英文整份**后补**（SOP：先全量中文，英文最后统一做）。当前均未做。

@@ -47,27 +47,28 @@
 
 ### Props
 
-| 名称 | 类型 | 默认值 | 说明 |
-|------|------|--------|------|
-| `src` | `string` | — | 图片地址（必填） |
-| `alt` | `string` | `''` | 替代文本，a11y 与 SEO 必填语义 |
-| `width` | `number \| string` | — | 宽度，建议显式设置以避免 CLS |
-| `height` | `number \| string` | — | 高度，同上 |
-| `fit` | `'fill' \| 'contain' \| 'cover' \| 'none' \| 'scale-down'` | `'fill'` | 映射 `object-fit` |
-| `position` | `string` | `'center'` | 映射 `object-position` |
-| `lazy` | `boolean` | `true` | 懒加载开关 |
-| `lazyMode` | `'native' \| 'observer'` | `'native'` | 原生 `loading=lazy` 或 IntersectionObserver |
-| `rootMargin` | `string` | `'200px'` | observer 模式下的提前加载距离 |
-| `placeholder` | `string \| Snippet \| boolean` | `true` | 占位：true 用骨架，string 作为 LQIP src，Snippet 自定义 |
-| `fallback` | `string \| boolean` | `true` | 失败降级图地址；false 关闭，改用 error 插槽 |
-| `crossorigin` | `'anonymous' \| 'use-credentials'` | — | 透传原生属性 |
-| `referrerpolicy` | `string` | — | 透传原生属性 |
-| `srcset` | `string` | — | 响应式图源 |
-| `sizes` | `string` | — | 响应式尺寸提示 |
-| `radius` | `number \| string` | — | 覆盖 `--cd-image-radius` |
-| `preview` | `boolean \| ImagePreviewConfig` | `false` | 是否开启点击预览，或传配置对象 |
-| `previewSrc` | `string` | `src` | 预览大图地址（默认用 `src`） |
-| `class` | `string` | — | 透传根类名 |
+> 本表由 `packages/svelte/src/image/meta.ts` 真源生成（2026-07-30 重校）。此前本表列的 prop 多为 Semi 对齐前的旧名或已删除项（如 `value`→`activeKey`、`change`→`onChange`），改 prop 时请同步 meta.ts，勿手写「规划中」的 prop。
+
+| Prop | 类型 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| src | `string` | `undefined` | 图片获取地址 |
+| alt | `string` | `''` | 图像描述 |
+| width | `number\|string` | `undefined` | 图片显示宽度，number 视为 px |
+| height | `number\|string` | `undefined` | 图片显示高度，number 视为 px |
+| placeholder | `Snippet` | `undefined` | 加载中占位内容（不传用 SkeletonImage 骨架） |
+| fallback | `string\|Snippet` | `undefined` | 加载失败：string=降级图 src；Snippet=自定义内容；不传=默认破图 icon |
+| preview | `boolean\|PreviewProps` | `true` | 预览：false 禁用；true 开启；对象=预览参数（含 src 覆盖预览图、visible 受控等） |
+| crossorigin | `'anonymous'\|'use-credentials'` | `undefined` | 透传给原生 img 的 crossorigin |
+| imgCls | `string` | `undefined` | 透传给 img 节点的自定义类名（对齐 Semi imgCls） |
+| imgStyle | `string` | `undefined` | 透传给 img 节点的自定义内联样式（对齐 Semi imgStyle） |
+| setDownloadName | `(src: string) => string` | `undefined` | 设置预览下载文件名 |
+| onClick | `(e: MouseEvent) => void` | `undefined` | 点击图片回调 |
+| onError | `(e: Event) => void` | `undefined` | 加载错误回调 |
+| onLoad | `(e: Event) => void` | `undefined` | 加载成功回调 |
+| class | `string` | `''` | 根类名透传 |
+| style | `string` | `''` | 根内联样式透传 |
+
+**子组件**：`ImagePreview`
 
 `ImagePreviewConfig`：`{ closable?: boolean; movable?: boolean; zoom?: [number, number]; zoomStep?: number; maskClosable?: boolean; getPopupContainer?: () => HTMLElement; }`
 
@@ -75,15 +76,7 @@
 
 ### Events
 
-| 事件 | payload | 说明 |
-|------|---------|------|
-| `on:load` | `Event` | 真图加载完成（status → loaded） |
-| `on:error` | `Event` | 加载失败（status → error，触发 fallback） |
-| `on:preview` | `{ src: string; index: number }` | 进入预览 |
-| `on:openChange` | `boolean` | 预览灯箱显隐变化（受控 `open`） |
-| `on:change` | `{ index: number }` | 预览组翻页，当前索引变化（受控 `activeIndex`） |
-| `on:zoom` | `{ scale: number }` | 缩放比例变化 |
-| `on:rotate` | `{ rotate: number }` | 旋转角度变化 |
+> 本组件无事件回调 prop（meta.events 为空）。此前本表列的回调均未实现，已删。
 
 ### Slots
 
@@ -120,11 +113,11 @@
 
 **Image 本体**
 - `<img>` 始终输出 `alt`；装饰性图片应传 `alt=""`（并配 `role="presentation"`）。
-- 加载中：占位层 `aria-busy="true"`；失败层提供 `role="img"` + `aria-label`（i18n `Image.loadError`）。
-- 可预览图片在 `<img>` 外包一层 `role="button"` `tabindex="0"` `aria-label`（`Image.previewTrigger`，如「查看大图」），支持 Enter/Space 打开。
+- 加载中：占位层 `aria-busy="true"`；失败层提供 `role="img"` + `aria-label`（i18n `Image.errorAlt`）。
+- 可预览图片在 `<img>` 外包一层 `role="button"` `tabindex="0"` `aria-label`（`Image.preview`，「预览」），支持 Enter/Space 打开。
 
 **预览灯箱（遵循 WAI-ARIA APG · Dialog (Modal)）**
-- 容器 `role="dialog"` `aria-modal="true"` `aria-label`（`Image.previewTitle`）。
+- 容器 `role="dialog"` `aria-modal="true"` `aria-label`（`Image.previewAlt`，「图片预览」）。
 - 焦点管理：打开时焦点移入灯箱（关闭按钮），`useFocusTrap` 锁定，关闭后返回触发元素。
 - 键盘交互：
   - `Esc` 关闭。
@@ -143,21 +136,23 @@
 
 用户可见文案零硬编码，全部走 i18n key（`Image.<field>`）：
 
-| key | 默认（zh-CN / en-US） |
-|------|------|
-| `Image.previewTrigger` | 查看大图 / View image |
-| `Image.previewTitle` | 图片预览 / Image preview |
-| `Image.loadError` | 图片加载失败 / Failed to load image |
-| `Image.loading` | 加载中 / Loading |
-| `Image.zoomIn` | 放大 / Zoom in |
-| `Image.zoomOut` | 缩小 / Zoom out |
-| `Image.rotateLeft` | 向左旋转 / Rotate left |
-| `Image.rotateRight` | 向右旋转 / Rotate right |
-| `Image.reset` | 重置 / Reset |
-| `Image.prev` | 上一张 / Previous |
-| `Image.next` | 下一张 / Next |
-| `Image.close` | 关闭 / Close |
-| `Image.previewCount` | 第 {current} / {total} 张 / {current} of {total} |
+> 本表由 `packages/locale/src/zh_CN.ts` 真源生成（2026-07-30 重校）。键名与键值都是 Semi 契约，勿手写「规划中」的键——历史上本表列过大量从未实现的键名，见 [[locale-dangling-keys-render-raw-key]]。
+
+| i18n key | 默认（zh-CN） |
+| --- | --- |
+| `Image.preview` | 预览 |
+| `Image.prevTip` | 上一张 |
+| `Image.nextTip` | 下一张 |
+| `Image.zoomInTip` | 放大 |
+| `Image.zoomOutTip` | 缩小 |
+| `Image.rotateTip` | 旋转 |
+| `Image.downloadTip` | 下载 |
+| `Image.adaptiveTip` | 适应页面 |
+| `Image.originTip` | 原始尺寸 |
+| `Image.errorAlt` | 图片加载失败 |
+| `Image.previewAlt` | 图片预览 |
+| `Image.closePreview` | 关闭预览 |
+| `Image.previewCount` | 第 {index} 张，共 {total} 张 |
 
 - `previewCount` 中的数字用 `Intl.NumberFormat` 本地化（如阿拉伯语数字）。
 - 缩放比例显示用 `Intl.NumberFormat(locale, { style: 'percent' })`（如 `150%`）。

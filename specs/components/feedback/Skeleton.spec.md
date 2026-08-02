@@ -36,7 +36,7 @@ Skeleton（骨架屏）是在内容加载完成前，以占位灰块预渲染页
 Skeleton 以**纯展示**为主，无键盘交互、无焦点管理，**不需要 `create<Name>` headless 逻辑**，渲染与样式完全在 `@chenzy-design/svelte` 实现。仅在以下两处复用 core 原语：
 
 - **`useId`**（@chenzy-design/core）：当 `loading=true` 时为占位容器生成稳定 id，供 `aria-busy` 区域与外部 `aria-describedby` 关联（可选）。
-- **`useLiveAnnouncer`**（@chenzy-design/core，可选）：当 `announce` 开启时，在 `loading` 由 `true → false` 切换瞬间向 polite live region 播报"内容已加载"（i18n key `Skeleton.loaded`），帮助屏幕阅读器用户感知加载完成。默认关闭以避免噪音。
+- **`useLiveAnnouncer`**（@chenzy-design/core，可选）：当 `announce` 开启时，在 `loading` 由 `true → false` 切换瞬间向 polite live region 播报"内容已加载"（文案由调用方传入——**Skeleton 不消费 locale**，`useLocale` 出现 0 次，原 `Skeleton.loaded` 键已随悬空键清理删除）。默认关闭以避免噪音。
 
 分层结论：
 - `@chenzy-design/core`：**不新增 `createSkeleton`**；仅依赖既有 `useId` / `useLiveAnnouncer`。
@@ -49,15 +49,18 @@ Skeleton 以**纯展示**为主，无键盘交互、无焦点管理，**不需�
 
 容器 `Skeleton`：
 
-| 属性 | 类型 | 默认值 | 说明 |
-|---|---|---|---|
-| `loading` | `boolean` | `true` | 是否处于加载占位态。`true` 渲染占位，`false` 渲染默认 slot 内容 |
-| `active` | `boolean` | `false` | 是否启用 shimmer 加载动画 |
-| `placeholder` | `Snippet` | — | 占位模板（也可用 `placeholder` slot），缺省时渲染子组件组合 |
-| `unmountPlaceholder` | `boolean` | `true` | `loading=false` 后是否从 DOM 卸载占位节点 |
-| `announce` | `boolean` | `false` | 加载完成时是否向 live region 播报 |
-| `class` | `string` | — | 自定义根类名 |
-| `style` | `string` | — | 自定义内联样式（仅消费 token，不写死颜色） |
+> 本表由 `packages/svelte/src/skeleton/meta.ts` 真源生成（2026-07-30 重校）。此前本表列的 prop 多为 Semi 对齐前的旧名或已删除项（如 `value`→`activeKey`、`change`→`onChange`），改 prop 时请同步 meta.ts，勿手写「规划中」的 prop。
+
+| Prop | 类型 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| loading | `boolean` | `true` | true 显示占位元素，false 显示子组件；受控不回写 |
+| active | `boolean` | `false` | 是否展示 shimmer 动画效果 |
+| placeholder | `Snippet` | `undefined` | 加载等待时的占位元素 |
+| children | `Snippet` | `undefined` | loading=false 时渲染的真实内容 |
+| class | `string` | `undefined` | 容器类名（对齐 Semi className） |
+| style | `string` | `undefined` | 容器内联样式（对齐 Semi style） |
+
+**子组件**：`SkeletonAvatar`、`SkeletonImage`、`SkeletonTitle`、`SkeletonButton`、`SkeletonParagraph`
 
 原子子组件公共 props（`Title` / `Paragraph` / `Avatar` / `Image` / `Button`）：
 
@@ -84,24 +87,16 @@ Skeleton 以**纯展示**为主，无键盘交互、无焦点管理，**不需�
 
 `Skeleton.Image` 专属：
 
-| 属性 | 类型 | 默认值 | 说明 |
-|---|---|---|---|
-| `showIcon` | `boolean` | `true` | 是否在占位中心显示图片图标 |
+> **`Skeleton.Image` 无专属 props**（2026-07-30 重校）：只有 `class` / `style`。此前列的 `showIcon` 从未实现。
 
 `Skeleton.Button` 专属：
 
-| 属性 | 类型 | 默认值 | 说明 |
-|---|---|---|---|
-| `size` | `'small' \| 'default' \| 'large'` | `'default'` | 与 Button 尺寸对齐 |
-| `block` | `boolean` | `false` | 是否撑满容器宽度 |
-| `pill` | `boolean` | `false` | 是否胶囊圆角 |
+> **`Skeleton.Button` 无专属 props**：只有 `class` / `style`。此前列的 `size` / `block` / `pill` 从未实现
+> （尺寸用 `SkeletonAvatar.size`，或由调用方用 `style` 控制）。
 
 ### Events
 
-| 事件 | 载荷 | 说明 |
-|---|---|---|
-| `on:loadingChange` | `{ loading: boolean }` | `loading` 受控值变化时触发（便于外部同步状态/埋点） |
-| `on:contentReady` | `void` | `loading` 由 `true → false`、真实内容首次挂载后触发 |
+> 本组件无事件回调 prop（meta.events 为空）。此前本表列的回调均未实现，已删。
 
 > 说明：Skeleton 无内部交互，不产生 `value/change` 或 `open/openChange`；事件仅用于状态同步与监控，非必需。
 

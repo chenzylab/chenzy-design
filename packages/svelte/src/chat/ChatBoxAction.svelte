@@ -109,7 +109,9 @@
     icon={resetIcon}
   />
 {/snippet}
-{#snippet resetIcon()}<IconRedoStroked />{/snippet}
+<!-- 类名对齐 Semi `-chatBox-action-icon-redo`：RTL 下该图标要水平翻转，
+     需要一个可选中的钩子（Semi 亦然）。 -->
+{#snippet resetIcon()}<IconRedoStroked class="cd-chat-chatBox-action-icon-redo" />{/snippet}
 
 {#snippet actionLike()}
   <Button
@@ -186,5 +188,10 @@
   .cd-chat-chatBox-action-icon-flip {
     display: inline-flex;
     transform: scaleY(-1);
+  }
+
+  /* —— RTL（对齐 Semi chat/rtl.scss）：重做图标水平翻转（箭头指向随书写方向） —— */
+  :global(.cd-rtl) :global(.cd-chat-chatBox-action-icon-redo) {
+    transform: scaleX(-1);
   }
 </style>

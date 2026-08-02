@@ -3,7 +3,6 @@ title: Lottie 动画
 name: lottie
 category: other
 brief: 在网页中展示 Lottie 动画。
-docMode: inline
 ---
 
 <script>

@@ -10,34 +10,10 @@
   §9.3：render 期不读 effect 写入的 $state；codes 遍历为纯派生，无自循环。
 -->
 <script lang="ts">
-  import type { ComponentProps } from 'svelte';
+  import { IconCodeStroked, IconFullScreenStroked } from '@chenzy-design/icons';
   import { Collapse } from '../collapse/index.js';
-  import CodeHighlight from '../code-highlight/CodeHighlight.svelte';
-  import JsonViewer from '../json-viewer/JsonViewer.svelte';
+  import SideBarCodeItem, { type CodeItemProps } from './SideBarCodeItem.svelte';
   import { useLocale } from '../locale-provider/index.js';
-
-  /** JsonViewer 组件 props 子集（透传，非受控 value）。 */
-  type JsonViewerProps = Partial<ComponentProps<typeof JsonViewer>>;
-  /** CodeHighlight 组件 props 子集（透传）。 */
-  type CodeHighlightProps = Partial<ComponentProps<typeof CodeHighlight>>;
-
-  /** 单个代码/JSON 预览项。对齐 Semi CodeItemProps。 */
-  export interface CodeItemProps {
-    /** 折叠头显示名。 */
-    name?: string;
-    /** 唯一标识（折叠面板 key）。 */
-    key: string;
-    /** 是否按 JSON 渲染（true → JsonViewer；false → CodeHighlight）。 */
-    isJson?: boolean;
-    /** CodeHighlight 语言 id（isJson=false 时生效）。 */
-    language?: string;
-    /** 预览内容（CodeHighlight 的 code / JsonViewer 的 value）。 */
-    content?: string;
-    /** 透传给 JsonViewer 的额外 props（isJson=true 时）。 */
-    jsonViewerProps?: JsonViewerProps;
-    /** 透传给 CodeHighlight 的额外 props（isJson=false 时）。 */
-    codeHighlightProps?: CodeHighlightProps;
-  }
 
   interface Props {
     /** 代码/JSON 预览项列表。 */
@@ -77,8 +53,10 @@
     onChange?.(keys);
   }
 
+  // Semi widget/code.tsx:77 给 Collapse 根节点挂 `-collapse` + `-collapse-code` 两个类
+  // （公共折叠样式 + code 变体），本库原来叫 -code-content，与 Semi 无对应。
   const rootCls = $derived(
-    ['cd-sidebar-code-content', className].filter(Boolean).join(' '),
+    ['cd-sidebar-collapse', 'cd-sidebar-collapse-code', className].filter(Boolean).join(' '),
   );
 </script>
 
@@ -91,87 +69,54 @@
     {#each codes as code (code.key)}
       <Collapse.Panel itemKey={code.key}>
         {#snippet head()}
-          <span class="cd-sidebar-code-content-head">
-            <span class="cd-sidebar-code-content-head-icon" aria-hidden="true">
-              <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
-                <path
-                  d="M6 4L2.5 8 6 12M10 4l3.5 4-3.5 4"
-                  stroke="currentColor"
-                  stroke-width="1.4"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                />
-              </svg>
-            </span>
-            <span class="cd-sidebar-code-content-head-text">{code.name ?? code.key}</span>
+          <span class="cd-sidebar-collapse-header-content">
+            <!-- Semi 直接把图标放在 -header-content 里，没有 -header-icon 这层包裹
+                 （widget/code.tsx:62 是裸 <IconCodeStroked />）。本库原来多包一层 span
+                 且画的是手写 svg，已换具名图标并去掉包裹层。 -->
+            <IconCodeStroked />
+            <span class="cd-sidebar-collapse-header-text">{code.name ?? code.key}</span>
             <!-- 展开（全屏）按钮：在 head 内自渲染，stopPropagation 不触发折叠（对齐 Semi FAQ）。 -->
             <button
               type="button"
-              class="cd-sidebar-code-content-expand"
+              class="cd-sidebar-collapse-header-expand-btn"
               aria-label={expandLabel}
               title={expandLabel}
               onclick={(e) => handleExpand(e, code)}
             >
-              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                <path
-                  d="M9.5 2.5h4v4M6.5 13.5h-4v-4M13.5 2.5l-5 5M2.5 13.5l5-5"
-                  stroke="currentColor"
-                  stroke-width="1.4"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                />
-              </svg>
+              <!-- Semi 用具名 IconFullScreenStroked（widget/code.tsx:68），本库原为手写 svg。 -->
+              <IconFullScreenStroked />
             </button>
           </span>
         {/snippet}
-        <div class="cd-sidebar-code-content-body">
-          {#if code.isJson}
-            <JsonViewer
-              value={code.content ?? ''}
-              width="100%"
-              showSearch={false}
-              {...code.jsonViewerProps}
-            />
-          {:else}
-            <CodeHighlight
-              code={code.content ?? ''}
-              language={code.language ?? 'markup'}
-              {...code.codeHighlightProps}
-            />
-          {/if}
-        </div>
+        <!-- 单项渲染委托给 SideBarCodeItem（对齐 Semi：CodeContent 内部渲染 CodeItem），
+             避免同一套 isJson 分流逻辑在两处各写一遍。 -->
+        <SideBarCodeItem {code} />
       </Collapse.Panel>
     {/each}
   </Collapse>
 </div>
 
 <style>
-  .cd-sidebar-code-content-head {
+  .cd-sidebar-collapse-header-content {
     display: flex;
     flex: 1 1 auto;
     align-items: center;
-    gap: var(--cd-sidebar-code-head-gap);
+    gap: var(--cd-sidebar-collapse-header-content-gap);
     min-inline-size: 0;
   }
   /* 展开按钮推到 head 右端（原 extra 靠右语义），紧邻折叠箭头前。 */
-  .cd-sidebar-code-content-expand {
+  .cd-sidebar-collapse-header-expand-btn {
     margin-inline-start: auto;
   }
-  .cd-sidebar-code-content-head-icon {
-    display: inline-flex;
-    flex-shrink: 0;
-    align-items: center;
-    color: var(--cd-sidebar-code-head-icon-color);
-  }
-  .cd-sidebar-code-content-head-text {
+  .cd-sidebar-collapse-header-text {
     overflow: hidden;
     color: var(--cd-sidebar-code-head-color);
-    font-size: var(--cd-sidebar-code-head-size);
-    font-weight: var(--cd-sidebar-code-head-weight);
+    font-size: var(--cd-font-size-regular);
+    font-weight: var(--cd-font-weight-regular);
     white-space: nowrap;
     text-overflow: ellipsis;
   }
-  .cd-sidebar-code-content-expand {
+  .cd-sidebar-collapse-header-expand-btn {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -181,21 +126,20 @@
     border: none;
     border-radius: var(--cd-sidebar-close-radius);
     background: transparent;
-    color: var(--cd-sidebar-code-expand-color);
+    color: var(--cd-sidebar-options-button-text);
     cursor: pointer;
     transition:
       background-color var(--cd-motion-duration-fast, 0.1s) var(--cd-motion-ease-standard, ease),
       color var(--cd-motion-duration-fast, 0.1s) var(--cd-motion-ease-standard, ease);
   }
-  .cd-sidebar-code-content-expand:hover {
+  .cd-sidebar-collapse-header-expand-btn:hover {
     background: var(--cd-sidebar-code-expand-hover-bg);
     color: var(--cd-sidebar-code-head-color);
   }
-  .cd-sidebar-code-content-expand:focus-visible {
+  .cd-sidebar-collapse-header-expand-btn:focus-visible {
     outline: none;
     box-shadow: var(--cd-focus-ring);
   }
-  .cd-sidebar-code-content-body {
-    padding: var(--cd-sidebar-code-body-padding);
-  }
+  /* 内容区 padding 随元素一起搬到 SideBarCodeItem（Svelte scoped 类不跨组件，
+     留在这里会被编译器判为「未使用」而丢弃）。 */
 </style>

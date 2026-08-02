@@ -3,7 +3,6 @@ title: Tree 树形控件
 name: tree
 category: show
 brief: 树型结构列表。
-docMode: inline
 ---
 
 <script>

@@ -11,6 +11,7 @@
   回调富载荷对齐 Semi（{itemKey,selectedKeys,selectedItems,domEvent,isOpen}）。
 -->
 <script lang="ts" module>
+  import { resolveDefault } from '@chenzy-design/core';
   export { NAV_CONTEXT_KEY } from './context.js';
 </script>
 
@@ -141,7 +142,7 @@
 
   let {
     items = [],
-    mode = 'vertical',
+    mode: modeProp,
     selectedKeys,
     defaultSelectedKeys,
     openKeys,
@@ -151,16 +152,16 @@
     defaultIsCollapsed = false,
     header,
     footer,
-    limitIndent = true,
-    toggleIconPosition = 'right',
+    limitIndent: limitIndentProp,
+    toggleIconPosition: toggleIconPositionProp,
     expandIcon,
     renderIcon,
-    subNavMotion = true,
-    subNavOpenDelay = DEFAULT_SUBNAV_OPEN_DELAY,
-    subNavCloseDelay = DEFAULT_SUBNAV_CLOSE_DELAY,
+    subNavMotion: subNavMotionProp,
+    subNavOpenDelay: subNavOpenDelayProp,
+    subNavCloseDelay: subNavCloseDelayProp,
     subDropdownProps,
-    tooltipShowDelay = DEFAULT_TOOLTIP_SHOW_DELAY,
-    tooltipHideDelay = DEFAULT_TOOLTIP_HIDE_DELAY,
+    tooltipShowDelay: tooltipShowDelayProp,
+    tooltipHideDelay: tooltipHideDelayProp,
     getPopupContainer,
     renderWrapper,
     class: className = '',
@@ -175,6 +176,16 @@
     footerSlot,
     children,
   }: Props = $props();
+  // cdGlobal 全局默认 props（对齐 Semi semiGlobal.config.overrideDefaultProps）：
+  // 优先级 = 显式传值 > cdGlobal['Navigation'] > 组件内置默认值。
+  const subNavCloseDelay = $derived(resolveDefault(subNavCloseDelayProp, 'Navigation', 'subNavCloseDelay', DEFAULT_SUBNAV_CLOSE_DELAY));
+  const subNavOpenDelay = $derived(resolveDefault(subNavOpenDelayProp, 'Navigation', 'subNavOpenDelay', DEFAULT_SUBNAV_OPEN_DELAY));
+  const tooltipHideDelay = $derived(resolveDefault(tooltipHideDelayProp, 'Navigation', 'tooltipHideDelay', DEFAULT_TOOLTIP_HIDE_DELAY));
+  const tooltipShowDelay = $derived(resolveDefault(tooltipShowDelayProp, 'Navigation', 'tooltipShowDelay', DEFAULT_TOOLTIP_SHOW_DELAY));
+  const toggleIconPosition = $derived(resolveDefault(toggleIconPositionProp, 'Navigation', 'toggleIconPosition', 'right'));
+  const limitIndent = $derived(resolveDefault(limitIndentProp, 'Navigation', 'limitIndent', true));
+  const subNavMotion = $derived(resolveDefault(subNavMotionProp, 'Navigation', 'subNavMotion', true));
+  const mode = $derived(resolveDefault(modeProp, 'Navigation', 'mode', 'vertical'));
 
   // ---------- 声明式子项收集（<Nav.Item>/<Nav.Sub>）----------
   let declared: NavItemDef[] = [];
@@ -483,5 +494,13 @@
   .cd-nav-horizontal .cd-nav-list {
     display: inline-flex;
     align-items: center;
+  }
+
+  /* —— RTL（对齐 Semi navigation/rtl.scss）——
+     只需声明方向：本库 Nav 的内边距与右侧分隔边框**已全部用逻辑属性**
+     （padding-inline / border-inline-end），RTL 下自己就翻，
+     不像 Semi 那样要写 `border-right:0; border-left:...` 掰回来。 */
+  :global(.cd-rtl) .cd-nav {
+    direction: rtl;
   }
 </style>

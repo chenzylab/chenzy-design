@@ -9,8 +9,10 @@
     'https://lf3-static.bytednsdoc.com/obj/eden-cn/ptlz_zlp/ljhwZthlaukjlkulzlp/components/audio1.mp3';
 </script>
 
-<AudioPlayer
-  audioUrl={{ src: audio1, title: 'Audio One' }}
-  showToolbar={false}
-  autoPlay={false}
-/>
+<div style="width: 100%">
+  <AudioPlayer
+    autoPlay={false}
+    audioUrl={{ src: audio1, title: '音频标题' }}
+    showToolbar={false}
+  />
+</div>

@@ -1,7 +1,7 @@
 <script lang="ts">
   import { Cropper, Button, Switch } from '@chenzy-design/svelte';
 
-  const src = 'https://picsum.photos/id/1015/800/500';
+  const src = 'https://lf3-static.bytednsdoc.com/obj/eden-cn/ptlz_zlp/ljhwZthlaukjlkulzlp/other/image.png';
   let showResizeBox = $state(true);
   let cropper = $state<{ getCropperCanvas: () => HTMLCanvasElement } | undefined>();
   let result = $state('');
@@ -26,12 +26,12 @@
     {src}
     {showResizeBox}
     cropperBoxStyle="outline-color: var(--cd-color-bg-0);"
-    style="width: 100%; height: 300px;"
+    style="width: 550px; height: 300px; margin: 20px;"
   />
   <div>
     <Button onclick={crop}>裁切</Button>
   </div>
   {#if result}
-    <img src={result} alt="裁切结果" style="max-height: 240px; border: 1px solid var(--cd-color-border);" />
+    <img src={result} alt="裁切结果" style="height: 400px;" />
   {/if}
 </div>

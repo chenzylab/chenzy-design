@@ -23,7 +23,7 @@
 </script>
 
 <script lang="ts">
-  import { compileToHast, type HastRoot, type UnifiedPluginEntry } from '@chenzy-design/core';
+  import { compileToHast, type HastRoot, type UnifiedPluginEntry, resolveDefault } from '@chenzy-design/core';
   import HastNode from './HastNode.svelte';
 
   interface Props {
@@ -48,13 +48,17 @@
   let {
     raw = '',
     components,
-    format = 'md',
-    remarkGfm = true,
+    format: formatProp,
+    remarkGfm: remarkGfmProp,
     remarkPlugins,
     rehypePlugins,
     class: className = '',
     style,
   }: Props = $props();
+  // cdGlobal 全局默认 props（对齐 Semi semiGlobal.config.overrideDefaultProps）：
+  // 优先级 = 显式传值 > cdGlobal['MarkdownRender'] > 组件内置默认值。
+  const format = $derived(resolveDefault(formatProp, 'MarkdownRender', 'format', 'md'));
+  const remarkGfm = $derived(resolveDefault(remarkGfmProp, 'MarkdownRender', 'remarkGfm', true));
 
   // 合并注册表：默认 + 使用方覆盖。
   const registry = $derived({ ...defaultComponents, ...(components ?? {}) });

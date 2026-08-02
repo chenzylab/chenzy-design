@@ -24,7 +24,7 @@
 -->
 <script lang="ts">
   import { setContext, getContext, untrack, type Snippet } from 'svelte';
-  import { useId, useDismiss, type Placement } from '@chenzy-design/core';
+  import { useId, useDismiss, type Placement, resolveDefault } from '@chenzy-design/core';
   import { getGlobalPopupContainer } from '../config-provider/index.js';
   import { floating } from '../_floating/use-floating.js';
   import DropdownMenu from './DropdownMenu.svelte';
@@ -113,23 +113,23 @@
     render,
     menu,
     children,
-    trigger = 'hover',
+    trigger: triggerProp,
     visible,
     defaultVisible = false,
-    position = 'bottom',
+    position: positionProp,
     autoAdjustOverflow = true,
     mouseEnterDelay = DEFAULT_ENTER_DELAY,
-    mouseLeaveDelay = DEFAULT_LEAVE_DELAY,
+    mouseLeaveDelay: mouseLeaveDelayProp,
     spacing,
     margin,
-    zIndex = 1050,
-    motion = true,
+    zIndex: zIndexProp,
+    motion: motionProp,
     className,
     contentClassName,
     style: contentStyle,
-    showTick = false,
+    showTick: showTickProp,
     stopPropagation = false,
-    closeOnEsc = true,
+    closeOnEsc: closeOnEscProp,
     rePosKey,
     disableFocusListener = false,
     clickToHide,
@@ -139,6 +139,15 @@
     onEscKeyDown,
     onClickOutSide,
   }: Props = $props();
+  // cdGlobal 全局默认 props（对齐 Semi semiGlobal.config.overrideDefaultProps）：
+  // 优先级 = 显式传值 > cdGlobal['Dropdown'] > 组件内置默认值。
+  const zIndex = $derived(resolveDefault(zIndexProp, 'Dropdown', 'zIndex', 1050));
+  const motion = $derived(resolveDefault(motionProp, 'Dropdown', 'motion', true));
+  const trigger = $derived(resolveDefault(triggerProp, 'Dropdown', 'trigger', 'hover'));
+  const position = $derived(resolveDefault(positionProp, 'Dropdown', 'position', 'bottom'));
+  const mouseLeaveDelay = $derived(resolveDefault(mouseLeaveDelayProp, 'Dropdown', 'mouseLeaveDelay', DEFAULT_LEAVE_DELAY));
+  const showTick = $derived(resolveDefault(showTickProp, 'Dropdown', 'showTick', false));
+  const closeOnEsc = $derived(resolveDefault(closeOnEscProp, 'Dropdown', 'closeOnEsc', true));
 
   // 父级 Dropdown 上下文（嵌套判定）：顶层无父 ctx（level 视为 0），render 内的 Item 处于 level 1，
   // 其内的子 Dropdown 读到 parent.level=1，自身内容 level=2。

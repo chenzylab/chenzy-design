@@ -50,26 +50,40 @@ Tabs（标签页）用于在同一区域内组织并切换多组对等内容，�
 
 ### Props
 
+> 本表由 `packages/svelte/src/tabs/meta.ts` 真源生成（2026-07-30 重校）。此前本表列的 prop 多为 Semi 对齐前的旧名或已删除项（如 `value`→`activeKey`、`change`→`onChange`），改 prop 时请同步 meta.ts，勿手写「规划中」的 prop。
+
 | Prop | 类型 | 默认值 | 说明 |
-|---|---|---|---|
-| `value` | `string \| number` | — | 受控选中标签 key（配合 `on:change`） |
-| `defaultValue` | `string \| number` | 首个标签 | 非受控初始选中 key |
-| `type` | `'line' \| 'card' \| 'button'` | `'line'` | 视觉风格 |
-| `tabPosition` | `'top' \| 'left' \| 'right' \| 'bottom'` | `'top'` | 标签栏位置 |
-| `size` | `'small' \| 'default' \| 'large'` | `'default'` | 尺寸 |
-| `tabList` | `Array<{ tab, itemKey, disabled?, closable?, icon? }>` | — | 数据驱动定义标签（替代 TabPane 子组件） |
-| `closable` | `boolean` | `false` | 全局可关闭（可被单标签 `closable` 覆盖） |
-| `addable` | `boolean` | `false` | 标签栏尾部显示新增按钮 |
-| `keyboardActivation` | `'auto' \| 'manual'` | `'auto'` | 方向键聚焦即激活 / 需确认激活 |
-| `overflow` | `'scroll' \| 'dropdown'` | `'scroll'` | 横向溢出处理方式 |
-| `lazy` | `boolean` | `false` | 面板首次激活才渲染 |
-| `destroyInactiveTabPane` | `boolean` | `false` | 切走即卸载非激活面板 |
-| `collapsible` | `boolean` | `false` | `line` 风格溢出时启用折叠箭头/下拉 |
-| `renderTabBar` | `(props, DefaultBar) => Snippet` | — | 完全自定义标签栏渲染 |
-| `tabBarClassName` | `string` | — | 标签栏容器（`.cd-tabs-bar`）自定义 class |
-| `tabBarStyle` | `string \| Record<string, string>` | — | 标签栏容器（`.cd-tabs-bar`）自定义样式 |
-| `visibleTabsStyle` | `string \| Record<string, string>` | — | 可见标签区域样式（scroll 模式作用于 `.cd-tabs-nav`，dropdown 模式作用于 `.cd-tabs-list`） |
-| `class` / `style` | `string` | — | 根节点透传 |
+| --- | --- | --- | --- |
+| activeKey | `string\|number` | `undefined` | 受控选中标签 key（对齐 Semi） |
+| defaultActiveKey | `string\|number` | `首个标签` | 非受控初始 key（对齐 Semi） |
+| type | `'line'\|'card'\|'button'\|'slash'` | `line` | 视觉风格（button=分段按钮组，slash=斜线式仅横向） |
+| size | `'small'\|'medium'\|'large'` | `large` | 尺寸档（对齐 Semi） |
+| tabPosition | `'top'\|'left'` | `top` | 标签栏位置：top 水平 / left 垂直（对齐 Semi；slash 仅 top） |
+| lazyRender | `boolean` | `false` | 懒渲染：仅当面板激活过才挂载进 DOM（对齐 Semi） |
+| keepDOM | `boolean` | `true` | 使用 TabPane 写法时是否渲染隐藏面板的 DOM（对齐 Semi） |
+| tabList | `TabItem[]` | `undefined` | 数据驱动标签定义；不传则从子 <Tabs.Pane> 的 tab/itemKey/icon/disabled/closable 纯声明式自动收集。TabItem 支持 icon?: Snippet（标签文字前渲染的图标） |
+| closable | `boolean` | `false` | 全局可关闭（单项可覆盖） |
+| collapsible | `boolean \| 'auto'` | `false` | 滚动折叠（对齐 Semi）：true 溢出时显示前/后切换箭头；auto 自动检测溢出再决定是否折叠（仅横向生效） |
+| more | `number \| { count?: number; render?: Snippet; dropdownProps?: object }` | `undefined` | 把末尾若干标签收进「更多」下拉（对齐 Semi）：数字简写或对象形式（count/render/dropdownProps） |
+| arrowPosition | `'start'\|'end'\|'both'` | `both` | collapsible 折叠模式中前/后切换箭头位置 |
+| renderArrow | `Snippet<[{ type: 'start'\|'end'; onClick: () => void }]>` | `undefined` | collapsible 折叠模式下自定义前/后切换箭头 |
+| showRestInDropdown | `boolean` | `true` | more 收纳模式是否在下拉中展示收起 tabs |
+| dropdownProps | `{ start?: object; end?: object }` | `undefined` | 折叠模式下透传下拉参数（对齐 Semi）：start=前箭头下拉，end=末尾「更多」下拉 |
+| onVisibleTabsChange | `(visibleTabKeys: (string\|number)[]) => void` | `undefined` | dropdown 模式下溢出项变化时回调，携带当前可见 tab keys |
+| class | `string` | `undefined` | 根节点自定义类名（对齐 Semi className） |
+| style | `string \| Record<string, string>` | `undefined` | 根节点自定义内联样式（对齐 Semi style） |
+| contentStyle | `string \| Record<string, string>` | `undefined` | 内容区外层样式（string 或 CSSProperties 对象） |
+| preventScroll | `boolean` | `false` | Tab 聚焦时是否阻止页面滚动 |
+| tabPaneMotion | `boolean` | `true` | 面板切换是否启用动画 |
+| tabBarExtraContent | `Snippet` | `undefined` | 标签栏右侧额外内容 |
+| tabBarClassName | `string` | `undefined` | 标签栏容器（.cd-tabs-bar）自定义 class |
+| tabBarStyle | `string \| Record<string, string>` | `undefined` | 标签栏容器（.cd-tabs-bar）自定义样式 |
+| visibleTabsStyle | `string \| Record<string, string>` | `undefined` | 可见标签区域自定义样式（scroll 模式作用于 .cd-tabs-nav，dropdown 模式作用于 .cd-tabs-list） |
+| onChange | `(key: string\|number) => void` | `undefined` |  |
+| onTabClose | `(key: string\|number) => void` | `undefined` |  |
+| onTabClick | `(key: string\|number, event: MouseEvent) => void` | `undefined` | 标签被点击触发（含已选中标签，未必触发 onChange；disabled 拦截前发出，可用于埋点） |
+| renderTabBar | `Snippet<[TabItem[], string\|number\|undefined, (key) => void]>` | `undefined` | 自定义整个标签栏渲染（接收 tab 列表、当前激活 key、切换回调 setActive）；传入时跳过内置标签栏与溢出处理，面板内容仍按 activeKey 显隐 |
+| children | `Snippet` | `undefined` | 声明式 TabPane 内容（<Tabs.Pane>），<Tabs.Pane> 支持 icon?: Snippet（标签文字前渲染的图标） |
 
 **Tabs.TabPane Props**
 
@@ -83,12 +97,7 @@ Tabs（标签页）用于在同一区域内组织并切换多组对等内容，�
 
 ### Events
 
-| Event | Payload | 说明 |
-|---|---|---|
-| `on:change` | `(key: string \| number)` | 选中标签变化（点击/键盘激活） |
-| `on:tabClick` | `(key, event)` | 标签被点击（含已选中标签，未必触发 change） |
-| `on:close` | `(key)` | 用户点击关闭叉，使用方据此从数据中移除 |
-| `on:add` | `()` | 用户点击新增按钮 |
+> 本组件无事件回调 prop（meta.events 为空）。此前本表列的回调均未实现，已删。
 
 > 受控模式下 `on:close`/`on:add` 仅发出意图，标签的实际增删由使用方更新 `tabList`/子组件完成。
 
@@ -153,14 +162,14 @@ Tabs（标签页）用于在同一区域内组织并切换多组对等内容，�
 
 用户可见文案零硬编码，均走 i18n key；动态数字用 `Intl.NumberFormat`。
 
-| i18n key | 默认（zh-CN） | 用途 |
-|---|---|---|
-| `Tabs.close` | 关闭 | 关闭按钮 `aria-label` |
-| `Tabs.closeTab` | 关闭标签 {tab} | 带标签名的关闭播报 |
-| `Tabs.add` | 新增标签 | 新增按钮 `aria-label` |
-| `Tabs.more` | 更多 | dropdown 溢出触发器 `aria-label` |
-| `Tabs.tabClosed` | 已关闭标签 {tab} | LiveAnnouncer 播报 |
-| `Tabs.tabAdded` | 已新增标签 | LiveAnnouncer 播报 |
+> 本表由 `packages/locale/src/zh_CN.ts` 真源生成（2026-07-30 重校）。键名与键值都是 Semi 契约，勿手写「规划中」的键——历史上本表列过大量从未实现的键名，见 [[locale-dangling-keys-render-raw-key]]。
+
+| i18n key | 默认（zh-CN） |
+| --- | --- |
+| `Tabs.scrollPrev` | 向前滚动 |
+| `Tabs.scrollNext` | 向后滚动 |
+| `Tabs.more` | 更多 |
+| `Tabs.closeTab` | 关闭 {tab} |
 
 RTL 语言（如 ar/he）通过 `dir="rtl"` 触发布局镜像，文案由 i18n 资源提供对应翻译。
 

@@ -150,4 +150,19 @@
     border-right-color: transparent;
     margin-right: calc(-1 * var(--cd-width-button-outline-border));
   }
+
+  /* —— RTL（对齐 Semi button/rtl.scss）——
+     ⚠️ Semi 那份 rtl.scss 通篇是 `padding-left/right` 互换，本库**不搬**：
+     三档尺寸的左右内边距 token 取值完全相同（都指向 base-tight / base），
+     互换等于空操作。真正需要换边的只有 outline 主题叠边那条
+     （透明边框与负外边距都在右侧，RTL 下要挪到左侧）。 */
+  :global(.cd-rtl) .cd-button-group {
+    direction: rtl;
+  }
+  :global(.cd-rtl) .cd-button-group-outline :global(.cd-button:not(:last-child)) {
+    border-right-color: initial;
+    margin-right: 0;
+    border-left-color: transparent;
+    margin-left: calc(-1 * var(--cd-width-button-outline-border));
+  }
 </style>

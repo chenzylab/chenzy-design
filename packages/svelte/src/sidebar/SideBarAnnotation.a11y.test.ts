@@ -64,16 +64,16 @@ describe('SideBarAnnotation — 分组 / 卡片渲染', () => {
       props: { visible: true, info, activeKey: 'videos', motion: false },
     });
     const videoCard = container.querySelector(
-      '.cd-sidebar-annotation-card-video',
+      '.cd-sidebar-annotation-item-video',
     ) as HTMLElement | null;
     expect(videoCard).not.toBeNull();
     // 有 url → 用 button（键盘可达）。
     expect(videoCard?.tagName).toBe('BUTTON');
     // 封面图。
-    expect(container.querySelector('.cd-sidebar-annotation-cover-img')).not.toBeNull();
+    expect(container.querySelector('.cd-sidebar-annotation-item-video-img')).not.toBeNull();
     // 时长 125s → 02:05（mm:ss），且 aria-label 走 i18n（en_US: "Video duration 02:05"）。
     const duration = container.querySelector(
-      '.cd-sidebar-annotation-duration',
+      '.cd-sidebar-annotation-item-video-duration',
     ) as HTMLElement | null;
     expect(duration?.textContent).toContain('02:05');
     expect(duration?.getAttribute('aria-label')).toBe('Video duration 02:05');
@@ -88,15 +88,17 @@ describe('SideBarAnnotation — 分组 / 卡片渲染', () => {
     expect(container.textContent).toContain('svelte.dev');
     // 序号 aria-label（en_US: "Citation 2"）。文本卡片的序号在 text 卡片内。
     const textCard = container.querySelector(
-      '.cd-sidebar-annotation-card-text',
+      '.cd-sidebar-annotation-item-text',
     ) as HTMLElement | null;
     const order = textCard?.querySelector(
-      '.cd-sidebar-annotation-order',
+      '.cd-sidebar-annotation-item-footer-order',
     ) as HTMLElement | null;
     expect(order?.getAttribute('aria-label')).toBe('Citation 2');
     // 无 url/onClick 的纯文本卡片是静态 div（不可点击）。
+    // 查 -item-static 而非 -item-text：前者才是「非交互」标记，后者是
+    // 动态类 -item-{item.type} 的产物（该 fixture 恰好 type='text' 才碰巧也命中）。
     const staticCard = container.querySelector(
-      '.cd-sidebar-annotation-card-static',
+      '.cd-sidebar-annotation-item-static',
     ) as HTMLElement | null;
     expect(staticCard).not.toBeNull();
     expect(staticCard?.tagName).toBe('DIV');
@@ -110,7 +112,7 @@ describe('SideBarAnnotation — 分组 / 卡片渲染', () => {
       props: { visible: true, info, activeKey: 'videos', motion: false, onClick },
     });
     const videoCard = container.querySelector(
-      '.cd-sidebar-annotation-card-video',
+      '.cd-sidebar-annotation-item-video',
     ) as HTMLElement;
     videoCard.click();
     expect(onClick).toHaveBeenCalledTimes(1);
@@ -137,7 +139,7 @@ describe('SideBarAnnotation — 分组 / 卡片渲染', () => {
     const { container } = renderWithLocale(SideBarAnnotation, {
       props: { visible: true, info, motion: false },
     });
-    const titleEl = container.querySelector('.cd-sidebar-container-title');
+    const titleEl = container.querySelector('.cd-sidebar-container-header-title');
     expect(titleEl?.textContent?.trim()).toBe('References');
   });
 });
@@ -149,6 +151,43 @@ describe('SideBarAnnotation — renderItem 覆盖', () => {
     });
     // 自定义渲染标记出现，默认卡片类不出现。
     expect(container.querySelector('[data-testid="custom-item"]')).not.toBeNull();
-    expect(container.querySelector('.cd-sidebar-annotation-card')).toBeNull();
+    expect(container.querySelector('.cd-sidebar-annotation-item')).toBeNull();
+  });
+});
+
+// video 卡的「标题 + 页脚」包裹层。Semi 叫 -item-video-content（annotation/item.tsx:45），
+// 本库原来复用了 -annotation-content —— 但那个类在分组网格上另有其义，
+// 同名导致 <style> 里出现两个同名规则块、后者静默覆盖前者的 padding/gap。
+describe('SideBarAnnotation — video 卡内层包裹（对齐 Semi -item-video-content）', () => {
+  const videoInfo: SideBarAnnotationGroup[] = [
+    {
+      header: '视频',
+      key: 'v',
+      annotations: [
+        { type: 'video', title: '标题', url: 'https://x/v', siteName: 'YT', order: 1 },
+      ],
+    },
+  ];
+
+  it('video 卡内层用 -item-video-content，且包住标题与页脚', () => {
+    const { container } = renderWithLocale(SideBarAnnotation, {
+      props: { visible: true, info: videoInfo, activeKey: 'v', motion: false },
+    });
+    const card = container.querySelector('.cd-sidebar-annotation-item-video')!;
+    const inner = card.querySelector('.cd-sidebar-annotation-item-video-content');
+    expect(inner, 'video 卡应有 -item-video-content 内层').not.toBeNull();
+    expect(inner!.querySelector('.cd-sidebar-annotation-item-title')).not.toBeNull();
+    expect(inner!.querySelector('.cd-sidebar-annotation-item-footer')).not.toBeNull();
+  });
+
+  it('-annotation-content 只用于分组网格，不再出现在卡片内部', () => {
+    const { container } = renderWithLocale(SideBarAnnotation, {
+      props: { visible: true, info: videoInfo, activeKey: 'v', motion: false },
+    });
+    // 分组网格那层仍在。
+    expect(container.querySelector('.cd-sidebar-annotation-content')).not.toBeNull();
+    // 但卡片内部不该再有同名节点（此前两处同名）。
+    const card = container.querySelector('.cd-sidebar-annotation-item-video')!;
+    expect(card.querySelector('.cd-sidebar-annotation-content')).toBeNull();
   });
 });

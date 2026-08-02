@@ -61,32 +61,32 @@ button.cd-switch.cd-switch-<size>.cd-switch-checked?.cd-switch-disabled?.cd-swit
 
 ### Props
 
-| 名称 | 类型 | 默认值 | 说明 |
-|---|---|---|---|
-| value | `boolean` | `false` | 受控开关态（约定 value + on:change）。绑定 `bind:value` 实现双向。 |
-| defaultValue | `boolean` | `false` | 非受控初始态。 |
-| checkedValue | `string \| number \| boolean` | `true` | 开态对应的实际值（用于表单提交与 onChange 回传）。 |
-| uncheckedValue | `string \| number \| boolean` | `false` | 关态对应的实际值。 |
-| size | `'small' \| 'default' \| 'large'` | `'default'` | 尺寸。 |
-| status | `'default' \| 'warning' \| 'error'` | `'default'` | 校验态（注：约定为 default/warning/error）。 |
-| disabled | `boolean` | `false` | 禁用，阻止交互与聚焦内交互。 |
-| loading | `boolean` | `false` | 异步加载态，锁定交互并展示 spinner。 |
-| checkedChildren | `string \| Snippet` | `undefined` | 开态内嵌文字/图标。**`size='small'` 时无效**（对齐 Semi：最小开关放不下文本，渲染层不渲染）。 |
-| uncheckedChildren | `string \| Snippet` | `undefined` | 关态内嵌文字/图标。**`size='small'` 时无效**。 |
-| name | `string` | `undefined` | 原生表单字段名（提交时使用）。 |
-| required | `boolean` | `false` | 表单必填校验（须为开态）。 |
-| ariaLabel | `string` | `undefined` | 无可见文本时的可访问名称。 |
-| announceOnChange | `boolean` | `false` | 切换后是否用 live region 播报新状态。 |
-| autofocus | `boolean` | `false` | 挂载后自动聚焦。 |
+> 本表由 `packages/svelte/src/switch/meta.ts` 真源生成（2026-07-30 重校）。此前本表列的 prop 多为 Semi 对齐前的旧名或已删除项（如 `value`→`activeKey`、`change`→`onChange`），改 prop 时请同步 meta.ts，勿手写「规划中」的 prop。
+
+| Prop | 类型 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| checked | `boolean` | `undefined` | 受控选中态；提供则为受控（对齐 Semi checked） |
+| defaultChecked | `boolean` | `false` | 非受控初始选中态（对齐 Semi defaultChecked） |
+| size | `'small'\|'default'\|'large'` | `default` |  |
+| disabled | `boolean` | `false` |  |
+| loading | `boolean` | `false` | 加载态，锁定交互并展示 spinner |
+| checkedText | `string \| Snippet` | `undefined` | 开态内嵌文字/图标（size=small 时不渲染） |
+| uncheckedText | `string \| Snippet` | `undefined` | 关态内嵌文字/图标（size=small 时不渲染） |
+| onChange | `(checked: boolean, event: Event) => void` | `undefined` | 变更回调（对齐 Semi (checked, e)） |
+| onMouseEnter | `(e: MouseEvent) => void` | `undefined` | 鼠标进入 |
+| onMouseLeave | `(e: MouseEvent) => void` | `undefined` | 鼠标离开 |
+| style | `string` | `undefined` | 透传根元素内联样式 |
+| class | `string` | `undefined` | 透传根元素 class（对齐 Semi className） |
+| id | `string` | `undefined` |  |
+| aria-label | `string` | `undefined` |  |
+| aria-labelledby | `string` | `undefined` | 关联外部可见文本 id（优先于 aria-label） |
+| aria-describedby | `string` | `undefined` |  |
+| aria-errormessage | `string` | `undefined` |  |
+| aria-invalid | `boolean` | `undefined` | 校验失败态（外层 Form 表达） |
 
 ### Events
 
-| 名称 | payload | 说明 |
-|---|---|---|
-| change | `{ value: boolean; nativeValue: string \| number \| boolean; event: Event }` | 状态变更（约定的受控事件）。nativeValue 为 checkedValue/uncheckedValue 映射结果。 |
-| focus | `FocusEvent` | 获得焦点。 |
-| blur | `FocusEvent` | 失去焦点。 |
-| keydown | `KeyboardEvent` | 键盘按下（可用于自定义快捷键扩展）。 |
+> 本组件无事件回调 prop（meta.events 为空）。此前本表列的回调均未实现，已删。
 
 > 说明：本组件无浮层，故不提供 open/openChange。loading 由外部 props 控制，调用方在 change 回调内置 loading=true，请求结束后复位并按结果更新 value（典型异步开关模式）。
 

@@ -359,4 +359,15 @@
       transition: none;
     }
   }
+
+  /* —— RTL（对齐 Semi progress/rtl.scss）——
+     只有横向进度条的文字外边距是单侧的，需换边；
+     垂直条的 margin-left/right 同值（都取 marginx），互换等于空操作，不写。 */
+  :global(.cd-rtl) .cd-progress {
+    direction: rtl;
+  }
+  :global(.cd-rtl) .cd-progress-horizontal .cd-progress-line-text {
+    margin-left: 0;
+    margin-right: var(--cd-spacing-progress-line-text-marginleft);
+  }
 </style>

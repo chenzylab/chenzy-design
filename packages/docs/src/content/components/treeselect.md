@@ -3,7 +3,6 @@ title: TreeSelect 树选择器
 name: treeselect
 category: input
 brief: 树选择器用于多层级树形数据的结构化展示 & 选取，例如显示文件夹与文件的列表、显示组织架构成员列表等等。
-docMode: inline
 ---
 
 <script>

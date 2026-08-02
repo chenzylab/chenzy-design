@@ -53,95 +53,93 @@ Cascader（级联选择器）用于从一组有层级关系的数据集合中进
 
 ### Props
 
+> 本表由 `packages/svelte/src/cascader/meta.ts` 真源生成（2026-07-30 重校）。此前本表列的 prop 多为 Semi 对齐前的旧名或已删除项（如 `value`→`activeKey`、`change`→`onChange`），改 prop 时请同步 meta.ts，勿手写「规划中」的 prop。
+
 | Prop | 类型 | 默认值 | 说明 |
-|---|---|---|---|
-| value | `(string\|number)[] \| (string\|number)[][]` | — | 受控值。单选为单条路径 key 数组；多选为多条路径数组。配 `on:change` |
-| defaultValue | 同上 | — | 非受控初始值 |
-| treeData | `CascaderNode[]` | `[]` | 级联数据源，节点含 `label/value/children/disabled/isLeaf/loadingChildren` |
-| open | `boolean` | — | 受控浮层显隐，配 `on:openChange` |
-| defaultOpen | `boolean` | `false` | 非受控初始显隐 |
-| multiple | `boolean` | `false` | 多选模式（叶子前置 Checkbox，父子级联） |
-| changeOnSelect | `boolean` | `false` | 选中任意层级即触发 change（而非仅叶子） |
-| leafOnly | `boolean` | `false` | 多选时只回传/计数叶子节点 |
-| loadData | `(node: CascaderNode) => Promise<CascaderNode[]>` | — | 动态加载子级；返回的数据合入树 |
-| expandTrigger | `'click' \| 'hover'` | `'click'` | 展开下一级的触发方式 |
-| filterTreeNode | `boolean \| ((query, node) => boolean)` | `false` | 是否可搜索及自定义匹配 |
+| --- | --- | --- | --- |
+| value | `(string\|number)[] \| (string\|number)[][]` | `undefined` | 单选单条路径；多选多条路径 |
+| defaultValue | `(string\|number)[] \| (string\|number)[][]` | `undefined` |  |
+| treeData | `CascaderNode[]` | `[]` |  |
+| open | `boolean` | `undefined` |  |
+| defaultOpen | `boolean` | `false` |  |
+| multiple | `boolean` | `false` | 每列 checkbox 多选 + 父子联动，多 tag 回显 |
+| size | `'small'\|'default'\|'large'` | `default` |  |
+| validateStatus | `'default'\|'warning'\|'error'` | `default` | 校验状态（对齐 Semi validateStatus） |
+| placeholder | `string` | `undefined` |  |
+| disabled | `boolean` | `false` |  |
+| changeOnSelect | `boolean` | `false` | 单选：点击任一层级（含中间非叶子）即提交该路径并触发 onChange，非叶子同时展开子列且不关闭面板，叶子提交并关闭；关闭时仅叶子提交并关闭 |
+| leafOnly | `boolean` | `false` | 多选时完全勾选的父级折叠为父路径（只回传/计数到该父级）；默认 false 仅回传叶子 |
+| filterTreeNode | `boolean \| ((query, path) => boolean)` | `undefined` | 是否可搜索及自定义匹配：false 关闭；true 默认 label 链子串匹配；函数自定义谓词 |
 | filterLeafOnly | `boolean` | `true` | 搜索结果是否仅展示到叶子路径 |
-| displayProp | `'label' \| 'value'` | `'label'` | 触发器回显使用的字段 |
-| displayRender | `(path: CascaderNode[]) => string \| Snippet` | — | 自定义触发器路径渲染 |
-| separator | `string` | `' / '` | 路径分隔符 |
-| size | `'small' \| 'default' \| 'large'` | `'default'` | 尺寸 |
-| status | `'default' \| 'warning' \| 'error'` | `'default'` | 校验态 |
-| placeholder | `string` | i18n | 占位文案 |
-| disabled | `boolean` | `false` | 禁用 |
-| clearable | `boolean` | `false` | 显示清除按钮 |
-| maxTagCount | `number` | — | 多选 Tag 溢出折叠阈值 |
-| showRestTagsPopover | `boolean` | `false` | 超出 maxTagCount 折叠的 tag 以 Popover 悬浮展示剩余项（hover +N） |
-| restTagsPopoverProps | `Record<string, unknown>` | — | 传给剩余 tags Popover 的额外 props（透传，可覆盖默认） |
-| emptyContent | `string \| Snippet` | i18n | 列为空时内容 |
-| destroyOnClose | `boolean` | `false` | 关闭时销毁浮层内容 |
+| displayProp | `'label'\|'value'` | `'label'` | 触发器回显使用的字段 |
+| separator | `string` | `' / '` | 路径分隔符（回显 + 搜索 label 链拼接） |
+| maxTagCount | `number` | `undefined` | 多选 Tag 溢出折叠阈值：超出显示前 N 个 + +M |
+| emptyContent | `string \| Snippet` | `undefined` | 列为空时内容；缺省走 i18n |
 | zIndex | `number` | `1030` | 浮层层级 |
-| getPopupContainer | `() => HTMLElement` | `body` | 浮层挂载容器 |
-| columnWidth | `number \| number[]` | `180` | 列宽（统一或逐列） |
-| dropdownClassName | `string` | — | 追加到浮层根节点的自定义类名（与内置类名并存） |
-| dropdownStyle | `string \| Record<string, string>` | — | 合并进浮层根节点的内联样式（不覆盖内置定位样式） |
-| dropdownMargin | `number \| { marginTop?; marginBottom?; marginLeft?; marginRight? }` | — | 浮层与 trigger 的额外间距（px）；数字映射到浮层 offset，对象取 marginTop |
-| filterable | `boolean` | `false` | 可搜索别名，等价 `filterTreeNode=true`；未传 filterTreeNode 时回退此值 |
-| treeNodeFilterProp | `string` | `'label'` | 搜索时用于过滤匹配的节点字段 |
-| filterRender | `Snippet<[{ path }]>` | — | 自定义搜索结果项渲染 |
-| filterSorter | `(a, b, input) => number` | — | 搜索结果自定义排序 |
-| onSearch | `(value: string) => void` | — | 搜索输入回调 |
-| remote | `boolean` | `false` | 远程搜索：跳过本地过滤，只触发 onSearch |
-| virtualizeInSearch | `{ height: number; width: number; itemSize: number }` | — | 搜索结果虚拟滚动配置 |
-| searchPosition | `'trigger' \| 'custom'` | `'trigger'` | 搜索框位置：`'trigger'` 内置；`'custom'` 不渲染内置搜索框 |
-| searchPlaceholder | `string` | — | 搜索框占位文案 |
-| autoMergeValue | `boolean` | `true` | 选中父节点时 value 不包含后代 |
-| checkRelation | `'related' \| 'unRelated'` | `'related'` | 多选节点选中关系：`'related'` 父子联动；`'unRelated'` 独立 |
-| onChangeWithObject | `boolean` | `false` | onChange 回传完整节点对象而非 value |
-| max | `number` | — | 多选可勾选数量上限；超出不选入并触发 onExceed |
-| onExceed | `(items: CascaderNode[]) => void` | — | 超出 max 时回调，传当前（含超出项）勾选节点集合 |
-| disableStrictly | `boolean` | `false` | 严格禁用：禁用节点不随父子联动继承 |
-| clickToSelect | `boolean` | `false` | 点击任意节点即选中（含非叶子） |
-| enableLeafClick | `boolean` | `false` | 多选模式下点击叶子即勾选 |
-| keyMaps | `{ value?; label?; children?; disabled?; isLeaf? }` | — | 自定义字段名映射 |
-| showNext | `'click' \| 'hover'` | `'click'` | 展开触发方式（canonical，优先于 expandTrigger） |
-| showClear | `boolean` | — | 显示清除按钮（clearable 别名，优先） |
-| mouseEnterDelay | `number` | `50` | hover 展开鼠标移入延迟（ms） |
-| mouseLeaveDelay | `number` | `50` | hover 鼠标移出延迟（ms） |
-| autoAdjustOverflow | `boolean` | `true` | 浮层视口溢出时自动翻转方向 |
-| preventScroll | `boolean` | `false` | 命令式 focus() 时阻止滚动文档 |
-| stopPropagation | `boolean` | `true` | 阻止下拉框点击冒泡 |
-| motion | `boolean` | `true` | 浮层展开动画 |
-| position | `string` | `'bottomStart'` | 浮层方向 |
-| triggerRender | `Snippet<[{ value, placeholder, isOpen, disabled }]>` | — | 完全自定义触发器 |
-| topSlot | `Snippet` | — | 面板顶部插槽 |
-| bottomSlot | `Snippet` | — | 面板底部插槽 |
-| prefix | `Snippet \| string` | — | 前置内容 |
-| suffix | `Snippet \| string` | — | 后置内容 |
-| insetLabel | `Snippet \| string` | — | 内嵌标签（触发器在值前渲染，如「地区：」） |
-| insetLabelId | `string` | — | 内嵌标签 DOM id（供外部 aria-labelledby 引用） |
-| arrowIcon / expandIcon | `Snippet` | — | 自定义展开/箭头图标（expandIcon 优先） |
-| clearIcon | `Snippet` | — | 自定义清除图标 |
+| getPopupContainer | `() => HTMLElement \| null \| undefined` | `undefined` | 浮层挂载容器，缺省 document.body；非 body 容器时 absolute 定位相对该容器 |
+| loadData | `(node: CascaderNode) => Promise<CascaderNode[]>` | `undefined` | 动态加载子节点 |
+| displayRender | `(labels: string[], selectedNodes: CascaderNode[]) => string` | `undefined` | 自定义触发器选中路径回显（单选 + 多选每个 tag 共用） |
+| onChange | `(value: (string\|number)[] \| (string\|number)[][]) => void` | `undefined` | 单选回调单条路径；多选回调多条叶子路径 |
+| aria-label | `string` | `'Cascader'` | 可访问名（对齐 Semi aria-label） |
+| ariaLabelledby | `string` | `undefined` | aria-labelledby：关联外部 label 元素（Form.Field 透传） |
+| ariaDescribedby | `string` | `undefined` | aria-describedby：关联 helpText / extraText（Form.Field 透传） |
+| ariaErrormessage | `string` | `undefined` | aria-errormessage：error 态关联错误信息容器（Form.Field 透传） |
+| ariaRequired | `boolean` | `undefined` | aria-required：必填语义（Form.Field required 透传） |
 | borderless | `boolean` | `false` | 无边框模式 |
-| ariaLabel | `string` | — | 可访问名 |
+| prefix | `Snippet \| string` | `undefined` | 前置内容 |
+| insetLabel | `Snippet \| string` | `undefined` | 内嵌标签：触发器在值前渲染的标签（如「地区：」），Semi 中为 prefix 的别名 |
+| insetLabelId | `string` | `undefined` | 内嵌标签的 DOM id（供外部 aria-labelledby 引用） |
+| suffix | `Snippet \| string` | `undefined` | 后置内容 |
+| clearIcon | `Snippet` | `undefined` | 自定义清除图标 |
+| expandIcon | `Snippet` | `undefined` | 自定义菜单项右侧展开图标（列项 icon，对齐 Semi expandIcon） |
+| arrowIcon | `Snippet` | `undefined` | 自定义触发器右侧下拉箭头（对齐 Semi arrowIcon，与 expandIcon 语义不同） |
+| motion | `boolean` | `true` | 下拉框展开动画 |
+| mouseEnterDelay | `number` | `50` | 鼠标移入延迟（ms） |
+| mouseLeaveDelay | `number` | `50` | 鼠标移出延迟（ms） |
+| autoAdjustOverflow | `boolean` | `true` | 下拉框自动调整方向 |
+| position | `string` | `'bottomStart'` | 下拉框方向 |
+| style | `string` | `undefined` | 选择框样式 |
+| dropdownStyle | `string \| Record<string, string>` | `undefined` | 下拉菜单样式（合并进浮层根节点，不覆盖内置定位样式） |
+| dropdownClassName | `string` | `undefined` | 追加到浮层根节点的自定义类名（与内置类名并存） |
+| dropdownMargin | `number \| { marginTop?: number; marginBottom?: number; marginLeft?: number; marginRight?: number }` | `undefined` | 浮层与 trigger 的额外间距（px）；数字映射到浮层 offset，对象取 marginTop |
+| onBlur | `(e: MouseEvent) => void` | `undefined` | 失焦回调 |
+| onFocus | `(e: MouseEvent) => void` | `undefined` | 聚焦回调 |
+| preventScroll | `boolean` | `false` | 聚焦时阻止滚动 |
+| stopPropagation | `boolean` | `true` | 阻止下拉框点击冒泡 |
+| topSlot | `Snippet` | `undefined` | 面板顶部插槽 |
+| bottomSlot | `Snippet` | `undefined` | 面板底部插槽 |
+| searchPosition | `'trigger'\|'custom'` | `'trigger'` | 搜索框位置：'trigger' 内置；'custom' 不渲染内置搜索框 |
+| searchPlaceholder | `string` | `undefined` | 搜索框占位文字 |
+| treeNodeFilterProp | `string` | `'label'` | 搜索时过滤的属性 |
+| filterRender | `Snippet<[{ path: FlatPath }]>` | `undefined` | 自定义搜索结果项渲染 |
+| filterSorter | `(a: FlatPath, b: FlatPath, input: string) => number` | `undefined` | 搜索结果自定义排序 |
+| onSearch | `(value: string) => void` | `undefined` | 搜索输入回调 |
+| remote | `boolean` | `false` | 远程搜索模式：跳过本地过滤，只触发 onSearch |
+| virtualizeInSearch | `{ height: number; width: number; itemSize: number }` | `undefined` | 搜索结果虚拟滚动配置 |
+| autoMergeValue | `boolean` | `true` | 选中父节点时 value 不包含后代 |
+| checkRelation | `'related'\|'unRelated'` | `'related'` | 勾选关系：'related' 父子联动；'unRelated' 独立 |
+| onChangeWithObject | `boolean` | `false` | onChange 回调是否返回完整 option 对象 |
+| max | `number` | `undefined` | 多选可勾选数量上限；超出时不选入并触发 onExceed（减少始终允许） |
+| onExceed | `(items: CascaderNode[]) => void` | `undefined` | 超出 max 时回调，传当前（含超出项）勾选的节点集合 |
+| showRestTagsPopover | `boolean` | `false` | 超出 maxTagCount 折叠的 tag 以 Popover 悬浮展示剩余项（hover +N） |
+| restTagsPopoverProps | `Record<string, unknown>` | `undefined` | 传给剩余 tags Popover 的额外 props（透传，可覆盖默认） |
+| showClear | `boolean` | `false` | 是否显示清除按钮（对齐 Semi showClear） |
+| keyMaps | `{ value?: string; label?: string; children?: string; disabled?: string; isLeaf?: string }` | `undefined` | 自定义字段名映射 |
+| clickToSelect | `boolean` | `false` | 点击任意节点即选中（含非叶子） |
+| enableLeafClick | `boolean` | `false` | 多选模式下点击叶子节点触发勾选 |
+| disableStrictly | `boolean` | `false` | 禁用不从父节点继承（严格禁用） |
+| showNext | `'click'\|'hover'` | `'click'` | 展开触发方式（对齐 Semi showNext）：click 点击 / hover 悬停展开子列 |
+| onClear | `() => void` | `undefined` | 清空回调 |
+| onLoad | `(loadedKeys: Key[], data: CascaderNode) => void` | `undefined` | 异步加载完成回调 |
+| onSelect | `(value: Key) => void` | `undefined` | 节点选中回调（单选叶子选中时） |
+| onDropdownVisibleChange | `(visible: boolean) => void` | `undefined` | 下拉面板显隐回调 |
+| onListScroll | `(e: Event, info: { panelIndex: number; activeNode: CascaderNode \| null }) => void` | `undefined` | 列滚动回调 |
+| triggerRender | `Snippet<[{ value: Key[] \| Key[][] \| undefined; placeholder: string; isOpen: boolean; disabled: boolean }]>` | `undefined` | 完全自定义触发器渲染 |
 | class | `string` | `''` | 根节点自定义类名（对齐 Semi className） |
-| style | `string` | — | 选择框内联样式 |
 
 ### Events
 
-| Event | payload | 说明 |
-|---|---|---|
-| change | `{ value, selectedNodes }` | 选定结果变化（单选为路径，多选为路径集合） |
-| openChange | `{ open: boolean }` | 浮层显隐变化（对应回调 prop onOpenChange / onDropdownVisibleChange） |
-| select | `{ node, path }` | 点击/激活某一节点（含非叶子） |
-| expand | `{ node, level }` | 展开了某一节点的下一级 |
-| load | `{ node, children }` | 动态加载完成 |
-| loadError | `{ node, error }` | 动态加载失败 |
-| search | `{ query: string }` | 搜索输入变化 |
-| clear | `{}` | 点击清除 |
-| blur / focus | `FocusEvent` | 触发器失焦/聚焦 |
-| listScroll | `{ panelIndex, activeNode }` | 下拉列滚动（对应回调 prop onListScroll） |
-| exceed | `{ items }` | 多选勾选超出 max（对应回调 prop onExceed） |
+> 本组件无事件回调 prop（meta.events 为空）。此前本表列的回调均未实现，已删。
 
 ### Slots
 
@@ -200,7 +198,7 @@ Cascader（级联选择器）用于从一组有层级关系的数据集合中进
 角色与属性：
 - 触发器：`role="combobox"`，`aria-haspopup="tree"`，`aria-expanded`，`aria-controls=<popup-id>`，`aria-activedescendant` 指向当前激活项。
 - 浮层：可搜索时容器配搜索 `input`；列区域 `role="tree"`，每列 `role="group"`，列项 `role="treeitem"`，含 `aria-level`、`aria-expanded`（有子级时）、`aria-selected`/`aria-checked`（多选）、`aria-disabled`、加载中 `aria-busy="true"`。
-- 多选 Tag 区：每个 Tag 关闭按钮配 `aria-label`（i18n `Cascader.removeTag`）。
+- 多选 Tag 区：每个 Tag 关闭按钮配 `aria-label`（走 `Tag.closeAriaLabel` 由 Tag 组件产出；Cascader slice 无 `removeTag` 键）。
 
 键盘交互：
 - 触发器：Enter/Space/Down 打开浮层并聚焦激活路径首列；Esc 关闭。
@@ -212,25 +210,22 @@ Cascader（级联选择器）用于从一组有层级关系的数据集合中进
 对比度：所有文本/边框/激活态 ≥ AA；不可仅以颜色区分激活与禁用，激活项辅以底色与（可选）勾选标记。
 reduced-motion：禁用浮层与列切换过渡。
 RTL：列从右向左排布，箭头方向镜像，Left/Right 键义对调。
-LiveAnnouncer：展开层级、加载完成（`Cascader.loaded`）、加载失败、选中路径结果（`Cascader.selectedAnnounce`）通过 polite 区播报。
+LiveAnnouncer：当前仅「加载中」走 `Cascader.loading`；「加载完成 / 加载失败 / 选中路径」三类播报**未实现**（locale 无 `loaded`/`selectedAnnounce` 键），如需补齐须同时加键与接线。
 
 ## 7. 国际化
 
 用户可见文案零硬编码，全部走 i18n key：
 
-| key | 默认（zh-CN / en） |
-|---|---|
-| Cascader.placeholder | 请选择 / Please select |
-| Cascader.searchPlaceholder | 搜索 / Search |
-| Cascader.empty | 暂无数据 / No data |
-| Cascader.notFound | 无匹配结果 / No results found |
-| Cascader.loading | 加载中… / Loading… |
-| Cascader.loadError | 加载失败，点击重试 / Load failed, click to retry |
-| Cascader.clear | 清除 / Clear |
-| Cascader.removeTag | 移除 {label} / Remove {label} |
-| Cascader.selectedCount | 已选 {count} 项 / {count} selected |
-| Cascader.selectedAnnounce | 已选择 {path} / Selected {path} |
-| Cascader.expandLevel | 展开第 {level} 级 / Expanded level {level} |
+> 本表由 `packages/locale/src/zh_CN.ts` 真源生成（2026-07-30 重校）。键名与键值都是 Semi 契约，勿手写「规划中」的键——历史上本表列过大量从未实现的键名，见 [[locale-dangling-keys-render-raw-key]]。
+
+| i18n key | 默认（zh-CN） |
+| --- | --- |
+| `Cascader.clear` | 清除 |
+| `Cascader.loading` | 加载中 |
+| `Cascader.searchPlaceholder` | 搜索 |
+| `Cascader.emptyText` | 无匹配项 |
+| `Cascader.columnLabel` | 第 {level} 级选项 |
+| `Cascader.searchResults` | 搜索结果 |
 
 - 路径分隔符 separator 可随 locale 调整。
 - `selectedCount` 等含复数语义文案交由 i18n 复数规则处理。
@@ -246,7 +241,7 @@ LiveAnnouncer：展开层级、加载完成（`Cascader.loaded`）、加载失�
 - 遵循 content-guidelines：句首大写（en）、中文不加句号、按钮用动词。
 
 危险操作文案（单列）：
-- 清除全部已选：触发器清除按钮 `Cascader.clear`，多选时若已选较多，可二次确认文案 `Cascader.clearConfirm` = "确认清除全部 {count} 项已选？/ Clear all {count} selections?"（默认不弹确认，由调用方按需开启）。
+- 清除全部已选：触发器清除按钮 `aria-label` 走 `Cascader.clear`。二次确认**未实现**（locale 无 `clearConfirm` 键），需要时由调用方自行用 Popconfirm 包裹。
 
 ## 9. 性能
 

@@ -99,7 +99,7 @@ export const meta = {
   },
   // hour/minute/second 是选中项后缀单位（英文为空串，对齐 Semi）；
   // hourLabel/minuteLabel/secondLabel 才是列 aria-label（本库 a11y 补充）。
-  i18nKeys: ['TimePicker.placeholder', 'TimePicker.triggerLabel', 'TimePicker.hour', 'TimePicker.minute', 'TimePicker.second', 'TimePicker.hourLabel', 'TimePicker.minuteLabel', 'TimePicker.secondLabel', 'TimePicker.am', 'TimePicker.pm', 'TimePicker.rangeStart', 'TimePicker.rangeEnd'],
+  i18nKeys: ['TimePicker.placeholder.time', 'TimePicker.placeholder.timeRange', 'TimePicker.triggerLabel', 'TimePicker.hour', 'TimePicker.minute', 'TimePicker.second', 'TimePicker.hourLabel', 'TimePicker.minuteLabel', 'TimePicker.secondLabel', 'TimePicker.AM', 'TimePicker.PM', 'TimePicker.begin', 'TimePicker.end'],
   // 面板列宽/面板高/range 双列分割线/圆角/阴影对齐 Semi timePicker/variables.scss；触发输入框复用
   // Input（--cd-input-* + 专属 --cd-radius-time-picker-input），时间列复用 ScrollList/ScrollItem
   // （其自身 --cd-*-scroll-list-* token）。

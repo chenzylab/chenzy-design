@@ -48,37 +48,41 @@ Notification（通知提醒框）是一种**命令式**的全局反馈组件，�
 
 ### Props（命令式 config 字段，亦为 `<Notification>` 受控渲染属性）
 
-| 名称 | 类型 | 默认值 | 说明 |
-|---|---|---|---|
-| `id` | `string` | 自动生成 | 通知唯一标识，传入相同 id 调用 `open` 等价于 `update` |
-| `type` | `'default' \| 'success' \| 'info' \| 'warning' \| 'error'` | `'default'` | 通知类型，决定图标与强调色 |
-| `title` | `string \| Snippet` | — | 标题，纯文本时用于 aria-labelledby |
-| `content` | `string \| Snippet` | — | 正文内容 |
-| `icon` | `Snippet \| false` | 按 type 推断 | 自定义图标；`false` 隐藏图标 |
-| `duration` | `number` | `4.5`（秒） | 自动关闭延时；`0` 表示不自动关闭 |
-| `placement` | `'topLeft' \| 'top' \| 'topRight' \| 'bottomLeft' \| 'bottom' \| 'bottomRight'` | `'topRight'` | 弹出位置 |
-| `closable` | `boolean` | `true` | 是否显示关闭按钮 |
-| `closeIcon` | `Snippet` | 内置 X | 自定义关闭图标 |
-| `showProgress` | `boolean` | `false` | 是否显示剩余时间进度条 |
-| `pauseOnHover` | `boolean` | `true` | 悬停时暂停计时 |
-| `footer` | `Snippet` | — | 操作区（按钮组） |
-| `width` | `string \| number` | `360` | 卡片宽度（覆盖 `--cd-notification-width`） |
-| `theme` | `'light' \| 'dark'` | 跟随全局 | 卡片配色主题 |
-| `className` | `string` | — | 根节点附加类名 |
-| `style` | `string` | — | 根节点内联样式 |
-| `getPopupContainer` | `() => HTMLElement` | `() => document.body` | 自定义挂载容器（局部通知） |
-| `zIndex` | `number` | `--cd-z-index-notification` | 自定义层级 |
-| `role` | `'status' \| 'alert'` | 按 type 推断 | 强制指定 live 极性 |
+> 本表由 `packages/svelte/src/notification/meta.ts` 真源生成（2026-07-30 重校）。此前本表列的 prop 多为 Semi 对齐前的旧名或已删除项（如 `value`→`activeKey`、`change`→`onChange`），改 prop 时请同步 meta.ts，勿手写「规划中」的 prop。
+
+| Prop | 类型 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| id | `string` | `undefined` | 指定 id；已存在则原地更新（对齐 Semi） |
+| title | `string \| Snippet` | `''` | 通知标题（string 文本或 Snippet） |
+| content | `string \| Snippet` | `''` | 通知内容（string 文本或 Snippet） |
+| type | `'default'\|'success'\|'info'\|'warning'\|'error'` | `'default'` | 语义类型，决定内置图标与强调色 |
+| duration | `number` | `3` | 自动关闭秒数，单位 s，0 时不自动关闭 |
+| position | `'top'\|'bottom'\|'topLeft'\|'topRight'\|'bottomLeft'\|'bottomRight'` | `'topRight'` | 弹出位置，每方位独立堆叠 |
+| showClose | `boolean` | `true` | 是否展示关闭按钮 |
+| theme | `'normal'\|'light'` | `'normal'` | 填充样式；light 为多色浅填充（提高与界面对比） |
+| icon | `Snippet` | `undefined` | 左上角自定义图标（覆盖类型内置图标） |
+| zIndex | `number` | `1010` | 弹层 z-index，首次设置一次生效 |
+| direction | `'ltr'\|'rtl'` | `'ltr'（可经 notification.config 改默认）` | RTL 时镜像卡片布局（图标/内容 margin 方向翻转） |
+| getPopupContainer | `() => HTMLElement` | `() => document.body` | 指定父级 DOM，容器将渲染至该 DOM（首条通知生效） |
+| onClick | `(e: MouseEvent) => void` | `undefined` | 点击通知的回调 |
+| onClose | `() => void` | `undefined` | 通知关闭回调（主动关闭、延时到达关闭都会触发） |
+| onCloseClick | `(id: string) => void` | `undefined` | 主动点击关闭按钮时的回调 |
+
+**事件**（回调 prop 形式，对齐 Semi）：
+
+| 事件 | 说明 |
+| --- | --- |
+| `onClose` | 通知关闭时触发（主动关闭 / 延时到达 / destroyAll） |
+| `onClick` | 点击通知卡片时触发 |
+| `onCloseClick` | 主动点击关闭按钮时触发，带 id |
 
 ### Events / Callbacks（config 回调 + `<Notification>` 事件）
 
-| 名称 | 载荷 | 说明 |
-|---|---|---|
-| `on:close` / `onClose` | `(id: string)` | 通知关闭后触发（自动或手动） |
-| `on:click` / `onClick` | `(e: MouseEvent, id)` | 点击通知主体触发 |
-| `on:openChange` | `{ open: boolean, id }` | 显隐变化（受控渲染模式下） |
-| `on:durationEnd` | `(id: string)` | 计时结束触发关闭前回调 |
-| `on:mouseenter` / `on:mouseleave` | `(id)` | 悬停暂停/恢复时触发 |
+| 事件 | 说明 |
+| --- | --- |
+| `onClose` | 通知关闭时触发（主动关闭 / 延时到达 / destroyAll） |
+| `onClick` | 点击通知卡片时触发 |
+| `onCloseClick` | 主动点击关闭按钮时触发，带 id |
 
 命令式返回：`notification.open(config) => string(id)`；`notification.close(id)`；`notification.update(id, config)`；`notification.destroyAll(placement?)`。
 
@@ -140,14 +144,11 @@ Notification（通知提醒框）是一种**命令式**的全局反馈组件，�
 
 用户可见文案零硬编码，经 i18n provider 注入：
 
-| i18n key | 默认（zh-CN / en-US） | 用途 |
-|---|---|---|
-| `Notification.closeText` | 关闭 / Close | 关闭按钮 aria-label |
-| `Notification.success` | 成功 / Success | success 图标的视觉隐藏前缀（屏幕阅读器） |
-| `Notification.info` | 提示 / Info | info 同上 |
-| `Notification.warning` | 警告 / Warning | warning 同上 |
-| `Notification.error` | 错误 / Error | error 同上 |
-| `Notification.notification` | 通知 / Notification | live region 区域标签 |
+> 本表由 `packages/locale/src/zh_CN.ts` 真源生成（2026-07-30 重校）。键名与键值都是 Semi 契约，勿手写「规划中」的键——历史上本表列过大量从未实现的键名，见 [[locale-dangling-keys-render-raw-key]]。
+
+| i18n key | 默认（zh-CN） |
+| --- | --- |
+| `Notification.closeText` | 关闭 |
 
 - 类型前缀（如"错误："）以视觉隐藏文本注入卡片首部，供屏幕阅读器先播报极性。
 - 文案/数字若出现在 content 由调用方负责，但组件内的相对时间、计数等若由组件提供，须用 `Intl.RelativeTimeFormat` / `Intl.NumberFormat`，locale 跟随 provider。

@@ -50,28 +50,84 @@ Form 是表单容器组件，负责承载并编排一组输入控件（Input/Sel
 
 ### Props（Form 容器）
 
+> 本表由 `packages/svelte/src/form/meta.ts` 真源生成（2026-07-30 重校）。此前本表列的 prop 多为 Semi 对齐前的旧名或已删除项（如 `value`→`activeKey`、`change`→`onChange`），改 prop 时请同步 meta.ts，勿手写「规划中」的 prop。
+
 | Prop | 类型 | 默认值 | 说明 |
-|------|------|--------|------|
-| `value` | `Record<string, any>` | — | 受控整表单值，配合 `on:change`。 |
-| `initValues` | `Record<string, any>` | `{}` | 非受控初始值，用于 reset 基准。 |
-| `layout` | `'vertical' \| 'horizontal'` | `'vertical'` | 整体排布方向。 |
-| `labelPosition` | `'top' \| 'left' \| 'inset'` | `'top'` | Label 相对控件位置。 |
-| `labelWidth` | `number \| string` | — | `left` 模式下 Label 固定宽度。 |
-| `labelAlign` | `'left' \| 'right'` | `'left'` | Label 文本对齐。 |
-| `size` | `'small' \| 'default' \| 'large'` | `'default'` | 统一字段尺寸，向子控件下发。 |
-| `disabled` | `boolean` | `false` | 禁用整张表单。 |
-| `requiredMark` | `boolean \| 'optional'` | `true` | 必填星标策略。 |
-| `colon` | `boolean` | `false` | Label 后是否加冒号（受 i18n 影响）。 |
-| `validateTrigger` | `'change' \| 'blur' \| 'submit' \| 'mount' \| string[]` | `['blur','change']` | 全局默认校验时机，字段可覆盖。 |
-| `showValidateIcon` | `boolean` | `true` | 错误/警告文案是否带状态图标。 |
-| `scrollToError` | `boolean \| ScrollIntoViewOptions` | `true` | 提交失败时滚动到首个错误字段。 |
-| `stopValidateWithError` | `boolean` | `false` | 字段命中首条错误即停止该字段后续 rule。 |
-| `preventDefault` | `boolean` | `true` | 是否拦截原生 submit 默认行为。 |
-| `stopPropagation` | `boolean` | `false` | 提交时是否阻止 submit 事件冒泡。 |
-| `allowEmpty` | `boolean` | `false` | 收集值时是否保留空值字段键。 |
-| `getFormApi` | `(formApi: FormApi) => void` | — | Form 挂载后一次性回传内部 FormApi 句柄，供父组件在外部命令式 `setFieldsValue`/`validate`/`validateField`/`resetFields`（Semi getFormApi）。 |
-| `onReset` | `() => void` | — | 表单重置时回调（原生 `<button type="reset">` reset 或 `formApi.resetFields()`）。 |
-| `onErrorChange` | `(errors: FieldErrors) => void` | — | 任意字段错误集合变化时回调，入参为最新 `formState.errors`（Semi onErrorChange）。 |
+| --- | --- | --- | --- |
+| value | `Record<string, unknown>` | `undefined` | 受控整表单值；变更经 onChange 上报 |
+| initValues | `Record<string, unknown>` | `{}` | 非受控初始值 |
+| id | `string` | `undefined` | form 元素 id（同时写 x-form-id 供外部 DOM 定位）（Semi id） |
+| layout | `'vertical'\|'horizontal'` | `vertical` |  |
+| labelPosition | `'top'\|'left'\|'inset'` | `top` |  |
+| labelWidth | `number \| string` | `undefined` |  |
+| labelAlign | `'left'\|'right'` | `left` | Label 文本对齐（spec §4） |
+| disabled | `boolean` | `false` |  |
+| requiredMark | `boolean` | `true` |  |
+| scrollToError | `boolean` | `false` | 提交校验失败时滚动并聚焦首个错误字段 |
+| validateTrigger | `'change'\|'blur'\|'submit'\|'mount'\|string[]` | `['blur','change']` | 全局默认校验时机，字段可经 trigger 覆盖（spec §4） |
+| showValidateIcon | `boolean` | `true` | 错误/警告文案是否带状态图标（spec §4） |
+| stopValidateWithError | `boolean` | `false` | 字段命中首条错误即停止该字段后续 rule（spec §4） |
+| stopPropagation | `{ submit?: boolean; reset?: boolean }` | `undefined` | 提交/重置时是否阻止事件冒泡（对齐 Semi 对象形态） |
+| allowEmpty | `boolean` | `false` | 收集值时是否保留空值字段键（spec §4） |
+| autoScrollToError | `boolean \| ScrollIntoViewOptions` | `false` | scrollToError 别名，可传 ScrollIntoViewOptions（Semi autoScrollToError） |
+| getFormApi | `(formApi: FormApi & { scrollToField; scrollToError }) => void` | `undefined` | Form 挂载后一次性回传内部 FormApi 句柄（含 scrollToField/scrollToError），供父级外部命令式 setValues/validate/reset（Semi getFormApi） |
+| onSubmit | `(r: { valid; values; errors }) => void` | `undefined` |  |
+| onSubmitFail | `(errors, values, e: SubmitEvent) => void` | `undefined` | 校验失败回调（带原生 submit 事件）（Semi onSubmitFail） |
+| onChange | `(values: Record<string, unknown>) => void` | `undefined` |  |
+| onReset | `() => void` | `undefined` | 表单重置时回调（原生 reset 或 formApi.reset()）（Semi onReset） |
+| onErrorChange | `(errors, changedError) => void` | `undefined` | 任意字段错误集合变化时回调，入参为最新 errors + 变更子集（Semi onErrorChange） |
+| children | `Snippet<[{ formState; formApi }]> \| Snippet` | `undefined` | 表单内容；带参 snippet 可拿 formState/formApi（Semi children-as-function） |
+| footer | `Snippet<[{ submitting: boolean }]>` | `undefined` |  |
+| Field.field | `string` | `—` | 字段名（必填） |
+| Field.label | `string \| { text; align; width; required; extra; optional }` | `undefined` | 标签：字符串或对象形态（对齐 Semi LabelProps） |
+| Field.labelPosition | `'top'\|'left'\|'inset'` | `继承容器` | field 级 label 位置覆盖 |
+| Field.labelAlign | `'left'\|'right'` | `继承容器` | field 级 label 对齐覆盖 |
+| Field.labelWidth | `number \| string` | `继承容器` | field 级 label 宽度覆盖（left 模式） |
+| Field.noLabel | `boolean` | `false` | 只去 Label 保留 error/wrapper（Semi noLabel） |
+| Field.noErrorMessage | `boolean` | `false` | 只去错误/提示信息块（Semi noErrorMessage） |
+| Field.name | `string` | `undefined` | label 的 htmlFor 目标（默认用自动 id）（Semi name） |
+| Field.fieldClassName | `string` | `undefined` | field wrapper 的 class 透传（Semi fieldClassName） |
+| Field.fieldStyle | `string` | `undefined` | field wrapper 的内联样式透传（Semi fieldStyle） |
+| Field.helpText | `string` | `undefined` | 提示文案，与 error 同块（error 优先）（Semi helpText） |
+| Field.extraTextPosition | `'middle'\|'bottom'` | `继承容器` | field 级 extraText 位置覆盖 |
+| Field.pure | `boolean` | `false` | 只接管数据流，不插 Label/ErrorMessage/extra（Semi pure） |
+| Field.isInInputGroup | `boolean` | `false` | group 内字段模式，Label/ErrorMessage 交由 Group 渲染（Semi isInInputGroup） |
+| Field.rules | `Rule[]` | `[]` |  |
+| Field.initValue | `unknown` | `undefined` | 字段级初始值，覆盖容器 initValues（spec §4.2） |
+| Field.required | `boolean` | `false` |  |
+| Field.validateStatus | `'default'\|'warning'\|'error'` | `undefined` | 外部强制校验态（受控展示，不经内部校验、不回写）（spec §4.2） |
+| Field.extraText | `string` | `undefined` |  |
+| Field.noStyle | `boolean` | `false` | 仅注册收集、不渲染布局 DOM（纯收集）（spec §4.2 §190） |
+| Field.span | `number` | `undefined` | Form.Section 栅格内占列（grid-column: span N）（spec §4.2） |
+| Field.transform | `(v, values) => unknown` | `undefined` | 提交前值转换（纯函数，不回写 state）（spec §4.2） |
+| Field.dependencies | `string[]` | `undefined` | 依赖字段名；其值变化时本字段自动重校验 |
+| Field.trigger | `'change'\|'blur'\|'submit'\|'mount'\|string[]` | `继承容器` | 字段级校验时机覆盖（spec §4） |
+| Field.valuePropName | `string` | `'value'` | 控件值属性名；如 Checkbox/Switch 用 'checked'，snippet 参数即多出同名别名映射字段值 |
+| Field.children | `Snippet<[{ value; [valuePropName]; onChange; onBlur; status; id; describedBy; disabled }]>` | `undefined` | snippet 参数含通用 value 及按 valuePropName 命名的别名（默认 value）；id 用于 label for/id 关联，describedBy 用于控件 aria-describedby |
+| Input.field | `string` | `—` | 字段名（必填） |
+| Input.label | `string` | `undefined` |  |
+| Input.rules | `Rule[]` | `[]` |  |
+| Input.initValue | `unknown` | `undefined` | 字段级初始值，覆盖容器 initValues（spec §4.2） |
+| Input.required | `boolean` | `false` |  |
+| Input.validateStatus | `'default'\|'warning'\|'error'` | `undefined` | 外部强制校验态（受控展示）（spec §4.2） |
+| Input.extraText | `string` | `undefined` |  |
+| Input.span | `number` | `undefined` | Form.Section 栅格内占列（spec §4.2） |
+| Input.transform | `(v, values) => unknown` | `undefined` | 提交前值转换（纯函数）（spec §4.2） |
+| Input.placeholder | `string` | `undefined` |  |
+| Input.type | `'text'\|'password'` | `text` |  |
+| Input.showClear | `boolean` | `false` |  |
+| Input.maxLength | `number` | `undefined` |  |
+| Input.dependencies | `string[]` | `undefined` | 依赖字段名；其值变化时本字段自动重校验 |
+| Input.trigger | `'change'\|'blur'\|'submit'\|'mount'\|string[]` | `继承容器` | 字段级校验时机覆盖（spec §4） |
+| form | `FormApi` | `undefined` | 外部预建 FormApi（createForm()），传入则用它，父层可立即操作（对齐 Semi Form.useForm()+form=）；不传则内部创建 |
+| InputGroup.label | `string \| { text; align; width; required; extra; optional }` | `undefined` | 组级标签（Label 上提到 group 级） |
+| InputGroup.labelPosition | `'top'\|'left'` | `继承容器` | 组标签位置 |
+| InputGroup.extraText | `string` | `undefined` | 额外说明文本 |
+| InputGroup.extraTextPosition | `'bottom'\|'middle'` | `bottom` | 额外说明位置 |
+| InputGroup.size | `'small'\|'default'\|'large'` | `undefined` | 整组尺寸，透传给内部控件 |
+| InputGroup.children | `Snippet` | `undefined` | 组内多个 <Form.Field>；自动进入 isInInputGroup 模式，Label/Error 上提 group 级 |
+
+**子组件**：`Form.Field`、`Form.List`、`Form.Input`、`Form.Select`、`Form.Checkbox`、`Form.CheckboxGroup`、`Form.Radio`、`Form.RadioGroup`、`Form.TextArea`、`Form.InputNumber`、`Form.TimePicker`、`Form.AutoComplete`、`Form.PinCode`、`Form.Switch`、`Form.Slider`、`Form.Rating`、`Form.DatePicker`、`Form.TagInput`、`Form.TreeSelect`、`Form.Cascader`、`Form.Upload`、`Form.Section`、`Form.Slot`、`Form.Label`、`Form.ErrorMessage`、`Form.InputGroup`
 
 ### Props（Form.Field / 绑定字段）
 
@@ -93,14 +149,7 @@ Form 是表单容器组件，负责承载并编排一组输入控件（Input/Sel
 
 ### Events
 
-| Event | payload | 说明 |
-|-------|---------|------|
-| `change` | `{ values, field?, value? }` | 任一字段值变化（受控同步）。 |
-| `submit` | `{ values, errors }` | 提交触发，`errors` 为空对象表示校验通过。 |
-| `submitFail` | `{ errors, values }` | 校验未通过的提交。 |
-| `reset` | `{ values }` | 调用 reset 后。 |
-| `valuesChange` | `{ changed, all }` | 增量值变化（含 setFieldsValue）。 |
-| `fieldValidate` | `{ field, status, errors }` | 单字段校验完成。 |
+> 本组件无事件回调 prop（meta.events 为空）。此前本表列的回调均未实现，已删。
 
 ### Slots
 
@@ -151,18 +200,19 @@ Form 是表单容器组件，负责承载并编排一组输入控件（Input/Sel
 
 用户可见文案零硬编码，经 i18n provider 注入；日期/数字校验提示用 `Intl`。
 
-| i18n key | 默认值（zh） | 说明 |
-|----------|-------------|------|
-| `Form.required` | `{label}为必填项` | 必填校验默认错误 |
-| `Form.optional` | `选填` | optional 标记 |
-| `Form.typeError` | `{label}格式不正确` | 类型校验失败 |
-| `Form.minLength` | `至少输入 {min} 个字符` | 长度下限 |
-| `Form.maxLength` | `最多输入 {max} 个字符` | 长度上限 |
-| `Form.min` | `不能小于 {min}` | 数值下限 |
-| `Form.max` | `不能大于 {max}` | 数值上限 |
-| `Form.pattern` | `{label}格式不符合要求` | 正则校验 |
-| `Form.submitFailAnnounce` | `{count} 个字段校验未通过` | 屏幕阅读器汇总播报 |
-| `Form.colon` | `：` | 冒号符号（部分语言无冒号或用半角） |
+> 本表由 `packages/locale/src/zh_CN.ts` 真源生成（2026-07-30 重校）。键名与键值都是 Semi 契约，勿手写「规划中」的键——历史上本表列过大量从未实现的键名，见 [[locale-dangling-keys-render-raw-key]]。
+
+| i18n key | 默认（zh-CN） |
+| --- | --- |
+| `Form.required` | {label}为必填项 |
+| `Form.optional` | 选填 |
+| `Form.typeError` | {label}格式不正确 |
+| `Form.minLength` | 至少输入 {min} 个字符 |
+| `Form.maxLength` | 最多输入 {max} 个字符 |
+| `Form.min` | 不能小于 {min} |
+| `Form.max` | 不能大于 {max} |
+| `Form.pattern` | {label}格式不符合要求 |
+| `Form.validating` | 校验中… |
 
 - 校验内插值（min/max/len）通过 `Intl.NumberFormat` 本地化数字；日期类规则提示走 `Intl.DateTimeFormat`。
 - 规则可返回 i18n key 或函数 `(label, locale) => string`，便于业务覆盖。
@@ -177,7 +227,7 @@ Form 是表单容器组件，负责承载并编排一组输入控件（Input/Sel
 - `extraText` 用于前置引导（如"密码需 8 位以上"），减少校验失败概率。
 - 句末标点：错误短句不加句号，与 Semi 一致。
 
-**危险操作文案（单列）**：Form 自身无破坏性动作，但其 footer 常承载"重置/清空"。当 `reset` 会清除用户已填大量内容时，调用方应二次确认；推荐文案 key `Form.resetConfirm`（默认"确定清空已填写的内容？"），破坏性按钮文案用动词明确"清空"，避免模糊的"确定"。该确认由调用方用 Modal/Popconfirm 实现，Form 不内置。
+**危险操作文案（单列）**：Form 自身无破坏性动作，但其 footer 常承载"重置/清空"。当 `reset` 会清除用户已填大量内容时，调用方应二次确认；推荐由调用方自备确认文案（locale 无 `Form.resetConfirm` 键，Form slice 只含校验类文案），破坏性按钮文案用动词明确"清空"，避免模糊的"确定"。该确认由调用方用 Modal/Popconfirm 实现，Form 不内置。
 
 ## 9. 性能
 

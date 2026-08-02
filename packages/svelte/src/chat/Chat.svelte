@@ -35,6 +35,7 @@
     type ChatMode,
     type SendHotKey,
     type EnableUploadProps,
+    resolveDefault,
   } from '@chenzy-design/core';
   import { IconChevronDown, IconDisc } from '@chenzy-design/icons';
   import { useLocale } from '../locale-provider/index.js';
@@ -83,8 +84,18 @@
     uploadTipProps?: Record<string, unknown>;
     /** 透传 MarkdownRender props。 */
     markdownRenderProps?: Record<string, unknown>;
+    /** 是否对用户消息中的 HTML 标签进行转义，防止被 Markdown 解析器当作 HTML 处理导致内容丢失。 */
+    escapeHtml?: boolean;
     /** 输入框占位。 */
     placeholder?: string;
+    /** 输入框类名（对齐 Semi inputBoxCls）。 */
+    inputBoxCls?: string;
+    /** 输入框样式（对齐 Semi inputBoxStyle）。 */
+    inputBoxStyle?: string;
+    /** 提示区最外层类名（对齐 Semi hintCls）。 */
+    hintCls?: string;
+    /** 提示区最外层样式（对齐 Semi hintStyle）。 */
+    hintStyle?: string;
     /** 顶部插槽。 */
     topSlot?: Snippet;
     /** 底部插槽（列表与输入区之间）。 */
@@ -119,18 +130,23 @@
   let {
     chats,
     roleConfig,
-    align = CHAT_ALIGN.LEFT_RIGHT,
-    mode = CHAT_MODE.BUBBLE,
-    sendHotKey = 'enter',
-    showClearContext = false,
-    showStopGenerate = false,
+    align: alignProp,
+    mode: modeProp,
+    sendHotKey: sendHotKeyProp,
+    showClearContext: showClearContextProp,
+    showStopGenerate: showStopGenerateProp,
     canSend,
     hints,
     enableUpload = true,
     uploadProps,
     uploadTipProps,
     markdownRenderProps,
+    escapeHtml = true,
     placeholder,
+    inputBoxCls = '',
+    inputBoxStyle = '',
+    hintCls = '',
+    hintStyle = '',
     topSlot,
     bottomSlot,
     class: className = '',
@@ -155,6 +171,13 @@
     renderHintBox,
     renderDivider,
   }: Props = $props();
+  // cdGlobal 全局默认 props（对齐 Semi semiGlobal.config.overrideDefaultProps）：
+  // 优先级 = 显式传值 > cdGlobal['Chat'] > 组件内置默认值。
+  const align = $derived(resolveDefault(alignProp, 'Chat', 'align', CHAT_ALIGN.LEFT_RIGHT));
+  const showStopGenerate = $derived(resolveDefault(showStopGenerateProp, 'Chat', 'showStopGenerate', false));
+  const mode = $derived(resolveDefault(modeProp, 'Chat', 'mode', CHAT_MODE.BUBBLE));
+  const showClearContext = $derived(resolveDefault(showClearContextProp, 'Chat', 'showClearContext', false));
+  const sendHotKey = $derived(resolveDefault(sendHotKeyProp, 'Chat', 'sendHotKey', 'enter'));
 
   const loc = useLocale();
 
@@ -342,6 +365,7 @@
             {mode}
             lastChat={i === currentChats.length - 1}
             {markdownRenderProps}
+            {escapeHtml}
             onMessageCopy={(m) => onMessageCopy?.(m)}
             onMessageDelete={doDelete}
             onMessageReset={doReset}
@@ -389,7 +413,7 @@
     {/if}
 
     {#if hints && hints.length > 0}
-      <Hint {hints} onHintClick={doHintClick} {renderHintBox} />
+      <Hint {hints} onHintClick={doHintClick} {renderHintBox} class={hintCls} style={hintStyle} />
     {/if}
 
     <InputBox
@@ -406,6 +430,8 @@
       onClearContext={doClearContext}
       onInputChange={(p) => onInputChange?.(p)}
       {renderInputArea}
+      class={inputBoxCls}
+      style={inputBoxStyle}
     />
   </div>
 </div>
@@ -479,5 +505,11 @@
   .cd-chat-topSlot,
   .cd-chat-bottomSlot {
     flex: 0 0 auto;
+  }
+
+  /* —— RTL（对齐 Semi chat/rtl.scss）：根节点声明方向；
+     图标镜像分别在 Hint / InputBox / ChatBoxAction 各自的 <style> 里。 —— */
+  :global(.cd-rtl) .cd-chat {
+    direction: rtl;
   }
 </style>

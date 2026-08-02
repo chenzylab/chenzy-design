@@ -3,7 +3,6 @@ title: Input 输入框
 name: input
 category: input
 brief: 输入框是最基本的接收用户文本输入的组件。
-docMode: inline
 ---
 
 <script>

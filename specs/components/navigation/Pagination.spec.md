@@ -57,34 +57,36 @@ Pagination 含分页算法、键盘导航、跳页解析、a11y 通告，属"有
 
 ### Props
 
-| 名称 | 类型 | 默认值 | 说明 |
-|---|---|---|---|
-| `total` | `number` | `0` | 数据总条数（驱动 pageCount 计算）。 |
-| `currentPage` | `number` | — | 当前页码（受控）；与 `on:change` 配合。 |
-| `defaultCurrentPage` | `number` | `1` | 默认页码（非受控）。 |
-| `pageSize` | `number` | — | 每页条数（受控）。 |
-| `defaultPageSize` | `number` | `10` | 默认每页条数（非受控）。 |
-| `pageSizeOpts` | `number[]` | `[10, 20, 50, 100]` | 每页条数可选项。 |
-| `size` | `'small' \| 'default' \| 'large'` | `'default'` | 尺寸档位。 |
-| `mode` | `'default' \| 'simple'` | `'default'` | 形态：完整 / 简洁。 |
-| `status` | `'default' \| 'warning' \| 'error'` | `'default'` | 跳页输入校验态（如越界输入提示）。 |
-| `showSizeChanger` | `boolean` | `false` | 是否展示每页条数选择器。 |
-| `showQuickJumper` | `boolean` | `false` | 是否展示跳页输入框。 |
-| `showTotal` | `boolean \| ((total, range) => string)` | `false` | 是否/如何展示总数文案。 |
-| `hideOnSinglePage` | `boolean` | `false` | 仅一页时是否隐藏整个分页器。 |
-| `siblingCount` | `number` | `1` | 当前页两侧保留的页码数。 |
-| `boundaryCount` | `number` | `1` | 首尾固定显示的页码数。 |
-| `disabled` | `boolean` | `false` | 整体禁用。 |
-| `popoverPosition` | `'top' \| 'bottom'` | `'bottom'` | sizeChanger 弹层位置（透传 Select）。 |
+> 本表由 `packages/svelte/src/pagination/meta.ts` 真源生成（2026-07-30 重校）。此前本表列的 prop 多为 Semi 对齐前的旧名或已删除项（如 `value`→`activeKey`、`change`→`onChange`），改 prop 时请同步 meta.ts，勿手写「规划中」的 prop。
+
+| Prop | 类型 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| total | `number` | `1` | 数据总条数（对齐 Semi） |
+| showTotal | `boolean` | `false` | 是否显示总页数文案（对齐 Semi） |
+| pageSize | `number` | `undefined` | 每页条数；缺省取 pageSizeOpts[0]（对齐 Semi，默认 null） |
+| pageSizeOpts | `number[]` | `[10,20,40,100]` | size changer 可选每页条数（对齐 Semi） |
+| size | `'small'\|'default'` | `default` | small 为紧凑视图（current/total）（对齐 Semi） |
+| currentPage | `number` | `undefined` | 受控当前页（越界自动钳制显示，不回写；对齐 Semi） |
+| defaultCurrentPage | `number` | `1` | 默认当前页（非受控；对齐 Semi） |
+| onPageChange | `(currentPage: number) => void` | `undefined` | 仅页码变化回调（对齐 Semi） |
+| onPageSizeChange | `(newPageSize: number) => void` | `undefined` | 每页容量变化回调（对齐 Semi） |
+| onChange | `(currentPage: number, pageSize: number) => void` | `undefined` | 页码或每页容量变化回调（对齐 Semi） |
+| prevText | `string \| Snippet` | `undefined` | 上一页内容；缺省显示 ‹（对齐 Semi prevText） |
+| nextText | `string \| Snippet` | `undefined` | 下一页内容；缺省显示 ›（对齐 Semi nextText） |
+| showSizeChanger | `boolean` | `false` | 显示每页条数选择器；size=small 时不生效（对齐 Semi） |
+| showQuickJumper | `boolean` | `false` | 显示快速跳页输入（越界静默钳制，非数字忽略；对齐 Semi） |
+| popoverZIndex | `number` | `1030` | 浮层 z-index（对齐 Semi），透传 Select/Popover |
+| popoverPosition | `PopoverPosition` | `'bottomLeft'` | size changer / 省略号 / hover 浮层方位（对齐 Semi，透传 Select/Popover） |
+| style | `string` | `undefined` | 透传根元素内联样式（对齐 Semi style） |
+| class | `string` | `undefined` | 透传根元素类名（对齐 Semi className） |
+| hideOnSinglePage | `boolean` | `false` | 仅一页时隐藏整个分页器；showSizeChanger 为 true 时此开关失效（对齐 Semi） |
+| hoverShowPageSelect | `boolean` | `false` | size=small 时 hover 页码弹出全部页码快速切换（对齐 Semi，v1.27） |
+| disabled | `boolean` | `false` | 禁用（对齐 Semi） |
+| preventPageChangeOnPageSizeChange | `boolean` | `false` | 切换 pageSize 时阻止自动调整 currentPage（对齐 Semi） |
 
 ### Events
 
-| 名称 | payload | 说明 |
-|---|---|---|
-| `on:change` | `{ currentPage: number, pageSize: number }` | 页码或每页条数变化（统一出口，便于一次性触发数据请求）。 |
-| `on:pageChange` | `number` | 仅页码变化时触发（细粒度）。 |
-| `on:pageSizeChange` | `number` | 仅每页条数变化时触发；变更后内部会重算并可能回退 currentPage。 |
-| `on:jump` | `{ value: number, valid: boolean }` | 跳页输入提交，valid=false 表示越界被钳制。 |
+> 本组件无事件回调 prop（meta.events 为空）。此前本表列的回调均未实现，已删。
 
 ### Slots
 
@@ -159,25 +161,22 @@ Pagination 含分页算法、键盘导航、跳页解析、a11y 通告，属"有
 
 用户可见文案零硬编码，全部走 i18n key；total 文案为 simple 模式核心，需支持复数与变量插值。日期无关，数字用 `Intl.NumberFormat` 本地化（千分位）。
 
-| i18n key | 默认（zh-CN） | 说明 |
-|---|---|---|
-| `Pagination.ariaLabel` | 分页导航 | nav 地标 label |
-| `Pagination.prev` | 上一页 | 上一页文案/aria |
-| `Pagination.next` | 下一页 | 下一页文案/aria |
-| `Pagination.prevAria` | 上一页 | 屏幕阅读器专用 |
-| `Pagination.nextAria` | 下一页 | 屏幕阅读器专用 |
-| `Pagination.page` | 第 {page} 页 | 页码项 aria-label |
-| `Pagination.currentPageAria` | 第 {page} 页，共 {count} 页 | 当前页通告 |
-| `Pagination.jumpNextAria` | 向后 5 页 | 快进 aria |
-| `Pagination.jumpPrevAria` | 向前 5 页 | 快退 aria |
-| `Pagination.total` | 共 {total} 条 | showTotal 默认文案（数字经 Intl 格式化） |
-| `Pagination.totalRange` | 第 {start}-{end} 条 / 共 {total} 条 | showTotal range 形式 |
-| `Pagination.simpleTotal` | 第 {current} / {count} 页 | **simple 模式核心位置文案** |
-| `Pagination.quickJumperLabel` | 跳至 | 跳页输入前缀/label |
-| `Pagination.quickJumperSuffix` | 页 | 跳页输入后缀 |
-| `Pagination.pageSizeLabel` | 每页条数 | sizeChanger label |
-| `Pagination.pageSizeOption` | {size} 条/页 | sizeChanger 选项 |
-| `Pagination.outOfRange` | 页码超出范围 | 跳页越界提示（status=error） |
+> 本表由 `packages/locale/src/zh_CN.ts` 真源生成（2026-07-30 重校）。键名与键值都是 Semi 契约，勿手写「规划中」的键——历史上本表列过大量从未实现的键名，见 [[locale-dangling-keys-render-raw-key]]。
+
+| i18n key | 默认（zh-CN） |
+| --- | --- |
+| `Pagination.total` | 共 {total} 页 |
+| `Pagination.ariaLabel` | 分页 |
+| `Pagination.prevPage` | 上一页 |
+| `Pagination.nextPage` | 下一页 |
+| `Pagination.pageLabel` | 第 {page} 页 |
+| `Pagination.pageSize` | {size} 条/页 |
+| `Pagination.itemsPerPage` | 每页条数 |
+| `Pagination.jumpTo` | 跳至 |
+| `Pagination.page` | 页 |
+| `Pagination.more` | 更多 |
+| `Pagination.pageChangeAnnounce` | 第 {page} 页，共 {count} 页 |
+| `Pagination.pageSizeChangeAnnounce` | 每页 {size} 条，第 {page} 页 |
 
 - 复数：`total / simpleTotal` 通过 ICU/复数规则适配 en（"{total, plural, one {# item} other {# items}}"）。
 - RTL 语言的范围连字符与变量顺序由翻译资源决定，不在代码中拼接。

@@ -3,7 +3,6 @@ title: Tag 标签
 name: tag
 category: show
 brief: 标签是图形化标记界面上的元素的组件，达到快速识别、分组的目的。
-docMode: inline
 ---
 
 <script>
@@ -149,7 +148,7 @@ import { Tag, TagGroup, SplitTagGroup } from '@chenzy-design/svelte';
 | avatarShape | 头像 Tag 形状，可选 `square` 和 `circle` | string | `square` |
 | class | 类名 | string | - |
 | maxTagCount | 最大数量限制，超出后显示为 +N | number | - |
-| popoverProps | popover 的配置属性，可以控制 direction、zIndex、trigger 等，具体参考 [Popover](/components/popover#API_参考) | PopoverProps | `{}` |
+| popoverProps | popover 的配置属性，可以控制 direction、zIndex、trigger 等，具体参考 [Popover](/components/popover#api-参考) | PopoverProps | `{}` |
 | showPopover | hover 到 +N 时，是否通过 Popover 显示剩余内容 | boolean | false |
 | size | 标签的尺寸，可选 `small`、 `default`、 `large` | string | `default` |
 | style | 样式 | string | - |

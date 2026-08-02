@@ -157,7 +157,7 @@
   }
 
   /* RTL：镜像 Semi rtl.scss */
-  :global([dir='rtl'] .cd-skeleton) {
+  :global(.cd-rtl .cd-skeleton) {
     direction: rtl;
   }
 </style>

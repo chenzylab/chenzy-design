@@ -3,7 +3,6 @@ title: Notification 通知
 name: notification
 category: feedback
 brief: 通知用于主动向用户发出消息通知。
-docMode: inline
 ---
 
 <script>

@@ -27,6 +27,8 @@ export const selectTokens = {
   'color-select-option-disabled-text': { value: 'var(--cd-color-disabled-text)', category: 'color', label: '禁用选项文字色', usage: '禁用选择器下拉菜单选项文字颜色' },
   'color-select-option-border-default': { value: 'var(--cd-color-border)', category: 'color', label: '分组分割线色', usage: '选择器下拉菜单分组标题分割线颜色' },
   'color-select-group-text': { value: 'var(--cd-color-text-2)', category: 'color', label: '分组标题文本色', usage: '选择器下拉菜单分组标题文本颜色' },
+  // 对齐 Semi $color-select_create_tips-text：allowCreate 新建选项的「创建」提示前缀色。
+  'color-select-create-tips-text': { value: 'var(--cd-color-text-2)', category: 'color', label: '新建提示文本色', usage: '选择器下拉菜单新建选项提示文本颜色' },
 
   'color-select-prefix-suffix-text-default': { value: 'var(--cd-color-text-2)', category: 'color', label: '前后缀文本色', usage: '选择器输入框前后缀文本颜色' },
 
@@ -77,6 +79,8 @@ export const selectTokens = {
   'spacing-select-selection-marginleft': { value: 'var(--cd-spacing-base-tight)', category: 'spacing', label: '内容区左外边距', usage: '选择器内容区左侧外边距（组件消费）' },
   // 对齐 Semi $spacing-select_multiple_selection-marginLeft：多选态内容区左外边距更小（4px）。
   'spacing-select-multiple-selection-marginleft': { value: 'var(--cd-spacing-extra-tight)', category: 'spacing', label: '多选内容区左外边距', usage: '多选选择器内容区左侧外边距（组件消费）' },
+  // 对齐 Semi $spacing-select_create_tips-marginRight：「创建」提示与输入值之间的间距。
+  'spacing-select-create-tips-marginright': { value: 'var(--cd-spacing-extra-tight)', category: 'spacing', label: '新建提示右外边距', usage: '选择器下拉菜单新建选项提示文本右侧外边距（组件消费）' },
   // 对齐 Semi $opacity-select_selection_text_inactive：触发器内搜索且输入为空时，
   // 原回填文本叠在输入框下方淡出显示（Semi index.tsx:1057 selection-text-inactive）。
   'opacity-select-selection-text-inactive': { value: '0.4', category: 'other', label: '回填文本淡出透明度', usage: '触发器内搜索、输入为空时原回填文本的淡出透明度（组件消费）' },
