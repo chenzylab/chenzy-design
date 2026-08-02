@@ -110,3 +110,35 @@ describe('SideBarCodeContent — 交互回调', () => {
     expect(container.querySelector('.cd-collapse-item-active')).toBeNull();
   });
 });
+
+// 折叠头图标。Semi widget/code.tsx:62/68 用的是具名图标（IconCodeStroked /
+// IconFullScreenStroked），且图标**直接放在 -header-content 里**，没有 -header-icon
+// 这层包裹。本库原来两处都是手写 svg，且多包了一层 span。
+describe('SideBarCodeContent — 折叠头图标（对齐 Semi）', () => {
+  const codes = [{ key: 'a', name: 'a.ts', content: 'const a = 1' }];
+
+  // 注：这条的「反向断言」无法用「加回一层 span」来验红 —— Svelte 编译器会把
+  // 没有任何 CSS 规则引用的 class 直接从产物里剥掉，加回去也渲染不出来。
+  // 正向断言（图标是 -header-content 的直接子节点）可验红，见下一条。
+  it('图标直接在 -header-content 下，无 -header-icon 包裹层', () => {
+    const { container } = renderWithLocale(CC, { props: { codes } });
+    const head = container.querySelector('.cd-sidebar-collapse-header-content');
+    expect(head, '折叠头应渲染').not.toBeNull();
+    expect(head!.querySelector('svg'), '应有图标').not.toBeNull();
+    // 正向断言：图标容器是 -header-content 的**直接子节点**（Semi 的结构）。
+    const firstEl = head!.firstElementChild;
+    expect(firstEl?.querySelector('svg') ?? firstEl, '首个子节点应是图标本身').not.toBeNull();
+    expect(firstEl?.classList.contains('cd-icon'), '首个子节点应是具名图标组件').toBe(true);
+    expect(
+      container.querySelector('.cd-sidebar-collapse-header-icon'),
+      '-header-icon 是本库自造的包裹层，Semi 没有',
+    ).toBeNull();
+  });
+
+  it('展开按钮内是图标（非手写 svg 的 path 串）', () => {
+    const { container } = renderWithLocale(CC, { props: { codes } });
+    const btn = container.querySelector('.cd-sidebar-collapse-header-expand-btn');
+    expect(btn, '展开按钮应渲染').not.toBeNull();
+    expect(btn!.querySelector('svg')).not.toBeNull();
+  });
+});

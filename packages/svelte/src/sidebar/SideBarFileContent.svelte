@@ -7,6 +7,7 @@
   §9.3：files 遍历为纯派生，无自循环；每项 editor 生命周期封装在 SideBarFileItem 的 $effect 内。
 -->
 <script lang="ts">
+  import { IconFile, IconFullScreenStroked } from '@chenzy-design/icons';
   import { Collapse } from '../collapse/index.js';
   import { useLocale } from '../locale-provider/index.js';
   import SideBarFileItem from './SideBarFileItem.svelte';
@@ -90,17 +91,8 @@
       <Collapse.Panel itemKey={file.key}>
         {#snippet head()}
           <span class="cd-sidebar-collapse-header-content">
-            <span class="cd-sidebar-collapse-header-icon" aria-hidden="true">
-              <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
-                <path
-                  d="M4 1.5h5l3 3v10h-8v-13ZM9 1.5V4.5h3"
-                  stroke="currentColor"
-                  stroke-width="1.3"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                />
-              </svg>
-            </span>
+            <!-- 同 code：Semi 是裸 <IconFile />，无 -header-icon 包裹层。 -->
+            <IconFile />
             <span class="cd-sidebar-collapse-header-text">{file.name ?? file.key}</span>
             <!-- 展开（全屏）按钮：在 head 内自渲染，stopPropagation 不触发折叠（对齐 Semi FAQ）。 -->
             <button
@@ -110,15 +102,8 @@
               title={expandLabel}
               onclick={(e) => handleExpand(e, file)}
             >
-              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                <path
-                  d="M9.5 2.5h4v4M6.5 13.5h-4v-4M13.5 2.5l-5 5M2.5 13.5l5-5"
-                  stroke="currentColor"
-                  stroke-width="1.4"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                />
-              </svg>
+              <!-- Semi 用具名 IconFullScreenStroked（widget/code.tsx:68），本库原为手写 svg。 -->
+              <IconFullScreenStroked />
             </button>
           </span>
         {/snippet}
@@ -149,12 +134,6 @@
   /* 展开按钮推到 head 右端（原 extra 靠右语义），紧邻折叠箭头前。 */
   .cd-sidebar-collapse-header-expand-btn {
     margin-inline-start: auto;
-  }
-  .cd-sidebar-collapse-header-icon {
-    display: inline-flex;
-    flex-shrink: 0;
-    align-items: center;
-    color: var(--cd-sidebar-code-head-icon-color);
   }
   .cd-sidebar-collapse-header-text {
     overflow: hidden;

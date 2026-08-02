@@ -10,6 +10,7 @@
   §9.3：render 期不读 effect 写入的 $state；codes 遍历为纯派生，无自循环。
 -->
 <script lang="ts">
+  import { IconCodeStroked, IconFullScreenStroked } from '@chenzy-design/icons';
   import { Collapse } from '../collapse/index.js';
   import SideBarCodeItem, { type CodeItemProps } from './SideBarCodeItem.svelte';
   import { useLocale } from '../locale-provider/index.js';
@@ -69,17 +70,10 @@
       <Collapse.Panel itemKey={code.key}>
         {#snippet head()}
           <span class="cd-sidebar-collapse-header-content">
-            <span class="cd-sidebar-collapse-header-icon" aria-hidden="true">
-              <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
-                <path
-                  d="M6 4L2.5 8 6 12M10 4l3.5 4-3.5 4"
-                  stroke="currentColor"
-                  stroke-width="1.4"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                />
-              </svg>
-            </span>
+            <!-- Semi 直接把图标放在 -header-content 里，没有 -header-icon 这层包裹
+                 （widget/code.tsx:62 是裸 <IconCodeStroked />）。本库原来多包一层 span
+                 且画的是手写 svg，已换具名图标并去掉包裹层。 -->
+            <IconCodeStroked />
             <span class="cd-sidebar-collapse-header-text">{code.name ?? code.key}</span>
             <!-- 展开（全屏）按钮：在 head 内自渲染，stopPropagation 不触发折叠（对齐 Semi FAQ）。 -->
             <button
@@ -89,15 +83,8 @@
               title={expandLabel}
               onclick={(e) => handleExpand(e, code)}
             >
-              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                <path
-                  d="M9.5 2.5h4v4M6.5 13.5h-4v-4M13.5 2.5l-5 5M2.5 13.5l5-5"
-                  stroke="currentColor"
-                  stroke-width="1.4"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                />
-              </svg>
+              <!-- Semi 用具名 IconFullScreenStroked（widget/code.tsx:68），本库原为手写 svg。 -->
+              <IconFullScreenStroked />
             </button>
           </span>
         {/snippet}
@@ -120,12 +107,6 @@
   /* 展开按钮推到 head 右端（原 extra 靠右语义），紧邻折叠箭头前。 */
   .cd-sidebar-collapse-header-expand-btn {
     margin-inline-start: auto;
-  }
-  .cd-sidebar-collapse-header-icon {
-    display: inline-flex;
-    flex-shrink: 0;
-    align-items: center;
-    color: var(--cd-sidebar-code-head-icon-color);
   }
   .cd-sidebar-collapse-header-text {
     overflow: hidden;
