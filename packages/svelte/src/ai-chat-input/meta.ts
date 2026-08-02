@@ -49,6 +49,10 @@ export const meta = {
     { name: 'popoverProps', type: 'object', default: '-', desc: '承载建议/技能/模版浮层的 Popover 配置（对齐 Semi popoverProps）' },
     { name: 'dropdownMatchTriggerWidth', type: 'boolean', default: 'true', desc: '浮层宽度跟随输入框宽度（对齐 Semi）' },
     { name: 'clearContentOnGenerating', type: 'boolean', default: 'true', desc: 'generating false→true 时清空输入' },
+    { name: 'keepSkillAfterSend', type: 'boolean', default: 'false', desc: '清空输入时保留已选技能标记（对齐 Semi）' },
+    { name: 'templatesCls', type: 'string', default: '-', desc: '模版浮层附加类名（对齐 Semi）' },
+    { name: 'templatesStyle', type: 'string', default: '-', desc: '模版浮层附加内联样式（对齐 Semi）' },
+    { name: 'uploadTipProps', type: 'TooltipProps', default: '-', desc: '传了才给上传按钮包一层 Tooltip（对齐 Semi）' },
   ],
   events: [
     { name: 'onContentChange', payload: '{ text, html, json }', desc: '内容变化' },

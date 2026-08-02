@@ -205,6 +205,7 @@ editor.storage.CdAIChatInput.allowHotKeySend = true;
 | defaultContent | 输入框默认内容，支持 html string 及 tiptap Content | string | `''` |
 | extensions | 自定义扩展，类型同 tiptap 的 Extension | `Extension[]` | `[]` |
 | generating | 是否正在生成中 | boolean | false |
+| keepSkillAfterSend | 清空输入时是否保留已选技能标记；true 时走 setContentWhileSaveTool 而非整体清空 | boolean | false |
 | onBlur | 富文本输入框失焦的回调 | `(event: FocusEvent) => void` | - |
 | onConfigureChange | 配置区域发生变化的回调 | `(value, changedValue) => void` | - |
 | onContentChange | 输入框内容变化时候的回调 | `(payload) => void` | - |
@@ -242,8 +243,11 @@ editor.storage.CdAIChatInput.allowHotKeySend = true;
 | style | 自定义样式 | string | - |
 | suggestions | 建议列表 | `AIChatInputSuggestion[]` | `[]` |
 | topSlotPosition | 自定义顶部内容相对引用/上传区域的位置 | `'top' \| 'bottom'` | `top` |
+| templatesCls | 模版浮层的附加类名 | string | - |
+| templatesStyle | 模版浮层的附加内联样式 | string | - |
 | transformer | 富文本节点归一覆盖（配合自定义 extensions） | `Map<string, (node) => Content>` | - |
 | uploadProps | 透传给内部 Upload 的 props | object | - |
+| uploadTipProps | 传了才给上传按钮包一层 Tooltip；透传 Tooltip props | TooltipProps | - |
 
 > **与 Semi 的差异**：
 >

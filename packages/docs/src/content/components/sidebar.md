@@ -156,6 +156,7 @@ Semi 用单选（radio）在「内置 / 自定义」间二选一切换列表；�
 | renderDetailContent | 自定义详情区域内容；传了则完全接管，不再走内置 code/file 渲染 | `Snippet<[mode]>` | - |
 | renderDetailHeader | 自定义详情区域头部（返回按钮之后） | `Snippet<[mode, detailContent]>` | - |
 | renderMainContent | 自定义主内容区域 | `Snippet<[activeKey]>` | - |
+| renderOptionItem | 自定义单个 Option 的渲染；命中即整项接管（含 role=tab / roving tabindex） | `Snippet<[{ option, onChange }]>` | - |
 | style | 自定义内联样式 | string | - |
 
 ### SideBarContainer
