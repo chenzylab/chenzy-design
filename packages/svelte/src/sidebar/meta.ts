@@ -189,8 +189,6 @@ export const meta = {
     '--cd-sidebar-mcp-gap',
     '--cd-sidebar-mcp-count-color',
     '--cd-sidebar-mcp-count-size',
-    '--cd-sidebar-mcp-group-title-color',
-    '--cd-sidebar-mcp-group-title-size',
     '--cd-sidebar-mcp-item-gap',
     '--cd-sidebar-mcp-item-padding',
     '--cd-sidebar-mcp-item-gutter',

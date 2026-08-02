@@ -714,10 +714,6 @@ export interface Locale {
     searchPlaceholder: string;
     /** MCPConfigure search input aria-label */
     mcpSearchLabel: string;
-    /** MCPConfigure built-in tools group heading */
-    mcpBuiltinGroup: string;
-    /** MCPConfigure custom tools group heading */
-    mcpCustomGroup: string;
     /** MCPConfigure active count summary; interpolates {count} and {total} */
     activeMCPNumber: string;
     /** MCPConfigure enable switch aria-label; interpolates {name} */
@@ -732,8 +728,6 @@ export interface Locale {
     newMcpAdd: string;
     /** MCPConfigure custom-group empty state text */
     emptyCustomMcpInfo: string;
-    /** MCPConfigure built-in-group empty state text */
-    mcpEmptyBuiltin: string;
     /** MCPConfigure no-search-result text */
     mcpNoResult: string;
     /** FileContent rich-text editor aria-label */

@@ -204,8 +204,6 @@ export const sideBarTokens = {
   'sidebar-mcp-gap': { value: 'var(--cd-spacing-base-tight)', category: 'spacing', label: 'MCP 区块间距', usage: 'MCPConfigure 搜索/分组区块之间纵向间距（组件消费）' },
   'sidebar-mcp-count-color': { value: 'var(--cd-color-text-2)', category: 'color', label: 'MCP 计数色', usage: 'MCPConfigure 已激活计数文本颜色（组件消费）' },
   'sidebar-mcp-count-size': { value: 'var(--cd-font-size-secondary)', category: 'font', label: 'MCP 计数字号', usage: 'MCPConfigure 已激活计数字号（组件消费）' },
-  'sidebar-mcp-group-title-color': { value: 'var(--cd-color-text-2)', category: 'color', label: 'MCP 分组标题色', usage: 'MCPConfigure 内置/自定义分组标题颜色（组件消费）' },
-  'sidebar-mcp-group-title-size': { value: 'var(--cd-font-size-secondary)', category: 'font', label: 'MCP 分组标题字号', usage: 'MCPConfigure 分组标题字号（组件消费）' },
   'sidebar-mcp-item-gap': { value: 'var(--cd-spacing-tight)', category: 'spacing', label: 'MCP 列表项间距', usage: 'MCPConfigure 列表项纵向间距（组件消费）' },
   'sidebar-mcp-item-padding': { value: 'var(--cd-spacing-tight)', category: 'spacing', label: 'MCP 列表项内边距', usage: 'MCPConfigure 单个工具项内边距（组件消费）' },
   'sidebar-mcp-item-radius': { value: 'var(--cd-border-radius-medium)', category: 'radius', label: 'MCP 列表项圆角', usage: 'MCPConfigure 工具项圆角（组件消费）' },

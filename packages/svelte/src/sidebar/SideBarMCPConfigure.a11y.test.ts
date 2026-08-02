@@ -1,7 +1,12 @@
-// SideBarMCPConfigure 组件测（P3）：双列表渲染 / 搜索过滤 / 启用开关 role=switch /
+// SideBarMCPConfigure 组件测（P3）：两模式切换 / 搜索过滤 / 启用开关 role=switch /
 // 动作按钮 i18n / 受控 onStatusChange 不回写 / 空态与无结果。
+//
+// 对齐 Semi mcpConfigure/content：头部 RadioGroup 在 INNER（内置 MCP Servers）与
+// CUSTOM（自定义）之间切换，**同一时刻只渲染一份列表**。本库早期是两组同屏堆叠，
+// 这批用例原来也按「两组同时可见」写，已随实现一起改。
 // 命名 *.a11y.test.ts → 落 dom(jsdom) vitest project（红线：*.test.ts 会落 node project 缺 DOM 崩溃）。
 import { describe, it, expect, vi } from 'vitest';
+import { fireEvent } from '@testing-library/svelte';
 import { renderWithLocale } from '../test-utils/a11y.js';
 import SideBarMCPConfigure from './SideBarMCPConfigure.svelte';
 import type { SideBarMCPOption } from './types.js';
@@ -24,18 +29,51 @@ function base(props: Record<string, unknown> = {}) {
   });
 }
 
-describe('SideBarMCPConfigure — 渲染 / 双列表', () => {
-  it('渲染内置 + 自定义两组列表，item 显示 label/desc', () => {
+/** 切到 CUSTOM 模式：点头部 RadioGroup 的第二个 radio。 */
+async function switchToCustom(container: Element) {
+  const radios = container.querySelectorAll(
+    '.cd-sidebar-mcp-configure-content-header input[type="radio"]',
+  );
+  expect(radios.length, '头部应有两个模式 radio').toBe(2);
+  await fireEvent.click(radios[1] as HTMLElement);
+}
+
+function labelsOf(container: Element) {
+  return [
+    ...container.querySelectorAll('.cd-sidebar-mcp-configure-content-item-content-label'),
+  ].map((n) => n.textContent);
+}
+
+describe('SideBarMCPConfigure — 两模式切换', () => {
+  it('默认 INNER 模式：只渲染内置列表，不渲染自定义项', () => {
     const { container } = base();
     expect(container.querySelector('.cd-sidebar-mcp')).toBeTruthy();
-    const labels = [...container.querySelectorAll('.cd-sidebar-mcp-configure-content-item-content-label')].map(
-      (n) => n.textContent,
-    );
-    expect(labels).toEqual(['File System', 'Git', 'Preset Search', 'My Tool']);
+    expect(labelsOf(container)).toEqual(['File System', 'Git', 'Preset Search']);
     const descs = [...container.querySelectorAll('.cd-sidebar-mcp-configure-content-item-content-desc')].map(
       (n) => n.textContent,
     );
     expect(descs).toContain('读写本地文件');
+  });
+
+  it('切到 CUSTOM 模式：只渲染自定义列表，且搜索框旁出现新增按钮', async () => {
+    const { container } = base();
+    await switchToCustom(container);
+    expect(labelsOf(container)).toEqual(['My Tool']);
+    // CUSTOM 且已有自定义项 → 搜索区里多一个新增按钮。
+    const searchArea = container.querySelector(
+      '.cd-sidebar-mcp-configure-content-search-container',
+    )!;
+    expect(searchArea.querySelector('button')).not.toBeNull();
+  });
+
+  it('切模式清空搜索词（否则会误以为新模式里没有匹配项）', async () => {
+    const { container } = base();
+    const input = container.querySelector('input[type="text"], input:not([type])') as HTMLInputElement;
+    await fireEvent.input(input, { target: { value: 'git' } });
+    expect(labelsOf(container)).toEqual(['Git']);
+    await switchToCustom(container);
+    // 搜索词已清空 → 自定义列表整份可见，而不是被 'git' 过滤成空。
+    expect(labelsOf(container)).toEqual(['My Tool']);
   });
 
   // 对齐 Semi `{locale.activeMCPNumber} {n}/{总数}`：文案不含占位符，计数拼在后面。
@@ -46,11 +84,12 @@ describe('SideBarMCPConfigure — 渲染 / 双列表', () => {
     );
   });
 
+  // INNER 模式只渲染 3 个内置项（自定义那份要切模式才可见）。
   it('每项启用开关为原生 role=switch + aria-checked 反映 active', () => {
     const { container } = base();
     const switches = [...container.querySelectorAll('[role="switch"]')];
-    // 3 内置 + 1 自定义 = 4 个开关。
-    expect(switches.length).toBe(4);
+    // INNER 模式只渲染 3 个内置项（自定义那份要切模式才可见）。
+    expect(switches.length).toBe(3);
     // File System active → checked。
     expect(switches[0]?.getAttribute('aria-checked')).toBe('true');
     // Git inactive。
@@ -64,14 +103,17 @@ describe('SideBarMCPConfigure — 渲染 / 双列表', () => {
     expect((switches[2] as HTMLButtonElement).disabled).toBe(true);
   });
 
-  it('configure=true 内置项显示配置按钮，自定义项显示编辑按钮', () => {
+  it('configure=true 内置项显示配置按钮', () => {
     const { container } = base();
-    const configureBtn = container.querySelector(
-      '[aria-label="Configure File System"]',
-    );
-    expect(configureBtn).toBeTruthy();
-    const editBtn = container.querySelector('[aria-label="Edit My Tool"]');
-    expect(editBtn).toBeTruthy();
+    expect(container.querySelector('[aria-label="Configure File System"]')).toBeTruthy();
+    // INNER 模式下自定义项不渲染，编辑按钮自然也不在。
+    expect(container.querySelector('[aria-label="Edit My Tool"]')).toBeNull();
+  });
+
+  it('切到 CUSTOM 模式后自定义项显示编辑按钮', async () => {
+    const { container } = base();
+    await switchToCustom(container);
+    expect(container.querySelector('[aria-label="Edit My Tool"]')).toBeTruthy();
   });
 
   it('搜索框有 aria-label（en_US mcpSearchLabel）', () => {
@@ -131,11 +173,13 @@ describe('SideBarMCPConfigure — 交互回调（受控不回写）', () => {
     expect(onStatusChange).not.toHaveBeenCalled();
   });
 
-  it('自定义项开关 custom=true', () => {
+  it('自定义项开关 custom=true', async () => {
     const onStatusChange = vi.fn();
     const { container } = base({ onStatusChange });
+    await switchToCustom(container);
+    // CUSTOM 模式只有一项自定义工具，故取第 0 个开关。
     const switches = [...container.querySelectorAll('[role="switch"]')];
-    (switches[3] as HTMLElement).click();
+    (switches[0] as HTMLElement).click();
     expect(onStatusChange.mock.calls[0]?.[1]).toBe(true);
   });
 
@@ -150,9 +194,10 @@ describe('SideBarMCPConfigure — 交互回调（受控不回写）', () => {
     expect(onConfigureClick.mock.calls[0]?.[1]?.value).toBe('fs');
   });
 
-  it('编辑按钮触发 onEditClick(e, option)', () => {
+  it('编辑按钮触发 onEditClick(e, option)', async () => {
     const onEditClick = vi.fn();
     const { container } = base({ onEditClick });
+    await switchToCustom(container);
     const btn = container.querySelector('[aria-label="Edit My Tool"]') as HTMLElement;
     btn.click();
     expect(onEditClick).toHaveBeenCalledTimes(1);
@@ -161,23 +206,23 @@ describe('SideBarMCPConfigure — 交互回调（受控不回写）', () => {
 });
 
 describe('SideBarMCPConfigure — 空态', () => {
-  it('自定义组为空显示添加按钮与空态文案（en_US emptyCustomMcpInfo）', () => {
+  // 对齐 Semi renderSearch 的 else 分支：CUSTOM 模式且一条自定义都没有时，
+  // 整块换成空态 + 新增按钮，此时连搜索框都不渲染。
+  it('CUSTOM 模式无自定义项：空态文案 + 新增按钮，且不渲染搜索框', async () => {
     const onAddClick = vi.fn();
     const { container } = renderWithLocale(MC, {
       props: { visible: true, options: OPTIONS, customOptions: [], onAddClick },
     });
-    // 文案对齐 Semi emptyCustomMcpInfo（'No custom MCP yet'），原「No custom tools yet」是本库自拟措辞。
+    await switchToCustom(container);
+    const empty = container.querySelector(
+      '.cd-sidebar-mcp-configure-content-custom-empty',
+    );
+    expect(empty).not.toBeNull();
+    // 文案对齐 Semi emptyCustomMcpInfo。
     expect(container.textContent).toContain('No custom MCP yet');
-    const cta = container.querySelector('.cd-sidebar-mcp-add-cta') as HTMLElement;
-    expect(cta).toBeTruthy();
-    cta.click();
+    // 空态时不渲染搜索区。
+    expect(container.querySelector('.cd-sidebar-mcp-configure-content-search')).toBeNull();
+    (empty!.querySelector('button') as HTMLElement).click();
     expect(onAddClick).toHaveBeenCalledTimes(1);
-  });
-
-  it('内置组为空显示空态文案（en_US mcpEmptyBuiltin）', () => {
-    const { container } = renderWithLocale(MC, {
-      props: { visible: true, options: [], customOptions: CUSTOM },
-    });
-    expect(container.textContent).toContain('No built-in tools');
   });
 });

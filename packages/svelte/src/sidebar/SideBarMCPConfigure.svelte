@@ -1,10 +1,13 @@
 <!--
   SideBarMCPConfigure — MCP 工具配置面板（P3）。see specs/components/show/SideBar.spec.md §4/§6/§9。
   外层复用 SideBarContainer 浮层壳（透传全部 Container props，title 默认走 i18n mcpConfigure）。
-  内部结构（对齐 Semi mcpConfigure/content，但双列表并列展示而非 radio 二选一）：
-    顶部计数（「已激活 MCP 数: N/总数」，对齐 Semi activeMCPNumber）+ 搜索框（Input，前缀放大镜 + aria-label）
-    → 「内置工具」分组列表（options）
-    → 「自定义工具」分组列表（customOptions），空态显示「添加自定义工具」按钮。
+  内部结构逐层对齐 Semi mcpConfigure/content：
+    头部：RadioGroup(type=button) 在 INNER（MCP Servers）/ CUSTOM（自定义）两模式间切换
+          + 已激活计数（「已激活 MCP 数: N/总数」，对齐 Semi activeMCPNumber）
+    搜索区：INNER 只有搜索框；CUSTOM 且已有自定义项时，搜索框右侧多一个「新增」按钮；
+            CUSTOM 且一条都没有时，整块换成空态 + 新增按钮（此时不渲染搜索框）
+    列表：只渲染当前模式那一份（Semi 的 state.showOptions 只维护一份，不是两份并列）
+  注：本库早期实现是「内置/自定义两个分组同屏堆叠」，没有模式概念，与 Semi 不符，已重写。
   每项：前置图标（string→img / Snippet）+ label + desc + 动作按钮（内置 configure=true 显示配置；
   自定义显示编辑）+ 启用开关（Switch，原生 role=switch + aria-checked，disabled 项锁定 + tooltip）。
 
@@ -28,8 +31,11 @@
     toggleMcpOptionActive,
     countActiveMcpOptions,
   } from '@chenzy-design/core';
+  import { IconPlus, IconSearch } from '@chenzy-design/icons';
   import Input from '../input/Input.svelte';
   import Switch from '../switch/Switch.svelte';
+  import { Button } from '../button/index.js';
+  import { Radio, RadioGroup } from '../radio/index.js';
   import { useLocale } from '../locale-provider/index.js';
   import SideBarContainer from './SideBarContainer.svelte';
   import type { SideBarMCPOption } from './types.js';
@@ -114,8 +120,11 @@
 
   const loc = useLocale();
 
-  // 受控搜索输入值（本组件唯一 $state；列表/计数纯派生自它 + props）。
+  // 受控搜索输入值。
   let inputValue = $state('');
+  // 当前模式（对齐 Semi state.mode，默认 INNER）：INNER 看内置 MCP、CUSTOM 看自定义 MCP。
+  // Semi 用 RadioGroup(type=button) 在两者间切换，两模式渲染的列表/搜索区/按钮都不同。
+  let mcpMode = $state<'inner' | 'custom'>('inner');
 
   const resolvedTitle = $derived<string | Snippet>(
     title ?? loc().t('SideBar.mcpConfigure'),
@@ -124,13 +133,11 @@
     placeholder ?? loc().t('SideBar.searchPlaceholder'),
   );
 
-  // 过滤后的两组列表（纯派生）。
-  const shownBuiltin = $derived(
-    filterMcpOptions(inputValue, options, filter),
-  );
-  const shownCustom = $derived(
-    filterMcpOptions(inputValue, customOptions, filter),
-  );
+  // 当前模式对应的源列表 + 过滤结果（对齐 Semi state.showOptions：
+  // 它只维护「当前模式的那一份」，不是两份并列）。
+  const isCustomMode = $derived(mcpMode === 'custom');
+  const sourceOptions = $derived(isCustomMode ? customOptions : options);
+  const showOptions = $derived(filterMcpOptions(inputValue, sourceOptions, filter));
 
   const activeCount = $derived(countActiveMcpOptions(options, customOptions));
   const totalCount = $derived(options.length + customOptions.length);
@@ -141,15 +148,24 @@
   );
 
   const hasCustom = $derived(customOptions.length > 0);
+  // CUSTOM 模式且一条自定义都没有 → 走 Empty 空态（对齐 Semi renderSearch 的 else 分支）。
+  const showCustomEmpty = $derived(isCustomMode && !hasCustom);
   const noResult = $derived(
-    inputValue.trim().length > 0 &&
-      shownBuiltin.length === 0 &&
-      shownCustom.length === 0,
+    inputValue.trim().length > 0 && showOptions.length === 0 && !showCustomEmpty,
   );
 
   function handleSearch(v: string): void {
     inputValue = v;
-    onSearch?.(v, false);
+    // custom 标记随当前模式（本库原来双列表并列，这里恒传 false，语义丢了）。
+    onSearch?.(v, isCustomMode);
+  }
+
+  // 切模式时清空搜索：Semi 的 showOptions 由 mode 决定源列表，
+  // 沿用上一个模式的搜索词会让人以为「新模式里没有匹配项」。
+  function handleModeChange(next: 'inner' | 'custom'): void {
+    if (next === mcpMode) return;
+    mcpMode = next;
+    inputValue = '';
   }
 
   function handleStatusChange(
@@ -198,111 +214,70 @@
   title={resolvedTitle}
   class={['cd-sidebar-mcp', className].filter(Boolean).join(' ')}
 >
-  <div class="cd-sidebar-mcp-configure-content-header-count">{countLabel}</div>
-
-  <!-- Semi 同一个 div 上挂两个类：-search（外边距）与 -search-container（列间距），
-       见 mcpConfigure/content.tsx:219。本库原来只有前者。 -->
-  <div
-    class="cd-sidebar-mcp-configure-content-search cd-sidebar-mcp-configure-content-search-container"
-  >
-  <Input
-    value={inputValue}
-    placeholder={resolvedPlaceholder}
-    aria-label={loc().t('SideBar.mcpSearchLabel')}
-    onInput={handleSearch}
-  >
-    {#snippet prefix()}
-      <svg
-        width="16"
-        height="16"
-        viewBox="0 0 16 16"
-        fill="none"
-        aria-hidden="true"
-      >
-        <circle cx="7" cy="7" r="4.5" stroke="currentColor" stroke-width="1.3" />
-        <path
-          d="M10.5 10.5 14 14"
-          stroke="currentColor"
-          stroke-width="1.3"
-          stroke-linecap="round"
-        />
-      </svg>
-    {/snippet}
-  </Input>
+  <!-- 头部：RadioGroup 切模式 + 已激活计数（对齐 Semi mcpConfigure/content.tsx:250-260）。
+       本库原来没有模式概念，把内置/自定义当两个分组同屏堆叠，也没有这个头部。 -->
+  <div class="cd-sidebar-mcp-configure-content-header">
+    <RadioGroup
+      type="button"
+      value={mcpMode}
+      onChange={(e) => handleModeChange(e.target.value as 'inner' | 'custom')}
+    >
+      <Radio value="inner">MCP Servers</Radio>
+      <Radio value="custom">{loc().t('SideBar.newMcpAdd')}</Radio>
+    </RadioGroup>
+    <span class="cd-sidebar-mcp-configure-content-header-count">{countLabel}</span>
   </div>
 
-  <!-- 内置工具组 -->
-  <section class="cd-sidebar-mcp-group">
-    <h3 class="cd-sidebar-mcp-group-title">
-      {loc().t('SideBar.mcpBuiltinGroup')}
-    </h3>
-    {#if shownBuiltin.length > 0}
-      <ul class="cd-sidebar-mcp-configure-content-item-container" role="list">
-        {#each shownBuiltin as option (option.value)}
-          {@render itemRow(option, false)}
-        {/each}
-      </ul>
-    {:else if !noResult}
-      <div class="cd-sidebar-mcp-empty">
-        {loc().t('SideBar.mcpEmptyBuiltin')}
-      </div>
-    {/if}
-  </section>
-
-  <!-- 自定义工具组 -->
-  <section class="cd-sidebar-mcp-group">
-    <div class="cd-sidebar-mcp-group-head">
-      <h3 class="cd-sidebar-mcp-group-title">
-        {loc().t('SideBar.mcpCustomGroup')}
-      </h3>
-      {#if hasCustom}
-        <button
-          type="button"
-          class="cd-sidebar-mcp-add"
-          aria-label={loc().t('SideBar.newMcpAdd')}
-          title={loc().t('SideBar.newMcpAdd')}
-          onclick={(e) => onAddClick?.(e)}
-        >
-          {@render plusIcon()}
-        </button>
+  {#if showCustomEmpty}
+    <!-- CUSTOM 模式且无自定义项：整块换成空态 + 添加按钮（对齐 Semi renderSearch 的 else 分支，
+         此时连搜索框都不渲染）。 -->
+    <div class="cd-sidebar-mcp-configure-content-custom-empty">
+      <span>{loc().t('SideBar.emptyCustomMcpInfo')}</span>
+      <Button theme="solid" type="primary" onclick={(e) => onAddClick?.(e)}>
+        {#snippet icon()}<IconPlus />{/snippet}
+        {loc().t('SideBar.newMcpAdd')}
+      </Button>
+    </div>
+  {:else}
+    <!-- Semi 同一个 div 上挂两个类：-search（外边距）与 -search-container（列间距），
+         见 mcpConfigure/content.tsx:219。本库原来只有前者。
+         INNER 模式只有搜索框；CUSTOM 模式搜索框右侧还有「新增」按钮。 -->
+    <div
+      class="cd-sidebar-mcp-configure-content-search cd-sidebar-mcp-configure-content-search-container"
+    >
+      <Input
+        value={inputValue}
+        placeholder={resolvedPlaceholder}
+        aria-label={loc().t('SideBar.mcpSearchLabel')}
+        onInput={handleSearch}
+      >
+        {#snippet prefix()}
+          <IconSearch />
+        {/snippet}
+      </Input>
+      {#if isCustomMode}
+        <Button theme="solid" type="primary" onclick={(e) => onAddClick?.(e)}>
+          {#snippet icon()}<IconPlus />{/snippet}
+          {loc().t('SideBar.newMcpAdd')}
+        </Button>
       {/if}
     </div>
-    {#if shownCustom.length > 0}
-      <ul class="cd-sidebar-mcp-configure-content-item-container" role="list">
-        {#each shownCustom as option (option.value)}
-          {@render itemRow(option, true)}
-        {/each}
-      </ul>
-    {:else if !hasCustom}
-      <div class="cd-sidebar-mcp-empty cd-sidebar-mcp-configure-content-custom-empty">
-        <span>{loc().t('SideBar.emptyCustomMcpInfo')}</span>
-        <button
-          type="button"
-          class="cd-sidebar-mcp-add-cta"
-          onclick={(e) => onAddClick?.(e)}
-        >
-          {@render plusIcon()}
-          <span>{loc().t('SideBar.newMcpAdd')}</span>
-        </button>
-      </div>
-    {/if}
-  </section>
+  {/if}
 
-  {#if noResult}
-    <div class="cd-sidebar-mcp-empty">{loc().t('SideBar.mcpNoResult')}</div>
+  <!-- 单一列表：渲染当前模式对应的那一份（对齐 Semi renderContent —— 它只有
+       -item-container 一层，没有分组标题）。 -->
+  {#if !showCustomEmpty}
+    <ul class="cd-sidebar-mcp-configure-content-item-container" role="list">
+      {#each showOptions as option (option.value)}
+        {@render itemRow(option, isCustomMode)}
+      {/each}
+    </ul>
+    {#if noResult}
+      <div class="cd-sidebar-mcp-empty">{loc().t('SideBar.mcpNoResult')}</div>
+    {/if}
   {/if}
 </SideBarContainer>
 
-{#snippet plusIcon()}
-  <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-    <path
-      d="M8 3.5v9M3.5 8h9"
-      stroke="currentColor"
-      stroke-width="1.5"
-      stroke-linecap="round"
-    />
-  </svg>
-{/snippet}
 
 {#snippet itemRow(option: SideBarMCPOption, custom: boolean)}
   <li class="cd-sidebar-mcp-configure-content-item" role="listitem">
@@ -406,42 +381,7 @@
     display: flex;
     column-gap: var(--cd-sidebar-mcp-search-container-column-gap);
   }
-  .cd-sidebar-mcp-group {
-    display: flex;
-    flex-direction: column;
-    gap: var(--cd-sidebar-mcp-item-gap);
-  }
-  .cd-sidebar-mcp-group-head {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-  }
-  .cd-sidebar-mcp-group-title {
-    margin: 0;
-    color: var(--cd-sidebar-mcp-group-title-color);
-    font-size: var(--cd-sidebar-mcp-group-title-size);
-    font-weight: var(--cd-font-weight-medium, 500);
-  }
-  .cd-sidebar-mcp-add {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    inline-size: 24px;
-    block-size: 24px;
-    padding: 0;
-    border: none;
-    border-radius: var(--cd-sidebar-close-radius);
-    background: transparent;
-    color: var(--cd-sidebar-mcp-action-color);
-    cursor: pointer;
-  }
-  .cd-sidebar-mcp-add:hover {
-    background: var(--cd-sidebar-mcp-action-hover-bg);
-    color: var(--cd-sidebar-mcp-label-color);
-  }
-  .cd-sidebar-mcp-add:focus-visible,
-  .cd-sidebar-mcp-configure-content-item-button:focus-visible,
-  .cd-sidebar-mcp-add-cta:focus-visible {
+  .cd-sidebar-mcp-configure-content-item-button:focus-visible {
     outline: none;
     box-shadow: var(--cd-focus-ring);
   }
