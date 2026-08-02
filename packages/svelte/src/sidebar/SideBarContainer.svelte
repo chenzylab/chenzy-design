@@ -264,8 +264,18 @@
     stackZ !== undefined ? `--cd-sidebar-z:${stackZ}` : undefined,
   );
 
+  // Semi 用 CSSAnimation 在动画元素上切 -animation-content_show / _hide 两个类
+  // （container/index.tsx:167）。本库的出入场是 transition + 外层 -container-open 状态类驱动，
+  // 机制不同但效果等价（值已按 animation.scss 对齐）。这里把 Semi 的两个类名也挂到
+  // 同一个动画元素上，保持类名契约一致——外部若按 Semi 类名做定制，两边都能命中。
   const panelCls = $derived(
-    ['cd-sidebar-container-panel', className].filter(Boolean).join(' '),
+    [
+      'cd-sidebar-container-panel',
+      isOpen ? 'cd-sidebar-animation-content_show' : 'cd-sidebar-animation-content_hide',
+      className,
+    ]
+      .filter(Boolean)
+      .join(' '),
   );
 
   const handleLabel = $derived(loc().t('Resizable.handleAriaLabel'));
@@ -375,12 +385,23 @@
        （translateX 100%↔0，180ms，cubic-bezier(0.25,0.46,0.45,0.94)）。
        Semi 只动 transform，没有透明度渐变——本库原来额外淡入淡出，且时长走的是
        通用 --cd-motion-duration-mid(200ms)，与 Semi 的 180ms 不一致。
-       实现上 Semi 用两个 keyframe 类（-animation-content_show/_hide）由 CSSAnimation 切换，
-       本库用 transition + -container-open 状态类；效果等价，故保留本库写法，只对齐值。 */
+       实现上 Semi 用两个 keyframe 类由 CSSAnimation 切换，本库用 transition +
+       -container-open 状态类驱动位移；效果等价。时长/曲线/延迟挂在 Semi 的同名类
+       -animation-content_show / _hide 上（见下），让这两个类名不只是装饰。 */
     transform: translateX(100%);
+    will-change: transform;
+  }
+
+  /* 出场档（对齐 Semi -animation-content_hide 用 hide 组变量）。 */
+  .cd-sidebar-animation-content_hide {
     transition: transform var(--cd-sidebar-inner-hide-duration)
       var(--cd-sidebar-inner-hide-function) var(--cd-sidebar-inner-hide-delay);
-    will-change: transform;
+  }
+
+  /* 入场档（对齐 Semi -animation-content_show 用 show 组变量）。 */
+  .cd-sidebar-animation-content_show {
+    transition: transform var(--cd-sidebar-inner-show-duration)
+      var(--cd-sidebar-inner-show-function) var(--cd-sidebar-inner-show-delay);
   }
   /* RTL：面板贴左，圆角/边框镜像，位移方向翻转。 */
   :global(.cd-rtl) .cd-sidebar-container {
@@ -390,12 +411,9 @@
   :global(.cd-rtl) .cd-sidebar-container-panel {
     transform: translateX(-100%);
   }
-  /* 入场用 show 档的时长/曲线/延迟（Semi 的 show 与 hide 是两组独立变量，
-     当前值相同但语义分开，故这里也分开引用）。 */
+  /* 展开态位移归零（时长/曲线由 -animation-content_show 提供）。 */
   .cd-sidebar-container-open .cd-sidebar-container-panel {
     transform: translateX(0);
-    transition: transform var(--cd-sidebar-inner-show-duration)
-      var(--cd-sidebar-inner-show-function) var(--cd-sidebar-inner-show-delay);
   }
   /* 把手：贴内容侧边缘（LTR 左、RTL 右），命中区 ≥12px 满足触控。 */
   .cd-sidebar-container-handle {

@@ -425,7 +425,9 @@
       {@render toolBtn(t('SideBar.image'), () => chain()?.insertContent({ type: 'imageUpload' }).run(), false, false, imageIcon)}
     </div>
   {/if}
-  <div bind:this={editorHost} class="cd-sidebar-editor"></div>
+  <!-- Semi widget/file.tsx:446 的 EditorContent 类名是 `${cssClasses.FILE}-editor`
+       = semi-sidebar-file-editor；本库原来漏了中间的 -file 段。 -->
+  <div bind:this={editorHost} class="cd-sidebar-file-editor"></div>
 </div>
 
 
@@ -530,24 +532,24 @@
     outline: none;
     box-shadow: var(--cd-focus-ring);
   }
-  .cd-sidebar-editor {
+  .cd-sidebar-file-editor {
     color: var(--cd-sidebar-file-editor-color);
     font-size: var(--cd-sidebar-file-editor-size);
     line-height: var(--cd-sidebar-file-editor-line-height);
   }
   /* ProseMirror 编辑区（运行时注入 class）用 :global 命中。 */
-  :global(.cd-sidebar-editor .ProseMirror) {
+  :global(.cd-sidebar-file-editor .ProseMirror) {
     outline: none;
     min-block-size: var(--cd-sidebar-file-editor-min-height);
   }
-  :global(.cd-sidebar-editor .ProseMirror:focus) {
+  :global(.cd-sidebar-file-editor .ProseMirror:focus) {
     outline: none;
   }
-  :global(.cd-sidebar-editor .ProseMirror img) {
+  :global(.cd-sidebar-file-editor .ProseMirror img) {
     max-inline-size: 100%;
     border-radius: var(--cd-sidebar-file-image-radius);
   }
-  :global(.cd-sidebar-editor .ProseMirror .cd-sidebar-file-select) {
+  :global(.cd-sidebar-file-editor .ProseMirror .cd-sidebar-file-select) {
     background: var(--cd-sidebar-file-selection-bg);
   }
 </style>

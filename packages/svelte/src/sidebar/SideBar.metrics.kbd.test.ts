@@ -51,6 +51,24 @@ describe('SideBarContainer 动效实测（对齐 Semi）', () => {
     expect(cs.transitionTimingFunction).toBe(SEMI.timingFunction);
     expect(cs.transitionProperty).toBe('transform');
   });
+
+  // Semi 用 CSSAnimation 在动画元素上切 -animation-content_show / _hide 两个类。
+  // 本库机制是 transition + -container-open 状态类，但把时长/曲线挂在这两个同名类上，
+  // 保证类名契约一致且不是装饰性的空类。
+  it('面板带 Semi 的 -animation-content_show / _hide 类，且各自承载对应档时长', async () => {
+    const screen = render(SideBarContainer, { props: { visible: true, motion: true } });
+    await settle();
+    const panel = document.querySelector('.cd-sidebar-container-panel') as HTMLElement;
+    expect(panel.classList.contains('cd-sidebar-animation-content_show')).toBe(true);
+    expect(panel.classList.contains('cd-sidebar-animation-content_hide')).toBe(false);
+    expect(getComputedStyle(panel).transitionDuration).toBe(SEMI.showDuration);
+
+    await screen.rerender({ visible: false, motion: true });
+    const closed = document.querySelector('.cd-sidebar-container-panel') as HTMLElement;
+    expect(closed.classList.contains('cd-sidebar-animation-content_hide')).toBe(true);
+    expect(closed.classList.contains('cd-sidebar-animation-content_show')).toBe(false);
+    expect(getComputedStyle(closed).transitionDuration).toBe(SEMI.hideDuration);
+  });
 });
 
 describe('SideBar 主壳/详情头布局实测（对齐 Semi）', () => {
