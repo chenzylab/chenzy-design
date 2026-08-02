@@ -106,8 +106,9 @@
   function motionDurationMs(): number {
     if (!motion) return 0;
     if (typeof window === 'undefined' || !panelEl) return 0;
+    // 取「关闭」时长（出场过渡用），对齐 Semi $animation_duration_sidebar_inner-hide。
     const raw = getComputedStyle(panelEl)
-      .getPropertyValue('--cd-sidebar-motion-duration')
+      .getPropertyValue('--cd-sidebar-inner-hide-duration')
       .trim();
     if (!raw) return 0;
     if (raw.endsWith('ms')) return parseFloat(raw) || 0;
@@ -370,12 +371,16 @@
     box-shadow: var(--cd-sidebar-shadow);
     border-start-start-radius: var(--cd-sidebar-radius);
     border-end-start-radius: var(--cd-sidebar-radius);
+    /* 位移与时长逐条对齐 Semi 的 slideShow_right / slideHide_right
+       （translateX 100%↔0，180ms，cubic-bezier(0.25,0.46,0.45,0.94)）。
+       Semi 只动 transform，没有透明度渐变——本库原来额外淡入淡出，且时长走的是
+       通用 --cd-motion-duration-mid(200ms)，与 Semi 的 180ms 不一致。
+       实现上 Semi 用两个 keyframe 类（-animation-content_show/_hide）由 CSSAnimation 切换，
+       本库用 transition + -container-open 状态类；效果等价，故保留本库写法，只对齐值。 */
     transform: translateX(100%);
-    opacity: 0;
-    transition:
-      transform var(--cd-sidebar-motion-duration) var(--cd-motion-ease-standard, ease),
-      opacity var(--cd-sidebar-motion-duration) var(--cd-motion-ease-standard, ease);
-    will-change: transform, opacity;
+    transition: transform var(--cd-sidebar-inner-hide-duration)
+      var(--cd-sidebar-inner-hide-function) var(--cd-sidebar-inner-hide-delay);
+    will-change: transform;
   }
   /* RTL：面板贴左，圆角/边框镜像，位移方向翻转。 */
   :global(.cd-rtl) .cd-sidebar-container {
@@ -385,9 +390,12 @@
   :global(.cd-rtl) .cd-sidebar-container-panel {
     transform: translateX(-100%);
   }
+  /* 入场用 show 档的时长/曲线/延迟（Semi 的 show 与 hide 是两组独立变量，
+     当前值相同但语义分开，故这里也分开引用）。 */
   .cd-sidebar-container-open .cd-sidebar-container-panel {
     transform: translateX(0);
-    opacity: 1;
+    transition: transform var(--cd-sidebar-inner-show-duration)
+      var(--cd-sidebar-inner-show-function) var(--cd-sidebar-inner-show-delay);
   }
   /* 把手：贴内容侧边缘（LTR 左、RTL 右），命中区 ≥12px 满足触控。 */
   .cd-sidebar-container-handle {

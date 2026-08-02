@@ -35,7 +35,14 @@ export const sideBarTokens = {
   'sidebar-radius': { value: 'var(--cd-border-radius-large)', category: 'radius', label: '容器圆角', usage: '本库自有：Container 贴边对侧圆角' },
   'sidebar-width': { value: '400px', category: 'other', label: '容器默认宽度', usage: '本库自有：Container 默认宽度' },
   'sidebar-z': { value: 'var(--cd-z-modal)', category: 'other', label: '层叠层级', usage: '本库自有：Container 浮层 z-index 基线' },
-  'sidebar-motion-duration': { value: 'var(--cd-motion-duration-mid)', category: 'animation', label: '展开动效时长', usage: '本库自有：Container 展开/收起过渡时长' },
+  // 展开/收起动效（名/值逐条镜像 Semi sidebar/animation.scss）。
+  // 原来只有一条 -motion-duration 指向通用 --cd-motion-duration-mid(200ms)，与 Semi 的 180ms 不符。
+  'sidebar-inner-show-duration': { value: '180ms', category: 'animation', label: '侧边栏打开动画时长', usage: 'Semi $animation_duration_sidebar_inner-show' },
+  'sidebar-inner-show-function': { value: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)', category: 'animation', label: '侧边栏打开过渡曲线', usage: 'Semi $animation_function_sidebar_inner-show' },
+  'sidebar-inner-show-delay': { value: '0ms', category: 'animation', label: '侧边栏打开延迟', usage: 'Semi $animation_delay_sidebar_inner-show' },
+  'sidebar-inner-hide-duration': { value: '180ms', category: 'animation', label: '侧边栏关闭动画时长', usage: 'Semi $animation_duration_sidebar_inner-hide' },
+  'sidebar-inner-hide-function': { value: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)', category: 'animation', label: '侧边栏关闭过渡曲线', usage: 'Semi $animation_function_sidebar_inner-hide' },
+  'sidebar-inner-hide-delay': { value: '0ms', category: 'animation', label: '侧边栏关闭延迟', usage: 'Semi $animation_delay_sidebar_inner-hide' },
   'sidebar-title-color': { value: 'var(--cd-color-text-0)', category: 'color', label: '标题颜色', usage: '本库自有：header 标题色（Semi 未抽变量）' },
   'sidebar-title-size': { value: 'var(--cd-font-size-regular)', category: 'font', label: '标题字号', usage: '本库自有：header 标题字号' },
   'sidebar-title-weight': { value: 'var(--cd-font-weight-bold)', category: 'font', label: '标题字重', usage: '本库自有：header 标题字重' },
