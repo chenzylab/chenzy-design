@@ -550,6 +550,71 @@
     border-radius: var(--cd-sidebar-file-image-radius);
   }
   :global(.cd-sidebar-file-editor .ProseMirror .cd-sidebar-file-select) {
+    display: inline-block;
     background: var(--cd-sidebar-file-selection-bg);
+    line-height: var(--cd-font-sidebar-file-lineheight);
+  }
+
+  /* —— 正文内容样式（逐条对齐 Semi sidebar.scss:455-520 的 .tiptap 块）——
+     本库此前只给编辑器容器/focus/img/select 写了样式，正文字号行高、选区高亮、
+     placeholder、段落、引用块、行内代码、代码块、分割线**一条都没有** ——
+     全靠浏览器默认样式，而 Semi 这 21 条变量本库也一条没建。 */
+  :global(.cd-sidebar-file-editor .ProseMirror) {
+    font-size: var(--cd-font-sidebar-file-fontsize);
+    line-height: var(--cd-font-sidebar-file-lineheight);
+  }
+
+  :global(.cd-sidebar-file-editor .ProseMirror ::selection) {
+    background: var(--cd-sidebar-file-selection-bg);
+  }
+
+  /* placeholder：tiptap 给空首段打 is-editor-empty，内容取 data-placeholder。 */
+  :global(.cd-sidebar-file-editor .ProseMirror p.is-editor-empty:first-child::before) {
+    color: var(--cd-color-sidebar-file-placeholder-text);
+    content: attr(data-placeholder);
+    float: left;
+    height: 0;
+    pointer-events: none;
+  }
+
+  :global(.cd-sidebar-file-editor .ProseMirror p) {
+    margin: 0;
+    white-space: pre-wrap;
+    color: var(--cd-color-sidebar-file-text);
+  }
+
+  :global(.cd-sidebar-file-editor .ProseMirror blockquote) {
+    border-left: var(--cd-width-sidebar-file-blockquote-border-left) solid
+      var(--cd-color-sidebar-file-blockquote-border-left);
+    margin: var(--cd-sidebar-file-blockquote-margin-y)
+      var(--cd-sidebar-file-blockquote-margin-x);
+    padding-left: var(--cd-sidebar-file-blockquote-padding-left);
+  }
+
+  :global(.cd-sidebar-file-editor .ProseMirror pre) {
+    background-color: var(--cd-color-sidebar-file-pre-bg);
+    padding: var(--cd-sidebar-file-pre-padding-y) var(--cd-sidebar-file-pre-padding-x);
+    border-radius: var(--cd-radius-sidebar-file-pre);
+    border: var(--cd-width-sidebar-file-pre-border) solid
+      var(--cd-color-sidebar-file-pre-border);
+    overflow: auto;
+    font-size: var(--cd-font-sidebar-file-pre-fontsize);
+    line-height: var(--cd-font-sidebar-file-pre-lineheight);
+  }
+
+  /* 代码块里的 code 不再叠一层底色（Semi 显式置 transparent）。 */
+  :global(.cd-sidebar-file-editor .ProseMirror pre code) {
+    background-color: transparent;
+  }
+
+  :global(.cd-sidebar-file-editor .ProseMirror code) {
+    background-color: var(--cd-color-sidebar-file-code-bg);
+    padding: var(--cd-sidebar-file-code-padding-y) var(--cd-sidebar-file-code-padding-x);
+  }
+
+  :global(.cd-sidebar-file-editor .ProseMirror hr) {
+    border: none;
+    border-top: var(--cd-width-sidebar-file-hr-border) solid
+      var(--cd-color-sidebar-file-hr-border-top);
   }
 </style>

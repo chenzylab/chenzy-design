@@ -11,6 +11,7 @@ import { describe, it, expect } from 'vitest';
 import { render } from 'vitest-browser-svelte';
 import SideBarContainer from './SideBarContainer.svelte';
 import SideBarA11yFixture from './SideBarA11yFixture.svelte';
+import SideBarFileItem from './SideBarFileItem.svelte';
 
 /** Semi sidebar/animation.scss + variables.scss 实测值。 */
 const SEMI = {
@@ -97,5 +98,55 @@ describe('SideBar 主壳/详情头布局实测（对齐 Semi）', () => {
     const right = document.querySelector('.cd-sidebar-detail-header-right') as HTMLElement;
     expect(getComputedStyle(left).columnGap).toBe(SEMI.detailHeaderLeftGap);
     expect(getComputedStyle(right).columnGap).toBe(SEMI.detailHeaderRightGap);
+  });
+});
+
+// 富文本编辑器正文内容样式。Semi sidebar.scss:455-520 给 .tiptap 定了字号/行高/
+// 段落/引用块/行内代码/代码块/分割线/placeholder 共 21 条变量；
+// 本库此前只写了容器/focus/img/select 四条，正文全靠浏览器默认样式。
+describe('SideBarFileItem 正文内容样式实测（对齐 Semi）', () => {
+  /** 等编辑器把内容渲染出来（tiptap 内核动态 import，时机有波动）。 */
+  async function waitFor(sel: string): Promise<HTMLElement> {
+    const deadline = Date.now() + 3000;
+    let el: HTMLElement | null = null;
+    while (!el && Date.now() < deadline) {
+      await new Promise((r) => setTimeout(r, 40));
+      el = document.querySelector(sel) as HTMLElement | null;
+    }
+    expect(el, `应渲染出 ${sel}`).not.toBeNull();
+    return el!;
+  }
+
+  it('正文 14px/24px；引用块 3px 左边框 + 16px 左内距', async () => {
+    render(SideBarFileItem, {
+      props: {
+        content: '<p>正文</p><blockquote><p>引用</p></blockquote>',
+        editable: false,
+      },
+    });
+    const pm = await waitFor('.cd-sidebar-file-editor .ProseMirror');
+    const cs = getComputedStyle(pm);
+    expect(cs.fontSize).toBe('14px');
+    expect(cs.lineHeight).toBe('24px');
+
+    const bq = pm.querySelector('blockquote') as HTMLElement;
+    expect(bq, '应渲染引用块').not.toBeNull();
+    const bs = getComputedStyle(bq);
+    expect(bs.borderLeftWidth).toBe('3px');
+    expect(bs.paddingLeft).toBe('16px');
+  });
+
+  it('代码块 4px 圆角 + 1px 边框 + 非透明底；块内 code 不叠底色', async () => {
+    render(SideBarFileItem, {
+      props: { content: '<pre><code>const a = 1</code></pre>', editable: false },
+    });
+    const pre = await waitFor('.cd-sidebar-file-editor .ProseMirror pre');
+    const ps = getComputedStyle(pre);
+    expect(ps.borderRadius).toBe('4px');
+    expect(ps.borderTopWidth).toBe('1px');
+    expect(ps.backgroundColor).not.toBe('rgba(0, 0, 0, 0)');
+    // Semi 显式把块内 code 的底色置 transparent（否则会叠两层）。
+    const code = pre.querySelector('code') as HTMLElement;
+    expect(getComputedStyle(code).backgroundColor).toBe('rgba(0, 0, 0, 0)');
   });
 });

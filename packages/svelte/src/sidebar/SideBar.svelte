@@ -239,6 +239,15 @@
     overflow: auto;
   }
 
+  /* Semi 只在 &-detail 作用域下给编辑器区加内边距（sidebar.scss:606-610）。
+     -file-editor 渲染在 SideBarFileItem 子组件里，需 :global 打洞。 */
+  .cd-sidebar-detail-content :global(.cd-sidebar-file-editor) {
+    flex: 1;
+    overflow: auto;
+    padding: var(--cd-sidebar-detail-file-editor-padding-y)
+      var(--cd-sidebar-detail-file-editor-padding-x);
+  }
+
   /* Semi &-detail-header：左右两组 space-between（本库原来是「标题 flex:1 撑开」）。 */
   .cd-sidebar-detail-header {
     display: flex;

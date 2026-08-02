@@ -233,5 +233,34 @@ export const sideBarTokens = {
   'sidebar-file-editor-min-height': { value: '48px', category: 'other', label: 'FileContent 编辑区最小高度', usage: 'FileItem 富文本编辑区最小高度（组件消费）' },
   'sidebar-file-image-radius': { value: 'var(--cd-border-radius-medium)', category: 'radius', label: 'FileContent 图片圆角', usage: 'FileItem 编辑区图片圆角（组件消费）' },
   'sidebar-file-image-slot-margin': { value: 'var(--cd-spacing-tight) 0', category: 'spacing', label: 'FileContent 图片上传槽外边距', usage: 'ImageUploadNode 上传槽外边距（组件消费）' },
-  'sidebar-file-selection-bg': { value: 'var(--cd-color-primary-light-default)', category: 'color', label: 'FileContent 选区高亮背景', usage: '设链接时选区高亮 Mark 背景（组件消费）' },
+  // 详情视图里的编辑器区域内边距（Semi 只在 &-detail 作用域下给 -file-editor 加）。
+  'sidebar-detail-file-editor-padding-y': { value: '0', category: 'spacing', label: '详情编辑区垂直内距', usage: 'Semi $spacing-sidebar_detail_file_editor-paddingY' },
+  'sidebar-detail-file-editor-padding-x': { value: '12px', category: 'spacing', label: '详情编辑区水平内距', usage: 'Semi $spacing-sidebar_detail_file_editor-paddingX' },
+
+  // —— 富文本编辑器正文内容（逐条镜像 Semi $*-sidebar_file-* / _blockquote / _pre / _code / _hr）——
+  // 本库此前只给编辑器容器/focus/img/select 写了样式，正文字号行高、引用块、
+  // 行内代码、代码块、分割线、placeholder 一条都没有 —— 全靠浏览器默认样式。
+  'sidebar-file-selection-bg': { value: 'var(--cd-color-light-blue-1)', category: 'color', label: '富文本选区背景', usage: 'Semi $color-sidebar_file_selection-bg' },
+  'color-sidebar-file-placeholder-text': { value: 'var(--cd-color-text-2)', category: 'color', label: '富文本 placeholder 色', usage: 'Semi $color-sidebar_file_placeholder-text' },
+  'color-sidebar-file-text': { value: 'var(--cd-color-text-0)', category: 'color', label: '富文本正文色', usage: 'Semi $color-sidebar_file-text' },
+  'color-sidebar-file-blockquote-border-left': { value: 'var(--cd-color-border)', category: 'color', label: '引用块左边框色', usage: 'Semi $color-sidebar_file_blockquote-borderLeft' },
+  'color-sidebar-file-pre-bg': { value: 'var(--cd-color-fill-0)', category: 'color', label: '代码块背景', usage: 'Semi $color-sidebar_file_pre_bg' },
+  'color-sidebar-file-pre-border': { value: 'var(--cd-color-border)', category: 'color', label: '代码块边框色', usage: 'Semi $color-sidebar_file_pre-border' },
+  'color-sidebar-file-code-bg': { value: 'var(--cd-color-border)', category: 'color', label: '行内代码背景', usage: 'Semi $color-sidebar_file_code-bg' },
+  'color-sidebar-file-hr-border-top': { value: 'var(--cd-color-border)', category: 'color', label: '分割线颜色', usage: 'Semi $color-sidebar_file_hr-borderTop' },
+  'width-sidebar-file-pre-border': { value: '1px', category: 'width', label: '代码块边框宽', usage: 'Semi $width-sidebar_file_pre-border' },
+  'width-sidebar-file-hr-border': { value: '1px', category: 'width', label: '分割线宽度', usage: 'Semi $width-sidebar_file_hr-border' },
+  'width-sidebar-file-blockquote-border-left': { value: '3px', category: 'width', label: '引用块左边框宽', usage: 'Semi $width-sidebar_file_blockquote-borderLeft' },
+  'sidebar-file-blockquote-margin-y': { value: '24px', category: 'spacing', label: '引用块垂直外距', usage: 'Semi $spacing-sidebar_file_blockquote-marginY' },
+  'sidebar-file-blockquote-margin-x': { value: '0', category: 'spacing', label: '引用块水平外距', usage: 'Semi $spacing-sidebar_file_blockquote-marginX' },
+  'sidebar-file-blockquote-padding-left': { value: '16px', category: 'spacing', label: '引用块左内距', usage: 'Semi $spacing-sidebar_file_blockquote-paddingLeft' },
+  'sidebar-file-pre-padding-y': { value: '2px', category: 'spacing', label: '代码块垂直内距', usage: 'Semi $spacing-sidebar_file_pre-paddingY' },
+  'sidebar-file-pre-padding-x': { value: '4px', category: 'spacing', label: '代码块水平内距', usage: 'Semi $spacing-sidebar_file_pre-paddingX' },
+  'sidebar-file-code-padding-y': { value: '2px', category: 'spacing', label: '行内代码垂直内距', usage: 'Semi $spacing-sidebar_file_code-paddingY' },
+  'sidebar-file-code-padding-x': { value: '4px', category: 'spacing', label: '行内代码水平内距', usage: 'Semi $spacing-sidebar_file_code-paddingX' },
+  'radius-sidebar-file-pre': { value: '4px', category: 'radius', label: '代码块圆角', usage: 'Semi $radius-sidebar_file_pre' },
+  'font-sidebar-file-fontsize': { value: '14px', category: 'font', label: '富文本正文字号', usage: 'Semi $font-sidebar_file-fontSize' },
+  'font-sidebar-file-lineheight': { value: '24px', category: 'font', label: '富文本正文行高', usage: 'Semi $font-sidebar_file-lineHeight' },
+  'font-sidebar-file-pre-fontsize': { value: '14px', category: 'font', label: '代码块字号', usage: 'Semi $font-sidebar_file_pre-fontSize' },
+  'font-sidebar-file-pre-lineheight': { value: '24px', category: 'font', label: '代码块行高', usage: 'Semi $font-sidebar_file_pre-lineHeight' },
 } satisfies TokenGroup;
