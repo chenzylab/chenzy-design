@@ -93,7 +93,10 @@ const components = [
   // 2026-07-31 补 RTL 镜像（direction + buttonRadioGroup 内边距换边）后实测 4.71 KB，
   // 属对齐 Semi rtl.scss 的真实功能增长，预算上调至 4.8 KB。
   // cascader：10.8→11 接 cdGlobal 全局默认 props（24 个 prop 走 resolveDefault，实测 10.85）
-  ['cascader', '{ Cascader }', '11 KB'],
+  // 2026-08-04 逐 demo 真机对齐 Semi 一轮修复（loadData 重构为 Semi 同构、拆出
+  // Item.svelte 承载面板渲染、triggerRender onClear 事件透传、filterRender 虚拟化
+  // 字号/padding/gap 对齐等真实功能/bug 修复，非无谓膨胀），实测 13.15 KB，预算随之上调。
+  ['cascader', '{ Cascader }', '13.3 KB'],
   ['checkbox', '{ Checkbox, CheckboxGroup }', '4 KB'],
   ['color-picker', '{ ColorPicker }', '7.5 KB'],
   // DatePicker 从零重写并严格对齐 Semi（7 type + range 双框触发器 + dateTime + 手输解析 +
