@@ -423,7 +423,6 @@ export interface Locale {
   Cascader: {
     clear: string;
     loading: string;
-    searchPlaceholder: string;
     emptyText: string;
     /** 每列 listbox 可访问名，uses {level} */
     columnLabel: string;

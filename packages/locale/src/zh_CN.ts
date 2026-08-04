@@ -293,7 +293,6 @@ export const zh_CN: Locale = {
   Cascader: {
     clear: '清除',
     loading: '加载中',
-    searchPlaceholder: '搜索',
     emptyText: '无匹配项',
     columnLabel: '第 {level} 级选项',
     searchResults: '搜索结果',
