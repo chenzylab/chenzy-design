@@ -292,7 +292,6 @@ export const en_US: Locale = {
   Cascader: {
     clear: 'Clear',
     loading: 'Loading',
-    searchPlaceholder: 'Search',
     emptyText: 'No match',
     columnLabel: 'Level {level} options',
     searchResults: 'Search results',

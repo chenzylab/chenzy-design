@@ -23,7 +23,7 @@
 <Modal title="新建" visible={visible} onOk={handleOk} onCancel={() => (visible = false)} style="width: 600px">
   <Form getFormApi={(api) => (formApi = api)}>
     <Row>
-      <Col span={11}>
+      <Col span={5}>
         <Form.Select
           field="region"
           label="国家/地区"
@@ -33,12 +33,33 @@
           optionList={[
             { label: '中国', value: 'China' },
             { label: '美国', value: 'US' },
+            { label: '欧洲', value: 'Europe' },
             { label: '日本', value: 'Japan' },
           ]}
         />
       </Col>
-      <Col span={11} offset={2}>
+      <Col span={15} offset={2}>
         <Form.Input field="owner" label="业务执行人" trigger="blur" rules={[{ required: true, message }]} />
+      </Col>
+    </Row>
+    <Row>
+      <Col span={5}>
+        <Form.Select
+          field="area"
+          label="投放区域"
+          placeholder="请选择"
+          style="width: 100%"
+          rules={[{ required: true, message }]}
+          optionList={[
+            { label: '中国', value: 'China' },
+            { label: '美国', value: 'US' },
+            { label: '欧洲', value: 'Europe' },
+            { label: '日本', value: 'Japan' },
+          ]}
+        />
+      </Col>
+      <Col span={15} offset={2}>
+        <Form.Input field="department" label="业务执行部门" trigger="blur" rules={[{ required: true, message }]} />
       </Col>
     </Row>
   </Form>

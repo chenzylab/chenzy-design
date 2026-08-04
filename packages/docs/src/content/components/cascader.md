@@ -16,6 +16,10 @@ brief: 用于选择多级分类下的某个选项。
   import searchableSrc from '../../demos/cascader/03-searchable.svelte?raw';
   import SearchableMultiple from '../../demos/cascader/04-searchable-multiple.svelte';
   import searchableMultipleSrc from '../../demos/cascader/04-searchable-multiple.svelte?raw';
+  import FilterSorter from '../../demos/cascader/04b-filter-sorter.svelte';
+  import filterSorterSrc from '../../demos/cascader/04b-filter-sorter.svelte?raw';
+  import FilterRender from '../../demos/cascader/04c-filter-render.svelte';
+  import filterRenderSrc from '../../demos/cascader/04c-filter-render.svelte?raw';
   import MaxTagCount from '../../demos/cascader/05-max-tag-count.svelte';
   import maxTagCountSrc from '../../demos/cascader/05-max-tag-count.svelte?raw';
   import Max from '../../demos/cascader/06-max.svelte';
@@ -24,6 +28,8 @@ brief: 用于选择多级分类下的某个选项。
   import changeOnSelectSrc from '../../demos/cascader/07-change-on-select.svelte?raw';
   import Display from '../../demos/cascader/08-display.svelte';
   import displaySrc from '../../demos/cascader/08-display.svelte?raw';
+  import Separator from '../../demos/cascader/08b-separator.svelte';
+  import separatorSrc from '../../demos/cascader/08b-separator.svelte?raw';
   import Disabled from '../../demos/cascader/09-disabled.svelte';
   import disabledSrc from '../../demos/cascader/09-disabled.svelte?raw';
   import DisableStrictly from '../../demos/cascader/10-disable-strictly.svelte';
@@ -48,12 +54,10 @@ brief: 用于选择多级分类下的某个选项。
   import remoteSrc from '../../demos/cascader/19-remote.svelte?raw';
   import VirtualizedSearch from '../../demos/cascader/20-virtualized-search.svelte';
   import virtualizedSearchSrc from '../../demos/cascader/20-virtualized-search.svelte?raw';
+  import LongList from '../../demos/cascader/20-long-list.svelte';
+  import longListSrc from '../../demos/cascader/20-long-list.svelte?raw';
   import TriggerRender from '../../demos/cascader/21-trigger-render.svelte';
   import triggerRenderSrc from '../../demos/cascader/21-trigger-render.svelte?raw';
-  import KeyMaps from '../../demos/cascader/22-key-maps.svelte';
-  import keyMapsSrc from '../../demos/cascader/22-key-maps.svelte?raw';
-  import ChangeWithObject from '../../demos/cascader/23-change-with-object.svelte';
-  import changeWithObjectSrc from '../../demos/cascader/23-change-with-object.svelte?raw';
 </script>
 
 ## 使用场景
@@ -95,6 +99,18 @@ import { Cascader } from '@chenzy-design/svelte';
 
 <DemoBox code={searchableMultipleSrc}><SearchableMultiple /></DemoBox>
 
+可以使用 `filterSorter` 对筛选后的数据进行排序。
+
+<DemoBox code={filterSorterSrc}><FilterSorter /></DemoBox>
+
+如果想要自定义渲染搜索后的选项，可以使用 `filterRender` 实现整行的自定义渲染，snippet 入参含 `className`（默认选项容器类名）、`inputValue`（搜索栏内容）、`disabled`、`data`（搜索结果数据）、`selected`（单选时的选中状态）、`checkStatus`（多选时的选中状态 `{checked, halfChecked}`）、`onClick`（单选点击选中回调）、`onCheck`（多选点击选中回调）。
+
+<DemoBox code={filterRenderSrc}><FilterRender /></DemoBox>
+
+如果搜索结果中存在大量 Option，可以通过设置 `virtualizeInSearch` 开启搜索结果面板的虚拟化来优化性能。virtualizeInSearch 是一个包含 `height`、`width`、`itemSize` 的对象。
+
+<DemoBox code={virtualizedSearchSrc}><VirtualizedSearch /></DemoBox>
+
 ### 限制标签展示数量
 
 在多选的场景中，利用 `maxTagCount` 可以限制展示的标签数量，超出部分将以 +N 的方式展示。使用 `showRestTagsPopover` 可以设置在超出 maxTagCount 后，hover +N 是否显示 Popover，默认为 false。并且，还可以在 `restTagsPopoverProps` 属性中配置 Popover。
@@ -115,13 +131,31 @@ import { Cascader } from '@chenzy-design/svelte';
 
 ### 自定义显示
 
-可以通过 `separator` 设置分隔符，包括：搜索时显示在下拉框的内容以及单选时回显到 Trigger 的内容的分隔符。也可以通过设置 `displayRender` 设定返回格式。
+可以通过 `displayProp` 设置回填选项显示的属性值，默认为 `label`。
+
+也可以通过 Snippet 型 prop 设定返回格式（Svelte 5 不支持函数返回 Snippet 这类 React render-prop 直译，故对齐 Semi 语义时拆成两个 Snippet 型 prop）。单选 (`multiple=false`) 时用 `displayRenderSingle`（入参为 labelPath 字符串数组）。多选 (`multiple=true`) 时用 `displayRenderTag`（每条 tag 各 render 一次，入参为 entity + idx），其中 entity 为节点的相关数据：
+
+| 属性 | 说明 | 类型 |
+| --- | --- | --- |
+| children | 子节点列表 | `CascaderEntity[]` |
+| data | 节点原始数据 | `CascaderNode` |
+| ind | 本节点在其父节点 children 数组中的下标 | number |
+| key | 祖先累积 key | string |
+| level | 节点层级（从 0 开始） | number |
+| parent | 父节点 | `CascaderEntity` |
+| parentKey | 父节点 key | string |
+| path | 祖先累积 key 数组 | `string[]` |
+| valuePath | 祖先原始 value 数组 | `string[]` |
 
 <DemoBox code={displaySrc}><Display /></DemoBox>
 
-### 禁用
+### 自定义分隔符
 
-通过节点的 `disabled` 字段禁用单个选项或整棵子树。
+可以通过 `separator` 设置分隔符，包括：搜索时显示在下拉框的内容以及单选时回显到 Trigger 的内容的分隔符。
+
+<DemoBox code={separatorSrc}><Separator /></DemoBox>
+
+### 禁用
 
 <DemoBox code={disabledSrc}><Disabled /></DemoBox>
 
@@ -185,27 +219,43 @@ import { Cascader } from '@chenzy-design/svelte';
 
 ### 超长列表
 
-当你的数据结构层级特别深时，Cascader 下拉菜单可能会超出屏幕。如果搜索结果中存在大量 Option，可以通过设置 `virtualizeInSearch` 开启搜索结果面板的虚拟化来优化性能。virtualizeInSearch 是一个包含 `height`、`width`、`itemSize` 的对象。
+当你的数据结构层级特别深时，Cascader 下拉菜单可能会超出屏幕，此时我们建议为下拉菜单设置 `overflow-x: auto` 以及一个合适的 `width` 宽度（建议以 N+0.5 列的宽度为准，最右侧显示半列，以给用户一种右侧尚有待展开项，可以水平方向滚动的视觉暗示）。
 
-<DemoBox code={virtualizedSearchSrc}><VirtualizedSearch /></DemoBox>
+<DemoBox code={longListSrc}><LongList /></DemoBox>
 
 ### 自定义 Trigger
 
 如果默认的触发器样式满足不了你的需求，可以用 `triggerRender` 自定义选择框的展示。
 
+triggerRender 入参如下
+
+```ts
+interface TriggerRenderProps {
+  /* 是否禁用 Cascader */
+  disabled: boolean;
+  /**
+   * 已选中的 node 在 treeData 中的层级位置，如下例子，
+   * 当选中浙江省-杭州市-萧山区时，此处 value 为 '0-0-1'
+   */
+  value?: string | Set<string>;
+  /* 当前 Input 框的输入值 */
+  inputValue: string;
+  /**
+   * 用于更新 input 框值的函数，当你在 triggerRender 自定义的
+   * Input 组件值更新时，你应该调用该函数，用于向 Cascader 内部
+   * 同步状态，使用时需要设置 filterTreeNode 参数非 false
+   */
+  onSearch: (inputValue: string) => void;
+  /* 用于清空值的函数（传入点击事件，用于 stopPropagation 阻止冒泡触发展开/关闭面板） */
+  onClear: (e?: MouseEvent) => void;
+  /* Placeholder */
+  placeholder?: string;
+  /* 用于删除单个 item，入参为层级位置 */
+  onRemove: (pos: string) => void;
+}
+```
+
 <DemoBox code={triggerRenderSrc}><TriggerRender /></DemoBox>
-
-### 自定义字段映射
-
-可以通过 `keyMaps` 自定义节点中 value、label、children、disabled、isLeaf 的字段名。
-
-<DemoBox code={keyMapsSrc}><KeyMaps /></DemoBox>
-
-### 获取选项的其他属性
-
-设为 `onChangeWithObject` 时，`onChange` 的入参类型会从 value 变为节点对象。
-
-<DemoBox code={changeWithObjectSrc}><ChangeWithObject /></DemoBox>
 
 ## API 参考
 
@@ -227,18 +277,19 @@ import { Cascader } from '@chenzy-design/svelte';
 | disabled | 是否禁用 | boolean | false |
 | disableStrictly | 开启严格禁用后，当节点是 disabled 时，不能通过子级或父级的关系改变选中状态 | boolean | false |
 | displayProp | 设置回填选项显示的属性值 | string | label |
-| displayRender | 设置回填格式 | `(labels: string[], nodes) => string` | - |
+| displayRenderSingle | 单选自定义触发器回显内容，入参为 labelPath 字符串数组 | `Snippet<[string[]]>` | - |
+| displayRenderTag | 多选每条 tag 的自定义回填内容，每条 tag 各 render 一次，入参为完整 Entity + idx | `Snippet<[CascaderEntity, number]>` | - |
 | dropdownClassName | 下拉菜单的 className 属性 | string | - |
 | dropdownStyle | 下拉菜单的样式 | string | - |
 | emptyContent | 当搜索无结果时展示的内容 | `string \| Snippet` | 暂无数据 |
 | filterLeafOnly | 搜索结果是否只展示叶子结点路径 | boolean | true |
-| filterRender | 自定义渲染筛选后的选项 | Snippet | - |
+| filterRender | 自定义渲染筛选后的选项；传入后接管点击选中，单选用回传的 onClick/selected，multiple 用 onCheck/checkStatus 自绘勾选交互 | `Snippet<[{ path, data, inputValue, disabled, className, selected, onClick, onCheck, checkStatus }]>` | - |
 | filterSorter | 对筛选后的选项进行排序 | `(a, b, input: string) => number` | - |
-| filterTreeNode | 设置筛选，true 用默认策略，传入函数自定义 | `boolean \| ((input, path) => boolean)` | false |
+| filterTreeNode | 设置筛选，true 用默认策略，传入函数自定义 | `boolean \| ((inputValue, treeNodeString, data?) => boolean)` | false |
 | getPopupContainer | 指定父级 DOM，自定义需要设置 `position: relative` | `() => HTMLElement` | `() => document.body` |
 | keyMaps | 自定义节点中 value、label、children、disabled、isLeaf 的字段 | object | - |
 | leafOnly | 多选时设置 value 只包含叶子节点。不支持动态切换 | boolean | false |
-| loadData | 异步加载数据，需要返回一个 Promise | `(node) => Promise<node[]>` | - |
+| loadData | 异步加载数据，传入从根到该节点的完整选中路径，需要返回一个 Promise；不返回数据，加载结果需在 Promise 内自行更新 treeData | `(selectOptions) => Promise<void>` | - |
 | max | 多选时限制选中数量，超出后触发 onExceed 回调 | number | - |
 | maxTagCount | 多选时标签的最大展示数量，超出后以 +N 形式展示 | number | - |
 | motion | 设置下拉框弹出的动画 | boolean | true |
@@ -267,7 +318,7 @@ import { Cascader } from '@chenzy-design/svelte';
 | onBlur | 失焦 Cascader 的回调 | `(e) => void` | - |
 | onChange | 选中树节点时调用，默认返回选中项 path 的 value 数组 | `(value) => void` | - |
 | onChangeWithObject | 设为 true 时，onChange 的入参类型会从 value 变为节点对象 | boolean | false |
-| onClear | showClear 为 true 时，点击清空按钮触发的回调 | `() => void` | - |
+| onClear | showClear 为 true 时，点击清空按钮触发的回调 | `(e) => void` | - |
 | onDropdownVisibleChange | 下拉框切换时的回调 | `(visible: boolean) => void` | - |
 | onExceed | 多选时，超出 max 后触发的回调 | `(items) => void` | - |
 | onFocus | 聚焦 Cascader 的回调 | `(e) => void` | - |

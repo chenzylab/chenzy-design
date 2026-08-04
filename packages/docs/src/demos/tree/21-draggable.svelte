@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Tree, Text } from '@chenzy-design/svelte';
-  import type { TreeNode } from '@chenzy-design/svelte';
+  import type { TreeNodeData } from '@chenzy-design/core';
 
   type DragNode = { key: string; label: string; children?: DragNode[] };
 
@@ -52,7 +52,7 @@
   <Text type="tertiary" size="small">draggable：拖拽节点改变层级/顺序（before / inside / after）</Text>
   <Tree
     style="width: 260px; height: 420px; border: 1px solid var(--cd-color-border); border-radius: 6px; box-sizing: border-box"
-    treeData={data as unknown as TreeNode[]}
+    treeData={data as unknown as TreeNodeData[]}
     draggable
     defaultExpandAll
     showLine

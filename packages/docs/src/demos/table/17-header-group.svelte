@@ -81,5 +81,6 @@
   expandable={{ expandedRowRender }}
   dataSource={data}
   scroll={{ y: 400 }}
+  onChange={(...args) => console.log(...args)}
   {columns}
 />

@@ -1,16 +1,26 @@
 <script lang="ts">
-  import { AIChatDialogue } from '@chenzy-design/svelte';
+  import { AIChatDialogue, Avatar } from '@chenzy-design/svelte';
   import type {
     AIDialogueMessage,
     AIDialogueRoleConfig,
     DialogueRenderConfig,
     RenderTitleProps,
+    RenderAvatarProps,
+    RenderActionProps,
   } from '@chenzy-design/svelte';
 
   const roleConfig: AIDialogueRoleConfig = {
     system: { name: 'System', color: '#8c8c8c' },
-    user: { name: 'User', color: '#4080ff' },
-    assistant: { name: 'Assistant', color: '#00b42a' },
+    user: {
+      name: 'User',
+      color: '#4080ff',
+      avatar: 'https://lf3-static.bytednsdoc.com/obj/eden-cn/ptlz_zlp/ljhwZthlaukjlkulzlp/docs-icon.png',
+    },
+    assistant: {
+      name: 'Assistant',
+      color: '#00b42a',
+      avatar: 'https://lf3-static.bytednsdoc.com/obj/eden-cn/ptlz_zlp/ljhwZthlaukjlkulzlp/other/logo.png',
+    },
   };
 
   const chats: AIDialogueMessage[] = [
@@ -34,9 +44,14 @@
     },
   ];
 
-  // dialogueRenderConfig 自定义各区块：这里改写标题（加前缀），并复用默认内容/操作节点。
+  // dialogueRenderConfig 三个区块分别自定义（对齐 Semi「自定义渲染会话框」demo）：
+  //   renderDialogueTitle —— 改写标题（加前缀）；
+  //   renderDialogueAvatar —— 用方形 Avatar 替代默认圆形头像；
+  //   renderDialogueAction —— 用 className 包一层，复用默认操作区（复制/反馈/更多等按钮）。
   const dialogueRenderConfig: DialogueRenderConfig = {
     renderDialogueTitle: titleSlot,
+    renderDialogueAvatar: avatarSlot,
+    renderDialogueAction: actionSlot,
   };
 </script>
 
@@ -46,4 +61,16 @@
 
 {#snippet titleSlot({ role }: RenderTitleProps)}
   <div style="font-weight:700; color:var(--cd-color-primary);">My-{role?.name ?? ''}</div>
+{/snippet}
+
+{#snippet avatarSlot({ role }: RenderAvatarProps)}
+  <Avatar src={role?.avatar} size="extra-small" shape="square">
+    {role?.name?.[0] ?? ''}
+  </Avatar>
+{/snippet}
+
+{#snippet actionSlot({ defaultAction, className }: RenderActionProps)}
+  <div class={className}>
+    {@render defaultAction()}
+  </div>
 {/snippet}

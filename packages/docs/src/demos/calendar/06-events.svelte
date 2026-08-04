@@ -5,11 +5,14 @@
   type Mode = 'day' | 'week' | 'month' | 'range';
   let mode = $state<Mode>('week');
   let displayValue = $state(new Date(2019, 6, 23, 8, 32, 0));
+
+  // 对齐 Semi：isMonthView 时 dailyStyle 退化为 allDayStyle，随视图联动切换。
+  let isMonthView = $derived(mode === 'month');
 </script>
 
-<!-- 对齐 Semi「事件渲染用法」：每个事件的 children 直接是带样式的块（daily 边框块 / allday 底块）。 -->
+<!-- 对齐 Semi「事件渲染用法」：daily 事件（0/6/7）按 isMonthView 动态切换样式；allday 事件恒用 allday 样式。 -->
 {#snippet daily(label: string)}
-  <div class="evt evt--daily">{label}</div>
+  <div class={isMonthView ? 'evt evt--allday' : 'evt evt--daily'}>{label}</div>
 {/snippet}
 {#snippet allday(label: string)}
   <div class="evt evt--allday">{label}</div>

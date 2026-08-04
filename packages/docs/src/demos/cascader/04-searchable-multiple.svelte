@@ -1,13 +1,16 @@
 <script lang="ts">
   import { Cascader } from '@chenzy-design/svelte';
   import { treeData } from './_data';
+
+  let value = $state<string[]>(['zhejiang', 'ningbo', 'haishu']);
 </script>
 
 <Cascader
   style="width: 300px"
   {treeData}
-  placeholder="可搜索的多选"
+  placeholder="请选择所在地区"
+  {value}
   multiple
   filterTreeNode
-  maxTagCount={2}
+  onChange={(v) => (value = v as string[])}
 />

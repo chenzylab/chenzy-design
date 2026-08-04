@@ -20,6 +20,8 @@ brief: 用于普通会话、AI 会话等场景的对话组件。
   import customRenderSrc from '../../demos/chat/05-custom-render.svelte?raw';
   import FullChatBox from '../../demos/chat/06-full-chatbox.svelte';
   import fullChatBoxSrc from '../../demos/chat/06-full-chatbox.svelte?raw';
+  import CustomAction from '../../demos/chat/10-custom-action.svelte';
+  import customActionSrc from '../../demos/chat/10-custom-action.svelte?raw';
   import CustomInput from '../../demos/chat/07-custom-input.svelte';
   import customInputSrc from '../../demos/chat/07-custom-input.svelte?raw';
   import Hints from '../../demos/chat/08-hints.svelte';
@@ -73,6 +75,10 @@ import { Chat } from '@chenzy-design/svelte';
 通过 `renderChatBoxAvatar`、`renderChatBoxTitle`、`renderChatBoxContent`、`renderChatBoxAction` 分别自定义头像、标题、内容与操作区。
 
 <DemoBox code={customRenderSrc}><CustomRender /></DemoBox>
+
+鼠标移动到会话上，即可显示会话操作区，通过 `renderChatBoxAction` 自定义渲染操作区。`defaultActionsObj` 提供拆分好的默认操作节点（copy / like / dislike / reset / delete），可与自定义节点（如 Dropdown 菜单）自由组合。
+
+<DemoBox code={customActionSrc}><CustomAction /></DemoBox>
 
 ### 完全自定义会话框
 

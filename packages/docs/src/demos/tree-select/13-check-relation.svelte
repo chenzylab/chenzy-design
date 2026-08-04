@@ -8,6 +8,7 @@
   dropdownStyle="max-height: 400px; overflow: auto"
   {treeData}
   multiple
+  defaultValue="Asia"
   checkRelation="unRelated"
   maxTagCount={3}
   defaultExpandAll

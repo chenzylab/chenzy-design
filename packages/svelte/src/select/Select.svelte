@@ -261,7 +261,8 @@
     renderCreateItem?: Snippet<[string]>;
     /**
      * 完全自定义触发器渲染，替换默认 combobox 触发框。
-     * 入参含当前 value/选中项/placeholder/open 态，供调用方自绘触发器。
+     * 入参含当前 value/选中项/placeholder/open 态，供调用方自绘触发器；
+     * 另含 onSearch/onRemove/onClear（对齐 Semi TriggerRenderProps），用于向 Select 内部同步搜索词/移除单项/清空。
      * a11y 注意：默认触发框携带的 role=combobox / aria-expanded / 键盘（↑↓/Enter/Esc）随之移除；
      * 自定义触发器需自行把必要 aria（role/aria-expanded/aria-controls）与聚焦/键盘事件挂到自绘元素上，
      * 或复用 params 里透传的 open/toggle/onTriggerKeydown 保持键盘可达。
@@ -276,6 +277,12 @@
           disabled: boolean;
           toggle: () => void;
           onTriggerKeydown: (e: KeyboardEvent) => void;
+          /** 更新搜索词并向 Select 内部同步（对齐 Semi onSearch；需同时开启 filter 才会参与过滤） */
+          onSearch: (value: string) => void;
+          /** 移除单个已选项（对齐 Semi onRemove；option 至少带 value/label） */
+          onRemove: (option: OptionData) => void;
+          /** 清空所有已选（对齐 Semi onClear） */
+          onClear: () => void;
         },
       ]
     >;
@@ -989,6 +996,12 @@
       disabled,
       toggle: toggleOpen,
       onTriggerKeydown,
+      onSearch: search,
+      onRemove: (option) => removeTag(option.value),
+      onClear: () => {
+        setValue(multiple ? [] : '');
+        onClear?.();
+      },
     })}
   {:else}
   <div

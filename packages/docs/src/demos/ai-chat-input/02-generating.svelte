@@ -1,11 +1,8 @@
 <script lang="ts">
   // 严格对齐 Semi「消息发送」demo：defaultContent + 两条 defaultFileList 附件
   // （一条 success、一条 percent=50 演示上传中的环形进度）+ 一条长文本引用；
-  // 发送后 toggle generating 并清空引用（引用需用户自行清除，附件与输入区由组件清）。
-  //
-  // 有意的偏离：Semi 原 demo 的 onContentChange / onUploadChange 只 console.log，
-  // 文档站看不到 console，这里改为就地文字反馈——演示等价且真机可断言
-  // （同 demo-no-alert-blocks-automation）。
+  // 发送后 toggle generating 并清空引用（引用需用户自行清除，附件与输入区由组件清）；
+  // 回调同 Semi 只 console.log，不额外展示页面文字。
   import { AIChatInput } from '@chenzy-design/svelte';
   import type {
     AIChatInputAttachment,
@@ -43,8 +40,6 @@
   ]);
 
   let generating = $state(false);
-  let contentLog = $state('（尚未输入）');
-  let uploadLog = $state('（初始两条）');
 
   function toggleGenerate(): void {
     generating = !generating;
@@ -60,11 +55,11 @@
   }
 
   function onContentChange(payload: { text: string }): void {
-    contentLog = payload.text.trim() || '（空）';
+    console.log('onContentChange', payload);
   }
 
   function onUploadChange(fileList: AIChatInputAttachment[]): void {
-    uploadLog = fileList.length ? fileList.map((a) => a.name).join('、') : '（已清空）';
+    console.log('onUploadChange', fileList);
   }
 </script>
 
@@ -80,9 +75,4 @@
     onReferenceDelete={handleReferenceDelete}
     {references}
   />
-  <p style="margin-top: 12px; color: var(--cd-color-text-2); font-size: 12px;">
-    onContentChange：<span data-testid="content-log">{contentLog}</span>
-    <br />
-    onUploadChange：<span data-testid="upload-log">{uploadLog}</span>
-  </p>
 </div>

@@ -114,6 +114,13 @@
     wrapperClassName?: string;
     /** 外层包裹 span（定位参照宿主）的内联样式；用于让包裹 span 直接承载触发盒 */
     triggerStyle?: string;
+    /**
+     * 点击浮层内容时向 trigger 转发一个合成 click（默认 false）。浮层被 portal
+     * 到 body 后脱离 trigger 的真实 DOM 子树，点击浮层内容不会真实冒泡到
+     * trigger——本库无先例（无 Semi 对应 prop），仅在业务确实需要"点击浮层内容
+     * 等同点击 trigger"时开启，见 Tooltip.svelte / use-floating.ts 详细说明。
+     */
+    forwardClickToTrigger?: boolean;
     /** 触发元素（必填） */
     children?: Snippet;
   }
@@ -155,6 +162,7 @@
     ariaLabelledby: ariaLabelledbyProp,
     wrapperClassName = '',
     triggerStyle = '',
+    forwardClickToTrigger = false,
     children,
   }: Props = $props();
   // cdGlobal 全局默认 props（对齐 Semi semiGlobal.config.overrideDefaultProps）：
@@ -255,6 +263,7 @@
   {ariaLabelledby}
   {wrapperClassName}
   {triggerStyle}
+  {forwardClickToTrigger}
   content={popCard}
 >
   {@render children?.()}

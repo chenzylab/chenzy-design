@@ -1,8 +1,8 @@
 <script lang="ts">
   import { Tree } from '@chenzy-design/svelte';
-  import type { TreeNode } from '@chenzy-design/svelte';
+  import type { TreeNodeData } from '@chenzy-design/core';
 
-  const treeData: TreeNode[] = [
+  const treeData: TreeNodeData[] = [
     {
       label: '模块',
       key: 'm0',
@@ -24,7 +24,7 @@
   let selectedKey = $state<string | number | null>(null);
   let descendants = $state<Set<string | number>>(new Set());
 
-  function collectKeys(node: TreeNode): (string | number)[] {
+  function collectKeys(node: TreeNodeData): (string | number)[] {
     const res: (string | number)[] = [node.key];
     for (const c of node.children ?? []) res.push(...collectKeys(c));
     return res;

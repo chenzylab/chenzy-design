@@ -1175,7 +1175,7 @@
       const i = (start + n) % len;
       const fn = visibleFlat[i] as FlatNode;
       if (isNodeDisabled(fn.node)) continue;
-      if (fn.node.label.toLowerCase().startsWith(prefix)) {
+      if (typeof fn.node.label === 'string' && fn.node.label.toLowerCase().startsWith(prefix)) {
         activeKey = fn.node.key;
         return;
       }
@@ -1704,7 +1704,7 @@
                 checked={checked}
                 indeterminate={!checked && rowHalf(node)}
                 disabled={!isCheckableNode(node)}
-                aria-label={node.label}
+                aria-label="Toggle the checked state of checkbox"
                 onChange={() => emitCheck(node)}
               />
             </span>
@@ -1731,13 +1731,17 @@
           <span class="cd-tree-option-label" class:cd-tree-option-ellipsis={ellipsis}>
             {#if renderLabel}
               {@render renderLabel({ node, level: f.level, searchValue: trimmedSearch, selected, checked })}
-            {:else if searchActive}
-              <!-- 搜索命中高亮复用 Highlight 组件（对齐 Semi Tree 内部用 Highlight） -->
+            {:else if searchActive && typeof node.label === 'string'}
+              <!-- 搜索命中高亮复用 Highlight 组件（对齐 Semi Tree 内部用 Highlight）；
+                   label 非字符串（Snippet/富节点）时高亮本就无法生效，原样渲染即可
+                   （对齐 Cascader highlightParts 同构处理）。 -->
               <Highlight
                 sourceString={node.label}
                 searchWords={trimmedSearch}
                 highlightClassName="cd-tree-option-highlight"
               />
+            {:else if typeof node.label === 'function'}
+              {@render (node.label as Snippet)()}
             {:else}{node.label}{/if}
           </span>
 

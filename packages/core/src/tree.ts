@@ -12,7 +12,13 @@ export interface TreeNodeData {
   key: TreeKey;
   /** 节点的 value（对齐 Semi TreeNodeData.value）。不填时 onChange/value 等以 key 为准。 */
   value?: string | number;
-  label: string;
+  /**
+   * 展示文本（对齐 Semi TreeNodeData.label: ReactNode，可以是纯字符串也可以是渲染层的
+   * 富节点/Snippet）。多数纯逻辑路径（flatten/conduct/search）只把 label 当透传字段、
+   * 不读取其内容，故此处不强制 string；渲染层（Svelte）按需 typeof === 'function' 断言
+   * 为 Snippet，参考 icon?: unknown 的既有模式。
+   */
+  label: unknown;
   disabled?: boolean;
   isLeaf?: boolean;
   children?: TreeNodeData[];

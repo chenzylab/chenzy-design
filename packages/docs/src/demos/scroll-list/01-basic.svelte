@@ -20,6 +20,10 @@
     if (data.type === 'hour') selectIndex2 = data.index;
     if (data.type === 'minute') selectIndex3 = data.index;
   }
+
+  function handleClose(): void {
+    console.log('close');
+  }
 </script>
 
 <ScrollList style="border:unset; box-shadow:unset;" header="无限滚动列表">
@@ -51,6 +55,6 @@
     aria-label="分钟"
   />
   {#snippet footer()}
-    <Button size="small" type="primary" theme="solid">Ok</Button>
+    <Button size="small" type="primary" theme="solid" onclick={handleClose}>Ok</Button>
   {/snippet}
 </ScrollList>

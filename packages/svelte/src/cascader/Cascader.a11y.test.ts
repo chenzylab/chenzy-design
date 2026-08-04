@@ -91,10 +91,14 @@ describe('Cascader a11y', () => {
     // 触发器内是 TagInput（role=group），而非旧的自绘 tag 列表。
     const tagInput = container.querySelector('.cd-tag-input[role="group"]');
     expect(tagInput).not.toBeNull();
-    // 选中路径以 tag 渲染，文本为整条路径 label（separator 连接）。
+    // 选中唯一叶子 West Lake，联动令祖先 Hangzhou/Zhejiang 也全选。autoMergeValue
+    // 默认 true：对齐 Semi normalizeKeyList（非 leafOnly 分支——保留 checkedKeys 中
+    // "父节点不在 checkedKeys 里"的那些 key），单一路径全选会一路折叠到最外层根
+    // Zhejiang（其父 Hangzhou/West Lake 均因父节点也在 checkedKeys 中被跳过），
+    // 只显示该节点自身 label（tagLabelOf 对齐 Semi renderTagItem，不拼接路径）。
     const tag = container.querySelector('.cd-cascader-selection-tag');
     expect(tag).not.toBeNull();
-    expect(tag?.textContent).toContain('West Lake');
+    expect(tag?.textContent).toContain('Zhejiang');
     await expectNoAxeViolations(container);
   });
 
@@ -115,17 +119,19 @@ describe('Cascader a11y', () => {
     await expectNoAxeViolations(container);
   });
 
-  // 回归：autoMergeValue 合并态删除叶子 tag。value 合并为父路径（[zj,hz]，代表其下 xh 全选），
-  // 但 tag 按叶子展开显示（West Lake）。点该 tag 的关闭按钮，删除必须生效并回调 onChange。
+  // 回归：autoMergeValue 合并态删除 tag。value 合并为根路径（[zj]——Hangzhou 是
+  // Zhejiang 唯一子节点、West Lake 是 Hangzhou 唯一子节点，选中 Hangzhou 会联动令
+  // 三层全部 checked，normalizeKeyList 一路折叠到最外层根，tag 显示 Zhejiang 自身）。
+  // 点该 tag 的关闭按钮，删除必须生效并回调 onChange。
   // 修复前 removeLeaf 在合并态 checkedBase（含父 key、不含叶子）上 delete(叶子) 会 miss → 删不掉。
-  it('多选 autoMergeValue 合并态：删除叶子 tag 生效并回调 onChange', async () => {
+  it('多选 autoMergeValue 合并态：删除 tag 生效并回调 onChange', async () => {
     let changed: unknown = undefined;
     const { container } = renderWithLocale(Cascader, {
       props: {
         treeData,
         multiple: true,
         autoMergeValue: true,
-        // 合并态：杭州(hz)父路径代表其唯一叶子 xh 全选；tag 展开显示 West Lake。
+        // 勾选中间节点 Hangzhou：联动令子孙 West Lake、祖先 Zhejiang 均全选。
         defaultValue: [['zj', 'hz']],
         'aria-label': 'Region',
         onChange: (v: unknown) => {
@@ -133,10 +139,10 @@ describe('Cascader a11y', () => {
         },
       },
     });
-    // 合并态下 tag 仍按叶子展开：应有 1 个路径 tag（West Lake）。
+    // 合并态一路折叠到根：应有 1 个路径 tag（Zhejiang）。
     const tag = container.querySelector('.cd-cascader-selection-tag');
     expect(tag).not.toBeNull();
-    expect(tag?.textContent).toContain('West Lake');
+    expect(tag?.textContent).toContain('Zhejiang');
     // 点该 tag 的关闭按钮（TagInput 内 Tag 的 .cd-tag-close / [aria-label*=close] 等）。
     const closeBtn = container.querySelector(
       '.cd-cascader-selection-tag .cd-tag-close, .cd-cascader-selection-tag button, .cd-tag-input .cd-tag-close',
@@ -169,11 +175,13 @@ describe('Cascader a11y', () => {
     expect(tags[0]?.textContent).not.toContain('West Lake');
   });
 
-  // 回归（渲染层）：unRelated 下多个跨层中间节点的完整路径 value 都渲染成含父路径的 tag。
+  // 回归（渲染层）：unRelated 下多个跨层中间节点各自独立回显为 tag，只显示该节点
+  // 自身 label（tagLabelOf 对齐 Semi renderTagItem `data[displayProp]`，取路径末端
+  // 节点自身字段，不拼接完整路径——同「Hangzhou 不含 West Lake」的既定规则）。
   // 覆盖 checkedLeafPaths 的 unRelated 分支（用 currentPaths 直取、findPath 解析路径）。
   // 注：交互层「点击 checkbox 经 toggleCheckNode 构建完整路径」的修复（colIndex 传参）走真机
   // 与 kbd 测试覆盖——此处用 defaultValue 传入已完整的路径，绕过 toggleCheckNode，故只验渲染。
-  it('多选 unRelated：多个中间节点的完整路径 value 均渲染含父路径的 tag', () => {
+  it('多选 unRelated：多个中间节点各自独立回显为 tag（只显示自身 label）', () => {
     const { container } = renderWithLocale(Cascader, {
       props: {
         treeData,
@@ -187,8 +195,7 @@ describe('Cascader a11y', () => {
     const tags = [...container.querySelectorAll('.cd-cascader-selection-tag')];
     expect(tags.length).toBe(2);
     const texts = tags.map((t) => t.textContent ?? '');
-    // 完整路径回显：Hangzhou 带父 Zhejiang，Jiangsu 独立。
-    expect(texts.some((t) => t.includes('Zhejiang') && t.includes('Hangzhou'))).toBe(true);
+    expect(texts.some((t) => t.includes('Hangzhou') && !t.includes('Zhejiang'))).toBe(true);
     expect(texts.some((t) => t.includes('Jiangsu'))).toBe(true);
   });
 });

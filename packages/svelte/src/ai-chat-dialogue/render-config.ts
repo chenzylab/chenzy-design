@@ -30,6 +30,9 @@ export interface RenderContentProps {
 export interface RenderActionProps {
   message: AIDialogueMessage;
   defaultAction: Snippet;
+  /** 操作栏外层类名（对齐 Semi RenderActionProps.className，值为 cd-ai-chat-dialogue-action，
+   * 供自定义渲染时复用默认显隐样式）。 */
+  className: string;
 }
 
 /** 会话框各默认节点集合（供整块自定义时复用）。 */

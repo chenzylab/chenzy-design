@@ -9,9 +9,14 @@
 
 export type CascaderKey = string | number;
 
-/** Minimal node shape consumed by the pure helpers (label/value/children). */
+/**
+ * Minimal node shape consumed by the pure helpers (label/value/children).
+ * label mirrors Semi CascaderData.label: ReactNode — the helpers only pass it through
+ * (join/flatten as `unknown`), never inspect its content, so it's typed loosely here;
+ * the render layer (Svelte) narrows to string vs Snippet as needed.
+ */
 export interface CascaderPathNode {
-  label: string;
+  label: unknown;
   value: CascaderKey;
   disabled?: boolean;
   children?: CascaderPathNode[];
@@ -64,7 +69,9 @@ export function flattenCascaderPaths<N extends CascaderPathNode>(
       const kids = (childrenOf ? childrenOf(n) : (n.children as N[] | undefined)) ?? undefined;
       const isLeaf = !kids || kids.length === 0;
       const nv = [...values, n.value];
-      const nl = [...labels, n.label];
+      // labels 供子串匹配/展示 join 用，label 非字符串（渲染层富节点）时降级为空串占位
+      // （对齐 Semi _defaultRenderText 对 ReactNode label 直接 join 同样不产出可读文本的取舍）。
+      const nl = [...labels, typeof n.label === 'string' ? n.label : ''];
       const nc = [...chain, n];
       const dis = parentDisabled || !!n.disabled;
       if (isLeaf || includeNonLeaf) {

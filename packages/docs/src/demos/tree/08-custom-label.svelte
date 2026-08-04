@@ -1,8 +1,8 @@
 <script lang="ts">
   import { Tree, Tag } from '@chenzy-design/svelte';
-  import type { TreeNode } from '@chenzy-design/svelte';
+  import type { TreeNodeData } from '@chenzy-design/core';
 
-  const treeData: TreeNode[] = [
+  const treeData: TreeNodeData[] = [
     {
       label: '前端团队',
       key: 'fe',

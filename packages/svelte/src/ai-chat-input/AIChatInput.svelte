@@ -100,7 +100,7 @@
     showUploadButton?: boolean;
     /** 透传给内部 Upload 的 props。 */
     uploadProps?: Record<string, unknown> | undefined;
-    /** 圆角样式（对齐 Semi round）。 */
+    /** 圆角样式（对齐 Semi round，默认 true）。 */
     round?: boolean;
     /** 附加 tiptap extensions（阶段 1 追加到 StarterKit 之后）。 */
     extensions?: unknown[];
@@ -157,10 +157,21 @@
      */
     onSuggestClick?: ((suggestion: AIChatInputSuggestion) => void) | undefined;
     // —— 阶段 2 · top 插槽 ——
-    /** 自定义 top slot 渲染（对齐 Semi renderTopSlot）。 */
-    renderTopSlot?: Snippet<[{ references: AIChatInputReference[]; attachments: AIChatInputAttachment[] }]> | undefined;
-    /** top slot 相对引用条的位置（对齐 Semi topSlotPosition，默认 top）。 */
-    topSlotPosition?: 'top' | 'bottom';
+    /** 自定义 top slot 渲染（对齐 Semi renderTopSlot / TopSlotProps）。 */
+    renderTopSlot?:
+      | Snippet<
+          [
+            {
+              references: AIChatInputReference[];
+              attachments: AIChatInputAttachment[];
+              handleReferenceDelete: (reference: AIChatInputReference) => void;
+              handleUploadFileDelete: (attachment: AIChatInputAttachment) => void;
+            },
+          ]
+        >
+      | undefined;
+    /** top slot 相对引用条/附件区的位置（对齐 Semi topSlotPosition，默认 top）。 */
+    topSlotPosition?: 'top' | 'middle' | 'bottom';
     // —— 阶段 3 · 技能 + 模版 ——
     /** 技能列表：空编辑区按 skillHotKey 弹出面板，选中后插入 skillSlot 节点（对齐 Semi skills）。 */
     skills?: AIChatInputSkill[];
@@ -267,7 +278,7 @@
     sendHotKey = 'enter',
     showUploadButton = true,
     uploadProps,
-    round = false,
+    round = true,
     extensions = [],
     transformer,
     onContentChange,
@@ -648,6 +659,13 @@
     event.stopPropagation();
     onReferenceDelete?.(reference);
   }
+  // top slot 透传版：不带 stopPropagation（外部 snippet 自行处理事件冒泡）。
+  function handleTopSlotReferenceDelete(reference: AIChatInputReference): void {
+    onReferenceDelete?.(reference);
+  }
+  function handleTopSlotUploadFileDelete(attachment: AIChatInputAttachment): void {
+    void removeAttachment(attachment);
+  }
 
   // 点击外部关闭建议面板（Esc 已在编辑区 keydown 处理）。
   $effect(() => {
@@ -822,7 +840,12 @@
   {#if hasReferences || hasTopSlot || hasAttachments}
     <div class="cd-ai-chat-input-top">
       {#if hasTopSlot && topSlotPosition === 'top'}
-        {@render renderTopSlot?.({ references, attachments })}
+        {@render renderTopSlot?.({
+          references,
+          attachments,
+          handleReferenceDelete: handleTopSlotReferenceDelete,
+          handleUploadFileDelete: handleTopSlotUploadFileDelete,
+        })}
       {/if}
       {#if hasReferences}
         <div class="cd-ai-chat-input-references">
@@ -875,6 +898,14 @@
             {/if}
           {/each}
         </div>
+      {/if}
+      {#if hasTopSlot && topSlotPosition === 'middle'}
+        {@render renderTopSlot?.({
+          references,
+          attachments,
+          handleReferenceDelete: handleTopSlotReferenceDelete,
+          handleUploadFileDelete: handleTopSlotUploadFileDelete,
+        })}
       {/if}
       {#if hasAttachments}
         <!--
@@ -934,7 +965,12 @@
         </AIChatInputHorizontalScroller>
       {/if}
       {#if hasTopSlot && topSlotPosition === 'bottom'}
-        {@render renderTopSlot?.({ references, attachments })}
+        {@render renderTopSlot?.({
+          references,
+          attachments,
+          handleReferenceDelete: handleTopSlotReferenceDelete,
+          handleUploadFileDelete: handleTopSlotUploadFileDelete,
+        })}
       {/if}
     </div>
   {/if}
@@ -1528,8 +1564,11 @@
     cursor: not-allowed;
   }
 
-  /* Semi &-footer-action-upload */
+  /* Semi &-footer-action-upload：span 触发器需自补 flex 居中才能吃到 width/height（inline 元素两者均不生效） */
   .cd-ai-chat-input-footer-action-upload {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     background: var(--cd-color-ai-chat-input-footer-upload-bg-default);
     color: var(--cd-color-ai-chat-input-footer-upload-text);
   }

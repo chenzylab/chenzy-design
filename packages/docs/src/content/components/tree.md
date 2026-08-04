@@ -52,16 +52,18 @@ brief: 树型结构列表。
   import draggableSrc from '../../demos/tree/21-draggable.svelte?raw';
   import FullLabelLeaf from '../../demos/tree/22-full-label-leaf.svelte';
   import fullLabelLeafSrc from '../../demos/tree/22-full-label-leaf.svelte?raw';
-  import FullLabelHighlight from '../../demos/tree/23-full-label-highlight.svelte';
-  import fullLabelHighlightSrc from '../../demos/tree/23-full-label-highlight.svelte?raw';
-  import FieldNames from '../../demos/tree/24-field-names.svelte';
-  import fieldNamesSrc from '../../demos/tree/24-field-names.svelte?raw';
-  import CustomFilter from '../../demos/tree/25-custom-filter.svelte';
-  import customFilterSrc from '../../demos/tree/25-custom-filter.svelte?raw';
-  import SearchControlledExpand from '../../demos/tree/26-search-controlled-expand.svelte';
-  import searchControlledExpandSrc from '../../demos/tree/26-search-controlled-expand.svelte?raw';
-  import DraggableFullLabel from '../../demos/tree/27-draggable-full-label.svelte';
-  import draggableFullLabelSrc from '../../demos/tree/27-draggable-full-label.svelte?raw';
+  import FullLabelSingleLeaf from '../../demos/tree/23-full-label-single-leaf.svelte';
+  import fullLabelSingleLeafSrc from '../../demos/tree/23-full-label-single-leaf.svelte?raw';
+  import FullLabelHighlight from '../../demos/tree/24-full-label-highlight.svelte';
+  import fullLabelHighlightSrc from '../../demos/tree/24-full-label-highlight.svelte?raw';
+  import FieldNames from '../../demos/tree/25-field-names.svelte';
+  import fieldNamesSrc from '../../demos/tree/25-field-names.svelte?raw';
+  import CustomFilter from '../../demos/tree/26-custom-filter.svelte';
+  import customFilterSrc from '../../demos/tree/26-custom-filter.svelte?raw';
+  import SearchControlledExpand from '../../demos/tree/27-search-controlled-expand.svelte';
+  import searchControlledExpandSrc from '../../demos/tree/27-search-controlled-expand.svelte?raw';
+  import DraggableFullLabel from '../../demos/tree/28-draggable-full-label.svelte';
+  import draggableFullLabelSrc from '../../demos/tree/28-draggable-full-label.svelte?raw';
 </script>
 
 ## 代码演示
@@ -201,6 +203,12 @@ TreeNodeData 的 label 属性支持传入节点来自定义显示的节点内容
 Tree 组件的 API 支持了大部分的渲染需求，如果有非常特殊的定制要求，可以使用 `renderFullLabel` 来接管整行 option 的渲染效果。此例针对「希望只有叶子节点可以选中，父节点只起到分组作用」的场景：只渲染叶子节点前的 Checkbox，并且点击父节点时不触发选中，点击叶子节点触发。同时开启 `leafOnly` 可以使 onChange 的回调入参都是叶子节点。
 
 <DemoBox code={fullLabelLeafSrc}><FullLabelLeaf /></DemoBox>
+
+### 高级定制·叶子分组单选
+
+此例针对「希望只有叶子节点可以单选，父节点只起到分组作用」的场景：点击父节点时不触发选中（仅触发展开/收起），点击叶子节点才触发选中。
+
+<DemoBox code={fullLabelSingleLeafSrc}><FullLabelSingleLeaf /></DemoBox>
 
 ### 高级定制·单选高亮子节点
 

@@ -1,25 +1,19 @@
 <script lang="ts">
-  import { Upload } from '@chenzy-design/svelte';
-  import { IconPlus } from '@chenzy-design/icons';
-  import type { UploadFileItem } from '@chenzy-design/svelte';
+  import { Upload, Button } from '@chenzy-design/svelte';
+  import { IconUpload } from '@chenzy-design/icons';
 
-  let val = $state<UploadFileItem[]>([]);
+  // 基本用法（对齐 Semi）：crop={true} 启用默认裁切配置。
 </script>
 
-<!--
-  crop 开启后，选中 image/* 文件先进裁切弹窗（Modal + Cropper），
-  确认后用裁切结果 File 替换原文件再走上传流程。
-  传对象可自定义宽高比/形状（此处圆形，适合头像）。
--->
 <Upload
-  listType="picture"
-  accept="image/*"
-  action="//example.com/upload"
-  crop={{ shape: 'round', aspectRatio: 1, modalTitle: '裁切头像' }}
-  beforeCrop={(file) => file.size > 0}
-  onCropError={(err) => console.error('crop failed', err)}
-  fileList={val}
-  onChange={({ fileList }) => (val = fileList)}
+  action="https://api.semi.design/upload"
+  crop={true}
+  onSuccess={(response, file) => {
+    console.log('上传成功:', response, file);
+  }}
 >
-  <IconPlus size="extra-large" />
+  <Button theme="light">
+    {#snippet icon()}<IconUpload />{/snippet}
+    点击上传（启用裁切）
+  </Button>
 </Upload>

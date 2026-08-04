@@ -13,8 +13,6 @@ brief: 基于富文本编辑器的 AI 聊天输入框，支持引用、附件、
   import basicSrc from '../../demos/ai-chat-input/01-basic.svelte?raw';
   import Generating from '../../demos/ai-chat-input/02-generating.svelte';
   import generatingSrc from '../../demos/ai-chat-input/02-generating.svelte?raw';
-  import HotkeyUpload from '../../demos/ai-chat-input/03-hotkey-upload.svelte';
-  import hotkeyUploadSrc from '../../demos/ai-chat-input/03-hotkey-upload.svelte?raw';
   import RichText from '../../demos/ai-chat-input/03b-rich-text.svelte';
   import richTextSrc from '../../demos/ai-chat-input/03b-rich-text.svelte?raw';
   import References from '../../demos/ai-chat-input/04-references.svelte';
@@ -25,6 +23,8 @@ brief: 基于富文本编辑器的 AI 聊天输入框，支持引用、附件、
   import skillsSrc from '../../demos/ai-chat-input/06-skills.svelte?raw';
   import Configure from '../../demos/ai-chat-input/07-configure.svelte';
   import configureSrc from '../../demos/ai-chat-input/07-configure.svelte?raw';
+  import ConfigureItem from '../../demos/ai-chat-input/07b-configure-item.svelte';
+  import configureItemSrc from '../../demos/ai-chat-input/07b-configure-item.svelte?raw';
   import WithDialogue from '../../demos/ai-chat-input/08-with-dialogue.svelte';
   import withDialogueSrc from '../../demos/ai-chat-input/08-with-dialogue.svelte?raw';
   import ActionArea from '../../demos/ai-chat-input/09-action-area.svelte';
@@ -72,8 +72,6 @@ import { AIChatInput } from '@chenzy-design/svelte';
 
 <DemoBox code={generatingSrc}><Generating /></DemoBox>
 
-<DemoBox code={hotkeyUploadSrc}><HotkeyUpload /></DemoBox>
-
 ### 富文本输入区
 
 AIChatInput 使用 [tiptap](https://tiptap.dev/docs/editor/getting-started/overview) 作为富文本输入框的编辑器，用户可以在输入框中输入文本，使用 AIChatInput 内置的 extensions（包括 `input-slot`，`select-slot`，`skill-slot`）。用户也可以自定义 extensions 来扩展编辑器的功能。
@@ -100,9 +98,13 @@ tiptap 内核体积较大，本库**全程动态 import**，不进主 bundle—�
 
 ### 配置区域
 
-通过 `renderConfigureArea` 自定义底部配置区，内部放 `AIChatInputConfigureSelect` / `Button` / `RadioButton` 等；其值在发送时并入消息的 `setup` 字段，变更经 `onConfigureChange` 通知。
+通过 `renderConfigureArea` 自定义底部配置区，内部放 `AIChatInputConfigureSelect` / `Button` / `Mcp` / `RadioButton` 等；其值在发送时并入消息的 `setup` 字段，变更经 `onConfigureChange` 通知。
 
 <DemoBox code={configureSrc}><Configure /></DemoBox>
+
+如果有其他形式的配置需求，可以用 `AIChatInputConfigureItem` 将任意受控组件（如 `Cascader`）接入配置区 context（对齐 Semi `getConfigureItem`，本库为 render-prop 形态而非 HOC）。
+
+<DemoBox code={configureItemSrc}><ConfigureItem /></DemoBox>
 
 ### 操作区域
 
@@ -229,7 +231,7 @@ editor.storage.CdAIChatInput.allowHotKeySend = true;
 | renderSkillItem | 自定义技能列表的 item 渲染（整项替换，需自行渲染根节点并挂 className/onClick/onMouseEnter） | `Snippet<[{ skill, className, onClick, onMouseEnter }]>` | - |
 | renderSuggestionItem | 自定义建议列表的 item 渲染（整项替换，需自行渲染根节点并挂 className/onClick/onMouseEnter） | `Snippet<[{ suggestion, className, onClick, onMouseEnter }]>` | - |
 | renderTemplate | 自定义模板渲染 | `Snippet<[{ skill, setContent }]>` | - |
-| renderTopSlot | 自定义顶部 slot | `Snippet<[{ references, attachments }]>` | - |
+| renderTopSlot | 自定义顶部 slot | `Snippet<[{ references, attachments, handleReferenceDelete, handleUploadFileDelete }]>` | - |
 | renderUploadButton | 自定义底部操作区上传按钮 UI（内置上传/粘贴逻辑仍由组件托管） | `Snippet<[{ openFileDialog, disabled, attachments }]>` | - |
 | round | 底部的配置区域和操作区域形状是否为全圆角 | boolean | true |
 | sendHotKey | 发送输入内容的键盘快捷键，支持 `enter`、`shift+enter` | string | `enter` |
@@ -242,7 +244,7 @@ editor.storage.CdAIChatInput.allowHotKeySend = true;
 | skills | 技能列表 | `AIChatInputSkill[]` | `[]` |
 | style | 自定义样式 | string | - |
 | suggestions | 建议列表 | `AIChatInputSuggestion[]` | `[]` |
-| topSlotPosition | 自定义顶部内容相对引用/上传区域的位置 | `'top' \| 'bottom'` | `top` |
+| topSlotPosition | 自定义顶部内容相对引用/上传区域的位置 | `'top' \| 'middle' \| 'bottom'` | `top` |
 | templatesCls | 模版浮层的附加类名 | string | - |
 | templatesStyle | 模版浮层的附加内联样式 | string | - |
 | transformer | 富文本节点归一覆盖（配合自定义 extensions） | `Map<string, (node) => Content>` | - |
@@ -259,11 +261,27 @@ editor.storage.CdAIChatInput.allowHotKeySend = true;
 
 ### Configure.Button
 
-同 [ButtonProps](/components/button#api-参考)。
+| 属性 | 说明 | 类型 | 默认值 |
+| --- | --- | --- | --- |
+| field | 绑定的配置字段名（发送时并入消息 `setup`） | string | - |
+| initValue | 初始值（注册到配置区，不触发 onConfigureChange） | boolean | - |
+| icon | 前置图标 | Snippet | - |
+| disabled | 禁用 | boolean | false |
+| onChange | 附加变更回调 | `(value: boolean) => void` | - |
 
 ### Configure.RadioButton
 
 同 [RadioGroupProps](/components/radio#api-参考)。
+
+### Configure.Item
+
+通用配置字段包装（对齐 Semi `getConfigureItem`），把任意受控组件接入配置区 context；本库为 render-prop 形态而非 React HOC。
+
+| 属性 | 说明 | 类型 | 默认值 |
+| --- | --- | --- | --- |
+| field | 绑定的配置字段名（发送时并入消息 `setup`） | string | - |
+| initValue | 初始值（注册到配置区，不触发 onConfigureChange） | unknown | - |
+| children | 渲染受控组件，参数提供当前 value 与 onChange 写回 | `Snippet<[{ value, onChange }]>` | - |
 
 ### Configure.Mcp
 

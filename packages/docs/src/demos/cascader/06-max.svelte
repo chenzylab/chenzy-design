@@ -6,8 +6,12 @@
 <Cascader
   style="width: 300px"
   {treeData}
-  placeholder="最多选择两项"
+  placeholder="请选择所在地区"
   multiple
-  max={2}
-  onExceed={() => Toast.warning('最多只允许选择两项')}
+  max={1}
+  onExceed={(v) => {
+    Toast.warning('exceed max');
+    console.log(v);
+  }}
+  defaultValue={['zhejiang', 'ningbo', 'haishu']}
 />

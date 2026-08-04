@@ -64,7 +64,7 @@ import { AIChatDialogue } from '@chenzy-design/svelte';
 
 ### 消息展示
 
-消息内容支持字符串或 `ContentItem[]`，涵盖文本、图片、文件、推理过程（reasoning）、工具调用（function_call）等类型。
+消息内容支持字符串或 `ContentItem[]`，涵盖文本、输入图片（input_image）、输入文件（input_file）、推理过程（reasoning）、工具调用（function_call）、带引用标注（annotations）的正文、以及分步展示（steps，对应 Semi 官方 demo 中自定义类型 `plan` + `renderDialogueContentItem` 接入的内部 Step widget；本库把该 widget 落成原生 `steps` 类型，无需自定义渲染即可分步展示）等类型。
 
 <DemoBox code={contentItemsSrc}><ContentItems /></DemoBox>
 
@@ -98,7 +98,7 @@ import { AIChatDialogue } from '@chenzy-design/svelte';
 
 ### 自定义渲染会话框
 
-通过 `dialogueRenderConfig` 分区块自定义渲染（头像 / 标题 / 内容 / 操作区），或整条替换。
+通过 `dialogueRenderConfig` 分区块自定义渲染（头像 `renderDialogueAvatar` / 标题 `renderDialogueTitle` / 内容 `renderDialogueContent` / 操作区 `renderDialogueAction`），或整条替换（`renderFullDialogue`）。`renderDialogueAction` 的参数带 `className`（值为 `cd-ai-chat-dialogue-action`），供包一层容器时复用默认显隐样式。
 
 <DemoBox code={renderDialogueSrc}><RenderDialogue /></DemoBox>
 

@@ -1,8 +1,9 @@
 <script lang="ts">
   // 已支持的表单控件全家福：Input / InputNumber / Select / DatePicker / TimePicker /
   // TreeSelect / Cascader / TagInput / TextArea / CheckboxGroup / RadioGroup / Slider /
-  // Rating / Switch，均从 Form 导出后自动接管数据流。对齐 Semi「已支持的表单控件」。
+  // Rating / Switch / Upload，均从 Form 导出后自动接管数据流。对齐 Semi「已支持的表单控件」。
   import { Form, Button, Space, Radio } from '@chenzy-design/svelte';
+  import { IconUpload } from '@chenzy-design/icons';
 
   const treeData = [
     {
@@ -29,6 +30,20 @@
     role: 'ued',
     switch: true,
     business: ['ulikeCam'],
+    files: [
+      {
+        uid: '1',
+        name: 'vigo.png',
+        status: 'success' as const,
+        size: 130 * 1024,
+      },
+      {
+        uid: '2',
+        name: 'resso.jpeg',
+        status: 'validateFail' as const,
+        size: 222 * 1024,
+      },
+    ],
   };
 </script>
 
@@ -71,6 +86,11 @@
       {treeData}
     />
     <Form.TagInput field="product" label="产品（TagInput）" placeholder="请输入产品" />
+    <Form.Upload field="files" label="证明文件（Upload）" action="//semi.design/api/upload">
+      {#snippet children()}
+        <Button icon={uploadIcon} theme="light">点击上传</Button>
+      {/snippet}
+    </Form.Upload>
   </Form.Section>
   <Form.Section text="资源详情">
     <Form.TextArea field="description" label="申请理由（TextArea）" placeholder="请填写申请理由" />
@@ -79,7 +99,7 @@
       label="申请类型（CheckboxGroup）"
       direction="horizontal"
       initValue={['user']}
-      optionList={[
+      options={[
         { label: 'admin', value: 'admin' },
         { label: 'user', value: 'user' },
         { label: 'guest', value: 'guest' },
@@ -103,3 +123,5 @@
     </Space>
   {/snippet}
 </Form>
+
+{#snippet uploadIcon()}<IconUpload />{/snippet}

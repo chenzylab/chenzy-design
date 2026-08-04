@@ -94,7 +94,7 @@ import {
 
 ### 代码展示
 
-`SideBarCodeContent` 以折叠列表展示代码/JSON：`isJson` 为 true 走 JsonViewer，否则走 CodeHighlight。
+`SideBarCodeItem` 展示单条代码/JSON 内容（不含折叠头）：`isJson` 为 true 走 JsonViewer，否则走 CodeHighlight。
 
 <DemoBox code={codeContentSrc}><CodeContent /></DemoBox>
 
@@ -118,7 +118,7 @@ Semi 用单选（radio）在「内置 / 自定义」间二选一切换列表；�
 
 ### 富文本编辑器
 
-`SideBarFileContent` 以折叠列表展示富文本，每项是一个 tiptap 编辑器；`editable` 控制查看/编辑，编辑态渲染格式工具栏与图片上传节点。
+`SideBarFileItem` 展示单条富文本内容，基于 tiptap 实现；`editable` 控制查看/编辑，编辑态渲染格式工具栏与图片上传节点。
 
 <DemoBox code={fileContentSrc}><FileContent /></DemoBox>
 
@@ -228,6 +228,8 @@ Semi 用单选（radio）在「内置 / 自定义」间二选一切换列表；�
 | img | 图片地址（视频封面图、文本配图） | string | - |
 | logo | 站点/内容所属平台的 logo 图片地址 | string | - |
 | onClick | 点击事件回调函数 | `(e: MouseEvent, item: SideBarAnnotationItem) => void` | - |
+| order | 引用序号（用于内容排序/标注序号展示） | number | - |
+| siteName | 内容所属的站点/平台名称 | string | - |
 | title | 标题 | string | - |
 | type | 卡片类型，`video` 渲染视频卡片，`text`（默认）渲染文本卡片 | `'video' \| 'text'` | `text` |
 | url | 来源地址，存在时点击在新窗口打开 | string | - |
@@ -287,3 +289,18 @@ Semi 用单选（radio）在「内置 / 自定义」间二选一切换列表；�
 | key | 唯一标识 | string | - |
 | name | 折叠头显示名 | string | - |
 | onContentChange | 内容变更回调 | `(html: string) => void` | - |
+
+### SideBarFileItem
+
+单个富文本查看/编辑器（对齐 Semi `file.js` 导出的 `FileItem`），
+`SideBarFileContent` 内部即渲染它；也可单独用于「只渲染一项、不要折叠列表」的场景。
+
+| 属性 | 说明 | 类型 | 默认值 |
+| --- | --- | --- | --- |
+| class | 自定义类名 | string | - |
+| content | 初始富文本内容（HTML） | string | - |
+| editable | 是否可编辑（false=只读查看） | boolean | true |
+| extensions | 追加到默认扩展集末尾的自定义 tiptap 扩展 | `Extension[]` | `[]` |
+| imgUploadProps | 图片上传相关配置属性 | `SideBarImageUploadOptions` | - |
+| onContentChange | 内容变更回调（`editor.getHTML()`） | `(html: string) => void` | - |
+| style | 自定义内联样式 | string | - |
