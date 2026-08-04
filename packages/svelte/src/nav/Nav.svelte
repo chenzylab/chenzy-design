@@ -377,7 +377,9 @@
     <div class="cd-nav-header-list-outer" class:cd-nav-header-list-outer-collapsed={collapsedState}>
       {#if hasHeader}
         {#if headerSlot}
-          {@render headerSlot()}
+          <NavHeader {mode} {collapsedState}>
+            {#snippet children()}{@render headerSlot()}{/snippet}
+          </NavHeader>
         {:else if header}
           <NavHeader
             {...header.logo !== undefined ? { logo: header.logo } : {}}
@@ -407,7 +409,9 @@
 
     {#if hasFooter}
       {#if footerSlot}
-        {@render footerSlot()}
+        <NavFooter>
+          {#snippet children()}{@render footerSlot()}{/snippet}
+        </NavFooter>
       {:else if footer}
         <NavFooter
           collapseButton={footer.collapseButton ?? false}
@@ -494,6 +498,11 @@
   .cd-nav-horizontal .cd-nav-list {
     display: inline-flex;
     align-items: center;
+  }
+  /* 顶部导航 footer：无分割线、右内边距归 0（对齐 Semi navigation.scss horizontal .footer）。 */
+  .cd-nav-horizontal :global(.cd-nav-footer) {
+    border-block-start: none;
+    padding-inline-end: 0;
   }
 
   /* —— RTL（对齐 Semi navigation/rtl.scss）——
