@@ -129,6 +129,9 @@ importers:
 
   packages/docs:
     dependencies:
+      '@chenzy-design/core':
+        specifier: workspace:*
+        version: link:../core
       '@chenzy-design/icons':
         specifier: workspace:*
         version: link:../icons

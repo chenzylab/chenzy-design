@@ -1,15 +1,15 @@
 <script lang="ts">
   import { Tree, Button } from '@chenzy-design/svelte';
-  import type { TreeNode } from '@chenzy-design/svelte';
+  import type { TreeNodeData } from '@chenzy-design/core';
 
-  const setA: TreeNode[] = [
+  const setA: TreeNodeData[] = [
     { label: '数据集 A', key: 'a', children: [{ label: 'A-1', key: 'a1' }, { label: 'A-2', key: 'a2' }] },
   ];
-  const setB: TreeNode[] = [
+  const setB: TreeNodeData[] = [
     { label: '数据集 B', key: 'b', children: [{ label: 'B-1', key: 'b1' }, { label: 'B-2', key: 'b2' }, { label: 'B-3', key: 'b3' }] },
   ];
 
-  let data = $state<TreeNode[]>(setA);
+  let data = $state<TreeNodeData[]>(setA);
 </script>
 
 <div style="display:flex; flex-direction:column; gap:12px; width:260px">

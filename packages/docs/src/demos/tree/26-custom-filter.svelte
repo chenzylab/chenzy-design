@@ -1,8 +1,8 @@
 <script lang="ts">
   import { Tree } from '@chenzy-design/svelte';
-  import type { TreeNode } from '@chenzy-design/svelte';
+  import type { TreeNodeData } from '@chenzy-design/core';
 
-  const treeData: TreeNode[] = [
+  const treeData: TreeNodeData[] = [
     {
       label: 'Asia',
       key: '0',
@@ -30,8 +30,8 @@
 
   // filterTreeNode 传函数：自定义命中逻辑（这里按 label 前缀匹配，区分大小写）。
   // 命中节点的祖先链自动展开。
-  const startsWith = (input: string, node: TreeNode) =>
-    node.label.toLowerCase().startsWith(input.toLowerCase());
+  const startsWith = (input: string, node: TreeNodeData) =>
+    typeof node.label === 'string' && node.label.toLowerCase().startsWith(input.toLowerCase());
 </script>
 
 <Tree

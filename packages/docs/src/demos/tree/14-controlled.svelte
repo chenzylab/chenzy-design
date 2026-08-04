@@ -1,8 +1,8 @@
 <script lang="ts">
   import { Tree, Button, Text } from '@chenzy-design/svelte';
-  import type { TreeNode } from '@chenzy-design/svelte';
+  import type { TreeNodeData } from '@chenzy-design/core';
 
-  const treeData: TreeNode[] = [
+  const treeData: TreeNodeData[] = [
     {
       label: '亚洲',
       key: 'asia',

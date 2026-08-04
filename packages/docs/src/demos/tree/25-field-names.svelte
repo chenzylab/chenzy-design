@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Tree, Text } from '@chenzy-design/svelte';
-  import type { TreeNode } from '@chenzy-design/svelte';
+  import type { TreeNodeData } from '@chenzy-design/core';
 
   // 后端数据用 id/name/sub 字段，通过 keyMaps 映射为标准 key/label/children
   const raw = [
@@ -25,7 +25,7 @@
 <div style="width:260px">
   <Tree
     style="width: 260px; height: 420px; border: 1px solid var(--cd-color-border); border-radius: 6px; box-sizing: border-box"
-    treeData={raw as unknown as TreeNode[]}
+    treeData={raw as unknown as TreeNodeData[]}
     keyMaps={{ key: 'id', label: 'name', children: 'sub' }}
     defaultExpandAll
     value={selected}

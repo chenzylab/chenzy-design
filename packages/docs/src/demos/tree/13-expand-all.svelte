@@ -1,12 +1,12 @@
 <script lang="ts">
   import { Tree, Button, Text } from '@chenzy-design/svelte';
-  import type { TreeNode } from '@chenzy-design/svelte';
+  import type { TreeNodeData } from '@chenzy-design/core';
 
-  const initial: TreeNode[] = [
+  const initial: TreeNodeData[] = [
     { label: '节点 1', key: 'n1', children: [{ label: '节点 1-1', key: 'n1-1' }] },
   ];
 
-  let data = $state<TreeNode[]>(initial);
+  let data = $state<TreeNodeData[]>(initial);
   let count = 1;
 
   function addNode() {

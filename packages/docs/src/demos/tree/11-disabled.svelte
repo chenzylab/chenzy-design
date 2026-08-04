@@ -1,9 +1,9 @@
 <script lang="ts">
   import { Tree, Text } from '@chenzy-design/svelte';
-  import type { TreeNode } from '@chenzy-design/svelte';
+  import type { TreeNodeData } from '@chenzy-design/core';
 
   // 部分节点 disabled；disableStrictly 下禁用节点勾选态不受父/子联动改变
-  const treeData: TreeNode[] = [
+  const treeData: TreeNodeData[] = [
     {
       label: '亚洲',
       key: 'asia',

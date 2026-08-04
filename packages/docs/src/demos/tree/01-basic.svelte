@@ -1,9 +1,9 @@
 <script lang="ts">
   import { Tree, Text } from '@chenzy-design/svelte';
-  import type { TreeNode } from '@chenzy-design/svelte';
+  import type { TreeNodeData } from '@chenzy-design/core';
 
   // 对齐 Semi 示例数据（Asia / North America）
-  const treeData: TreeNode[] = [
+  const treeData: TreeNodeData[] = [
     {
       label: '亚洲',
       key: 'asia',
