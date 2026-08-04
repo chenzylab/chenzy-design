@@ -1,12 +1,21 @@
 <script lang="ts">
   import { TreeSelect } from '@chenzy-design/svelte';
-  import { treeData } from './_data';
+  import { treeData, type TreeNode } from './_data';
+
+  let data = $state<TreeNode[]>([]);
+
+  setTimeout(() => (data = treeData), 500);
 </script>
 
 <TreeSelect
+  style="width: 300px; margin-bottom: 20px"
+  expandAll
+  treeData={data}
+  placeholder="expandAll"
+/>
+<TreeSelect
   style="width: 300px"
-  dropdownStyle="max-height: 400px; overflow: auto"
-  {treeData}
   defaultExpandAll
-  placeholder="默认展开所有节点"
+  treeData={data}
+  placeholder="defaultExpandAll"
 />

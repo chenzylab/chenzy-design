@@ -312,7 +312,11 @@
       {/if}
 
       {#if dialogueRenderConfig?.renderDialogueAction}
-        {@render dialogueRenderConfig.renderDialogueAction({ message, defaultAction })}
+        {@render dialogueRenderConfig.renderDialogueAction({
+          message,
+          defaultAction,
+          className: 'cd-ai-chat-dialogue-action',
+        })}
       {:else}
         {@render defaultAction()}
       {/if}

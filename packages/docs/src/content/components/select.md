@@ -228,6 +228,8 @@ import { Select } from '@chenzy-design/svelte';
 
 如果 Select 默认的触发器样式满足不了你的需求，可以用 `triggerRender` 自定义选择框的展示。如果想保留搜索筛选能力，又不希望自己渲染 Input 相关的结构，可以同时通过 `searchPosition='dropdown'`，将默认的搜索框置于下拉列表中。
 
+`triggerRender` 入参除 value/selectedOptions/placeholder/open 等状态外，还提供 `onSearch`/`onRemove`/`onClear` 三个回调，用于向 Select 内部同步搜索词、移除单个已选项、清空全部已选项。下面第三个例子复用了 TagInput 的拖拽排序能力，通过 `triggerRender` 为 Select 增加已选项排序功能。
+
 <DemoBox code={triggerRenderSrc}><TriggerRender /></DemoBox>
 
 ### 自定义候选项渲染

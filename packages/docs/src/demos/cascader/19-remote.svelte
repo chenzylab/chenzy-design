@@ -1,34 +1,80 @@
 <script lang="ts">
-  import { Cascader } from '@chenzy-design/svelte';
-  import { treeData as initial, type TreeNode } from './_data';
+  import { Cascader, Spin } from '@chenzy-design/svelte';
+  import type { CascaderNode } from '@chenzy-design/svelte';
 
-  let treeData = $state<TreeNode[]>(initial);
+  let treeData = $state<CascaderNode[]>([]);
+  let loading = $state(false);
 
-  let timer: ReturnType<typeof setTimeout> | undefined;
-  const handleSearch = (input: string) => {
-    clearTimeout(timer);
-    timer = setTimeout(() => {
+  // 用变量保存最新一次请求的 token，丢弃过期响应（对齐 Semi reqTokenRef）。
+  let reqToken = 0;
+
+  // 模拟远程搜索接口
+  function fetchByKeyword(keyword: string): Promise<CascaderNode[]> {
+    return new Promise((resolve) => {
+      const delay = 200 + Math.floor(Math.random() * 800);
+      setTimeout(() => {
+        if (!keyword) {
+          resolve([]);
+          return;
+        }
+        resolve([
+          {
+            label: '浙江省',
+            value: 'zhejiang',
+            children: [
+              {
+                label: '杭州市',
+                value: 'hangzhou',
+                children: [
+                  { label: '西湖区', value: 'xihu' },
+                  { label: '萧山区', value: 'xiaoshan' },
+                  { label: '临安区', value: 'linan' },
+                ],
+              },
+              {
+                label: '宁波市',
+                value: 'ningbo',
+                children: [
+                  { label: '海曙区', value: 'haishu' },
+                  { label: '江北区', value: 'jiangbei' },
+                ],
+              },
+            ],
+          },
+        ]);
+      }, delay);
+    });
+  }
+
+  let debounceTimer: ReturnType<typeof setTimeout> | undefined;
+  function handleSearch(input: string) {
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(() => {
       if (!input) {
-        treeData = initial;
+        treeData = [];
+        loading = false;
         return;
       }
-      // 模拟远程返回：按输入构造一条路径
-      treeData = [
-        {
-          label: `${input}省`,
-          value: `${input}-p`,
-          children: [{ label: `${input}市`, value: `${input}-c`, children: [{ label: `${input}区`, value: `${input}-d` }] }],
-        },
-      ];
+      const token = ++reqToken;
+      loading = true;
+      fetchByKeyword(input).then((next) => {
+        // 后发先到时直接丢弃过期结果
+        if (token !== reqToken) return;
+        treeData = next;
+        loading = false;
+      });
     }, 300);
-  };
+  }
 </script>
 
-<Cascader
-  style="width: 300px"
-  {treeData}
-  remote
-  filterTreeNode
-  onSearch={handleSearch}
-  placeholder="远程搜索（输入触发 onSearch）"
-/>
+<Spin spinning={loading}>
+  <Cascader
+    style="width: 300px"
+    placeholder="输入关键词远程搜索"
+    filterTreeNode
+    remote
+    {treeData}
+    onSearch={handleSearch}
+    onChange={(v) => console.log('selected:', v)}
+  />
+</Spin>

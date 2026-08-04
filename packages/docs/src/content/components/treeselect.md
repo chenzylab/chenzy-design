@@ -110,6 +110,8 @@ import { TreeSelect } from '@chenzy-design/svelte';
 
 `defaultExpandAll` 和 `expandAll` 均可以设置 TreeSelect 的默认展开/收起状态。二者的区别是，`defaultExpandAll` 只在初始化时生效，而 `expandAll` 不仅会在初始化时生效，当数据（`treeData`）发生动态更新时，`expandAll` 也仍然生效。
 
+在下面的 demo 中，`treeData` 更新后，`defaultExpandAll` 失效，`expandAll` 仍然生效。
+
 <DemoBox code={defaultExpandSrc}><DefaultExpand /></DemoBox>
 
 ### 禁用

@@ -17,6 +17,8 @@ brief: 通过拖拽改变元素尺寸，支持单体伸缩与分栏组合两种�
   import allHandlesSrc from '../../demos/resizable/07-all-handles.svelte?raw';
   import Corners from '../../demos/resizable/02-corners.svelte';
   import cornersSrc from '../../demos/resizable/02-corners.svelte?raw';
+  import Ratio from '../../demos/resizable/17-ratio.svelte';
+  import ratioSrc from '../../demos/resizable/17-ratio.svelte?raw';
   import LockGrid from '../../demos/resizable/03-lock-grid.svelte';
   import lockGridSrc from '../../demos/resizable/03-lock-grid.svelte?raw';
   import Snap from '../../demos/resizable/15-snap.svelte';
@@ -66,6 +68,12 @@ import { Resizable, ResizeGroup, ResizeItem, ResizeHandler } from '@chenzy-desig
 <DemoBox code={allHandlesSrc}><AllHandles /></DemoBox>
 
 <DemoBox code={cornersSrc}><Corners /></DemoBox>
+
+### 设置变化比例
+
+通过 `ratio` 设置拖动和实际变化的比例。
+
+<DemoBox code={ratioSrc}><Ratio /></DemoBox>
 
 ### 锁定横纵比
 

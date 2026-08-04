@@ -3,9 +3,17 @@
   // 不影响上传/粘贴逻辑（内置 Upload 仍由组件托管），openFileDialog 触发内部文件选择。
   import { AIChatInput, Button } from '@chenzy-design/svelte';
   import { IconUpload } from '@chenzy-design/icons';
+
+  const uploadProps = { action: 'https://api.semi.design/upload' };
 </script>
 
-<AIChatInput placeholder="自定义上传按钮（仍支持粘贴上传）" renderUploadButton={uploadButton} />
+<div style="margin: 12px;">
+  <AIChatInput
+    placeholder="自定义上传按钮（仍支持粘贴上传）"
+    {uploadProps}
+    renderUploadButton={uploadButton}
+  />
+</div>
 
 {#snippet uploadButton({ openFileDialog, disabled }: { openFileDialog: () => void; disabled: boolean })}
   <Button
@@ -14,7 +22,10 @@
     theme="borderless"
     {disabled}
     aria-label="上传附件"
-    onclick={openFileDialog}
+    onclick={(e) => {
+      e.stopPropagation();
+      openFileDialog();
+    }}
   >
     <IconUpload />
   </Button>

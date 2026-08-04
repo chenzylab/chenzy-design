@@ -1,14 +1,16 @@
 <script lang="ts">
   import { AIChatInput, getSelectSlotHTML, getInputSlotHTML } from '@chenzy-design/svelte';
   import type { AIChatInputSkill } from '@chenzy-design/svelte';
+  import { IconSearchStroked, IconLanguage, IconEditStroked } from '@chenzy-design/icons';
 
   // 空编辑区按 skillHotKey（默认 '/'）弹出技能面板：↑↓ 导航 / Enter 选中 / Esc 关闭。
   // 选中后技能作为 skill-slot 节点插入编辑器（inline chip，可删除）。
   // hasTemplate 的技能选中后展示「模版」按钮，点击弹出 renderTemplate 面板。
+  // icon 对齐 Semi Skill.icon：技能项前置图标（对齐 Semi demo 的 IconTemplateStroked/IconSearch 用法）。
   const skills: AIChatInputSkill[] = [
-    { label: '总结', value: 'summarize' },
-    { label: '翻译', value: 'translate', hasTemplate: true },
-    { label: '润色', value: 'polish' },
+    { label: '总结', value: 'summarize', icon: iconSummarize },
+    { label: '翻译', value: 'translate', hasTemplate: true, icon: iconTranslate },
+    { label: '润色', value: 'polish', icon: iconPolish },
   ];
   let picked = $state('（按 / 唤起技能）');
 
@@ -27,6 +29,10 @@
     ],
   };
 </script>
+
+{#snippet iconSummarize()}<IconSearchStroked />{/snippet}
+{#snippet iconTranslate()}<IconLanguage />{/snippet}
+{#snippet iconPolish()}<IconEditStroked />{/snippet}
 
 <div style="max-width: 560px;">
   <AIChatInput

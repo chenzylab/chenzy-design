@@ -1,44 +1,25 @@
 <script lang="ts">
-  import {
-    SideBarContainer,
-    SideBar,
-    SideBarFileContent,
-    Button,
-    type FileItemProps,
-  } from '@chenzy-design/svelte';
+  // 对齐 Semi「富文本编辑器」段：用 SideBarFileItem 查看/编辑单条富文本内容
+  // （基于 tiptap），配合按钮切换 editable。
+  import { SideBarFileItem, Button } from '@chenzy-design/svelte';
 
-  let visible = $state(false);
-  let activeKey = $state<string[]>(['readme']);
+  const defaultContent = `<h2>chenzy-design 介绍</h2>
+<p>chenzy-design 是一个基于 <strong>Svelte 5</strong> 的组件库，严格对齐 <em>Semi Design</em> 的设计与交互规范。</p>
+<ul>
+  <li>设计简洁、现代化</li>
+  <li>提供主题方案，可深度样式定制</li>
+</ul>
+<p>组件基于原生 DOM API 实现，无第三方 UI 依赖。</p>`;
 
-  const files: FileItemProps[] = [
-    {
-      key: 'readme',
-      name: 'README.md（可编辑）',
-      editable: true,
-      content:
-        '<h2>chenzy-design</h2><p>一个基于 <strong>Svelte 5</strong> 的组件库。</p><ul><li>运行时 CSS 变量主题</li><li>无障碍增强</li></ul>',
-      onContentChange: (html) => console.log('changed', html),
-    },
-    {
-      key: 'notes',
-      name: 'notes.html（只读）',
-      content:
-        '<p>这是<em>只读</em>富文本，展示 <a href="https://example.com">链接</a> 与 <code>行内代码</code>。</p><blockquote>引用块示例。</blockquote>',
-    },
-  ];
+  let editable = $state(true);
+  let content = $state(defaultContent);
 </script>
 
-<Button onclick={() => (visible = true)}>打开富文本查看/编辑</Button>
-
-<SideBarContainer {visible} title="文件内容" onCancel={() => (visible = false)}>
-  <SideBar mode="main" renderMainContent={mainContent} />
-</SideBarContainer>
-
-{#snippet mainContent()}
-  <SideBarFileContent
-    {files}
-    {activeKey}
-    onChange={(keys) => (activeKey = keys)}
-    onExpand={(_e, file) => console.log('expand', file.key)}
-  />
-{/snippet}
+<Button onclick={() => (editable = !editable)}>是否可编辑：{editable ? '是' : '否'}</Button>
+<br /><br />
+<SideBarFileItem
+  {content}
+  onContentChange={(html) => (content = html)}
+  {editable}
+  style="border: 1px solid var(--cd-color-border); padding: 12px;"
+/>

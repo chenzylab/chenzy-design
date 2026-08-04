@@ -111,7 +111,7 @@ export {
 } from '@chenzy-design/core';
 export { DatePicker, datePickerMeta } from './date-picker/index.js';
 export { TimePicker, timePickerMeta } from './time-picker/index.js';
-export { Cascader, cascaderMeta, type CascaderNode } from './cascader/index.js';
+export { Cascader, cascaderMeta, type CascaderNode, type CascaderEntity } from './cascader/index.js';
 export {
   TreeSelect,
   treeSelectMeta,

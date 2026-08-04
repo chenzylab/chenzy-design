@@ -762,12 +762,20 @@
     border-start-start-radius: var(--cd-radius-input-wrapper);
     border-end-start-radius: var(--cd-radius-input-wrapper);
   }
-  /* borderless —— 对齐 Semi：非悬浮/聚焦时全透明；error/warning 保留实色描边。 */
+  /* borderless —— 对齐 Semi：非悬浮/聚焦时全透明；error/warning 保留实色描边。
+     选择器特异性须 ≥ 上面 527/531 行 default 聚焦态规则，否则聚焦（含聚焦时悬浮）
+     会被 default 态的 --cd-color-input-default-bg-focus(-hover) 盖回去，使 borderless
+     输入框冒出一圈非透明底色（如 Cascader 内嵌搜索框）。531 行「聚焦+悬浮」组合
+     比 527 行单聚焦多一个 :hover 伪类和 2 个 :not(.warning/.error)，特异性更高，
+     必须单独补一条同量级选择器覆盖，光靠单聚焦那条覆盖不掉悬浮时的反弹。 */
   .cd-input-borderless:not(:focus-within):not(:hover) {
     background: transparent;
     border-color: transparent;
   }
-  .cd-input-borderless:focus-within:not(:active) {
+  .cd-input-borderless:not(.cd-input-wrapper-with-prepend):not(.cd-input-wrapper-with-append):focus-within:not(:active) {
+    background: transparent;
+  }
+  .cd-input-borderless:not(.cd-input-wrapper-with-prepend):not(.cd-input-wrapper-with-append):focus-within:hover:not(.cd-input-wrapper-warning):not(.cd-input-wrapper-error) {
     background: transparent;
   }
   .cd-input-borderless.cd-input-wrapper-error:not(:focus-within) {

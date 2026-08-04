@@ -15,6 +15,8 @@
     initValue?: boolean;
     /** 按钮文案。 */
     children?: Snippet;
+    /** 前置图标（对齐 Semi Configure.Button 透传底层 Button 的 icon）。 */
+    icon?: Snippet;
     /** 附加变更回调。 */
     onChange?: ((value: boolean) => void) | undefined;
     /** 禁用。 */
@@ -27,6 +29,7 @@
     field,
     initValue,
     children,
+    icon,
     onChange,
     disabled = false,
     class: className,
@@ -59,6 +62,7 @@
   {disabled}
   onclick={handleClick}
 >
+  {#if icon}{@render icon()}{/if}
   {#if children}{@render children()}{/if}
 </button>
 

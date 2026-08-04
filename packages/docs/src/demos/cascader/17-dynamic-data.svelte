@@ -17,10 +17,11 @@
     },
   ];
 
-  let treeData = $state<TreeNode[]>(dataV1);
+  let isV1 = $state(true);
+  const treeData = $derived(isV1 ? dataV1 : dataV2);
 </script>
 
 <Space vertical align="start">
-  <Button onclick={() => (treeData = treeData === dataV1 ? dataV2 : dataV1)}>切换数据源</Button>
+  <Button onclick={() => (isV1 = !isV1)}>切换数据源</Button>
   <Cascader style="width: 300px" {treeData} placeholder="动态更新数据" />
 </Space>

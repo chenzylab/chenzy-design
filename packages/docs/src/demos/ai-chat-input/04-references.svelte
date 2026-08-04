@@ -5,8 +5,7 @@
   // getContentType(getAttachmentType(item)) 从 name 后缀推导（docx→word、pdf→pdf、
   // mp4→video、json→code），Image.jpeg 命中图片白名单故渲染缩略图。
   //
-  // 有意的偏离：Semi 的 onReferenceClick 只 console.log，文档站看不到 console，
-  // 这里改为就地文字反馈（同 demo-no-alert-blocks-automation）。
+  // onReferenceClick 同 Semi 只 console.log，不额外展示页面文字。
   import { AIChatInput } from '@chenzy-design/svelte';
   import type { AIChatInputReference } from '@chenzy-design/svelte';
 
@@ -31,14 +30,13 @@
   ];
 
   let references = $state<AIChatInputReference[]>(referenceTemp);
-  let lastClicked = $state('（未点击）');
 
   function handleReferenceDelete(item: AIChatInputReference): void {
     references = references.filter((ref) => ref.id !== item.id);
   }
 
   function handleReferenceClick(item: AIChatInputReference): void {
-    lastClicked = item.type === 'text' ? (item.content ?? '') : (item.name ?? item.id);
+    console.log('点击了引用', item);
   }
 </script>
 
@@ -50,7 +48,4 @@
     {references}
     {uploadProps}
   />
-  <p style="margin-top: 12px; color: var(--cd-color-text-2); font-size: 12px;">
-    最近点击的引用：<span data-testid="clicked">{lastClicked}</span>
-  </p>
 </div>

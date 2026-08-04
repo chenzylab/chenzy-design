@@ -126,6 +126,15 @@
      */
     triggerStyle?: string;
     /**
+     * 点击浮层内容时向 trigger 转发一个合成 click（默认 false），见
+     * use-floating.ts UseFloatingOptions.forwardClickToTrigger 的详细说明：
+     * 浮层被 portal 到 body 后脱离 trigger 的真实 DOM 子树，点击浮层内容不会
+     * 真实冒泡到 trigger（React 靠虚拟树冒泡不受影响，Svelte 无此机制）。
+     * 仅在业务确实需要"点击浮层内容 = 点击 trigger"语义时开启（如 Cascader
+     * 的 +N 剩余标签 Popover 需要点击其中的 tag 也能重新展开选择面板）。
+     */
+    forwardClickToTrigger?: boolean;
+    /**
      * 浮层 wrapper 节点的 id（对齐 Semi wrapperId）；trigger 的 aria 属性指向此 id，
      * 不设则组件随机生成。
      */
@@ -178,6 +187,7 @@
     prefixCls: prefixClsProp,
     wrapperClassName = '',
     triggerStyle = '',
+    forwardClickToTrigger = false,
     wrapperId,
     role: roleProp,
     guardFocus,
@@ -603,7 +613,7 @@
       aria-hidden={!isOpen || undefined}
       tabindex={isDialog ? -1 : undefined}
       bind:this={popEl}
-      use:floating={{ trigger: anchorEl, placement, autoAdjust: autoAdjustOverflow, offset: mainAxisSpacing, padding: marginPadding, arrowPointAtCenter, over: isOver, onPlacement, getContainer: resolvePopupContainer, open: isOpen, rePosKey }}
+      use:floating={{ trigger: anchorEl, placement, autoAdjust: autoAdjustOverflow, offset: mainAxisSpacing, padding: marginPadding, arrowPointAtCenter, over: isOver, onPlacement, getContainer: resolvePopupContainer, open: isOpen, rePosKey, forwardClickToTrigger }}
       class="{prefixCls}-wrapper {className}"
       class:cd-tooltip-with-arrow={showArrowBool}
       class:cd-tooltip-wrapper-show={isOpen}

@@ -21,6 +21,7 @@
 <div style="display:flex; gap:8px; flex-wrap:wrap">
   <Button icon={giftBtnIcon} onclick={() => notification.info({ ...opts, icon: giftIcon })} />
   <Button icon={starBtnIcon} onclick={() => notification.info({ ...opts, icon: starIcon })} />
+  <Button icon={starBtnIcon} onclick={() => notification.info({ ...opts, icon: starPinkIcon })} />
 </div>
 
 {#snippet giftBtnIcon()}
@@ -30,8 +31,11 @@
   <IconStar />
 {/snippet}
 {#snippet giftIcon()}
-  <IconGift size="large" style="color: var(--cd-color-danger)" />
+  <IconGift style="color: red" />
 {/snippet}
 {#snippet starIcon()}
-  <IconStar size="large" style="color: #f5a623" />
+  <IconStar />
+{/snippet}
+{#snippet starPinkIcon()}
+  <IconStar style="color: pink" />
 {/snippet}

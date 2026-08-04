@@ -22,6 +22,16 @@ brief: 文件选择上传。
   import failRetrySrc from '../../demos/upload/06-fail-retry.svelte?raw';
   import Crop from '../../demos/upload/07-crop.svelte';
   import cropSrc from '../../demos/upload/07-crop.svelte?raw';
+  import CropCustomConfig from '../../demos/upload/31-crop-custom-config.svelte';
+  import cropCustomConfigSrc from '../../demos/upload/31-crop-custom-config.svelte?raw';
+  import CropRound from '../../demos/upload/32-crop-round.svelte';
+  import cropRoundSrc from '../../demos/upload/32-crop-round.svelte?raw';
+  import CropBeforeConfirm from '../../demos/upload/33-crop-before-confirm.svelte';
+  import cropBeforeConfirmSrc from '../../demos/upload/33-crop-before-confirm.svelte?raw';
+  import CropDrag from '../../demos/upload/34-crop-drag.svelte';
+  import cropDragSrc from '../../demos/upload/34-crop-drag.svelte?raw';
+  import CropModalProps from '../../demos/upload/35-crop-modal-props.svelte';
+  import cropModalPropsSrc from '../../demos/upload/35-crop-modal-props.svelte?raw';
   import RenderFamily from '../../demos/upload/08-render-family.svelte';
   import renderFamilySrc from '../../demos/upload/08-render-family.svelte?raw';
   import AvatarTrigger from '../../demos/upload/09-avatar-trigger.svelte';
@@ -116,9 +126,43 @@ import { Upload } from '@chenzy-design/svelte';
 
 ### 图片裁切
 
-通过 `crop` 属性启用图片裁切功能。传入 `true` 使用默认配置，传入对象可自定义裁切参数（宽高比、形状、质量等）。支持点击选择、拖拽、粘贴、替换文件时进行裁切。
+通过 `crop` 属性启用图片裁切功能。支持点击选择、拖拽、粘贴、替换文件时进行裁切。
+
+#### 基本用法
+
+设置 `crop={true}` 启用默认裁切配置。
 
 <DemoBox code={cropSrc}><Crop /></DemoBox>
+
+#### 自定义裁切配置
+
+通过对象形式配置裁切参数，包括宽高比、形状、质量等。
+
+<DemoBox code={cropCustomConfigSrc}><CropCustomConfig /></DemoBox>
+
+#### 圆形裁切
+
+适用于头像上传场景，设置 `shape: 'round'` 启用圆形裁切。
+
+<DemoBox code={cropRoundSrc}><CropRound /></DemoBox>
+
+#### 裁切前确认
+
+通过 `beforeCrop` 回调，在裁切前进行确认或其他处理。返回 `false` 可跳过裁切直接上传。
+
+<DemoBox code={cropBeforeConfirmSrc}><CropBeforeConfirm /></DemoBox>
+
+#### 拖拽上传裁切
+
+拖拽上传时也会触发裁切功能。
+
+<DemoBox code={cropDragSrc}><CropDrag /></DemoBox>
+
+#### 自定义裁切弹窗样式
+
+通过 `cropModalProps` 自定义裁切弹窗的样式和属性。
+
+<DemoBox code={cropModalPropsSrc}><CropModalProps /></DemoBox>
 
 ### 自定义列表操作区与预览
 

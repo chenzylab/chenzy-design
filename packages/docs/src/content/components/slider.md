@@ -48,7 +48,7 @@ import { Slider } from '@chenzy-design/svelte';
 
 ### 自定义提示
 
-使用 `tipFormatter` 可以设置 Tooltip 的显示的格式。设置 `tipFormatter={null}`，则隐藏 Tooltip。`getAriaValueText` 用于给滑块的当前值提供一个用户友好的名称，对屏幕阅读器用户很重要。
+使用 `tipFormatter` 可以设置 Tooltip 的显示的格式。设置 `tipFormatter={() => null}`，则隐藏 Tooltip。`getAriaValueText` 用于给滑块的当前值提供一个用户友好的名称，对屏幕阅读器用户很重要。
 
 <DemoBox code={tipFormatterSrc}><TipFormatter /></DemoBox>
 

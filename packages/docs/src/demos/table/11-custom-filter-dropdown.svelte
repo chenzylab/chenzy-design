@@ -3,6 +3,8 @@
   import { figmaIconUrl, getData, formatDate, type FileRow } from './_data';
   import type { RenderFilterDropdownProps } from '@chenzy-design/svelte/table';
 
+  let nameInputRef: { focus: () => void } | undefined;
+
   const columns = [
     {
       title: '标题',
@@ -12,6 +14,10 @@
       onFilter: (value: string | number, record: FileRow) =>
         (record.name as string).includes(value as string),
       renderFilterDropdown: nameFilterDropdown,
+      onFilterDropdownVisibleChange: (visible: boolean) => {
+        console.log('inputRef', visible, nameInputRef);
+        nameInputRef?.focus();
+      },
     },
     { title: '大小', dataIndex: 'size', sorter: (a: FileRow, b: FileRow) => ((a.size as number) - (b.size as number) > 0 ? 1 : -1), render: renderSize },
     {
@@ -48,6 +54,7 @@
   {@const { tempFilteredValue, setTempFilteredValue, confirm, clear, close } = props}
   <Space vertical align="start" style="padding: 8px">
     <Input
+      bind:this={nameInputRef}
       value={(tempFilteredValue[0] as string) ?? ''}
       onChange={(v) => setTempFilteredValue(v ? [v] : [])}
     />

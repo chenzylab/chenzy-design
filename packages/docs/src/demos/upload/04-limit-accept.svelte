@@ -1,8 +1,7 @@
 <script lang="ts">
-  import { Upload, Space, Text, Button } from '@chenzy-design/svelte';
+  import { Upload, Space, Text, Button, Toast } from '@chenzy-design/svelte';
   import { IconUpload } from '@chenzy-design/icons';
 
-  let exceeded = $state(false);
   let invalidCount = $state(0);
 </script>
 
@@ -14,7 +13,7 @@
     accept=".png,.jpg,.jpeg"
     action="//example.com/upload"
     prompt="超出数量或类型不符的文件会被忽略"
-    onExceed={() => (exceeded = true)}
+    onExceed={() => Toast.warning('最多只允许上传 3 个文件')}
     onAcceptInvalid={(files) => (invalidCount = files.length)}
   >
     <Button theme="light">
@@ -22,9 +21,6 @@
       点击上传（最多 3 项）
     </Button>
   </Upload>
-  {#if exceeded}
-    <Text type="warning">已超出 3 个文件上限</Text>
-  {/if}
   {#if invalidCount > 0}
     <Text type="danger">{invalidCount} 个文件类型不符被拒绝</Text>
   {/if}

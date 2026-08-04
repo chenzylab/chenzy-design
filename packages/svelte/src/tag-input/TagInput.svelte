@@ -199,7 +199,15 @@
       current.length > maxTagCount,
   );
   const visibleTags = $derived(collapsed ? current.slice(0, maxTagCount) : current);
-  const restTags = $derived(collapsed ? current.slice(maxTagCount) : []);
+  /* 对齐 Semi renderTags：restTags 复用与可见 tag 同一份渲染（renderTagItem 或默认
+     Tag+label），不是裸 value 字符串——Semi getAllTags() 先把全部 tag 渲染成节点，
+     再 slice 成 visible/rest 两段，rest popover 里显示的就是同款完整 Tag（label +
+     可关闭 ×），故这里带上原始 index，供 tagSnippet 里的 onClose/自定义渲染取用。 */
+  const restTags = $derived(
+    collapsed
+      ? current.slice(maxTagCount).map((tag, ri) => ({ tag, index: (maxTagCount as number) + ri }))
+      : [],
+  );
 
   function expandRest() {
     if (expandRestTagsOnClick) restExpanded = true;
@@ -460,6 +468,41 @@
     </div>
   {/if}
 
+  <!-- 单个 tag 内容（对齐 Semi renderTag）：可见 tag 与 restTags popover 里的 tag
+       共用同一份渲染（renderTagItem 或默认 Tag+label），而非 popover 内容裸渲染
+       value 字符串——Semi getAllTags() 先把全部 tag 渲染成节点再 slice 成两段，
+       两段拿到的是同款完整 Tag（自定义 label + 可关闭 ×）。 -->
+  {#snippet tagContent(tag: string, i: number)}
+    {#if renderTagItem}
+      {@render renderTagItem({ value: tag, index: i, onClose: () => removeAt(i) })}
+    {:else}
+      <Tag
+        class="cd-tag-input-wrapper-tag"
+        color="white"
+        type="light"
+        size={tagSize}
+        closable={!disabled}
+        visible
+        aria-label={`${!disabled ? 'Closable ' : ''}Tag: ${tag}`}
+        onClose={(_children, e) => {
+          e.preventDefault();
+          removeAt(i);
+        }}
+      >
+        {#if canDrag}
+          <span class="cd-tag-input-drag-handler"><IconHandle size="small" /></span>
+        {/if}
+        {#if tooltipEnabled}
+          <Popover content={tag} trigger="hover" position="top" {...tooltipProps}>
+            <span class="cd-tag-input-wrapper-typo">{tag}</span>
+          </Popover>
+        {:else}
+          <span class="cd-tag-input-wrapper-typo">{tag}</span>
+        {/if}
+      </Tag>
+    {/if}
+  {/snippet}
+
   <div class="cd-tag-input-wrapper">
     {#each visibleTags as tag, i (`${i}-${tag}`)}
       <!-- 拖拽包裹层：HTML5 DnD 为鼠标增强，键盘用户经删除按钮增删 -->
@@ -477,93 +520,72 @@
         ondrop={(e) => onTagDrop(e, i)}
         ondragend={onTagDragEnd}
       >
-        {#if renderTagItem}
-          {@render renderTagItem({ value: tag, index: i, onClose: () => removeAt(i) })}
-        {:else}
-          <Tag
-            class="cd-tag-input-wrapper-tag"
-            color="white"
-            type="light"
-            size={tagSize}
-            closable={!disabled}
-            visible
-            aria-label={`${!disabled ? 'Closable ' : ''}Tag: ${tag}`}
-            onClose={(_children, e) => {
-              e.preventDefault();
-              removeAt(i);
-            }}
-          >
-            {#if canDrag}
-              <span class="cd-tag-input-drag-handler"><IconHandle size="small" /></span>
-            {/if}
-            {#if tooltipEnabled}
-              <Popover content={tag} trigger="hover" position="top" {...tooltipProps}>
-                <span class="cd-tag-input-wrapper-typo">{tag}</span>
-              </Popover>
-            {:else}
-              <span class="cd-tag-input-wrapper-typo">{tag}</span>
-            {/if}
-          </Tag>
-        {/if}
+        {@render tagContent(tag, i)}
       </div>
     {/each}
 
     {#if collapsed && restTags.length > 0}
       {#if showRestTagsPopover}
-        <Popover trigger="hover" position="top" showArrow {...(restTagsPopoverProps ?? {})}>
+        <!-- forwardClickToTrigger：popover 内容 portal 到 body，点击其中的 tag
+             不会真实冒泡到这个 span（"+N" trigger）。React/Semi 靠虚拟树冒泡
+             天然不受影响，本库需显式补上，让点击 popover 里的 tag 跟点击容器
+             空白区域一样，能冒泡触发外层（如 Cascader）展开面板。 -->
+        <Popover trigger="hover" position="top" showArrow forwardClickToTrigger {...(restTagsPopoverProps ?? {})}>
           {#snippet content()}
             <div class="cd-tag-input-rest-list">
-              {#each restTags as rest, ri (`rest-${ri}-${rest}`)}
-                <span class="cd-tag-input-rest-item">{rest}</span>
+              {#each restTags as { tag, index } (`rest-${index}-${tag}`)}
+                {@render tagContent(tag, index)}
               {/each}
             </div>
           {/snippet}
+          <!-- 对齐 Semi restTagsContent：`+N` 纯展示 span，不绑定 onClick、不
+               stopPropagation——Semi 靠事件自然冒泡到外层容器触发展开面板
+               （expandRestTagsOnClick 实际由 TagInput active 焦点态驱动，不是
+               "+N" 自己的点击回调，见 renderTags() `!active || !expandRestTagsOnClick`
+               判定）。此前 stopPropagation 会吞掉冒泡，让 Cascader 场景点击 +N
+               无法像 Semi 一样展开级联面板。 -->
           <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
-          <span
-            class="cd-tag-input-wrapper-n"
-            class:cd-tag-input-wrapper-n-disabled={disabled}
-            onclick={(e) => {
-              e.stopPropagation();
-              expandRest();
-            }}
-          >+{current.length - (maxTagCount ?? 0)}</span>
+          <span class="cd-tag-input-wrapper-n" class:cd-tag-input-wrapper-n-disabled={disabled}
+            >+{current.length - (maxTagCount ?? 0)}</span
+          >
         </Popover>
       {:else}
         <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
-        <span
-          class="cd-tag-input-wrapper-n"
-          class:cd-tag-input-wrapper-n-disabled={disabled}
-          onclick={(e) => {
-            e.stopPropagation();
-            expandRest();
-          }}
-        >+{current.length - (maxTagCount ?? 0)}</span>
+        <span class="cd-tag-input-wrapper-n" class:cd-tag-input-wrapper-n-disabled={disabled}
+          >+{current.length - (maxTagCount ?? 0)}</span
+        >
       {/if}
     {/if}
 
     <!-- 隐藏镜像：量输入文本宽度让 input 撑开换行（对齐 Semi inputMirror） -->
     <span bind:this={mirrorEl} class="cd-tag-input-wrapper-inputMirror" aria-hidden="true"></span>
 
-    <input
-      class="cd-tag-input-wrapper-input cd-tag-input-wrapper-input-{size}"
-      bind:this={inputEl}
-      type="text"
-      value={currentInput}
-      style:width={inputWidth !== undefined ? `${inputWidth}px` : undefined}
-      placeholder={current.length === 0 ? placeholder : undefined}
-      {disabled}
-      maxlength={maxLength}
-      aria-label={ariaLabel}
-      aria-labelledby={ariaLabelledby}
-      aria-describedby={ariaDescribedby}
-      aria-errormessage={ariaErrormessage}
-      aria-required={ariaRequired || undefined}
-      aria-invalid={validateStatus === 'error' || undefined}
-      oninput={handleInput}
-      onkeydown={handleKeydown}
-      onblur={handleBlur}
-      onfocus={handleFocus}
-    />
+    <!-- 对齐 Semi Input 组件结构：原生 input 外包一层 div（承载宽度样式），避免裸 input
+         直接参与父级 flex 布局——浏览器给 <input> 的默认 min-content 基线（约等于 20 字符
+         宽度）会在 flex-wrap 换行判定时被当作该 flex item 的最小宽度，导致 tag 排满一行后
+         input 本该跟着换行占满剩余空间时反被判定"放不下"而独占下一行；div 元素没有这个
+         UA 默认最小宽度，包一层即可让 input 正常参与同行布局。 -->
+    <div class="cd-tag-input-wrapper-input-box" style:width={inputWidth !== undefined ? `${inputWidth}px` : undefined}>
+      <input
+        class="cd-tag-input-wrapper-input cd-tag-input-wrapper-input-{size}"
+        bind:this={inputEl}
+        type="text"
+        value={currentInput}
+        placeholder={current.length === 0 ? placeholder : undefined}
+        {disabled}
+        maxlength={maxLength}
+        aria-label={ariaLabel}
+        aria-labelledby={ariaLabelledby}
+        aria-describedby={ariaDescribedby}
+        aria-errormessage={ariaErrormessage}
+        aria-required={ariaRequired || undefined}
+        aria-invalid={validateStatus === 'error' || undefined}
+        oninput={handleInput}
+        onkeydown={handleKeydown}
+        onblur={handleBlur}
+        onfocus={handleFocus}
+      />
+    </div>
   </div>
 
   {#if showClear}
@@ -750,12 +772,17 @@
     color: var(--cd-tag-input-disabled-text-default);
   }
 
-  /* 输入框（对齐 Semi &-wrapper-input）—— */
-  .cd-tag-input-wrapper-input {
+  /* 输入框外层 div（真正参与父级 flex 布局的 item，对齐 Semi Input 组件的 wrapper div：
+     div 元素没有浏览器给 <input> 的默认最小宽度基线，换行判定按此处的 min/max 生效）—— */
+  .cd-tag-input-wrapper-input-box {
     flex-grow: 1;
     inline-size: min-content;
     min-inline-size: 2px;
     max-inline-size: 100%;
+  }
+  /* 输入框（对齐 Semi &-wrapper-input）：撑满外层 div，自身不再是 flex item —— */
+  .cd-tag-input-wrapper-input {
+    inline-size: 100%;
     margin: 0;
     border: none;
     outline: none;
@@ -829,17 +856,15 @@
     inset-inline-end: calc(var(--cd-tag-input-sortable-item-over) * -1);
   }
 
-  /* +N 剩余标签浮层列表 —— */
+  /* +N 剩余标签浮层列表：对齐 Semi content={restTags}——Popover content 直接是一份
+     Tag 数组，没有额外容器强制纵向堆叠。Tag 自身 display:inline-flex（tag.scss），
+     多个 Tag 在默认块级容器里天然按行内流排布、空间不够自动换行，故这里只需
+     flex-wrap（非 column），间距靠 gap 补足（Tag 间无自带 margin）。 */
   .cd-tag-input-rest-list {
     display: flex;
-    flex-direction: column;
+    flex-wrap: wrap;
     gap: var(--cd-spacing-extra-tight);
     max-inline-size: 240px;
-  }
-  .cd-tag-input-rest-item {
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
   }
 
   /* 清除按钮（对齐 Semi &-clearBtn）—— */

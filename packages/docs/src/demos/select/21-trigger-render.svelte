@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Select, Tag } from '@chenzy-design/svelte';
+  import { Select, Tag, TagInput } from '@chenzy-design/svelte';
   import { IconAppCenter, IconChevronDown } from '@chenzy-design/icons';
 
   let valList = $state<string[]>(['douyin', 'ulikecam']);
@@ -10,6 +10,15 @@
     { value: 'jianying', label: '剪映' },
     { value: 'toutiao', label: '今日头条' },
   ];
+
+  // 拖拽排序触发器：复用 TagInput draggable 能力
+  let valList2 = $state<string[]>(['douyin', 'ulikecam']);
+  let inputVal = $state('');
+
+  function handleSort(currentLabels: string[]) {
+    const newValue = currentLabels.map((label) => list.find((i) => i.label === label)!.value);
+    valList2 = newValue;
+  }
 </script>
 
 <div>
@@ -57,6 +66,34 @@
             <IconChevronDown />
           {/snippet}
         </Tag>
+      </div>
+    {/snippet}
+  </Select>
+  <br />
+  <br />
+  <h4>可对已选项拖拽重新排序的 Select</h4>
+  <Select
+    value={valList2}
+    optionList={list}
+    onChange={(v) => (valList2 = v as string[])}
+    multiple
+    filter
+    style="width: 240px"
+  >
+    {#snippet triggerRender({ selectedOptions, onSearch })}
+      <div role="presentation" onkeydown={(e) => e.stopPropagation()}>
+        <TagInput
+          draggable
+          allowDuplicates={false}
+          value={selectedOptions.map((item) => item.label)}
+          inputValue={inputVal}
+          onInputChange={(word) => {
+            onSearch(word);
+            inputVal = word;
+          }}
+          onChange={handleSort}
+          showClear
+        />
       </div>
     {/snippet}
   </Select>

@@ -87,7 +87,7 @@ export const meta = {
     { name: 'renderOptionItem', params: '[{ option, selected, focused, onMouseEnter, onClick }]', desc: '完全自定义候选项渲染（对齐 Semi renderOptionItem）' },
     { name: 'renderSelectedItem', params: '[{ option }]', desc: '自定义选中值/Tag 渲染（对齐 Semi renderSelectedItem）' },
     { name: 'renderCreateItem', params: '[queryString]', desc: '自定义"创建xxx"项渲染' },
-    { name: 'triggerRender', params: '[{ value, selectedOptions, placeholder, open, disabled, toggle, onTriggerKeydown }]', desc: '完全自定义触发器渲染（替换默认 combobox 触发框）；需自挂 aria/键盘保持可达' },
+    { name: 'triggerRender', params: '[{ value, selectedOptions, placeholder, open, disabled, toggle, onTriggerKeydown, onSearch, onRemove, onClear }]', desc: '完全自定义触发器渲染（替换默认 combobox 触发框）；需自挂 aria/键盘保持可达' },
   ],
   methods: [
     { name: 'open()', desc: '命令式展开下拉列表（对齐 Semi）' },
