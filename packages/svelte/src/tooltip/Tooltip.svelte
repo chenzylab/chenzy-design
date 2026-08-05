@@ -614,8 +614,7 @@
       tabindex={isDialog ? -1 : undefined}
       bind:this={popEl}
       use:floating={{ trigger: anchorEl, placement, autoAdjust: autoAdjustOverflow, offset: mainAxisSpacing, padding: marginPadding, arrowPointAtCenter, over: isOver, onPlacement, getContainer: resolvePopupContainer, open: isOpen, rePosKey, forwardClickToTrigger }}
-      class="{prefixCls}-wrapper {className}"
-      class:cd-tooltip-with-arrow={showArrowBool}
+      class="{prefixCls}-wrapper {showArrowBool ? `${prefixCls}-with-arrow` : ''} {className}"
       class:cd-tooltip-wrapper-show={isOpen}
       class:cd-tooltip-wrapper-hidden={!isOpen}
       class:cd-tooltip-wrapper-motion={motionEnabled}

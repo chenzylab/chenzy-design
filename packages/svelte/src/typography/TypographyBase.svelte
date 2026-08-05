@@ -6,109 +6,29 @@
   标签嵌套包裹（非根元素 class）。根元素类名 cd-typography + 单横线修饰（对齐 Semi semi-typography-*）。
 
   纯文本路径（无 ellipsis/copyable）：零 hook、零 observer、零 timer，仅 class 拼接 + 语义包裹。
-  交互路径组合 @chenzy-design/core 原语（createEllipsis / createCopyable）。
+  交互路径组合 @chenzy-design/core 原语（createEllipsis）+ Copyable.svelte（复制按钮，对齐 Semi
+  copyable.tsx，含 Tooltip 提示 + live announce）。
     - ellipsis：CSS clamp 默认；expandable/suffix/showTooltip/pos≠end 走 ResizeObserver+rAF 测量。
     - 测量写 state 在 rAF/observer 回调里（异步首测），避免与渲染读形成同步 effect 自循环。
-  size='inherit' 经 Svelte context 继承外层 Typography 的实际 size（对齐 Semi SizeContext）。
+  size='inherit' 经 Svelte context 继承外层 Typography 的实际 size（对齐 Semi SizeContext，见 context.ts）。
 -->
-<script lang="ts" module>
-  import { getContext, setContext } from 'svelte';
-
-  /** Semi 语义色类型（对齐 strings.TYPE）。 */
-  export type TypoType =
-    | 'primary'
-    | 'secondary'
-    | 'tertiary'
-    | 'quaternary'
-    | 'warning'
-    | 'danger'
-    | 'success';
-  /** Semi size（对齐 strings.SIZE）。 */
-  export type TypoSize = 'normal' | 'small' | 'inherit';
-
-  const SIZE_CTX = Symbol('cd-typography-size');
-  /** 供各子组件把自身实际 size 下传，size='inherit' 时读回。 */
-  export function setParentSize(size: 'normal' | 'small'): void {
-    setContext(SIZE_CTX, size);
-  }
-  export function getParentSize(): 'normal' | 'small' {
-    return getContext<'normal' | 'small'>(SIZE_CTX) ?? 'normal';
-  }
-</script>
-
 <script lang="ts">
   import type { Snippet } from 'svelte';
   import { untrack, onMount } from 'svelte';
-  import {
-    createCopyable,
-    createEllipsis,
-    fitTruncatedText,
-    type EllipsisPos,
-  } from '@chenzy-design/core';
-  import { IconCopy, IconTick } from '@chenzy-design/icons';
+  import { createEllipsis, fitTruncatedText, type EllipsisPos } from '@chenzy-design/core';
   import { useLocale } from '../locale-provider/index.js';
   import Tooltip from '../tooltip/Tooltip.svelte';
   import Popover from '../popover/Popover.svelte';
-
-  /**
-   * showTooltip 浮层透传选项（对齐 Semi opts）。content 指定浮层显示的自定义内容
-   * （非原文）；theme/placement/maxWidth 透传 Tooltip；popover 额外接受 title。
-   */
-  export interface EllipsisTooltipOpts {
-    content?: string;
-    title?: string;
-    theme?: 'dark' | 'light';
-    placement?: string;
-    position?: 'top' | 'bottom' | 'left' | 'right';
-    maxWidth?: number | string;
-    className?: string;
-    style?: string;
-  }
-  /**
-   * showTooltip 配置（对齐 Semi）：
-   *  - `true`：默认 Tooltip，浮层 = 完整原文。
-   *  - `{ opts: { content } }`：浮层显示自定义内容。
-   *  - `{ type: 'popover', opts }`：用 Popover 而非 Tooltip。
-   *  - `{ renderTooltip }`：完全自定义浮层。Semi 的 `(content, children) => VNode`
-   *    在 Svelte 中表达为 snippet `(fullText, trigger) => 浮层`。
-   */
-  export interface EllipsisShowTooltip {
-    type?: 'tooltip' | 'popover';
-    opts?: EllipsisTooltipOpts;
-    renderTooltip?: Snippet<[string, Snippet]>;
-  }
-
-  export interface EllipsisConfig {
-    rows?: number;
-    expandable?: boolean;
-    /** 展开后是否可折叠回去（Semi collapsible）；默认 false */
-    collapsible?: boolean;
-    expandText?: string;
-    collapseText?: string;
-    suffix?: string;
-    pos?: EllipsisPos;
-    showTooltip?: boolean | EllipsisShowTooltip;
-    /** 展开/收起回调（对齐 Semi onExpand(expanded, event)）。 */
-    onExpand?: (expanded: boolean, e: MouseEvent) => void;
-  }
-  /** 复制配置（对齐 Semi CopyableConfig）。 */
-  export interface CopyableConfig {
-    /** 复制到剪贴板的内容（默认取节点文本）。 */
-    content?: string;
-    /** 复制图标 tooltip 文案（默认 i18n copy）。 */
-    copyTip?: string;
-    /** 复制成功提示（默认 i18n copied）。 */
-    successTip?: string;
-    /** 自定义复制图标（对齐 Semi icon）。 */
-    icon?: Snippet;
-    /** 复制回调（对齐 Semi onCopy(e, content, res)）。 */
-    onCopy?: (e: MouseEvent, content: string, res: boolean) => void;
-    /**
-     * 完全接管复制控件渲染（对齐 Semi copyable.render）。
-     * 参数：copied 是否已复制、doCopy 触发复制、config 当前 CopyableConfig。
-     */
-    render?: Snippet<[boolean, (e: MouseEvent) => void, CopyableConfig]>;
-  }
+  import { setParentSize, getParentSize } from './context.js';
+  import type {
+    TypoType,
+    TypoSize,
+    EllipsisTooltipOpts,
+    EllipsisShowTooltip,
+    EllipsisConfig,
+    CopyableConfig,
+  } from './types.js';
+  import Copyable from './Copyable.svelte';
 
   interface Props {
     /** rendered tag */
@@ -217,25 +137,6 @@
 
   // 构造期一次性快照（原语 init 实例化一次，不随 config 重建）。
   const initEllipsis = untrack(() => ellipsisCfg);
-  const initCopyable = untrack(() => copyableCfg);
-
-  // --- copyable ---
-  let copied = $state(false);
-  const copyApi = initCopyable
-    ? createCopyable({
-        onChange: (c) => (copied = c),
-        onCopy: () => announce(copyableCfg?.successTip ?? loc().t('Typography.copied')),
-      })
-    : null;
-  $effect(() => () => copyApi?.destroy());
-
-  // 复制：core copy() 返回 Promise<boolean>（永不 throw），据其结果回调 onCopy(e, content, res)。
-  async function doCopy(e: MouseEvent): Promise<void> {
-    if (!copyApi) return;
-    const content = copyableCfg?.content ?? textContent();
-    const res = await copyApi.copy(content);
-    copyableCfg?.onCopy?.(e, content, res);
-  }
 
   // --- ellipsis ---
   let expanded = $state(false);
@@ -265,38 +166,6 @@
   function textContent(): string {
     return hostEl?.textContent?.trim() ?? '';
   }
-
-  // --- single live region for copy announce（命令式, cleanup）---
-  let liveEl: HTMLDivElement | undefined;
-  function ensureLive(): HTMLDivElement | null {
-    if (typeof document === 'undefined') return null;
-    if (!liveEl) {
-      liveEl = document.createElement('div');
-      liveEl.setAttribute('aria-live', 'polite');
-      liveEl.setAttribute('role', 'status');
-      const s = liveEl.style;
-      s.position = 'absolute';
-      s.width = '1px';
-      s.height = '1px';
-      s.margin = '-1px';
-      s.padding = '0';
-      s.overflow = 'hidden';
-      s.clipPath = 'inset(50%)';
-      s.whiteSpace = 'nowrap';
-      document.body.appendChild(liveEl);
-    }
-    return liveEl;
-  }
-  function announce(msg: string): void {
-    const el = ensureLive();
-    if (!el || !msg) return;
-    el.textContent = '';
-    el.textContent = msg;
-  }
-  $effect(() => () => {
-    liveEl?.remove();
-    liveEl = undefined;
-  });
 
   // --- ellipsis measurement（精确路径: expandable / suffix / showTooltip / pos≠end）---
   const measureRows = initEllipsis?.rows ?? 1;
@@ -460,7 +329,6 @@
   });
   const tooltipContent = $derived(tooltipOpts.content ?? fullText);
 
-  const copyLabel = $derived(copyableCfg?.copyTip ?? loc().t('Typography.copy'));
   const expandLabel = $derived(ellipsisCfg?.expandText ?? loc().t('Typography.expand'));
   const collapseLabel = $derived(ellipsisCfg?.collapseText ?? loc().t('Typography.collapse'));
 
@@ -476,34 +344,9 @@
   );
 </script>
 
-{#snippet copyIconDefault()}
-  <IconCopy size="inherit" aria-hidden="true" />
-{/snippet}
-{#snippet copiedIconDefault()}
-  <IconTick size="inherit" aria-hidden="true" />
-{/snippet}
-
 {#snippet actions()}
   {#if copyableCfg}
-    {#if copyableCfg.render}
-      {@render copyableCfg.render(copied, doCopy, copyableCfg)}
-    {:else if copied}
-      <span class="cd-typography-action-copied">
-        {#if copyableCfg.successTip}{copyableCfg.successTip}{:else}{@render copiedIconDefault()}{loc().t('Typography.copied')}{/if}
-      </span>
-    {:else}
-      <span class="cd-typography-action-copy">
-        <button
-          type="button"
-          class="cd-typography-action-copy-icon"
-          aria-label={copyLabel}
-          title={copyLabel}
-          onclick={doCopy}
-        >
-          {#if copyableCfg.icon}{@render copyableCfg.icon()}{:else}{@render copyIconDefault()}{/if}
-        </button>
-      </span>
-    {/if}
+    <Copyable config={copyableCfg} getDefaultContent={textContent} />
   {/if}
 {/snippet}
 
@@ -576,6 +419,7 @@
       title={tooltipOpts.title ?? ''}
       position={tooltipOpts.position ?? 'top'}
       trigger="hover"
+      showArrow={tooltipOpts.showArrow ?? true}
       class={tooltipOpts.className ?? ''}
       style={[
         typeof tooltipOpts.maxWidth === 'number'
