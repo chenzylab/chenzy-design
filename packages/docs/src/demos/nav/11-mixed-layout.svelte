@@ -94,10 +94,11 @@
       <Nav
         mode="horizontal"
         items={topItems}
-        header={{ logo, text: 'Semi 运营后台' }}
-        footerSlot={footerNav}
         onSelect={(d) => console.log('trigger onSelect: ', d)}
-      />
+      >
+        <Nav.Header {logo} text="Semi 运营后台" />
+        <Nav.Footer>{@render footerNav()}</Nav.Footer>
+      </Nav>
     </div>
   </Header>
   <Layout hasSider>

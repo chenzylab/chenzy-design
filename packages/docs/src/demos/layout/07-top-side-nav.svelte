@@ -39,24 +39,11 @@
 {#snippet bellIcon()}<IconBell size="large" />{/snippet}
 {#snippet helpIcon()}<IconHelpCircle size="large" />{/snippet}
 
-{#snippet navFooter()}
-  <Button
-    theme="borderless"
-    icon={bellIcon}
-    style="color: var(--cd-color-text-2); margin-right: 12px;"
-  />
-  <Button
-    theme="borderless"
-    icon={helpIcon}
-    style="color: var(--cd-color-text-2); margin-right: 12px;"
-  />
-  <Avatar color="orange" size="small">YJ</Avatar>
-{/snippet}
-
 <Layout style="border: 1px solid var(--cd-color-border);">
   <Layout.Header style="background: var(--cd-color-bg-1);">
     <div>
-      <Nav mode="horizontal" defaultSelectedKeys={['Home']} header={{ logo }} footerSlot={navFooter}>
+      <Nav mode="horizontal" defaultSelectedKeys={['Home']}>
+        <Nav.Header {logo} />
         <span style="color: var(--cd-color-text-2);">
           <span style="margin-right: 24px; color: var(--cd-color-text-0); font-weight: 600;">
             模版推荐
@@ -64,6 +51,19 @@
           <span style="margin-right: 24px;">所有模版</span>
           <span>我的模版</span>
         </span>
+        <Nav.Footer>
+          <Button
+            theme="borderless"
+            icon={bellIcon}
+            style="color: var(--cd-color-text-2); margin-right: 12px;"
+          />
+          <Button
+            theme="borderless"
+            icon={helpIcon}
+            style="color: var(--cd-color-text-2); margin-right: 12px;"
+          />
+          <Avatar color="orange" size="small">YJ</Avatar>
+        </Nav.Footer>
       </Nav>
     </div>
   </Layout.Header>
