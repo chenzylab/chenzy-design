@@ -96,6 +96,9 @@
         // 进入下一个 h2 即离开「代码演示」辖区，此后 h3 不再收录。
         if (isH2) inDemos = false;
         if (!isH2 && !inDemos) continue;
+        // 「设计变量」h2 现在也带原生 id="tokens"（供锚点跳转），但它由下方专属
+        // 逻辑手动补进 TOC 末尾——此处跳过，避免 key 重复导致 Toc 的 keyed each 报错。
+        if (h.id === 'tokens') continue;
         sections.push({ id: h.id, title, level: 1 });
       }
       // 设计变量 section 由页面在 md 之后补渲染（不在 md 标题里），故手动补进 TOC 末尾。
@@ -198,7 +201,7 @@
            （数据驱动，对齐 Semi 组件页末尾的「设计变量」章节 <DesignToken/>）。 -->
       {#if hasTokens}
         <section class="section" id="tokens">
-          <h2>{t('section.tokens', lang)}<SectionAnchor id="tokens" /></h2>
+          <h2 id="tokens">{t('section.tokens', lang)}<SectionAnchor id="tokens" /></h2>
           <DesignTokenTable component={tokenComponent} />
         </section>
       {/if}
