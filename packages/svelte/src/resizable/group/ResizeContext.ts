@@ -4,20 +4,7 @@
  * Bookkeeping uses a PLAIN array (not $state) to avoid the Svelte 5 effect loop
  * described in AGENTS.md §9.3 — the group re-measures on a single trigger state.
  */
-import type {
-  Direction,
-  GroupDirection,
-  ResizeCallback,
-  ResizeStartCallback,
-} from '@chenzy-design/core';
-import type { Snippet } from 'svelte';
-
-/** Per-direction custom class names for single Resizable handles. */
-export type HandleClassName = Partial<Record<Direction, string>>;
-/** Per-direction inline styles for single Resizable handles. */
-export type HandleStyle = Partial<Record<Direction, string>>;
-/** Per-direction custom handle content for single Resizable handles. */
-export type HandleNode = Partial<Record<Direction, Snippet>>;
+import type { GroupDirection, ResizeCallback, ResizeStartCallback } from '@chenzy-design/core';
 
 export interface ResizeItemRegistration {
   /** stable id for ordering */
@@ -34,7 +21,6 @@ export interface ResizeItemRegistration {
 export interface ResizeHandlerRegistration {
   id: number;
   getEl: () => HTMLElement | null;
-  isDisabled: () => boolean;
 }
 
 export interface ResizeGroupContext {

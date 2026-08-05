@@ -13,7 +13,7 @@
     RESIZE_GROUP_KEY,
     type ResizeGroupContext,
     type ResizeItemRegistration,
-  } from './context.js';
+  } from './ResizeContext.js';
 
   interface Props {
     /** 初始尺寸（百分比字符串 / px / 纯数字比例）。 */

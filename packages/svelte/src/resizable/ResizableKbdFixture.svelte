@@ -4,10 +4,10 @@
   jsdom 无布局、量不到宽度变化。
 -->
 <script lang="ts">
-  import Resizable from './Resizable.svelte';
-  import ResizeGroup from './ResizeGroup.svelte';
-  import ResizeItem from './ResizeItem.svelte';
-  import ResizeHandler from './ResizeHandler.svelte';
+  import Resizable from './single/Resizable.svelte';
+  import ResizeGroup from './group/ResizeGroup.svelte';
+  import ResizeItem from './group/ResizeItem.svelte';
+  import ResizeHandler from './group/ResizeHandler.svelte';
 </script>
 
 <!-- 单体：仅右边缘可拖，minWidth/maxWidth 约束 -->

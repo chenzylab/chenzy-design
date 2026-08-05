@@ -24,7 +24,7 @@
     type ResizeGroupContext,
     type ResizeItemRegistration,
     type ResizeHandlerRegistration,
-  } from './context.js';
+  } from './ResizeContext.js';
 
   interface Props {
     /** 分栏方向（横向=调宽，纵向=调高）。默认 horizontal。 */
@@ -301,7 +301,7 @@
     height: 100%;
     width: 100%;
     inset: 0;
-    z-index: 20;
+    z-index: var(--cd-z-index-resizable-background);
     opacity: 0;
     position: fixed;
   }
