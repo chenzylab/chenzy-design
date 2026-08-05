@@ -49,6 +49,12 @@
     style?: string | undefined;
     /** 内容区（.cd-button-content）自定义类名（对齐 Semi contentClassName）。 */
     contentClassName?: string | undefined;
+    /**
+     * 是否走图标装配路径（内部 Button.svelte 派发器专用，透传其已算好的
+     * icon||(loading&&!disabled) 判定；用户直接用 IconButton 组件时不传，
+     * 始终为图标装配语义，等价于 undefined→true）。
+     */
+    iconButtonMode?: boolean | undefined;
     children?: Snippet | undefined;
     onclick?: ((e: MouseEvent) => void) | undefined;
     onmousedown?: ((e: MouseEvent) => void) | undefined;
@@ -77,6 +83,7 @@
     class: className,
     style: styleProp,
     contentClassName,
+    iconButtonMode,
     children,
     onclick,
     onmousedown,
@@ -84,6 +91,15 @@
     onmouseleave,
     ...rest
   }: Props = $props();
+
+  // 图标装配路径开关（对齐 Semi button/index.tsx 派发条件 icon||(loading&&!disabled)）。
+  // IconButton 组件本身（用户直接用）总是走图标装配路径（「带图标的 Button」本就是它的语义）；
+  // Button.svelte 派发器改为始终渲染本组件、显式传入其已算好的判定结果，使根 DOM（<button>，
+  // 由内部唯一的 <BaseButton> 承载）在 loading/icon 变化时不被销毁重建（对齐 Semi index.tsx
+  // 内部单一 render 出口）——曾因 Button.svelte 用 {#if}在 IconButton/BaseButton 两个不同
+  // 组件间切换，导致持有旧 DOM 引用的消费方在状态切换后读到销毁前的节点（Feedback loading
+  // class 断言即是一例）。
+  const isIconButtonMode = $derived(iconButtonMode ?? true);
 
   // loading 图标：仅在 loading && !disabled 时渲染 spinner（对齐 Semi）。
   const showLoadingIcon = $derived(loading && !disabled);
@@ -134,16 +150,20 @@
     return undefined;
   });
 
-  // 组装到根 button 的额外 class（对齐 Semi iconBtnCls）。
+  // 组装到根 button 的额外 class（对齐 Semi iconBtnCls）。未命中图标装配路径时
+  // （Button.svelte 派发器传 iconButtonMode=false）不加 -with-icon 系列，
+  // 等价于 Semi BaseButton 分支的纯净 class（对齐 Semi 未 hasIcon 时的 className）。
   const extraClass = $derived(
-    [
-      'cd-button-with-icon',
-      iconOnly && 'cd-button-with-icon-only',
-      loading && 'cd-button-loading',
-      className,
-    ]
-      .filter(Boolean)
-      .join(' '),
+    isIconButtonMode
+      ? [
+          'cd-button-with-icon',
+          iconOnly && 'cd-button-with-icon-only',
+          loading && 'cd-button-loading',
+          className,
+        ]
+          .filter(Boolean)
+          .join(' ')
+      : className,
   );
 
   // noHorizontalPadding → inline paddingLeft/Right=0（对齐 Semi IconButton，仅有 icon 时）。
@@ -222,7 +242,11 @@
   {onmouseenter}
   {onmouseleave}
 >
-  {@render assembledContent()}
+  {#if isIconButtonMode}
+    {@render assembledContent()}
+  {:else}
+    {@render children?.()}
+  {/if}
 </BaseButton>
 
 <style>

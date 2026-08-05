@@ -2,14 +2,19 @@
   Button — 对外派发器（严格对齐 Semi semi-ui/button/index.tsx）。
   Semi：有 icon || (loading && !disabled) → 委托 IconButton；否则 → BaseButton 纯容器。
   本组件只做 defaults 解析（type/theme/size/disabled/colorful，来源：显式 prop > ButtonGroup
-  上下文 > cdGlobal 全局默认 > 组件内置默认）与分支派发，不含图标装配逻辑
-  （icon 组装/loading/colorful fill 全部落在 ../iconbutton/IconButton.svelte，单一来源）。
+  上下文 > cdGlobal 全局默认 > 组件内置默认），不含图标装配逻辑（icon 组装/loading/colorful
+  fill 全部落在 ../iconbutton/IconButton.svelte，单一来源）。
+
+  根节点始终渲染 IconButton（把 isIconButton 判定结果传给其 iconButtonMode，未命中时
+  IconButton 内部退化为纯文字透传，效果等价于 Semi 的 BaseButton 分支），不用
+  {#if}在 IconButton/BaseButton 两个不同组件间切换：Svelte 对组件类型切换的处理是
+  销毁重建根 DOM，会让 loading/icon 状态变化时 <button> 元素被替换，导致持有旧 DOM
+  引用的消费方读到销毁前的节点（真实回归：Feedback 组件 loading class 断言失败）。
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
   import { resolveDefault } from '@chenzy-design/core';
   import type { IconSize } from '@chenzy-design/icons';
-  import BaseButton from './BaseButton.svelte';
   import IconButton from '../iconbutton/IconButton.svelte';
   import {
     getButtonGroupContext,
@@ -110,56 +115,34 @@
     colorfulProp ?? group?.colorful ?? resolveDefault(undefined, 'Button', 'colorful', false),
   );
 
-  // 对齐 Semi 派发：有 icon || (loading && !disabled) 走 IconButton 分支。
+  // 对齐 Semi 派发条件：有 icon || (loading && !disabled) 走图标装配语义。
   const isIconButton = $derived(!!icon || (loading && !disabled));
 </script>
 
-{#if isIconButton}
-  <IconButton
-    {...rest}
-    {type}
-    {theme}
-    {size}
-    {block}
-    {disabled}
-    {loading}
-    {colorful}
-    {circle}
-    {htmlType}
-    aria-label={ariaLabel}
-    {icon}
-    {iconPosition}
-    {iconSize}
-    {iconStyle}
-    {noHorizontalPadding}
-    class={className}
-    {style}
-    {contentClassName}
-    {onclick}
-    {onmousedown}
-    {onmouseenter}
-    {onmouseleave}
-    {children}
-  />
-{:else}
-  <BaseButton
-    {...rest}
-    {type}
-    {theme}
-    {size}
-    {block}
-    {disabled}
-    {colorful}
-    {circle}
-    {htmlType}
-    class={className}
-    {style}
-    {contentClassName}
-    aria-label={ariaLabel}
-    {onclick}
-    {onmousedown}
-    {onmouseenter}
-    {onmouseleave}
-    {children}
-  />
-{/if}
+<IconButton
+  {...rest}
+  {type}
+  {theme}
+  {size}
+  {block}
+  {disabled}
+  {loading}
+  {colorful}
+  {circle}
+  {htmlType}
+  aria-label={ariaLabel}
+  {icon}
+  {iconPosition}
+  {iconSize}
+  {iconStyle}
+  {noHorizontalPadding}
+  class={className}
+  {style}
+  {contentClassName}
+  iconButtonMode={isIconButton}
+  {onclick}
+  {onmousedown}
+  {onmouseenter}
+  {onmouseleave}
+  {children}
+/>
