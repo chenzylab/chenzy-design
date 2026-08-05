@@ -10,4 +10,6 @@
   let { align, layout }: Props = $props();
 </script>
 
-<Divider {align} {layout}>divider title</Divider>
+<Divider {...align !== undefined ? { align } : {}} {...layout !== undefined ? { layout } : {}}>
+  divider title
+</Divider>
