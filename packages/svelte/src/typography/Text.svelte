@@ -4,12 +4,8 @@
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
-  import TypographyBase, {
-    type TypoType,
-    type TypoSize,
-    type EllipsisConfig,
-    type CopyableConfig,
-  } from './TypographyBase.svelte';
+  import TypographyBase from './TypographyBase.svelte';
+  import type { TypoType, TypoSize, EllipsisConfig, CopyableConfig } from './types.js';
 
   interface Props {
     type?: TypoType;

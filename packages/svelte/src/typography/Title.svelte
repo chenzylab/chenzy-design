@@ -4,11 +4,8 @@
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
-  import TypographyBase, {
-    type TypoType,
-    type EllipsisConfig,
-    type CopyableConfig,
-  } from './TypographyBase.svelte';
+  import TypographyBase from './TypographyBase.svelte';
+  import type { TypoType, EllipsisConfig, CopyableConfig } from './types.js';
 
   type TitleWeight = 'light' | 'regular' | 'medium' | 'semibold' | 'bold' | 'default' | number;
 

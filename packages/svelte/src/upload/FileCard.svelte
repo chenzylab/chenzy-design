@@ -13,7 +13,7 @@
   import { Spin } from '../spin/index.js';
   import { Tooltip } from '../tooltip/index.js';
   import { Text } from '../typography/index.js';
-  import type { EllipsisShowTooltip } from '../typography/TypographyBase.svelte';
+  import type { EllipsisShowTooltip } from '../typography/types.js';
   import { IconAlertCircle, IconClose, IconClear, IconFile, IconRefresh } from '@chenzy-design/icons';
   import type {
     UploadFileItem,
