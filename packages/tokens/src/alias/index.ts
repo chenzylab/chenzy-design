@@ -126,6 +126,15 @@ export const aliasLight = {
   'color-ai-general-disabled': 'var(--cd-color-ai-general-2)',
   // AI general 浅底（Semi general-0）：Button tertiary solid colorful 的极浅淡彩背景
   'color-ai-general-light': 'var(--cd-color-ai-general-0)',
+  // AI general 四色渐变分量（Semi iconButton getFillColor 默认值，逐值对应 ai-general-5-0..3）：
+  // colorful 图标 multipleColor（4 色）fill 注入消费，与 color-ai-general 渐变背景同源档位。
+  'color-ai-general-multiple-0': 'var(--cd-color-ai-general-5-0)',
+  'color-ai-general-multiple-1': 'var(--cd-color-ai-general-5-1)',
+  'color-ai-general-multiple-2': 'var(--cd-color-ai-general-5-2)',
+  'color-ai-general-multiple-3': 'var(--cd-color-ai-general-5-3)',
+  // AI general 双色 fill（Semi twoColor 默认值 ['rgba(166,71,255)', 'currentColor']）：
+  // primary = ai-general-5-1，secondary 跟随文字颜色（非渐变，故用 currentColor 而非 token）。
+  'color-ai-general-two-primary': 'var(--cd-color-ai-general-5-1)',
   // AI purple（Semi ai-purple-5）：Button primary outline colorful 的紫色文字/边框（单色，非渐变）
   'color-ai-purple': ref('ai-purple-5'),
   'color-ai-purple-hover': ref('ai-purple-6'),
@@ -274,6 +283,12 @@ export const aliasDark: Partial<Record<AliasKey, string | TokenRef>> = {
   // AI general 浅底（Semi 暗色 general-0）：深靛蓝，tertiary solid colorful 背景
   'color-ai-general-light':
     'linear-gradient(278deg, rgb(80,18,101) 0%, rgb(58,23,112) 30%, rgb(39,29,108) 60%, rgb(9,44,100) 100%)',
+  // AI general 四色渐变分量（同 light 段：引用 --cd-color-ai-general-5-0..3，paletteDark 下自动取暗色值）。
+  'color-ai-general-multiple-0': 'var(--cd-color-ai-general-5-0)',
+  'color-ai-general-multiple-1': 'var(--cd-color-ai-general-5-1)',
+  'color-ai-general-multiple-2': 'var(--cd-color-ai-general-5-2)',
+  'color-ai-general-multiple-3': 'var(--cd-color-ai-general-5-3)',
+  'color-ai-general-two-primary': 'var(--cd-color-ai-general-5-1)',
   // AI purple（Semi 暗色 ai-purple-5）
   'color-ai-purple': 'rgb(195,117,255)',
   // —— 镜像 Semi global.scss dark 块（同 light，见上方说明）——

@@ -18,6 +18,8 @@ export const meta = {
     { name: 'htmlType', type: "'button'|'submit'|'reset'", default: 'button', desc: '原生 button 的 type 值' },
     { name: 'icon', type: 'Snippet', default: 'undefined', desc: '图标插槽；纯图标按钮需提供 aria-label' },
     { name: 'iconPosition', type: "'left'|'right'", default: 'left', desc: '图标相对文字位置' },
+    { name: 'iconSize', type: 'IconSize', default: 'undefined', desc: '图标尺寸（作用在图标元素上，需搭配 icon 使用）' },
+    { name: 'iconStyle', type: 'string', default: 'undefined', desc: '图标内联样式（作用在图标元素上，需搭配 icon 使用）' },
     { name: 'noHorizontalPadding', type: "boolean|'left'|'right'|('left'|'right')[]", default: 'false', desc: '仅设置 icon 时去单/双侧水平内距（inline padding）' },
     { name: 'aria-label', type: 'string', default: 'undefined', desc: '无障碍名（透传 aria-label）；纯图标按钮必填' },
     { name: 'class', type: 'string', default: 'undefined', desc: '根元素自定义类名' },

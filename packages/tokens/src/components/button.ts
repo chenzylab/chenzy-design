@@ -249,4 +249,14 @@ export const buttonTokens = {
   'color-button-primary-outline-colorful-text-default': { value: 'var(--cd-color-ai-purple)', category: 'color', label: 'Colorful 主要按钮文字色', usage: 'colorful primary outline 文字/边框（紫色单色）' },
   'color-button-tertiary-solid-colorful-bg-default': { value: 'var(--cd-color-ai-general-light)', category: 'color', label: 'Colorful 第三按钮背景', usage: 'colorful tertiary solid 极浅淡彩底' },
   'color-button-tertiary-solid-colorful-text-default': { value: 'var(--cd-color-ai-general)', category: 'color', label: 'Colorful 第三按钮文字填充', usage: 'colorful tertiary solid 渐变文字填充' },
+
+  // —— colorful 图标 fill 注入（对齐 Semi iconButton multipleColor/twoColor）——
+  // Semi 用 cloneElement 把 CSS var 名字符串注入具名图标 fill prop，但这些 var 从未在
+  // scss 里定义过（纯运行时约定）；本库改为真实定义、消费 alias AI 语义色，保持可主题化。
+  'color-button-colorful-multiple-fill-0': { value: 'var(--cd-color-ai-general-multiple-0)', category: 'color', label: 'Colorful 图标四色填充 0', usage: 'colorful 具名图标 multipleColor fill[0]（primary light/borderless、tertiary solid）' },
+  'color-button-colorful-multiple-fill-1': { value: 'var(--cd-color-ai-general-multiple-1)', category: 'color', label: 'Colorful 图标四色填充 1', usage: 'colorful 具名图标 multipleColor fill[1]' },
+  'color-button-colorful-multiple-fill-2': { value: 'var(--cd-color-ai-general-multiple-2)', category: 'color', label: 'Colorful 图标四色填充 2', usage: 'colorful 具名图标 multipleColor fill[2]' },
+  'color-button-colorful-multiple-fill-3': { value: 'var(--cd-color-ai-general-multiple-3)', category: 'color', label: 'Colorful 图标四色填充 3', usage: 'colorful 具名图标 multipleColor fill[3]' },
+  'color-button-colorful-fill-primary': { value: 'var(--cd-color-ai-general-two-primary)', category: 'color', label: 'Colorful 图标双色填充 - 主色', usage: 'colorful 具名图标 twoColor fill[0]（tertiary light/borderless/outline）' },
+  'color-button-colorful-fill-secondary': { value: 'currentColor', category: 'color', label: 'Colorful 图标双色填充 - 次色', usage: 'colorful 具名图标 twoColor fill[1]，跟随文字色（对齐 Semi 默认值 currentColor）' },
 } satisfies TokenGroup;

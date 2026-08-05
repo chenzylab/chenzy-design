@@ -192,6 +192,8 @@ import { Button, ButtonGroup, SplitButtonGroup } from '@chenzy-design/svelte';
 | htmlType | 设置 `button` 原生的 `type` 值，可选值：`button`、`reset`、`submit` | string | 'button' |
 | icon | 图标 | Snippet | - |
 | iconPosition | 图标位置，可选值：`left` \| `right` | string | 'left' |
+| iconSize | 图标尺寸（作用在图标元素上，需搭配 `icon` 使用） | IconSize | - |
+| iconStyle | 图标内联样式（作用在图标元素上，需搭配 `icon` 使用） | string | - |
 | loading | 加载状态 | boolean | false |
 | noHorizontalPadding | 设置水平方向是否去掉内边距，只对设置了 icon 的 Button 有效。可选值：`true`（等效于 `['left', 'right']`）、`'left'`、`'right'`、`['left', 'right']` | boolean \| string \| Array | false |
 | size | 按钮大小，可选值：`large`、`default`、`small` | string | 'default' |

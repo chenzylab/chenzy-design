@@ -12,7 +12,7 @@ export const meta = {
   /** IconButton = Button 的薄封装（复用全部 Button 组装逻辑与 token）。 */
   relatedTo: 'Button',
   props: [
-    { name: 'icon', type: 'Snippet', default: 'undefined', desc: '图标内容（可选）' },
+    { name: 'icon', type: 'Snippet<[{ fill?: string | string[] }]>', default: 'undefined', desc: '图标内容（可选）；colorful 命中 multipleColor/twoColor 时收到 fill 数组，供支持 fill prop 的具名图标消费' },
     { name: 'children', type: 'Snippet', default: 'undefined', desc: '文字内容（可选）；提供后非纯图标' },
     { name: 'aria-label', type: 'string', default: 'undefined', desc: '可访问名（透传到 aria-label）；纯图标按钮建议提供' },
     { name: 'type', type: "'primary'|'secondary'|'tertiary'|'warning'|'danger'", default: 'primary', desc: '语义类型' },

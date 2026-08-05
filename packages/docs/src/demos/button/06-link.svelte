@@ -4,16 +4,20 @@
   const { Text } = Typography;
 </script>
 
-<!-- 链接型文字按钮推荐用 Typography 的 link prop 实现（而非 Button，对齐 Semi） -->
-<div style="display: flex; flex-direction: column; gap: 16px; align-items: flex-start;">
+<!-- 链接型文字按钮推荐用 Typography 的 link prop 实现（而非 Button，对齐 Semi）。
+     容器不用 flex（flex item 默认按最小内容宽度收缩会把 <a> 挤到比文字自然宽度更窄，
+     触发不该有的换行），改用 block 流 + margin 间距，贴近 Semi 官方 story 的裸 <br/> 排布。 -->
+<div>
   <Text link={{ href: 'https://github.com/bytegolang/chenzy.design', target: '_blank', rel: 'noreferrer' }}>
     链接文本
   </Text>
-
+  <br />
+  <br />
   <Text link={{ href: 'https://svelte.dev', target: '_blank', rel: 'noreferrer' }}>
     打开网站
   </Text>
-
+  <br />
+  <br />
   <!-- 带图标 + 下划线的链接（hover 出下划线，对齐 Semi）。icon 用前缀 snippet。 -->
   <Text link={{ href: 'https://svelte.dev', target: '_blank', rel: 'noreferrer' }} underline>
     {#snippet icon()}

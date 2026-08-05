@@ -31,6 +31,8 @@
 | htmlType | `'button'\|'submit'\|'reset'` | `button` | 原生 button 的 type 值 |
 | icon | `Snippet` | `undefined` | 图标插槽；纯图标按钮需提供 aria-label |
 | iconPosition | `'left'\|'right'` | `left` | 图标相对文字位置 |
+| iconSize | `IconSize` | `undefined` | 图标尺寸（作用在图标元素上，需搭配 icon 使用） |
+| iconStyle | `string` | `undefined` | 图标内联样式（作用在图标元素上，需搭配 icon 使用） |
 | noHorizontalPadding | `boolean\|'left'\|'right'\|('left'\|'right')[]` | `false` | 仅设置 icon 时去单/双侧水平内距（inline padding） |
 | aria-label | `string` | `undefined` | 无障碍名（透传 aria-label）；纯图标按钮必填 |
 | class | `string` | `undefined` | 根元素自定义类名 |
