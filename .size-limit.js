@@ -53,10 +53,12 @@ const ignore = [
 // 取该组件的主渲染组件（含子组件时取代表/全部，与 spec 预算口径一致）。
 const components = [
   // basic
-  // 破坏性对齐 Semi 重建三层架构（BaseButton 纯容器 + Button 派发器 + IconButton 组装）后实测 4.44 KB，预算按 +15% buffer 校准。
-  ['button', '{ Button }', '5.1 KB'],
-  // 破坏性对齐 Semi iconButton 后（去必填约束、补 iconPosition/iconSize/iconStyle/noHorizontalPadding/contentClassName 等透传、iconSize/iconStyle 走 Icon 包裹）实测 0.71 KB，预算按 +15% buffer 校准。
-  ['iconbutton', '{ IconButton }', '0.85 KB'],
+  // 委托方向对齐 Semi index.tsx→IconButton（Button 变薄派发器，图标装配/loading 渐变/colorful fill
+  // 注入/RTL 镜像全部移到 IconButton，单一逻辑源）后实测 3.81 KB，预算按 +15% buffer 校准。
+  ['button', '{ Button }', '4.4 KB'],
+  // 承接原 Button 内嵌的图标装配逻辑（loading 渐变 SVG + colorful multipleColor/twoColor fill 注入
+  // + icon-only/content RTL 镜像 CSS）后实测 3.05 KB，预算按 +15% buffer 校准。
+  ['iconbutton', '{ IconButton }', '3.55 KB'],
   // 破坏性对齐 Semi 重写（纯 div+onClick、删 button/a/dev warn/focus/a11y/自定义 shape）瘦身，实测 2.06 KB，预算按 +20% buffer 校准。
   ['float-button', '{ FloatButton, FloatButtonGroup }', '2.5 KB'],
   ['divider', '{ Divider }', '1.55 KB'],

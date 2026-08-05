@@ -476,4 +476,21 @@
       transition: none;
     }
   }
+
+  /* ===== RTL（对齐 Semi button/rtl.scss）=====
+     Semi 用物理属性（padding-left/right），故 RTL 下逐条互换左右值；本库正向同样用物理属性，
+     镜像方式与 Semi 逐行对应。direction:rtl 由祖先 .cd-rtl 统一设置（见 ConfigProvider），
+     这里只补物理属性不会自动翻转的左右值互换。 */
+  :global(.cd-rtl) .cd-button {
+    padding-left: var(--cd-spacing-button-default-paddingright);
+    padding-right: var(--cd-spacing-button-default-paddingleft);
+  }
+  :global(.cd-rtl) .cd-button-size-small {
+    padding-left: var(--cd-spacing-button-small-paddingright);
+    padding-right: var(--cd-spacing-button-small-paddingleft);
+  }
+  :global(.cd-rtl) .cd-button-size-large {
+    padding-left: var(--cd-spacing-button-large-paddingright);
+    padding-right: var(--cd-spacing-button-large-paddingleft);
+  }
 </style>

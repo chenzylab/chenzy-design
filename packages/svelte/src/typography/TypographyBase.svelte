@@ -466,6 +466,14 @@
 
   // link 时透传给 <a> 的属性对象（object 形态）
   const linkAttrs = $derived(typeof link === 'object' ? link : {});
+
+  // 宿主标签：对齐 Semi wrap(link, disabled ? 'span' : 'a') —— link 且非 disabled 时
+  // 宿主元素本身就是 <a>（非另包一层 span 再嵌 <a>，避免多出的 inline 容器打乱行内布局，
+  // 具体症状：Text link+icon 在受限宽度容器里图标与文字错误换行）。
+  const resolvedElement = $derived(link && !disabled ? 'a' : element);
+  const resolvedHostAttrs = $derived(
+    link && !disabled ? { ...linkAttrs, ...hostAttrs } : hostAttrs,
+  );
 </script>
 
 {#snippet copyIconDefault()}
@@ -541,18 +549,19 @@
   {#if del}<del>{@render linkTag()}</del>{:else}{@render linkTag()}{/if}
 {/snippet}
 {#snippet linkTag()}
-  {#if link && disabled}<span>{@render linkWrapped()}</span>{:else if link}<a {...linkAttrs}>{@render linkWrapped()}</a>{:else}{@render linkWrapped()}{/if}
+  {@render linkWrapped()}
 {/snippet}
 
-<!-- 宿主元素（对齐 Semi Typography 容器 = element(component)）。 -->
+<!-- 宿主元素（对齐 Semi Typography 容器 = element(component)；link&&!disabled 时宿主本身
+     就是 <a>，见 resolvedElement，不再另包一层容器再嵌套渲染 <a>）。 -->
 {#snippet hostNode()}
   <svelte:element
-    this={element}
+    this={resolvedElement}
     bind:this={hostEl}
     class={cls}
     style={hostStyle || undefined}
     aria-disabled={disabled || undefined}
-    {...hostAttrs}
+    {...resolvedHostAttrs}
   >{@render decorated()}{@render expandBtn()}{@render actions()}</svelte:element>
 {/snippet}
 
@@ -677,6 +686,14 @@
     margin-right: var(--cd-spacing-typography-iconprefix-marginright);
     vertical-align: middle;
     color: inherit;
+  }
+  /* 用户可能直接传入裸 <svg>（无 Icon 基座包裹）：UnoCSS presetUno 的 preflight reset 把
+     svg/img/video 等「替换元素」统一设为 display:block（Tailwind Preflight 同源做法），
+     裸 svg 因此变成块级、在图标后强制换行，把「图标+文字」拆成两行。Semi 官网无此激进 reset，
+     故图标与文字天然同行；这里显式覆盖回 inline，对齐视觉且不影响本身已有 inline-block 的
+     Icon 基座（该覆盖只对直接子代 svg 生效，不影响其内部再嵌套的 svg）。 */
+  :global(.cd-typography-icon) > :global(svg) {
+    display: inline;
   }
 
   /* 小号文本（对齐 .semi-typography-small）。 */
