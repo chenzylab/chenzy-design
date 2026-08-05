@@ -1,11 +1,10 @@
 <script lang="ts">
   import { Space, Tabs, TabPane, Button } from '@chenzy-design/svelte';
 
-  let active = $state<string | number>('1');
   const marginTop = 'margin-top:15px;';
 </script>
 
-<Tabs type="line" activeKey={active} onChange={(k) => (active = k)}>
+<Tabs type="line">
   <TabPane tab="tight" itemKey="1">
     <Space spacing="tight" style={marginTop}>
       <Button theme="solid" type="primary">按钮</Button>

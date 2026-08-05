@@ -30,7 +30,7 @@ Space 是一个**间距布局容器**，用于在一组相邻子元素之间施�
 | 层 | 职责 | 说明 |
 | --- | --- | --- |
 | `@chenzy-design/core` | 无 | Space 是纯展示组件，无交互/键盘/a11y 状态逻辑，**不提供 `createSpace`**，不复用任何 core 原语（useFocusTrap/useRovingTabindex 等均不需要）。 |
-| `@chenzy-design/svelte` | 全部 | `Space.svelte` 负责：把 `spacing`/`align`/`vertical`/`wrap` 解析为 class（档位）+ inline gap（number），拼装 flex 样式，透传根节点属性（`class`/`style`/`...rest`）。 |
+| `@chenzy-design/svelte` | 全部 | `Space.svelte` 负责：把 `spacing`/`align`/`vertical`/`wrap` 解析为 class（档位）+ inline gap（number），拼装 flex 样式，透传根节点属性（`class`/`style`/仅 `data-*`）。 |
 
 实现要点：
 - 间距解析（对齐 Semi index.tsx）：`spacing` 为字符串档位 → 命中 `cd-space-{tight|medium|loose}-horizontal/-vertical` class（gap 值消费 `--cd-spacing-space-*` Token）；为 `number` → inline `column-gap`/`row-gap` = `${n}px`；为 `[h, v]` → 元素为档位走 class、为 number 走对应 inline gap。`isWrap = wrap && vertical ? false : wrap`。
@@ -48,7 +48,7 @@ Space 是一个**间距布局容器**，用于在一组相邻子元素之间施�
 | `wrap` | `boolean` | `false` | 横向自动换行（`vertical` 时强制不换行）。 |
 | `class` | `string` | `''` | 透传到根节点的自定义类名（对齐 Semi `className`）。 |
 | `style` | `string` | `''` | 透传到根节点的内联样式。 |
-| `...rest` | — | — | 其余原生属性（`data-*` / `aria-*` / `on*`）透传到根 `<div>`（对齐 Semi `getDataAttr`）。 |
+| `...rest` | — | — | 仅 `data-*` 透传到根 `<div>`（对齐 Semi `getDataAttr` 逐字段实现；`aria-*`/`on*` 不透传，Semi `SpaceProps` 无索引签名）。 |
 
 > 说明：Space 是纯布局容器，无受控输入、无浮层，故不涉及 `value/open/status/size` 等一致性 API；`size` 概念由 `spacing` 表达。
 
@@ -56,7 +56,7 @@ Space 是一个**间距布局容器**，用于在一组相邻子元素之间施�
 
 | 名称 | payload | 说明 |
 | --- | --- | --- |
-| —（无组件自有事件） | — | Space 不产生语义事件。原生 DOM 事件（如 `on:click`）通过 `...$$restProps` 透传到根节点。 |
+| —（无组件自有事件） | — | Space 不产生语义事件，也不透传原生 DOM 事件（对齐 Semi `getDataAttr` 只认 `data-*`）。 |
 
 ### Slots
 
@@ -82,7 +82,7 @@ Space 是一个**间距布局容器**，用于在一组相邻子元素之间施�
 
 Space 是**视觉布局容器**，本身不引入交互语义，但需保证不破坏可访问性：
 
-- **role**：根 `div` 不带 role（纯展示，`role="none"` 隐含）。对齐 Semi，组件不提供 `tag`/`role` prop；当语义上是一组导航或列表时，由业务在外层包裹语义容器，或经 `...rest` 透传 `role`/`aria-label` 到根节点。
+- **role**：根 `div` 不带 role（纯展示，`role="none"` 隐含）。对齐 Semi，组件不提供 `tag`/`role` prop，也不透传 `role`/`aria-label`（Semi `getDataAttr` 只认 `data-*`）；当语义上是一组导航或列表时，由业务在外层包裹语义容器。
 - **键盘交互**：无（容器不可聚焦，`tabindex` 不设置）。子元素自身的 Tab 顺序由 DOM 源顺序决定——Space **不重排 DOM**（仅用 flex 视觉排列），故视觉顺序 = DOM 顺序 = 阅读/Tab 顺序，避免焦点错乱。
 - **焦点管理**：不接管焦点，无焦点陷阱。
 - **对比度**：容器自身无内置视觉描边/背景，不引入非文本对比要求；子内容对比度由业务保证。
@@ -133,7 +133,7 @@ Space 是**视觉布局容器**，本身不引入交互语义，但需保证不�
   - `align` 命中 `cd-space-align-{align}`（映射 `align-items`）。
   - `wrap` 命中 `cd-space-wrap`（`vertical` 时强制不换行）。
   - 根恒 `<div>`，不产生额外包裹 DOM（纯 `gap` 快路径）。
-  - `class`/`style`/`...rest`（`data-*`/`aria-*`）正确透传到根节点。
+  - `class`/`style` 正确透传到根节点；`...rest` 仅 `data-*` 透传，`aria-*`/`on*` 不透传。
 - **可访问性测试（axe）**：默认渲染无 a11y 违规；DOM 顺序与视觉顺序一致性断言。
 - **视觉回归（Storybook + 截图）**：横向/竖向、三档间距、wrap 换行行距一致、RTL 镜像。
 - **SSR 测试**：服务端渲染输出稳定、无 `window` 访问报错。

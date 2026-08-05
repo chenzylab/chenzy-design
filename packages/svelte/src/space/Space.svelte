@@ -1,11 +1,11 @@
 <!--
   Space — see specs/components/basic/Space.spec.md
   间距布局容器，破坏性严格对齐 Semi Design（semi-ui/space + semi-foundation/space）。
-  - props 仅：vertical / spacing / align / wrap / class / style / children，外加 ...rest 透传
-    （data-* / aria-* / on* 到根 <div>，对齐 Semi getDataAttr）。根元素恒 <div>。
+  - props 仅：vertical / spacing / align / wrap / class / style / children；根 <div> 只透传
+    data-*（对齐 Semi getDataAttr 逐字段实现，不含 aria 与 on 系事件全量 rest 透传）。根元素恒 <div>。
   - gap 与 align 由 class 驱动（不用 inline style），完整镜像 Semi scss；仅 number/array 中
     的 number 元素走 inline rowGap/columnGap。gap 值消费 --cd-spacing-space-tight/medium/loose。
-  - 无超集：不再有 block / tag / role / ariaLabel。
+  - 无超集：不再有 block / tag / role / ariaLabel；rest props 不透传 aria 与 on 系事件。
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
@@ -33,7 +33,7 @@
     /** 透传到根节点的内联样式。 */
     style?: string;
     children?: Snippet;
-    /** 其余原生属性透传到根 div（data-* / aria-* / on* 等，对齐 Semi getDataAttr）。 */
+    /** 其余属性；仅 data-* 会透传到根 div（对齐 Semi getDataAttr，不含 aria 与 on 系事件全量透传）。 */
     [key: string]: unknown;
   }
 
@@ -47,6 +47,10 @@
     children,
     ...rest
   }: Props = $props();
+
+  const dataAttrs = $derived(
+    Object.fromEntries(Object.entries(rest).filter(([key]) => key.startsWith('data-'))),
+  );
 
   const isStep = (v: SpacingItem): v is SpacingStep => typeof v === 'string';
 
@@ -102,7 +106,7 @@
   );
 </script>
 
-<div class={cls} style={inlineStyle || undefined} {...rest}>
+<div class={cls} style={inlineStyle || undefined} {...dataAttrs}>
   {@render children?.()}
 </div>
 
