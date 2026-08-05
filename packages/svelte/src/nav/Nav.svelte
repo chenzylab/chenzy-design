@@ -45,8 +45,12 @@
   import {
     NAV_CONTEXT_KEY,
     NAV_COLLECTOR_KEY,
+    NAV_SLOT_KEY,
     type NavContext,
     type NavCollector,
+    type NavSlotRegistry,
+    type NavHeaderSlotProps,
+    type NavFooterSlotProps,
   } from './context.js';
   import NavItemRender from './NavItemRender.svelte';
   import NavHeader from './Header.svelte';
@@ -71,9 +75,9 @@
     isCollapsed?: boolean;
     /** 默认折叠态（非受控，仅 vertical 有效）。 */
     defaultIsCollapsed?: boolean;
-    /** 头部区域配置对象（{logo, text, link, ...}）。与 headerSlot 二选一。 */
+    /** 头部区域配置对象（{logo, text, link, ...}）。与声明式 `<Nav.Header>` 子元素二选一（声明式优先）。 */
     header?: NavHeaderConfig;
-    /** 底部区域配置对象（{collapseButton, ...}）。与 footerSlot 二选一。 */
+    /** 底部区域配置对象（{collapseButton, ...}）。与声明式 `<Nav.Footer>` 子元素二选一（声明式优先）。 */
     footer?: NavFooterConfig;
     /** 缩进限制：仅一级缩进（默认 true）；false 时逐级缩进。 */
     limitIndent?: boolean;
@@ -128,14 +132,11 @@
     onOpenChange?: (data: NavOpenChangeData) => void;
     /** 折叠态变化回调。 */
     onCollapseChange?: (isCollapsed: boolean) => void;
-    /** 自定义头部（覆盖 header 配置对象）。 */
-    headerSlot?: Snippet;
-    /** 自定义底部（覆盖 footer 配置对象）。 */
-    footerSlot?: Snippet;
     /**
      * 子内容，渲染在导航列表 ul 内、items 之后（对齐 Semi `{itemElems}{children}`）。
-     * 既可放声明式子项 <Nav.Item>/<Nav.Sub>（经 context 注册，自身不产 DOM；与 items 二选一，
-     * items 优先），也可放任意内容（如一组文字/链接），后者原样渲染。
+     * 可放声明式子项 <Nav.Item>/<Nav.Sub>（与 items 二选一，items 优先）、
+     * <Nav.Header>/<Nav.Footer>（与 header/footer object prop 二选一，声明式优先，
+     * 经 context 注册摘出到对应位置，自身不产 DOM），也可放任意内容原样渲染。
      */
     children?: Snippet;
   }
@@ -172,8 +173,6 @@
     onClick,
     onOpenChange,
     onCollapseChange,
-    headerSlot,
-    footerSlot,
     children,
   }: Props = $props();
   // cdGlobal 全局默认 props（对齐 Semi semiGlobal.config.overrideDefaultProps）：
@@ -211,6 +210,20 @@
     if (items.length) return normalizeNavItems(items);
     const r = revision;
     return r >= 0 ? declared.slice() : [];
+  });
+
+  // ---------- 声明式 Header/Footer 注册（<Nav.Header>/<Nav.Footer> 作为 Nav 直接子元素）----------
+  // 对齐 Semi children 层级 JSX 写法：与 header/footer object prop 二选一，声明式优先
+  // （二者同传时以声明式为准，因为它更贴近字面书写顺序）。
+  let declaredHeader: NavHeaderSlotProps | undefined = $state(undefined);
+  let declaredFooter: NavFooterSlotProps | undefined = $state(undefined);
+  setContext<NavSlotRegistry>(NAV_SLOT_KEY, {
+    setHeader: (props) => {
+      declaredHeader = props;
+    },
+    setFooter: (props) => {
+      declaredFooter = props;
+    },
   });
 
   // ---------- 折叠态（受控/非受控，仅 vertical）----------
@@ -367,8 +380,8 @@
       .join(' '),
   );
 
-  const hasHeader = $derived(!!headerSlot || !!header);
-  const hasFooter = $derived(!!footerSlot || (!!footer && !!footer.collapseButton));
+  const hasHeader = $derived(!!declaredHeader || !!header);
+  const hasFooter = $derived(!!declaredFooter || (!!footer && !!footer.collapseButton));
 </script>
 
 <!-- 根为纯容器 <div>（对齐 Semi index.tsx：无 nav landmark）；列表用 role=menu 语义。 -->
@@ -376,12 +389,22 @@
   <div class="cd-nav-inner">
     <div class="cd-nav-header-list-outer" class:cd-nav-header-list-outer-collapsed={collapsedState}>
       {#if hasHeader}
-        {#if headerSlot}
-          <NavHeader {mode} {collapsedState}>
-            {#snippet children()}{@render headerSlot()}{/snippet}
-          </NavHeader>
+        {#if declaredHeader}
+          <NavHeader
+            _internalRender
+            {...declaredHeader.logo !== undefined ? { logo: declaredHeader.logo } : {}}
+            {...declaredHeader.text !== undefined ? { text: declaredHeader.text } : {}}
+            {...declaredHeader.link !== undefined ? { link: declaredHeader.link } : {}}
+            {...declaredHeader.linkOptions !== undefined ? { linkOptions: declaredHeader.linkOptions } : {}}
+            {...declaredHeader.class !== undefined ? { class: declaredHeader.class } : {}}
+            {...declaredHeader.style !== undefined ? { style: declaredHeader.style } : {}}
+            {...declaredHeader.children !== undefined ? { children: declaredHeader.children } : {}}
+            {mode}
+            {collapsedState}
+          />
         {:else if header}
           <NavHeader
+            _internalRender
             {...header.logo !== undefined ? { logo: header.logo } : {}}
             {...header.text !== undefined ? { text: header.text } : {}}
             {...header.link !== undefined ? { link: header.link } : {}}
@@ -408,12 +431,19 @@
     </div>
 
     {#if hasFooter}
-      {#if footerSlot}
-        <NavFooter>
-          {#snippet children()}{@render footerSlot()}{/snippet}
-        </NavFooter>
+      {#if declaredFooter}
+        <NavFooter
+          _internalRender
+          collapseButton={declaredFooter.collapseButton ?? false}
+          {...declaredFooter.collapseText !== undefined ? { collapseText: declaredFooter.collapseText } : {}}
+          {...declaredFooter.class !== undefined ? { class: declaredFooter.class } : {}}
+          {...declaredFooter.style !== undefined ? { style: declaredFooter.style } : {}}
+          {...declaredFooter.onClick !== undefined ? { onClick: declaredFooter.onClick } : {}}
+          {...declaredFooter.children !== undefined ? { children: declaredFooter.children } : {}}
+        />
       {:else if footer}
         <NavFooter
+          _internalRender
           collapseButton={footer.collapseButton ?? false}
           {...footer.collapseText !== undefined ? { collapseText: footer.collapseText } : {}}
           {...footer.class !== undefined ? { class: footer.class } : {}}

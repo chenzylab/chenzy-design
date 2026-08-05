@@ -36,30 +36,25 @@
 {#snippet bellIcon()}<IconBell size="large" />{/snippet}
 {#snippet helpIcon()}<IconHelpCircle size="large" />{/snippet}
 
-{#snippet navFooter()}
-  <Button
-    theme="borderless"
-    icon={bellIcon}
-    style="color: var(--cd-color-text-2); margin-right: 12px;"
-  />
-  <Button
-    theme="borderless"
-    icon={helpIcon}
-    style="color: var(--cd-color-text-2); margin-right: 12px;"
-  />
-  <Avatar color="orange" size="small">YJ</Avatar>
-{/snippet}
-
 <Layout style="border: 1px solid var(--cd-color-border);">
   <Layout.Header style="background: var(--cd-color-bg-1);">
     <div>
-      <Nav
-        mode="horizontal"
-        defaultSelectedKeys={['Home']}
-        {items}
-        header={{ logo }}
-        footerSlot={navFooter}
-      />
+      <Nav mode="horizontal" defaultSelectedKeys={['Home']} {items}>
+        <Nav.Header {logo} />
+        <Nav.Footer>
+          <Button
+            theme="borderless"
+            icon={bellIcon}
+            style="color: var(--cd-color-text-2); margin-right: 12px;"
+          />
+          <Button
+            theme="borderless"
+            icon={helpIcon}
+            style="color: var(--cd-color-text-2); margin-right: 12px;"
+          />
+          <Avatar color="orange" size="small">YJ</Avatar>
+        </Nav.Footer>
+      </Nav>
     </div>
   </Layout.Header>
   <Layout.Content style="padding: 24px; background: var(--cd-color-bg-0);">

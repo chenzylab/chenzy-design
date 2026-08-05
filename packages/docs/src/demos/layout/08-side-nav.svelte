@@ -31,12 +31,6 @@
 {#snippet bellIcon()}<IconBell size="large" />{/snippet}
 {#snippet helpIcon()}<IconHelpCircle size="large" />{/snippet}
 
-{#snippet navFooter()}
-  <Button theme="borderless" icon={bellIcon} style="color: var(--cd-color-text-2); margin-right: 12px;" />
-  <Button theme="borderless" icon={helpIcon} style="color: var(--cd-color-text-2); margin-right: 12px;" />
-  <Avatar color="orange" size="small">YJ</Avatar>
-{/snippet}
-
 <Layout style="border: 1px solid var(--cd-color-border);">
   <Layout.Sider style="background: var(--cd-color-bg-1);">
     <Nav
@@ -49,7 +43,13 @@
   </Layout.Sider>
   <Layout>
     <Layout.Header style="background: var(--cd-color-bg-1);">
-      <Nav mode="horizontal" footerSlot={navFooter} />
+      <Nav mode="horizontal">
+        <Nav.Footer>
+          <Button theme="borderless" icon={bellIcon} style="color: var(--cd-color-text-2); margin-right: 12px;" />
+          <Button theme="borderless" icon={helpIcon} style="color: var(--cd-color-text-2); margin-right: 12px;" />
+          <Avatar color="orange" size="small">YJ</Avatar>
+        </Nav.Footer>
+      </Nav>
     </Layout.Header>
     <Layout.Content style="padding: 24px; background: var(--cd-color-bg-0);">
       <Breadcrumb
