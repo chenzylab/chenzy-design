@@ -61,16 +61,12 @@ Resizable 组件族让容器/面板可通过拖拽把手调整尺寸：
 | `minWidth` / `minHeight` | `string \| number` | — | 最小宽/高。 |
 | `maxWidth` / `maxHeight` | `string \| number` | — | 最大宽/高。 |
 | `lockAspectRatio` | `boolean \| number` | `false` | 锁定宽高比（number 为指定比值）。 |
-| `lockAspectRatioExtraWidth` | `number` | `0` | 锁比时附加宽。 |
-| `lockAspectRatioExtraHeight` | `number` | `0` | 锁比时附加高。 |
 | `grid` | `[number, number]` | — | 吸附网格步长 [x, y]。 |
 | `snap` | `{ x?: number[]; y?: number[] }` | — | 吸附到指定坐标。 |
 | `snapGap` | `number` | `0` | 吸附触发阈值。 |
 | `boundElement` | `'parent' \| 'window' \| HTMLElement` | — | 拖拽边界约束。 |
-| `boundsByDirection` | `boolean` | `false` | 按方向分别约束边界。 |
 | `handleNode` | `Partial<Record<Direction, Snippet>>` | — | 自定义各向把手内容。 |
 | `handleStyle` / `handleClass` | `Partial<Record<Direction, ...>>` | — | 各向把手样式/类。 |
-| `handleWrapperStyle` / `handleWrapperClass` | `string` | — | 把手容器样式/类。 |
 | `scale` | `number` | `1` | 画布缩放系数（拖拽 delta 除以 scale）。 |
 | `ratio` | `number \| [number, number]` | `1` | 像素比（高分屏 delta 修正）。 |
 | `onResizeStart` | `(e, dir) => void \| boolean` | — | 拖拽开始。**返回 `false` 可取消本次拖拽**（对齐 Semi ResizeStartCallback）。 |
@@ -100,10 +96,7 @@ Resizable 组件族让容器/面板可通过拖拽把手调整尺寸：
 
 | 名称 | 类型 | 默认 | 说明 |
 | --- | --- | --- | --- |
-| `direction` | `Direction` | 随 group | 把手方向（一般由 group direction 决定）。 |
-| `disabled` | `boolean` | `false` | 禁用该把手。 |
-| `class` / `style` | `string` | — | 样式。 |
-| `children` | `Snippet` | — | 自定义把手内容。 |
+| `class` / `style` | `string` | — | 样式；固定渲染 IconHandle（对齐 Semi，无自定义内容/disabled）。 |
 
 ### Events
 

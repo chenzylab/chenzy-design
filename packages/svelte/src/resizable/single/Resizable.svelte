@@ -1,10 +1,10 @@
 <!--
   Resizable — single resizable container with up to 8 drag handles (4 edges + 4
-  corners). Consumes createResizeDrag from core for imperative pointer geometry
-  (redline no.3: no reactive attachment reads geometry). Handles are bare divs
-  (no role / aria / tabindex / keyboard) — strictly aligned with Semi Design.
+  corners), each an independent ResizableHandler. Consumes createResizeDrag from
+  core for imperative pointer geometry (redline no.3: no reactive attachment
+  reads geometry).
   DOM mirrors Semi: root cd-resizable-resizable, an isResizing fixed background
-  overlay, a handle-wrapper layer, and per-direction cd-resizable-resizableHandler.
+  overlay, and per-direction ResizableHandler.
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
@@ -17,7 +17,8 @@
     type ResizeCallback,
     type ResizeStartCallback,
   } from '@chenzy-design/core';
-  import type { HandleClassName, HandleStyle, HandleNode } from './context.js';
+  import ResizableHandler from './ResizableHandler.svelte';
+  import type { HandleClassName, HandleStyle, HandleNode } from './types.js';
 
   interface Props {
     /** 受控尺寸。 */
@@ -32,10 +33,6 @@
     maxHeight?: string | number;
     /** 锁定宽高比（true 从起始尺寸推导，number 为指定比值）。 */
     lockAspectRatio?: boolean | number;
-    /** 锁定比例时宽度额外补偿（对齐 Semi）。 */
-    lockAspectRatioExtraWidth?: number;
-    /** 锁定比例时高度额外补偿（对齐 Semi）。 */
-    lockAspectRatioExtraHeight?: number;
     /** 吸附网格步长 [x, y]，默认 [1,1]。也接受单数字（归一为 [n,n]）。 */
     grid?: [number, number] | number;
     /** 吸附到指定像素尺寸（对齐 Semi snap）。 */
@@ -44,18 +41,12 @@
     snapGap?: number;
     /** 限制伸缩范围的边界元素（对齐 Semi boundElement）：'parent' | 'window' | HTMLElement。 */
     boundElement?: 'parent' | 'window' | HTMLElement;
-    /** 按方向计算边界（对齐 Semi boundsByDirection）。 */
-    boundsByDirection?: boolean;
     /** 画布缩放系数（拖拽 delta 除以 scale）。 */
     scale?: number;
-    /** 像素比修正（高分屏 delta）。 */
+    /** 像素比修正（高分屏 delta，对齐 Semi ratio）。 */
     ratio?: number | [number, number];
     class?: string;
     style?: string;
-    /** 把手 wrapper 层的类名。 */
-    handleWrapperClass?: string;
-    /** 把手 wrapper 层的内联样式。 */
-    handleWrapperStyle?: string;
     /** 各向把手的自定义类名。 */
     handleClass?: HandleClassName;
     /** 各向把手的自定义内联样式。 */
@@ -80,19 +71,14 @@
     maxWidth,
     maxHeight,
     lockAspectRatio = false,
-    lockAspectRatioExtraWidth = 0,
-    lockAspectRatioExtraHeight = 0,
     grid,
     snap,
     snapGap,
     boundElement,
-    boundsByDirection,
     scale = 1,
     ratio = 1,
     class: className = '',
     style,
-    handleWrapperClass = '',
-    handleWrapperStyle,
     handleClass,
     handleStyle,
     handleNode,
@@ -206,10 +192,7 @@
       ...(snap ? { snap } : {}),
       ...(snapGap != null ? { snapGap } : {}),
       ...(boundElement ? { getBoundMax: computeBoundMax } : {}),
-      ...(boundsByDirection ? { boundsByDirection } : {}),
       lockAspectRatio,
-      lockAspectRatioExtraWidth,
-      lockAspectRatioExtraHeight,
       scale,
       ratio,
       onMove: (s, _delta, d, e) => {
@@ -254,22 +237,19 @@
     <div class="cd-resizable-background"></div>
   {/if}
   {@render children?.()}
-  {#if enable !== false && enabledHandles.length}
-    <div class={handleWrapperClass} style={handleWrapperStyle}>
-      {#each enabledHandles as dir (dir)}
-        <!-- 把手是裸命中区，严格对齐 Semi（无 role/aria/键盘），仅承载指针拖拽。 -->
-        <!-- svelte-ignore a11y_no_static_element_interactions -->
-        <div
-          class="{handleClass?.[dir] ?? ''} cd-resizable-resizableHandler cd-resizable-resizableHandler-{dir}"
-          style={handleStyle?.[dir]}
-          onpointerdown={(e) => handlePointerDown(e, dir)}
-        >
-          {#if handleNode?.[dir]}
-            {@render handleNode[dir]?.()}
-          {/if}
-        </div>
-      {/each}
-    </div>
+  {#if enable !== false}
+    {#each enabledHandles as dir (dir)}
+      <ResizableHandler
+        direction={dir}
+        class={handleClass?.[dir]}
+        style={handleStyle?.[dir]}
+        onResizeStart={handlePointerDown}
+      >
+        {#if handleNode?.[dir]}
+          {@render handleNode[dir]?.()}
+        {/if}
+      </ResizableHandler>
+    {/each}
   {/if}
 </div>
 
@@ -284,71 +264,8 @@
     height: 100%;
     width: 100%;
     inset: 0;
-    z-index: 20;
+    z-index: var(--cd-z-index-resizable-background);
     opacity: 0;
     position: fixed;
-  }
-
-  :global(.cd-resizable-resizableHandler) {
-    position: absolute;
-    user-select: none;
-    z-index: 10;
-  }
-  /* 上下把手：宽满高 10px */
-  :global(.cd-resizable-resizableHandler-top),
-  :global(.cd-resizable-resizableHandler-bottom) {
-    width: 100%;
-    height: 10px;
-    left: 0;
-    cursor: row-resize;
-  }
-  :global(.cd-resizable-resizableHandler-top) {
-    top: -5px;
-  }
-  :global(.cd-resizable-resizableHandler-bottom) {
-    bottom: -5px;
-  }
-  /* 左右把手：高满宽 10px */
-  :global(.cd-resizable-resizableHandler-left),
-  :global(.cd-resizable-resizableHandler-right) {
-    width: 10px;
-    height: 100%;
-    top: 0;
-    cursor: col-resize;
-  }
-  :global(.cd-resizable-resizableHandler-left) {
-    left: -5px;
-  }
-  :global(.cd-resizable-resizableHandler-right) {
-    right: -5px;
-  }
-  /* 四角：20x20 */
-  :global(.cd-resizable-resizableHandler-topRight),
-  :global(.cd-resizable-resizableHandler-bottomRight),
-  :global(.cd-resizable-resizableHandler-bottomLeft),
-  :global(.cd-resizable-resizableHandler-topLeft) {
-    width: 20px;
-    height: 20px;
-    position: absolute;
-  }
-  :global(.cd-resizable-resizableHandler-topRight) {
-    top: -10px;
-    right: -10px;
-    cursor: ne-resize;
-  }
-  :global(.cd-resizable-resizableHandler-bottomRight) {
-    bottom: -10px;
-    right: -10px;
-    cursor: se-resize;
-  }
-  :global(.cd-resizable-resizableHandler-bottomLeft) {
-    bottom: -10px;
-    left: -10px;
-    cursor: sw-resize;
-  }
-  :global(.cd-resizable-resizableHandler-topLeft) {
-    top: -10px;
-    left: -10px;
-    cursor: nw-resize;
   }
 </style>

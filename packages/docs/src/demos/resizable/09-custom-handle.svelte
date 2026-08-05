@@ -5,51 +5,22 @@
 </script>
 
 {#snippet rightGrip()}
-  <div class="grip" aria-hidden="true">
-    <span></span><span></span><span></span>
+  <div
+    aria-hidden="true"
+    style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; width: 100%; height: 100%; background: var(--cd-color-primary-light-default);"
+  >
+    <span style="width: 3px; height: 3px; border-radius: 50%; background: var(--cd-color-primary);"></span>
+    <span style="width: 3px; height: 3px; border-radius: 50%; background: var(--cd-color-primary);"></span>
+    <span style="width: 3px; height: 3px; border-radius: 50%; background: var(--cd-color-primary);"></span>
   </div>
 {/snippet}
 
-<Resizable
-  enable={{ right: true }}
-  defaultSize={{ width: 260, height: 160 }}
-  minWidth={140}
-  maxWidth={480}
-  handleNode={{ right: rightGrip }}
-  class="demo-box"
->
-  <div class="demo-content">右边缘自定义抓握条 →</div>
-</Resizable>
-
-<style>
-  :global(.demo-box) {
-    position: relative;
-    border: 1px solid var(--cd-color-border);
-    border-radius: var(--cd-border-radius-medium);
-    background: var(--cd-color-fill-0);
-  }
-  .demo-content {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    height: 100%;
-    padding: 0 16px;
-    color: var(--cd-color-text-1);
-  }
-  .grip {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 3px;
-    width: 100%;
-    height: 100%;
-    background: var(--cd-color-primary-light-default);
-  }
-  .grip span {
-    width: 3px;
-    height: 3px;
-    border-radius: 50%;
-    background: var(--cd-color-primary);
-  }
-</style>
+<div style="width: 500px; height: 60%; max-width: 100%;">
+  <Resizable
+    defaultSize={{ width: '60%', height: 300 }}
+    handleNode={{ right: rightGrip }}
+    style="margin-left: 20%; position: relative; border: 1px solid var(--cd-color-border); border-radius: var(--cd-border-radius-medium); background: var(--cd-color-fill-0);"
+  >
+    <div style="margin-left: 20%; font-size: 14px; color: var(--cd-color-text-1);">right</div>
+  </Resizable>
+</div>
