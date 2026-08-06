@@ -195,10 +195,6 @@ export interface Locale {
     /** LiveAnnouncer：预览翻页计数，uses {index} / {total} */
     previewCount: string;
   };
-  CodeHighlight: {
-    /** 代码块滚动区 aria-label（role=region 命名） */
-    codeBlock: string;
-  };
   Cropper: {
     /** 裁切容器 aria-label */
     container: string;

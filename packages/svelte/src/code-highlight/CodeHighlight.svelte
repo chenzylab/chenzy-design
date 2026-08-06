@@ -6,15 +6,16 @@
   未处理内容，规避 XSS。语言包/行号插件按需 import。
 
   DOM 对齐 Semi：<div class="cd-code-highlight [cd-code-highlight-defaultTheme]"><pre><code>。
+  根 class 顺序对齐 Semi cls(className, PREFIX, "semi-light-scrollbar", {defaultTheme条件类})：
+  外部 class 在前。Semi 根节点无 tabindex/role/aria-label（无键盘可访问滚动区增强），本库严格
+  对齐不添加。
   样式对齐 Semi codeHighlight.scss：prism 主题为固定 Lea Verou dabblet 配色（写死色值 +
   色板阶梯 rgba(var(--semi-X-6),1) → var(--cd-color-X-6)），容器色引 alias。移除自造 token 中间层。
-  defaultTheme 开关控制是否套用内置配色；长代码块可滚动，加 tabindex/role=region + i18n
-  aria-label 供键盘 + AT 访问。
+  defaultTheme 开关控制是否套用内置配色。
 -->
 <script lang="ts">
   import { resolveCodeClassName, resolveDefault } from '@chenzy-design/core';
   import Prism from 'prismjs';
-  import { useLocale } from '../locale-provider/index.js';
 
   // Semi 对齐：手动高亮，禁止 Prism 自动扫描 DOM。
   Prism.manual = true;
@@ -68,18 +69,16 @@
   const lineNumber = $derived(resolveDefault(lineNumberProp, 'CodeHighlight', 'lineNumber', true));
   const defaultTheme = $derived(resolveDefault(defaultThemeProp, 'CodeHighlight', 'defaultTheme', true));
 
-  const loc = useLocale();
-
   let codeEl: HTMLElement | undefined = $state();
 
-  // 对齐 Semi：根 class = cd-code-highlight + cd-light-scrollbar + [cd-code-highlight-defaultTheme] + 外部 class。
+  // 对齐 Semi cls(className, PREFIX, "semi-light-scrollbar", {defaultTheme条件类})：外部 class 在前。
   // cd-light-scrollbar 镜像 Semi 的 semi-light-scrollbar（浅色滚动条，全局工具类）。
   const rootClass = $derived(
     [
+      className,
       'cd-code-highlight',
       'cd-light-scrollbar',
       defaultTheme && 'cd-code-highlight-defaultTheme',
-      className,
     ]
       .filter(Boolean)
       .join(' '),
@@ -110,23 +109,14 @@
   });
 </script>
 
-<!-- DOM 对齐 Semi：div.cd-code-highlight > pre > code。tabindex=0 让长代码块可键盘滚动聚焦；
-     role=region + aria-label 命名该滚动区（WCAG 2.1.1）。 -->
-<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
-<div
-  class={rootClass}
-  style={style || undefined}
-  tabindex="0"
-  role="region"
-  aria-label={loc().t('CodeHighlight.codeBlock')}
+<!-- DOM 对齐 Semi：div.cd-code-highlight > pre > code。 -->
+<div class={rootClass} style={style || undefined}
 ><pre class:line-numbers={lineNumber}><code bind:this={codeEl}></code></pre></div>
 
 <style>
-  /* —— 容器 —— 对齐 Semi codeHighlight.scss。根 div 承担滚动 + 键盘聚焦（role=region）。 */
-  .cd-code-highlight {
-    overflow: auto;
-  }
-
+  /* —— 容器 —— 对齐 Semi codeHighlight.scss：overflow:auto 只在 defaultTheme 的
+     pre[class*='language-'] 规则里（见下）；defaultTheme=false 时 Semi 无溢出处理，
+     本库不额外加根节点 overflow，保持与 Semi 一致（长代码会撑破容器，交给使用方处理）。 */
   .cd-code-highlight :global(pre) {
     margin: 0;
   }
