@@ -5,8 +5,10 @@
   pointerdown 记起点→document 绑 move/up→clamp 到 constrainer 的 top/left→customMove 或写 style。
 
   Svelte 无 React cloneElement，无法把 ref 注入 children 本身，故用一层 wrapper div 承载 bind:this
-  与几何（这是框架必要适配）；wrapper 不加任何自造 class/token/样式，cursor 由 core 命令式写在
-  handler 上（对齐 Semi 无样式层：无 scss/无 token/无 className）。touch-action:none 保证触屏拖拽。
+  与几何（这是框架必要适配）；wrapper 不加任何自造样式/token（对齐 Semi 无样式层：无 scss/无 token/
+  无 className 视觉）。cursor:move 与 preventDefault（阻止拖拽选中文字、阻止触屏滚动冲突）均由
+  core 命令式对齐 Semi foundation（无需 CSS touch-action/user-select 兜底，Semi 单靠 preventDefault
+  即覆盖两者，见 foundation.ts _preventDefault）。cd-drag-move class 仅作 DOM 定位锚点用，无样式。
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
@@ -95,12 +97,3 @@
 <div bind:this={rootEl} class={cls} {style}>
   {@render children?.()}
 </div>
-
-<style>
-  /* 无样式层（对齐 Semi dragMove：无 scss/token/className 视觉）；仅 touch-action 保证触屏拖拽、
-     user-select 防拖拽选中。cursor:move 与 position:absolute 由 core 命令式写在元素上（对齐 Semi init）。 */
-  .cd-drag-move {
-    touch-action: none;
-    user-select: none;
-  }
-</style>
