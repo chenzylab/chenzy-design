@@ -60,12 +60,9 @@ export const jsonViewerTokens = {
   // —— 自研搜索/替换工具条（Svelte 壳自渲染，内核仅提供 API；对齐 Semi 交互） ——
   'color-json-viewer-toolbar-bg': { value: 'var(--cd-color-bg-0)', category: 'color', label: '工具条背景', usage: '搜索/替换工具条背景' },
   'color-json-viewer-toolbar-border': { value: 'var(--cd-color-border)', category: 'color', label: '工具条边框', usage: '搜索/替换工具条边框' },
-  'color-json-viewer-toolbar-shadow': { value: 'var(--cd-shadow-elevated)', category: 'other', label: '工具条阴影', usage: '搜索/替换工具条浮层阴影' },
   'radius-json-viewer-toolbar': { value: 'var(--cd-border-radius-small)', category: 'radius', label: '工具条圆角', usage: '搜索/替换工具条圆角' },
   'spacing-json-viewer-toolbar-gap': { value: 'var(--cd-spacing-extra-tight)', category: 'spacing', label: '工具条间距', usage: '工具条控件间距' },
   'spacing-json-viewer-toolbar-padding': { value: 'var(--cd-spacing-tight)', category: 'spacing', label: '工具条内边距', usage: '工具条内边距' },
-  'color-json-viewer-toolbar-btn-hover': { value: 'var(--cd-color-fill-1)', category: 'color', label: '工具按钮悬浮', usage: '工具条按钮悬浮背景' },
-  'color-json-viewer-toolbar-btn-active': { value: 'var(--cd-color-primary-light-default)', category: 'color', label: '工具按钮激活', usage: '搜索选项激活态背景' },
   // 搜索选项按钮（大小写/正则/全词）——对齐 Semi jsonViewer.scss search-options-item：
   //   color text-2 / hover bg color-default / active color primary + bg primary-light-default。
   'color-json-viewer-search-options-item': { value: 'var(--cd-color-text-2)', category: 'color', label: '搜索选项文字', usage: 'search-options-item 默认文字色（对齐 Semi text-2）' },

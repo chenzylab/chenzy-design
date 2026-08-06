@@ -9,4 +9,6 @@
 }`;
 </script>
 
-<JsonViewer height={120} width={700} value={data} options={{ autoWrap: true }} />
+<div style="margin-bottom: 16px;">
+  <JsonViewer height={120} width={700} value={data} options={{ autoWrap: true }} />
+</div>

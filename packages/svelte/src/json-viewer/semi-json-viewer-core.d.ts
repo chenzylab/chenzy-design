@@ -9,8 +9,13 @@ declare module '@douyinfe/semi-json-viewer-core' {
   export interface JsonViewerEmitter {
     on(event: 'customRender', handler: (e: { customRenderMap: Map<HTMLElement, unknown> }) => void): void;
     on(event: 'contentChanged', handler: (e?: unknown) => void): void;
+    /** hover 700ms 后触发（对齐 Semi notifyHover），e.target 是被 hover 的 DOM 节点。 */
+    on(event: 'hoverNode', handler: (e: { value: string; target: HTMLElement }) => void): void;
     on(event: string, handler: (e?: unknown) => void): void;
     off?(event: string, handler: (e?: unknown) => void): void;
+    /** 把 renderTooltip 返回的 HTMLElement 传回内核挂载到 tooltip 容器。 */
+    emit(event: 'renderHoverNode', payload: { el: HTMLElement }): void;
+    emit(event: string, payload?: unknown): void;
   }
 
   /** JSON 模型（取值等）。 */

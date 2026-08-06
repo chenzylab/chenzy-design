@@ -1,6 +1,7 @@
 <script lang="ts">
   import { getContext, setContext, untrack } from 'svelte';
   import type { Snippet } from 'svelte';
+  import { DEV } from 'esm-env';
   import {
     mergeConfig,
     DEFAULT_CONFIG,
@@ -140,9 +141,9 @@
     currentScreensRef = { ...EMPTY_SCREENS };
   }
 
-  // dev 检测：兼容 Vite（import.meta.env.DEV）与非 Vite 消费方（缺失时静默 no-op），
-  // 避免依赖 vite/client 环境类型即可通过 svelte-check。
-  const isDev = (import.meta as ImportMeta & { env?: { DEV?: boolean } }).env?.DEV ?? false;
+  // dev 检测：esm-env 在各打包器/运行时下都能正确解析（非 Vite 消费方降级为 false），
+  // 不直接引用 Vite 专有的环境变量对象。
+  const isDev = DEV;
 
   function ensureRegistered(): void {
     if (!responsiveObserve) {
