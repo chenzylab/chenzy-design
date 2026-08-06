@@ -47,7 +47,7 @@ import { DragMove } from '@chenzy-design/svelte';
 
 ### 限制拖动范围
 
-传入 `constrainer`，该函数返回限制可拖拽范围的元素；本库额外支持直接传字符串 `'parent'` 表示约束在父元素内。
+传入 `constrainer`，该函数返回限制可拖拽范围的元素；也可直接传字符串 `'parent'` 表示约束在父元素内。
 
 <Notice type="primary" title="注意">
 
@@ -75,9 +75,7 @@ constrainer 设置的元素需要为 relative 定位。
 | --- | --- | --- | --- |
 | allowInputDrag | 点击原生 input/textarea 时是否允许拖动 | boolean | false |
 | allowMove | 点击/触摸时是否允许拖动的判断函数 | `(event: MouseEvent \| TouchEvent, element: HTMLElement) => boolean` | - |
-| children | 被拖拽移动的子元素 | Snippet | - |
-| class | 包裹元素类名（本库补充） | string | - |
-| constrainer | 返回限制可拖拽的范围的元素，或直接传 `'parent'` 表示约束在父元素内 | `(() => HTMLElement \| null) \| 'parent'` | - |
+| constrainer | 返回限制可拖拽的范围的元素 | `() => HTMLElement \| 'parent'` | - |
 | customMove | 自定义拖动后的位置处理 | `(element: HTMLElement, top: number, left: number) => void` | - |
 | handler | 返回触发拖动的元素 | `() => HTMLElement` | - |
 | onMouseDown | 鼠标按下时的回调 | `(e: MouseEvent) => void` | - |
@@ -87,4 +85,5 @@ constrainer 设置的元素需要为 relative 定位。
 | onTouchEnd | 触摸结束时的回调 | `(e: TouchEvent) => void` | - |
 | onTouchMove | 触摸移动时的回调 | `(e: TouchEvent) => void` | - |
 | onTouchStart | 触摸开始时的回调 | `(e: TouchEvent) => void` | - |
-| style | 包裹元素内联样式（本库补充） | string | - |
+| class | 包裹元素类名（Svelte 框架必要补充，Semi 靠 cloneElement 无需此 prop） | string | - |
+| style | 包裹元素内联样式（Svelte 框架必要补充，用于设置初始 top/left） | string | - |

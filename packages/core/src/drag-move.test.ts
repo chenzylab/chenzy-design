@@ -1,10 +1,29 @@
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   createDragMove,
   calcMoveRange,
   computeNextPosition,
   clampValueInRange,
 } from './drag-move.js';
+
+// node 环境（unit project）无全局 requestAnimationFrame（对齐 Semi foundation._changePos
+// 把写入包 rAF 后引入）。测试不需要真的等一帧，同步 flush 即可验证写入发生。
+let rafCallbacks: Array<() => void> = [];
+beforeEach(() => {
+  rafCallbacks = [];
+  vi.stubGlobal('requestAnimationFrame', (cb: () => void) => {
+    rafCallbacks.push(cb);
+    return rafCallbacks.length;
+  });
+});
+afterEach(() => {
+  vi.unstubAllGlobals();
+});
+const flushRaf = () => {
+  const pending = rafCallbacks;
+  rafCallbacks = [];
+  pending.forEach((cb) => cb());
+};
 
 // ---- fake document so we can drive pointer events without a real DOM ----
 function makeFakeDoc() {
@@ -189,6 +208,7 @@ describe('createDragMove — lifecycle + position write', () => {
     expect(doc.count('mousemove')).toBe(1);
     // move to (100, 80) → left=80, top=60
     doc.fire('mousemove', me(100, 80));
+    flushRaf();
     expect(el.style.left).toBe('80px');
     expect(el.style.top).toBe('60px');
     doc.fire('mouseup', me(100, 80));
@@ -216,6 +236,7 @@ describe('createDragMove — lifecycle + position write', () => {
     el.fire('mousedown', me(0, 0)); // offset (0,0)
     // drag far beyond → clamps to xMax=150, yMax=150
     doc.fire('mousemove', me(999, 999));
+    flushRaf();
     expect(el.style.left).toBe('150px');
     expect(el.style.top).toBe('150px');
   });
@@ -246,6 +267,7 @@ describe('createDragMove — lifecycle + position write', () => {
     ctrl.init();
     el.fire('mousedown', me(0, 0));
     doc.fire('mousemove', me(40, 25));
+    flushRaf();
     expect(custom).toHaveBeenCalledWith(el, 25, 40); // (element, top, left)
     expect(el.style.left).toBeUndefined();
   });
@@ -293,6 +315,7 @@ describe('createDragMove — lifecycle + position write', () => {
     el.fire('mousedown', me(0, 0));
     expect(onStart).toHaveBeenCalledOnce();
     doc.fire('mousemove', me(15, 25));
+    flushRaf();
     expect(onMove).toHaveBeenCalledWith(25, 15, expect.anything(), el);
     doc.fire('mouseup', me(15, 25));
     expect(onEnd).toHaveBeenCalledOnce();
@@ -309,6 +332,7 @@ describe('createDragMove — lifecycle + position write', () => {
     el.fire('touchstart', te(25, 25)); // offset (20,20)
     expect(doc.count('touchmove')).toBe(1);
     doc.fire('touchmove', te(60, 50));
+    flushRaf();
     expect(el.style.left).toBe('40px');
     expect(el.style.top).toBe('30px');
     doc.fire('touchend', te(60, 50));

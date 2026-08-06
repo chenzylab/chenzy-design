@@ -8,7 +8,7 @@ export const meta = {
   stage: 'M6',
   semiEquivalent: 'DragMove',
   description:
-    '通用拖拽移动容器（严格对齐 Semi Design dragMove，纯逻辑组件无样式层）：包裹单个子元素使其可被拖拽在页面/约束区内自由移动（与 Resizable 改尺寸正交，DragMove 改位置）。core 沉淀通用拖拽原语 createDragMove（命令式绑/解全局监听，pointerdown 记录起点→document 绑 move/up→计算 clamp 到 constrainer 的 top/left→customMove 或写 style→up 解绑+卸载兜底），供 Modal 可拖拽标题栏、Cropper 画布拖拽后续复用。init 强制 element position:absolute + handler cursor:move（对齐 Semi foundation）。约束区支持 parent/自定义 DOM/无约束；allowMove 谓词拦截；allowInputDrag 控制是否从表单元素发起。鼠标/触摸双通道，touch-action:none 支持触屏。无 token/scss/className（对齐 Semi）；Svelte 无 cloneElement 故用一层透明 wrapper 承载几何（框架必要适配）。',
+    '通用拖拽移动容器（严格对齐 Semi Design dragMove，纯逻辑组件无样式层）：包裹单个子元素使其可被拖拽在页面/约束区内自由移动（与 Resizable 改尺寸正交，DragMove 改位置）。core 沉淀通用拖拽原语 createDragMove（命令式绑/解全局监听，pointerdown 记录起点→document 绑 move/up→计算 clamp 到 constrainer 的 top/left→rAF 内 customMove 或写 style→up 解绑+卸载兜底），供 Modal 可拖拽标题栏、Cropper 画布拖拽后续复用。init 强制 element position:absolute + handler cursor:move（对齐 Semi foundation）。约束区支持 parent/自定义 DOM/无约束；allowMove 谓词拦截；allowInputDrag 控制是否从表单元素发起。鼠标/触摸双通道，preventDefault 阻止文字选中与触屏滚动冲突（对齐 Semi，不用 CSS touch-action/user-select 兜底）。无 token/scss/className（对齐 Semi）；Svelte 无 cloneElement 故用一层透明 wrapper 承载几何（框架必要适配）。',
   relatedTo: ['Resizable', 'Modal', 'Cropper'],
   props: [
     {
