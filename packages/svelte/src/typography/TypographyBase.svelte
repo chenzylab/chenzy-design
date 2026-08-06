@@ -335,13 +335,7 @@
   // link 时透传给 <a> 的属性对象（object 形态）
   const linkAttrs = $derived(typeof link === 'object' ? link : {});
 
-  // 宿主标签：对齐 Semi wrap(link, disabled ? 'span' : 'a') —— link 且非 disabled 时
-  // 宿主元素本身就是 <a>（非另包一层 span 再嵌 <a>，避免多出的 inline 容器打乱行内布局，
-  // 具体症状：Text link+icon 在受限宽度容器里图标与文字错误换行）。
-  const resolvedElement = $derived(link && !disabled ? 'a' : element);
-  const resolvedHostAttrs = $derived(
-    link && !disabled ? { ...linkAttrs, ...hostAttrs } : hostAttrs,
-  );
+  let linkEl = $state<HTMLAnchorElement | undefined>();
 </script>
 
 {#snippet actions()}
@@ -376,6 +370,14 @@
   {#if link}<span class="cd-typography-link-text {underline ? 'cd-typography-link-underline' : ''}">{@render inner()}</span>{:else}{@render inner()}{/if}
 {/snippet}
 
+<!-- 装饰链末端：link 时真正包一层 <a>（对齐 Semi wrapperDecorations wrap(link, disabled?'span':'a')，
+     该行包裹的是 content 本身，非宿主元素——宿主始终是 element，见下方 hostNode）。
+     disabled 时降级为 span（不可点击但保留视觉/结构）。<a> 自身不带 class（对齐 Semi 空 class），
+     颜色继承宿主的 .cd-typography-link 规则，避免外部容器用后代选择器覆盖正文色时连带盖住链接色。 -->
+{#snippet linkAnchor()}
+  {#if link && !disabled}<a bind:this={linkEl} {...linkAttrs}>{@render linkWrapped()}</a>{:else if link}<span>{@render linkWrapped()}</span>{:else}{@render linkWrapped()}{/if}
+{/snippet}
+
 {#snippet decorated()}
   {#if mark}<mark>{@render codeWrap()}</mark>{:else}{@render codeWrap()}{/if}
 {/snippet}
@@ -392,19 +394,20 @@
   {#if del}<del>{@render linkTag()}</del>{:else}{@render linkTag()}{/if}
 {/snippet}
 {#snippet linkTag()}
-  {@render linkWrapped()}
+  {@render linkAnchor()}
 {/snippet}
 
-<!-- 宿主元素（对齐 Semi Typography 容器 = element(component)；link&&!disabled 时宿主本身
-     就是 <a>，见 resolvedElement，不再另包一层容器再嵌套渲染 <a>）。 -->
+<!-- 宿主元素（对齐 Semi Typography 容器 = element(component)，恒为传入的 element，
+     默认 span；link 时不再变形，<a> 由装饰链 linkAnchor 在内容层单独包裹，
+     对齐 Semi Base 组件把 wrap(link,...) 施加在 children 而非容器本身）。 -->
 {#snippet hostNode()}
   <svelte:element
-    this={resolvedElement}
+    this={element}
     bind:this={hostEl}
     class={cls}
     style={hostStyle || undefined}
     aria-disabled={disabled || undefined}
-    {...resolvedHostAttrs}
+    {...hostAttrs}
   >{@render decorated()}{@render expandBtn()}{@render actions()}</svelte:element>
 {/snippet}
 
@@ -488,8 +491,12 @@
     color: var(--cd-color-typography-danger-text-default);
   }
 
-  /* 链接（对齐 .semi-typography-link + a）。 */
-  :global(.cd-typography-link) {
+  /* 链接（对齐 .semi-typography.semi-typography-link 复合选择器）。
+     复合而非单类：链接常作为 .cd-typography 自身的子孙/自身出现在外部容器
+     （如 chat 气泡）里，外部容器常用 `.外层 :global(.cd-typography){color}`
+     这类 (0,2,0) 特异性覆盖正文色，若这里仍是单类 (0,1,0) 会被盖成同色，
+     链接在深色气泡里看起来「变黑」。 */
+  :global(.cd-typography.cd-typography-link) {
     color: var(--cd-color-typography-link-text-default);
     font-weight: var(--cd-font-typography-link-fontweight);
   }
