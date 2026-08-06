@@ -1,15 +1,16 @@
 <!--
   ChatCode — Chat 消息内容的代码块覆盖（严格对齐 Semi chat/chatBox/code.tsx）。
-  通过 MarkdownRender components={{ pre: ChatCode }} 覆盖围栏代码块：
-  - 有语言 → <div.cd-chat-chatBox-content-code>（深色 topSlot 栏：语言标签 + 复制按钮 IconCopyStroked/IconTick）+ CodeHighlight。
-  - 无语言 → 纯 <pre><code>。
+  Semi 注册到 components['code']（非 pre），内部调用 markdownRender 的 code(props) 渲染核心内容，
+  有语言时外层包一层 topSlot（语言标签 + 复制按钮）。本库对应：MarkdownRender components={{ code: ChatCode }}，
+  内部渲染 markdown-render 的 code.svelte（同一份 CodeHighlight lineNumber=true 逻辑，不再自行重写）。
   复制走 navigator.clipboard，2s 后复位为「复制」态（对齐 Semi copied 态）。
 -->
 <script lang="ts">
-  import type { Element, ElementContent } from 'hast';
+  import type { Element } from 'hast';
   import { IconCopyStroked, IconTick } from '@chenzy-design/icons';
-  import { CodeHighlight } from '../code-highlight/index.js';
   import { useLocale } from '../locale-provider/index.js';
+  import Code from '../markdown-render/components/code.svelte';
+  import { getCodeLanguage } from '../markdown-render/components/code-lang.js';
 
   interface Props {
     node?: Element;
@@ -20,27 +21,15 @@
 
   const loc = useLocale();
 
-  const codeEl = $derived(
-    node?.children?.find(
-      (c: ElementContent): c is Element => c.type === 'element' && c.tagName === 'code',
-    ),
-  );
-
-  function extractText(el: ElementContent): string {
+  function extractText(el: Element['children'][number]): string {
     if (el.type === 'text') return el.value;
     if (el.type === 'element' && el.children) {
-      return el.children.map((c: ElementContent) => extractText(c)).join('');
+      return el.children.map((c) => extractText(c)).join('');
     }
     return '';
   }
-  const code = $derived(codeEl ? extractText(codeEl) : '');
-
-  const language = $derived.by(() => {
-    const cn = codeEl?.properties?.className;
-    const classes = Array.isArray(cn) ? cn.map(String) : cn ? [String(cn)] : [];
-    const langClass = classes.find((c) => c.startsWith('language-'));
-    return langClass ? langClass.slice('language-'.length) : undefined;
-  });
+  const code = $derived(node ? node.children.map((c) => extractText(c)).join('') : '');
+  const language = $derived(getCodeLanguage(node));
 
   let copied = $state(false);
   let resetTimer: ReturnType<typeof setTimeout> | undefined;
@@ -78,10 +67,10 @@
         {/if}
       </span>
     </div>
-    <CodeHighlight {code} {language} lineNumber={false} />
+    <Code {...(node ? { node } : {})} />
   </div>
 {:else}
-  <pre><code>{code}</code></pre>
+  <Code {...(node ? { node } : {})} />
 {/if}
 
 <style>

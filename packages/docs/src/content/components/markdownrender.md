@@ -31,6 +31,8 @@ Markdown 是一种文档标记语言，可以通过简单的标记实现例如�
 - 服务端动态生成富文本内容时，前端渲染
 - 偏内容展示的轻交互网站
 
+**注意：Safari 16.3 之前的版本不支持正则环视断言，会导致上游依赖的 remark-gfm [报错](https://github.com/syntax-tree/mdast-util-gfm-autolink-literal/issues/10)，可以传入 `remarkGfm` 为 `false` 关闭 GFM 语法解析（会导致表格等 Markdown 特性无法解析），并在项目编译时用 null-loader 或 alias 等方式忽略掉 remark-gfm 这个包。**
+
 <Notice type="primary" title="与 Semi 的能力差异：不支持 MDX">
 
 Semi 的 MarkdownRender 同时支持 Markdown 与 **MDX**（在 Markdown 中直接书写 JSX），其实现依赖 React 的 `jsx/run-time`。
@@ -63,15 +65,44 @@ import { MarkdownRender } from '@chenzy-design/svelte';
 
 <DemoBox code={customElementSrc}><CustomElement /></DemoBox>
 
+可以覆盖的基本元素 tag 支持 `a blockquote br code em h1 h2 h3 h4 h5 h6 hr img li ol p pre strong ul table`；其中 `h1` `h2` `h3` `h4` `h5` `h6` `p` `a` `img` `table` `code` 默认已注册为 Semi 风格组件（见 `MarkdownRender.defaultComponents`），其余标签走原生渲染，可自行传入 `components` 覆盖。
+
 ### 仅纯 Markdown
 
 `format="md"` 为纯 Markdown 模式。本库仅支持该模式（见上方差异说明），特殊符号无需转义。
 
 <DemoBox code={plainMarkdownSrc}><PlainMarkdown /></DemoBox>
 
+<Notice type="primary" title="format='md' 模式下 HTML 标签的处理">
+
+`format="md"` 模式下，Markdown 中嵌入的 raw HTML（如 `<div>`、`<span style="color:red">` 等）会被底层编译器剥离，不会渲染到页面上（默认 `allowDangerousHtml: false`）。
+
+如需保留 HTML 标签渲染，可通过 `rehypePlugins` 传入 [rehype-raw](https://github.com/rehypejs/rehype-raw) 插件（自负 XSS 风险）：
+
+</Notice>
+
+```jsx
+import { MarkdownRender } from '@chenzy-design/svelte';
+import rehypeRaw from 'rehype-raw';
+```
+
+```svelte
+<MarkdownRender
+  format="md"
+  raw={`<span style="color:red">红色文字</span>`}
+  rehypePlugins={[rehypeRaw]}
+/>
+```
+
 ### 添加自定义组件
 
-通过 `components` 注册自定义组件，即可在 Markdown 中渲染带 JS 事件的元素——这是本库替代 MDX 正文 JSX 的方式。
+通过 `components` 注册自定义组件，即可在 Markdown 中渲染带 JS 事件的元素——这是本库替代 MDX 正文 JSX 的方式。默认的 Markdown 组件可从 `MarkdownRender.defaultComponents` 中获取，用于二次封装叠加自定义组件。
+
+<Notice type="primary" title="注意事项">
+
+注意尽量确保被渲染的 Markdown 内容可信，防止 XSS。
+
+</Notice>
 
 <DemoBox code={customComponentSrc}><CustomComponent /></DemoBox>
 
@@ -88,6 +119,6 @@ import { MarkdownRender } from '@chenzy-design/svelte';
 | format | 传入的 raw 类型。**本库仅支持 `'md'`**（Semi 另有 `'mdx'`，Svelte 无 jsx-runtime 故不支持） | `'md'` | `'md'` |
 | raw | Markdown 的纯文本 | string | - |
 | rehypePlugins | 自定义 Rehype Plugin | `Plugin[]` | - |
-| remarkGfm | 是否开启 Github GFM 语法 | boolean | true |
+| remarkGfm | 是否开启 Github GFM 语法，Safari 16.3 之前不支持环视断言会报错 | boolean | true |
 | remarkPlugins | 自定义 Remark Plugin | `Plugin[]` | - |
 | style | 样式 | string | - |

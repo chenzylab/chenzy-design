@@ -1,5 +1,5 @@
 <!--
-  MdImage — MarkdownRender 默认 img 覆盖（严格对齐 Semi markdownRender components/img.tsx）。
+  img — MarkdownRender 默认 img 覆盖（严格对齐 Semi markdownRender/components/img.tsx）。
   Semi：<div class="semi-markdownRender-component-image">
           <Image fallback={<IconUploadError/>} width="100%" {...omit(props,'children')} />
           <div class="semi-markdownRender-component-image-alt">{alt}</div>
@@ -15,7 +15,7 @@
     [key: string]: unknown;
   }
 
-  let { src = '', alt = '' }: Props = $props();
+  let { src = '', alt = '', ...rest }: Props = $props();
 </script>
 
 {#snippet errorFallback()}
@@ -23,6 +23,6 @@
 {/snippet}
 
 <div class="cd-markdown-render-component-image">
-  <Image {src} {alt} width="100%" fallback={errorFallback} />
+  <Image {src} {alt} width="100%" fallback={errorFallback} {...rest} />
   <div class="cd-markdown-render-component-image-alt">{alt}</div>
 </div>

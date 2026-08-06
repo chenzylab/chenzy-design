@@ -6,7 +6,7 @@ export const meta = {
   name: 'MarkdownRender',
   category: 'plus',
   description:
-    'Markdown 渲染组件（严格对齐 Semi markdownRender，用 unified 管线替代 MDX）：remark-parse + 条件 remark-gfm + remark-rehype + 透传 remark/rehype 插件把 raw 编译成 hast，再由 Svelte 递归渲染。默认组件映射对齐 Semi 11 键：h1-h6→Typography.Title（cd-markdown-render-component-header）、p→Typography.Paragraph（-component-p）、a→Typography.Text link、img→div.-component-image>Image+alt、table→Table、行内 code→span.-simple-code、围栏代码块→CodeHighlight(lineNumber)。标题字号/行高/颜色由 Typography 承担（Semi 亦然），组件只补 Semi 定义的 margin/simpleCode/image 样式（20 token 镜像 Semi variables.scss）。支持 components 覆盖；默认剥离 raw HTML（对齐 Semi format=md，保留需自传 rehype-raw 自负 XSS）。不支持 md 正文里任意 JSX 表达式求值（Semi format=mdx 深度能力，Svelte 无 jsx-runtime，运行时模型硬不兼容）。',
+    'Markdown 渲染组件（严格对齐 Semi markdownRender，用 unified 管线替代 MDX）：remark-parse + 条件 remark-gfm + remark-rehype + 透传 remark/rehype 插件把 raw 编译成 hast，再由 Svelte 递归渲染。默认组件映射对齐 Semi 11 键（h1.tsx~h6.tsx/a.tsx/img.tsx/table.tsx/p.tsx/code.tsx 逐文件对应本库 h1.svelte~h6.svelte/a.svelte/img.svelte/table.svelte/p.svelte/code.svelte）：h1-h6→Typography.Title（cd-markdown-render-component-header）、p→Typography.Paragraph（-component-p）、a→Typography.Text link、img→div.-component-image>Image+alt、table→Table、code→同一组件按 className 是否含 language-* 分流（有→CodeHighlight lineNumber，无→span.-simple-code，行内 code 与无语言围栏代码块共用该分支）。不覆盖 pre（Semi 无此键，围栏代码块最终 DOM 是原生 <pre> 包裹 CodeHighlight/span）。标题字号/行高/颜色由 Typography 承担（Semi 亦然），组件只补 Semi 定义的 margin/simpleCode/image 样式（20 token 镜像 Semi variables.scss）。支持 components 覆盖；默认剥离 raw HTML（对齐 Semi format=md，保留需自传 rehype-raw 自负 XSS）。不支持 md 正文里任意 JSX 表达式求值（Semi format=mdx 深度能力，Svelte 无 jsx-runtime，运行时模型硬不兼容）。',
   exports: ['MarkdownRender', 'defaultComponents'],
   props: [
     { name: 'raw', type: 'string', default: "''", desc: 'Markdown 源码' },
@@ -50,8 +50,8 @@ export const meta = {
     focusable: false,
     note: '渲染语义化 HTML（标题 / 列表 / 表格 / 链接等）保留原生可访问性；外链自动补 rel=noopener noreferrer + target=_blank；默认剥离 raw HTML 规避注入；图片 alt 由 Markdown 源码 `![alt](url)` 提供。',
   },
-  // 默认覆盖元素（对齐 Semi SemiMarkdownComponents 11 键）；其余标签走原生渲染，可由使用方 components 注册。
-  overridableTags: ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'a', 'img', 'table', 'code', 'pre'],
+  // 默认覆盖元素（对齐 Semi SemiMarkdownComponents 11 键）；pre 不在其中（Semi 无此键，保留原生标签）。
+  overridableTags: ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'a', 'img', 'table', 'code'],
   // token 严格镜像 Semi variables.scss（20 条）；排版由 Typography 承担，无自造 h*-size/quote/table/hr 等。
   tokens: [
     '--cd-markdown-render-image-margin-left',
