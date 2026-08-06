@@ -32,16 +32,16 @@ describe('Typography a11y', () => {
     await expectNoAxeViolations(container);
   });
 
-  it('Link：<a> 是宿主根元素本身（对齐 Semi wrap(link,"a")），非另包一层 span 再嵌套 <a>', () => {
+  it('Link：宿主恒为 span 且带 -link class，<a> 由装饰链在内容层单独包裹、自身无业务 class（对齐 Semi wrapperDecorations wrap(link, disabled?"span":"a") 施加于 children 而非容器）', () => {
     const { container } = render(TypographyA11yFixture, {
       props: { variant: 'link', text: 'Visit', props: { href: 'https://example.com' } },
     });
-    // 曾经的回归：宿主固定用 span，link 时内部再塞一个 <a>，多出的 inline span 容器
-    // 在窄/受限宽度父级里会把 <a> 挤压成整行宽度，导致图标+文字被迫换行。
+    const host = container.querySelector('span.cd-typography')!;
+    expect(host.classList.contains('cd-typography-link')).toBe(true);
     const a = container.querySelector('a')!;
-    expect(a.parentElement).toBe(container);
-    expect(a.classList.contains('cd-typography')).toBe(true);
-    expect(a.classList.contains('cd-typography-link')).toBe(true);
+    expect(a.parentElement).toBe(host);
+    expect(a.classList.contains('cd-typography')).toBe(false);
+    expect(a.classList.contains('cd-typography-link')).toBe(false);
   });
 
   it('Link + disabled：宿主退回不可点击的 span（对齐 Semi wrap(link, disabled?"span":"a")）', () => {
