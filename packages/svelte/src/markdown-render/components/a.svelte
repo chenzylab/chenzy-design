@@ -1,6 +1,7 @@
 <!--
-  MdLink — MarkdownRender 默认 a 覆盖（严格对齐 Semi markdownRender components/a.tsx）。
-  Semi：<Typography.Text link={{ ...props }} {...props} />（把 href 等透传给内部 <a>）。
+  a — MarkdownRender 默认 a 覆盖（严格对齐 Semi markdownRender/components/a.tsx）。
+  Semi：<Typography.Text link={{ ...props }} {...props} />（props 双重展开：一份进 link 对象透传给内部 <a>，
+  一份直接 spread 到 Text 组件本身）。
   额外：外链（http(s):// 或 //）自动补 rel=noopener + target=_blank（安全默认，Semi Text link 也支持透传）。
 -->
 <script lang="ts">
@@ -28,6 +29,6 @@
   });
 </script>
 
-<Text link={linkProps}>
+<Text link={linkProps} {...rest}>
   {#if children}{@render children()}{/if}
 </Text>

@@ -207,7 +207,9 @@ const components = [
   // code-highlight 含 prismjs core；markdown-render 的 unified/remark 与
   // json-viewer 的内核均为动态 import，不计入组件壳（json-viewer ignore 内核）。
   ['code-highlight', '{ CodeHighlight }', '16 KB'],
-  ['markdown-render', '{ MarkdownRender }', '3.5 KB'],
+  // 严格对齐 Semi 文件结构（h1~h6/a/img/p/table/code 单文件拆分，非 pre 键改为 code 键
+  // 统一处理行内+围栏代码块）后实测 3.69 KB，预算按实测 +~10% 校准。
+  ['markdown-render', '{ MarkdownRender }', '4 KB'],
   ['video-player', '{ VideoPlayer }', '9 KB'],
   // 破坏性对齐 Semi 后复用 Button/Dropdown/Popover/Tooltip/Image + 具名图标 + 自建 AudioSlider，
   // 功能显著增长（单行布局/Popover 音量面板/Dropdown 5 档倍速/40 token）。按实测 5.13KB +7% 校准。

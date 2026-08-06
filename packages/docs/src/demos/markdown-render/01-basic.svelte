@@ -1,13 +1,41 @@
 <script lang="ts">
   import { MarkdownRender } from '@chenzy-design/svelte';
 
-  // 对齐 Semi 基本用法：富文本（加粗/删除线/链接/emoji）+ 特殊符号 + 图片 + 多级标题 + 列表 + 表格。
-  // 本库仅支持 md 模式（见页面顶部差异说明），{} <> 等符号无需转义，此处按字面文本展示。
+  // 对齐 Semi 基本用法 demo 内容（content/plus/markdownrender/index.md）：
+  // 富文本（加粗/删除线/链接/emoji）+ DSM 分企业类型的多级列表 + 图片 + 7 项待办列表 + 5 行表格。
+  // 本库仅支持 md 模式（见页面顶部差异说明），{} <> 等符号无需转义；Semi 原文里的 <u>/<br/> 是 raw HTML，
+  // md 模式下默认会被剥离（见「仅纯 Markdown」一节说明），这里换成等价的 Markdown 空行分段，不用 HTML 标签。
+  // 额外补充行内代码 + 围栏代码块小节，用于展示 code 组件覆盖能力（Semi 原 demo 未覆盖这块，本库补充）。
   const raw = `## 从 Semi Design 到 Any Design
 
 正文内容是普通的文本，也可以**加粗**~~删除线~~和 [超链接](https://semi.design) 等 Markdown 基本语法所支持的富文本，也支持 emoji 🍰
 
 本库仅支持 md 模式，特殊符号 {} <> ... 无需转义
+
+#### Semi Design DSM
+
+[Semi DSM](https://semi.design/dsm) 是 Semi Design 提供的设计系统管理工具（Design System Management），支持全局、组件级别的样式定制，并在 Figma 和前端代码之间保持同步
+
+适用于各种规模的团队，无论你是需要简化工作流程，提高团队协作，还是增加生产力，我们都有适合你的功能
+
+##### 中大型企业
+
+- 多达 3000+ Design Token，深入每一处细节的定制可能，色彩，阴影，边距，圆角，动效，渲染结构均可自由定制，告别 ~~CSS 硬编码~~
+- 功能强大，经过抖音内部数千项目验证过的 UI lib，轻松应对各类复杂场景
+- A11y 无障碍友好，国际化功能完备
+- 面向社区建设，完全开源，无使用限制
+- 从 designOps 到 devOps，自动化工作流，Figma UI Kit 一键刷入主题，生成 Style Guideline，研发一行 npm 代码配置接入
+
+##### 初创企业
+
+- 无需从 0 到 1 投入大量研发资源，快速复用开源社区优秀方案，低成本快速定制具备品牌特色的设计系统
+- 一键支持暗色模式生成，支持根据品牌色快速生成包含 320 个全色阶、兼容深/浅两种模式的色彩系统，并支持动态切换
+- 不断进化，DSM + Semi Design 组件由抖音前端架构团队专业维护，已稳定迭代五年+，值得信赖
+
+##### 自由设计师/个人开发者
+
+- 低成本快速创建风格各异的设计系统，更少时间，更快交付
+- 研发接入友好，无需反复沟通，交付 npm 包产物，一键完成代码接入
 
 ![DSM](https://semi.design/dsm_manual/content/introduction/start/start-intro.png)
 
@@ -19,12 +47,26 @@
 - 好好地睡觉
 - 好好地游玩
 - 好好地学习
+- 好好地聊天
+- 好好地吵架
+- 过着平凡普通的每日
 
 | 支持 | Markdown 表格 | c | d |
 | - | :- | -: | :-: |
 | 1 | 2 | 3 | 4 |
 | 21 | 22 | 23 | 24 |
-| 31 | 32 | 33 | 34 |`;
+| 31 | 32 | 33 | 34 |
+| 41 | 42 | 43 | 44 |
+
+#### 代码
+
+行内代码 \`npm install\`，以及围栏代码块：
+
+\`\`\`js
+function hello() {
+  console.log('Hello, Semi Design');
+}
+\`\`\``;
 </script>
 
 <MarkdownRender {raw} />

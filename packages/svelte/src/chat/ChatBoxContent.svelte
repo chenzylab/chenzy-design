@@ -97,11 +97,11 @@
       </div>
     {:else}
       {#if contentText}
-        <!-- 代码块用 chat 专属 ChatCode 覆盖（深色 topSlot + 语言标签 + 复制，对齐 Semi）。 -->
+        <!-- 代码块用 chat 专属 ChatCode 覆盖（深色 topSlot + 语言标签 + 复制，对齐 Semi chat/code.tsx 挂 code 键）。 -->
         <MarkdownRender
           raw={contentText}
           format="md"
-          components={{ pre: ChatCode }}
+          components={{ code: ChatCode }}
           {...markdownRenderProps}
         />
       {/if}

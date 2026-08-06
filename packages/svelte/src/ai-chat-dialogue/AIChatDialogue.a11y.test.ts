@@ -338,8 +338,7 @@ describe('AIChatDialogue · steps 内容块', () => {
   });
 });
 
-// 对话内代码块（对齐 Semi widgets/contentItem/code.tsx）。
-// 本库此前没有这个覆盖：围栏代码块走 MarkdownRender 默认 MdPre，没有语言标签栏也没有复制按钮。
+// 对话内代码块（对齐 Semi widgets/contentItem/code.tsx，挂 code 键，内部复用 markdown-render 的 code.svelte）。
 describe('AIChatDialogue · 代码块（DialogueCode）', () => {
   const codeChats: AIDialogueMessage[] = [
     {

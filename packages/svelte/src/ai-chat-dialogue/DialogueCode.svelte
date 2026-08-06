@@ -1,21 +1,19 @@
 <!--
   DialogueCode — 对话内容里的代码块（1:1 对齐 Semi widgets/contentItem/code.tsx）。
 
-  本库此前没有这个覆盖：对话里的围栏代码块走 MarkdownRender 默认 MdPre，
-  没有语言标签栏、也没有复制按钮。
-
   与 chat 的 ChatCode 是**两套视觉**，别混用（Semi 侧也是两个文件）：
   · chat：深色 topSlot、复制按钮带「复制/已复制」文案；
   · dialogue：浅色 topSlot（fill-0 + text-0）、整块带 1px 边框、复制按钮**只有图标无文案**。
 
-  挂载点是 `pre` 键而非 `code`：Semi 靠 MDX 把围栏代码扁平成 code 元素后覆盖 code 键，
-  本库标准 remark-rehype 产出 pre>code，覆盖 pre 才能拿到整块（同 MdPre / ChatCode 的做法）。
+  挂载点是 `code` 键（对齐 Semi aiChatDialogue/code.tsx 挂 components['code']，内部调用
+  markdownRender 的 code(props) 渲染核心内容，外层按 language 有无包 topSlot）。
 -->
 <script lang="ts">
-  import type { Element, ElementContent } from 'hast';
+  import type { Element } from 'hast';
   import { IconCopyStroked, IconTick } from '@chenzy-design/icons';
-  import { CodeHighlight } from '../code-highlight/index.js';
   import { useLocale } from '../locale-provider/index.js';
+  import Code from '../markdown-render/components/code.svelte';
+  import { getCodeLanguage } from '../markdown-render/components/code-lang.js';
 
   interface Props {
     node?: Element;
@@ -26,27 +24,15 @@
 
   const loc = useLocale();
 
-  const codeEl = $derived(
-    node?.children?.find(
-      (c: ElementContent): c is Element => c.type === 'element' && c.tagName === 'code',
-    ),
-  );
-
-  function extractText(el: ElementContent): string {
+  function extractText(el: Element['children'][number]): string {
     if (el.type === 'text') return el.value;
     if (el.type === 'element' && el.children) {
-      return el.children.map((c: ElementContent) => extractText(c)).join('');
+      return el.children.map((c) => extractText(c)).join('');
     }
     return '';
   }
-  const code = $derived(codeEl ? extractText(codeEl) : '');
-
-  const language = $derived.by(() => {
-    const cn = codeEl?.properties?.className;
-    const classes = Array.isArray(cn) ? cn.map(String) : cn ? [String(cn)] : [];
-    const langClass = classes.find((c) => c.startsWith('language-'));
-    return langClass ? langClass.slice('language-'.length) : undefined;
-  });
+  const code = $derived(node ? node.children.map((c) => extractText(c)).join('') : '');
+  const language = $derived(getCodeLanguage(node));
 
   // 对齐 Semi：复制后置 copied 态，2s 复位。
   let copied = $state(false);
@@ -79,10 +65,10 @@
         </button>
       </span>
     </div>
-    <CodeHighlight {code} {language} lineNumber={false} />
+    <Code {...(node ? { node } : {})} />
   </div>
 {:else}
-  <pre><code>{code}</code></pre>
+  <Code {...(node ? { node } : {})} />
 {/if}
 
 <style>

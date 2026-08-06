@@ -76,13 +76,13 @@
   /**
    * 注入对话专属的代码块渲染（对齐 Semi：aiChatDialogue 用自己的 code.tsx 覆盖
    * markdownRender 的 code 组件，带语言标签栏 + 复制按钮）。
-   * 挂 `pre` 键的原因见 DialogueCode.svelte 顶部说明。
+   * 挂 `code` 键（对齐 Semi components['code'] = Code）。
    * 放在展开之前，调用方仍可用 markdownRenderProps.components 覆盖掉它。
    */
   const mdProps = $derived({
     ...markdownRenderProps,
     components: {
-      pre: DialogueCode,
+      code: DialogueCode,
       ...((markdownRenderProps?.components as Record<string, unknown>) ?? {}),
     },
   });
