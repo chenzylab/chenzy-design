@@ -41,6 +41,7 @@
   import { useLocale } from '../locale-provider/index.js';
   import type { UploadFileItem } from '../upload/types.js';
   import Button from '../button/Button.svelte';
+  import { useToast, ToastHolder } from '../toast/index.js';
   import ChatBox from './ChatBox.svelte';
   import InputBox from './InputBox.svelte';
   import Hint from './Hint.svelte';
@@ -180,6 +181,10 @@
   const sendHotKey = $derived(resolveDefault(sendHotKeyProp, 'Chat', 'sendHotKey', 'enter'));
 
   const loc = useLocale();
+
+  // 局部 Toast 实例（对齐 Semi chatContent.tsx Toast.useToast()）：复制成功提示渲染在
+  // chat 组件树内（继承 LocaleProvider 等上下文），非全局单例。见 .cd-chat-toast 挂载点。
+  const [toast, toastHolderStore] = useToast();
 
   // 受控（传了 chats）/ 非受控（内部 inner）——对齐 Upload 的 value 模式。
   // 受控：父级拥有 chats，我们只经 onChatsChange 回传、从不写 prop；
@@ -364,6 +369,7 @@
             role={roleOf(message)}
             {align}
             {mode}
+            {toast}
             lastChat={i === currentChats.length - 1}
             {markdownRenderProps}
             {escapeHtml}
@@ -380,6 +386,9 @@
             {renderDivider}
           />
         {/each}
+      </div>
+      <div class="cd-chat-toast">
+        <ToastHolder store={toastHolderStore} />
       </div>
 
       <!-- 回到底部 / 停止生成悬浮按钮（对齐 Semi -action，Button + 具名图标） -->
@@ -471,6 +480,14 @@
     padding-right: var(--cd-chat-container-paddingX);
     height: 100%;
     overflow: auto;
+  }
+
+  /* —— Toast 挂载点（对齐 Semi -toast：绝对定位、居中顶部） —— */
+  .cd-chat-toast {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
   }
 
   /* —— 回到底部 / 停止生成（对齐 Semi -action，绝对定位居中底部） —— */

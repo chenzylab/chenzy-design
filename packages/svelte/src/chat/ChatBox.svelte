@@ -19,6 +19,7 @@
   } from '@chenzy-design/core';
   import { useLocale } from '../locale-provider/index.js';
   import Divider from '../divider/Divider.svelte';
+  import type { ToastHookApi } from '../toast/index.js';
   import ChatBoxAvatar from './ChatBoxAvatar.svelte';
   import ChatBoxTitle from './ChatBoxTitle.svelte';
   import ChatBoxContent from './ChatBoxContent.svelte';
@@ -38,6 +39,8 @@
     role?: Metadata | undefined;
     align?: ChatAlign;
     mode?: ChatMode;
+    /** 局部 Toast 实例（对齐 Semi chatContent.tsx Toast.useToast() 一路透传）。 */
+    toast?: ToastHookApi | undefined;
     lastChat?: boolean;
     markdownRenderProps?: Record<string, unknown> | undefined;
     /** 是否转义用户消息中的 HTML 标签（对齐 Semi escapeHtml）。 */
@@ -61,6 +64,7 @@
     role,
     align = CHAT_ALIGN.LEFT_RIGHT,
     mode = CHAT_MODE.BUBBLE,
+    toast,
     lastChat = false,
     markdownRenderProps,
     escapeHtml = true,
@@ -157,6 +161,7 @@
 {#snippet actionNode()}
   <ChatBoxAction
     {message}
+    {toast}
     {lastChat}
     {contentText}
     {onMessageCopy}

@@ -17,10 +17,13 @@
   import { useLocale } from '../locale-provider/index.js';
   import Button from '../button/Button.svelte';
   import Popconfirm from '../popconfirm/Popconfirm.svelte';
+  import type { ToastHookApi } from '../toast/index.js';
   import type { RenderActionProps } from './types.js';
 
   interface Props {
     message: Message;
+    /** 局部 Toast 实例（对齐 Semi copyToClipboardAndToast）。 */
+    toast?: ToastHookApi | undefined;
     lastChat: boolean;
     contentText: string;
     onMessageCopy?: ((message: Message) => void) | undefined;
@@ -33,6 +36,7 @@
 
   let {
     message,
+    toast,
     lastChat,
     contentText,
     onMessageCopy,
@@ -45,12 +49,15 @@
 
   const loc = useLocale();
 
-  async function handleCopy(): Promise<void> {
-    try {
-      await navigator.clipboard?.writeText(contentText);
-    } catch {
-      // 剪贴板不可用时静默；仍派发回调交由使用方兜底。
-    }
+  // 对齐 Semi copyToClipboardAndToast：同步发起复制 + 立即弹 toast，不等待写入结果
+  // （Semi 用同步的 copy-text-to-clipboard，不 await、不判断成功与否）。此前用
+  // `await navigator.clipboard.writeText` 会在剪贴板权限受限/挂起的场景下卡住，
+  // 导致 toast 与 onMessageCopy 永远执行不到；不等待可确保用户始终能看到反馈。
+  function handleCopy(): void {
+    void navigator.clipboard?.writeText(contentText).catch(() => {
+      // 剪贴板不可用时静默；toast/onMessageCopy 仍照常触发（对齐 Semi 不判断结果）。
+    });
+    toast?.success({ content: loc().t('Chat.copySuccess') });
     onMessageCopy?.(message);
   }
 
@@ -140,7 +147,7 @@
 
 {#snippet actionLike()}
   <Button
-    class={`cd-chat-chatBox-action-btn${message.like ? ' cd-chat-chatBox-action-btn-active' : ''}`}
+    class="cd-chat-chatBox-action-btn"
     theme="borderless"
     type="tertiary"
     size="small"
@@ -157,7 +164,7 @@
 
 {#snippet actionDislike()}
   <Button
-    class={`cd-chat-chatBox-action-btn${message.dislike ? ' cd-chat-chatBox-action-btn-active' : ''}`}
+    class="cd-chat-chatBox-action-btn"
     theme="borderless"
     type="tertiary"
     size="small"
@@ -211,15 +218,15 @@
     margin-left: var(--cd-chat-chatBox-action-marginX);
     margin-right: var(--cd-chat-chatBox-action-marginX);
   }
+  /* 图标色对齐 Semi chat_chatBox_action_icon(-hover)；hover/active 背景不覆盖，
+     沿用 Button borderless 自身的面性背景（对齐 Semi：chat_chatBox_action-bg-hover
+     虽定义为 transparent，但 Semi 实际视觉背景来自 .semi-button-borderless:hover
+     的 fill-0/fill-1，chat 层从未 override 掉它）。 */
   .cd-chat-chatBox-action :global(.cd-chat-chatBox-action-btn) {
     color: var(--cd-chat-chatBox-action-icon);
   }
   .cd-chat-chatBox-action :global(.cd-chat-chatBox-action-btn:hover) {
     color: var(--cd-chat-chatBox-action-icon-hover);
-    background-color: var(--cd-chat-chatBox-action-bg-hover);
-  }
-  .cd-chat-chatBox-action :global(.cd-chat-chatBox-action-btn-active) {
-    color: var(--cd-color-primary);
   }
   .cd-chat-chatBox-action-icon-flip {
     display: inline-flex;

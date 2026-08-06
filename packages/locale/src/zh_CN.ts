@@ -397,6 +397,7 @@ export const zh_CN: Locale = {
     clear: '清除上下文',
     copy: '复制',
     copied: '复制成功',
+    copySuccess: '复制成功',
     delete: '删除',
     deleteConfirm: '确认删除该会话吗？',
     reset: '重新生成',

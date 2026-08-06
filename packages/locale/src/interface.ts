@@ -583,6 +583,8 @@ export interface Locale {
     copy: string;
     /** 代码块复制成功后的即时反馈文案（对齐 Semi Chat.copied） */
     copied: string;
+    /** 消息级复制成功 Toast 文案（对齐 Semi Chat.copySuccess，与 copied 是 Semi 保留的两个独立 key） */
+    copySuccess: string;
     /** delete-message action aria-label */
     delete: string;
     /** 删除消息二次确认气泡文案（对齐 Semi Chat.deleteConfirm） */

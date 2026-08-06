@@ -13,6 +13,16 @@
   stack 展开：innerWrapper mouseenter → hover=true → 每条 zero-height-wrapper 撑开为实测高度（对齐 Semi mouseInSide）。
   红线：render 不读 effect 写的状态——toasts 初始同步读一次（拿到惰性挂载前已入队的首条），
   $effect 仅做订阅 + cleanup 退订。
+
+  fixed prop（对齐 Semi 两条渲染路径的差异）：全局单例（Toast.success 等）走
+  semi-ui/toast/index.tsx 的 ToastList，wrapper 是 position:fixed 挂在 document.body，
+  相对视口定位；而局部 Hook（Toast.useToast，见 ToastHolder.svelte）走
+  semi-ui/toast/useToast/HookToast.tsx，直接渲染 <Toast> 卡片本身，**不带任何 fixed
+  wrapper**，定位完全交给调用方容器（如 chat 的 .semi-chat-toast：absolute + translateX(-50%)）。
+  两条路径共用同一份 ToastContainer 时，若调用方容器带 transform（.cd-chat-toast 即是），
+  fixed 子元素的包含块会被该祖先劫持（transform!==none 即创建包含块，即使是单位矩阵），
+  导致 width:100% 解析为 0、卡片被压缩成竖排——用 fixed=false 时改为非定位的普通块级
+  wrapper，交由外层容器摆位，与 Semi Hook 路径行为一致。
 -->
 <script lang="ts">
   import type { ToastStore, ToastItem } from '@chenzy-design/core';
@@ -23,9 +33,11 @@
     store: ToastStore;
     /** 位置配置 getter（top/left/bottom/right/zIndex），闭包隔离多实例。局部 holder 可省略。 */
     getPositionConfig?: () => ToastPositionConfig;
+    /** wrapper 是否 position:fixed（对齐 Semi 全局单例路径）。局部 Hook 场景传 false。 */
+    fixed?: boolean;
   }
 
-  let { store, getPositionConfig }: Props = $props();
+  let { store, getPositionConfig, fixed = true }: Props = $props();
 
   // 初始同步读一次：捕获惰性挂载前已入队的首条 toast。
   // core 的 subscribe 不会立即回放当前值，因此必须在此先读一次。
@@ -91,7 +103,7 @@
   });
 </script>
 
-<div class="cd-toast-wrapper" style={wrapperStyle()}>
+<div class="cd-toast-wrapper" class:cd-toast-wrapper-inline={!fixed} style={fixed ? wrapperStyle() : undefined}>
   <div class="cd-toast-innerWrapper" class:cd-toast-innerWrapper-hover={hover} onmouseenter={handleEnter} onmouseleave={handleLeave} role="presentation">
     {#each toasts as t, i (t.id)}
       <!-- 进/退场由 CSS keyframe 承载：!leaving→show(enter)，leaving→hide(leave)；animationend 且 leaving 时 finalizeRemove 真删（对齐 Semi startClassName + onAnimationEnd） -->
@@ -125,6 +137,14 @@
     justify-content: center;
     z-index: var(--cd-z-toast);
     pointer-events: none;
+  }
+
+  /* 局部 Hook 模式（对齐 Semi useToast/HookToast：不带 fixed wrapper，定位交给调用方容器）。 */
+  .cd-toast-wrapper-inline {
+    position: static;
+    height: auto;
+    top: auto;
+    width: auto;
   }
 
   /* —— 内层（对齐 Semi .semi-toast-innerWrapper）—— */
