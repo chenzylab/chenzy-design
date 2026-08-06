@@ -200,6 +200,16 @@
   let backBottomVisible = $state(false);
   let containerEl: HTMLDivElement | null = $state(null);
 
+  // 滚动条视觉（对齐 Semi wheelScroll）：容器恒为 overflow:scroll（预留固定轨道宽度，
+  // 避免内容区域宽度随「有无滚动条」跳动——hint/消息气泡的可用宽度需要稳定），但初始
+  // 用 ::-webkit-scrollbar{display:none} 隐藏滚动条视觉本身（对齐 Semi -scroll-hidden），
+  // 首次真实鼠标滚轮事件后永久切换为显示原生滚动条（对齐 Semi registerWheelEvent +
+  // setWheelScroll(true)，一次性、不可逆）。
+  let wheelScrolled = $state(false);
+  function handleWheel(): void {
+    wheelScrolled = true;
+  }
+
   let idSeq = 0;
   function makeId(): string {
     idSeq += 1;
@@ -357,10 +367,12 @@
       <div
         bind:this={containerEl}
         class="cd-chat-container"
+        class:cd-chat-container-scroll-hidden={!wheelScrolled}
         role="log"
         aria-live="polite"
         aria-label={loc().t('Chat.messageList')}
         onscroll={handleScroll}
+        onwheel={wheelScrolled ? undefined : handleWheel}
       >
         {#each currentChats as message, i (message.id ?? i)}
           <ChatBox
@@ -479,7 +491,18 @@
     padding-left: var(--cd-chat-container-paddingX);
     padding-right: var(--cd-chat-container-paddingX);
     height: 100%;
-    overflow: auto;
+    /* 恒 scroll（非 auto，对齐 Semi）：预留固定滚动条轨道宽度，避免内容可用宽度随
+       「有无滚动条」跳动——hint 提示条/消息气泡的 width:fit-content 计算基准需要稳定，
+       用 auto 时内容不够长不出滚动条，宽度基准会比出滚动条时多出一条轨道宽度，
+       与 Semi 视觉不符（真机对比：Semi 提示条右侧始终留有轨道宽度的空白）。 */
+    overflow: scroll;
+  }
+
+  /* 滚动条视觉初始隐藏（对齐 Semi -scroll-hidden，仅 WebKit，Firefox 无等效私有属性可用，
+     对齐 Semi 亦未做 Firefox 处理）：轨道空间仍占用（overflow:scroll 保证），只是滚动条
+     滑块本身不可见，首次真实滚轮滚动后移除该 class 显示原生滚动条。 */
+  .cd-chat-container-scroll-hidden::-webkit-scrollbar {
+    display: none;
   }
 
   /* —— Toast 挂载点（对齐 Semi -toast：绝对定位、居中顶部） —— */
