@@ -45,29 +45,34 @@
   }
 </script>
 
-<div style="height: 400px; border: 1px solid var(--cd-color-border); border-radius: 16px;">
-  <Chat {chats} {roleConfig} {uploadProps} {onChatsChange} {onMessageSend}>
-    {#snippet renderChatBoxAction({ defaultActionsObj, className })}
-      <span class={className}>
-        {#if defaultActionsObj}
-          {@render defaultActionsObj.copy?.()}
-          {@render defaultActionsObj.reset?.()}
-          {@render defaultActionsObj.like?.()}
-          {@render defaultActionsObj.dislike?.()}
-          {@render defaultActionsObj.delete?.()}
-        {/if}
-        <Dropdown trigger="click" position="top">
-          <Button icon={moreIcon} theme="borderless" type="tertiary" />
-          {#snippet render()}
-            <Dropdown.Menu>
-              <Dropdown.Item icon={forwardIcon}>分享</Dropdown.Item>
-            </Dropdown.Menu>
-          {/snippet}
-        </Dropdown>
-      </span>
-    {/snippet}
-  </Chat>
-</div>
+<Chat
+  {chats}
+  {roleConfig}
+  {uploadProps}
+  {onChatsChange}
+  {onMessageSend}
+  style="height: 400px; border: 1px solid var(--cd-color-border); border-radius: 16px;"
+>
+  {#snippet renderChatBoxAction({ defaultActionsObj, className })}
+    <span class={className}>
+      {#if defaultActionsObj}
+        {@render defaultActionsObj.copy?.()}
+        {@render defaultActionsObj.reset?.()}
+        {@render defaultActionsObj.like?.()}
+        {@render defaultActionsObj.dislike?.()}
+        {@render defaultActionsObj.delete?.()}
+      {/if}
+      <Dropdown trigger="click" position="top">
+        <Button icon={moreIcon} theme="borderless" type="tertiary" />
+        {#snippet render()}
+          <Dropdown.Menu>
+            <Dropdown.Item icon={forwardIcon}>分享</Dropdown.Item>
+          </Dropdown.Menu>
+        {/snippet}
+      </Dropdown>
+    </span>
+  {/snippet}
+</Chat>
 
 {#snippet moreIcon()}<IconMoreStroked />{/snippet}
 {#snippet forwardIcon()}<IconForward />{/snippet}

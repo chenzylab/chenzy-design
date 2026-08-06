@@ -19,17 +19,22 @@
     },
   };
 
-  // 展示给用户看的示例代码字符串（非真依赖）；同 01-basic 用拼接躲过 vite 依赖扫描。
-  const IMP = 'import';
-  const assistantIntro = `Semi Design 是由抖音前端团队和 MED 产品设计团队设计、开发并维护的设计系统。作为一个全面、易用、优质的现代应用 UI 解决方案，Semi Design 从字节跳动各业务线的复杂场景中提炼而来，目前已经支撑了近千个平台产品，服务了内外部超过 10 万用户。
+  // 严格对齐 Semi 原文内容，含引用角标 [1] 与 Learn more 链接列表（均为标准 markdown 行内链接）。
+  const assistantIntro = `Semi Design 是由抖音前端团队和 MED 产品设计团队设计、开发并维护的设计系统。作为一个全面、易用、优质的现代应用 UI 解决方案，Semi Design 从字节跳动各业务线的复杂场景中提炼而来，目前已经支撑了近千个平台产品，服务了内外部超过 10 万用户[[1]](https://semi.design/zh-CN/start/introduction)。
 
 Semi Design 的特点包括：
 
 1. 设计简洁、现代化。
 2. 提供主题方案，可深度样式定制。
 3. 提供明暗色两套模式，切换方便。
-4. 国际化，覆盖了简/繁体中文、英语、日语、韩语、葡萄牙语等 20+ 种语言。
-5. 采用 Foundation 和 Adapter 跨框架技术方案，方便扩展。`;
+4. 国际化，覆盖了简/繁体中文、英语、日语、韩语、葡萄牙语等 20+ 种语言，日期时间组件提供全球时区支持，全部组件可自动适配阿拉伯文 RTL 布局。
+5. 采用 Foundation 和 Adapter 跨框架技术方案，方便扩展。
+
+---
+Learn more:
+1. [Introduction 介绍 - Semi Design](https://semi.design/zh-CN/start/introduction)
+2. [Getting Started 快速开始 - Semi Design](https://semi.design/zh-CN/start/getting-started)
+3. [Semi D2C 设计稿转代码的演进之路 - 知乎](https://zhuanlan.zhihu.com/p/667189184)`;
 
   let chats = $state<ChatMessage[]>([
     { role: 'system', id: '1', createAt: 1715676751919, content: "Hello, I'm your AI assistant." },
@@ -88,14 +93,13 @@ Semi Design 的特点包括：
   }
 </script>
 
-<div style="height: 600px; border: 1px solid var(--cd-color-border); border-radius: 16px;">
-  <Chat
-    {chats}
-    {roleConfig}
-    {uploadProps}
-    showStopGenerate
-    {onChatsChange}
-    {onMessageSend}
-    {onStopGenerator}
-  />
-</div>
+<Chat
+  {chats}
+  {roleConfig}
+  {uploadProps}
+  showStopGenerate
+  {onChatsChange}
+  {onMessageSend}
+  {onStopGenerator}
+  style="height: 600px; border: 1px solid var(--cd-color-border); border-radius: 16px;"
+/>

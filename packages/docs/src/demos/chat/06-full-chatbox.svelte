@@ -44,9 +44,15 @@
   }
 </script>
 
-<div style="height: 400px; border: 1px solid var(--cd-color-border); border-radius: 16px;">
-  <Chat {chats} {roleConfig} {uploadProps} {onChatsChange} {onMessageSend} renderFullChatBox={fullChatBoxSnippet} />
-</div>
+<Chat
+  {chats}
+  {roleConfig}
+  {uploadProps}
+  {onChatsChange}
+  {onMessageSend}
+  renderFullChatBox={fullChatBoxSnippet}
+  style="height: 400px; border: 1px solid var(--cd-color-border); border-radius: 16px;"
+/>
 
 {#snippet fullChatBoxSnippet({ message, role, defaultNodes, className }: ChatRenderFullChatBoxProps)}
   {@const isUser = message?.role === 'user'}

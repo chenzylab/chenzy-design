@@ -63,15 +63,14 @@
   }
 </script>
 
-<div style="height: 550px; border: 1px solid var(--cd-color-border); border-radius: 16px; margin: 8px 16px;">
-  <Chat
-    {chats}
-    {roleConfig}
-    {uploadProps}
-    {uploadTipProps}
-    showClearContext
-    {onChatsChange}
-    {onMessageSend}
-    {onMessageReset}
-  />
-</div>
+<Chat
+  {chats}
+  {roleConfig}
+  {uploadProps}
+  {uploadTipProps}
+  showClearContext
+  {onChatsChange}
+  {onMessageSend}
+  {onMessageReset}
+  style="height: 550px; border: 1px solid var(--cd-color-border); border-radius: 16px; margin: 8px 16px;"
+/>
