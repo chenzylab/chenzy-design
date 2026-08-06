@@ -50,9 +50,15 @@
   }
 </script>
 
-<div style="height: 500px; border: 1px solid var(--cd-color-border); border-radius: 16px;">
-  <Chat {chats} {roleConfig} {uploadProps} {onChatsChange} {onMessageSend} renderInputArea={inputAreaSnippet} />
-</div>
+<Chat
+  {chats}
+  {roleConfig}
+  {uploadProps}
+  {onChatsChange}
+  {onMessageSend}
+  renderInputArea={inputAreaSnippet}
+  style="height: 500px; border: 1px solid var(--cd-color-border); border-radius: 16px;"
+/>
 
 {#snippet inputAreaSnippet({ onSend }: ChatRenderInputAreaProps)}
   <div

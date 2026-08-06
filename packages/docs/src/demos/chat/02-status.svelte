@@ -40,6 +40,11 @@
   }
 </script>
 
-<div style="height: 400px; border: 1px solid var(--cd-color-border); border-radius: 16px;">
-  <Chat {chats} {roleConfig} {uploadProps} onChatsChange={(n) => (chats = n)} {onMessageSend} />
-</div>
+<Chat
+  {chats}
+  {roleConfig}
+  {uploadProps}
+  onChatsChange={(n) => (chats = n)}
+  {onMessageSend}
+  style="height: 400px; border: 1px solid var(--cd-color-border); border-radius: 16px;"
+/>

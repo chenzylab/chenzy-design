@@ -93,17 +93,16 @@
   </span>
 </div>
 
-<div style="height: 400px; border: 1px solid var(--cd-color-border); border-radius: 16px;">
-  <Chat
-    {chats}
-    {roleConfig}
-    {uploadProps}
-    {onChatsChange}
-    {onMessageSend}
-    renderChatBoxAvatar={avatarMode === 'default' ? undefined : avatarSnippet}
-    renderChatBoxTitle={titleMode === 'default' ? undefined : titleSnippet}
-  />
-</div>
+<Chat
+  {chats}
+  {roleConfig}
+  {uploadProps}
+  {onChatsChange}
+  {onMessageSend}
+  renderChatBoxAvatar={avatarMode === 'default' ? undefined : avatarSnippet}
+  renderChatBoxTitle={titleMode === 'default' ? undefined : titleSnippet}
+  style="height: 400px; border: 1px solid var(--cd-color-border); border-radius: 16px;"
+/>
 
 {#snippet avatarSnippet({ role }: ChatRenderAvatarProps)}
   {#if avatarMode === 'custom'}

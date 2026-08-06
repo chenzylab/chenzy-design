@@ -86,9 +86,15 @@
   }
 </script>
 
-<div style="height: 500px; border: 1px solid var(--cd-color-border); border-radius: 16px;">
-  <Chat {chats} {roleConfig} {uploadProps} {onChatsChange} {onMessageSend} renderChatBoxContent={contentSnippet} />
-</div>
+<Chat
+  {chats}
+  {roleConfig}
+  {uploadProps}
+  {onChatsChange}
+  {onMessageSend}
+  renderChatBoxContent={contentSnippet}
+  style="height: 500px; border: 1px solid var(--cd-color-border); border-radius: 16px;"
+/>
 
 {#snippet contentSnippet({ message, className }: ChatRenderContentProps)}
   {@const source = (message?.source as Source[] | undefined) ?? undefined}
