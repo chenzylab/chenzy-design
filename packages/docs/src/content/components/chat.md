@@ -40,6 +40,14 @@ Chat 组件可用于普通会话，AI 会话等场景。
 
 > Chat 中的 MarkdownRender 使用 `format="md"`。本库的 MarkdownRender 不支持 MDX（Svelte 无 jsx-runtime，详见该组件页说明）；需要在对话内容中渲染自定义组件时，通过 `markdownRenderProps` 透传 `components` 注册标签。
 
+附件支持通过点击上传按钮、输入框粘贴、拖拽文件至 Chat 区域上传。通过 `uploadProps` 设置上传参数，详情参考 [Upload](/components/upload#api-参考)。
+
+上传按钮的提示文案可通过 `uploadTipProps` 设置，详情参考 [Tooltip](/components/tooltip#api-参考)。
+
+对话是多方参与、多轮交互的场景。可通过 `roleConfig` 传入角色信息（包括名称、头像等），具体参数细节见 [RoleConfig](#roleconfig)。
+
+使用 `align` 属性可以设置对话的布局，支持左右分布（`leftRight`，默认）和左对齐（`leftAlign`）。
+
 ## 代码演示
 
 ### 如何引入
@@ -56,25 +64,79 @@ import { Chat } from '@chenzy-design/svelte';
 
 ### 消息状态
 
-通过 `status` 设置消息状态，可选值为 `loading`、`incomplete`、`complete`、`error`。
+`chats` 类型为 `Message[]`，`Message` 包含对话的各种信息，如角色（role）、内容（content）、附件（attachment）、状态（status）、唯一标识（id）、创建时间（createAt）等，具体见 [Message](#message)。其中 status 不同，会话样式不同。
 
 <DemoBox code={statusSrc}><Status /></DemoBox>
 
 ### 动态更新数据
 
-发送消息后先插入 loading 状态的回复，待异步内容返回后原地更新为完整内容。
+对于后台返回 Server-Sent Events 数据的情况，可将获取到的数据用于更新 `chats`，对话内容将实时更新。发送消息后先插入 loading 状态的回复，待异步内容返回后原地更新为完整内容。
+
+`showStopGenerate` 参数可用于设置是否展示停止生成按钮，默认为 `false`，可以在 `onStopGenerator` 中处理停止生成逻辑。
 
 <DemoBox code={dynamicSrc}><Dynamic /></DemoBox>
 
 ### 清除上下文
 
-设置 `showClearContext` 展示清除上下文按钮，点击后在消息末尾追加一条分割线，可通过 `onClear` 感知。
+通过 `showClearContext` 可以开启在输入框中显示清除上下文按钮，默认为 `false`。点击后在消息末尾追加一条分割线，可通过 `onClear` 感知；也可以通过 ref 调用 `clearContext` 方法清除上下文。
 
 <DemoBox code={clearContextSrc}><ClearContext /></DemoBox>
 
 ### 自定义渲染会话框
 
-通过 `renderChatBoxAvatar`、`renderChatBoxTitle`、`renderChatBoxContent`、`renderChatBoxAction` 分别自定义头像、标题、内容与操作区。
+通过 `renderChatBoxAvatar`、`renderChatBoxTitle`、`renderChatBoxContent`、`renderChatBoxAction` 分别自定义头像、标题、内容与操作区，各 snippet 的参数类型如下（对齐 Semi `ChatBoxRenderConfig` 收纳的各接口；本库走扁平 prop，无需 `chatBoxRenderConfig` 聚合对象）：
+
+```ts
+export interface RenderTitleProps {
+  message?: Message;
+  role?: Metadata;
+  defaultTitle?: Snippet;
+}
+
+export interface RenderAvatarProps {
+  message?: Message;
+  role?: Metadata;
+  defaultAvatar?: Snippet;
+}
+
+export interface RenderContentProps {
+  message?: Message;
+  role?: Metadata;
+  defaultContent?: Snippet;
+  className?: string;
+}
+
+export interface DefaultActionNodes {
+  copy?: Snippet;
+  like?: Snippet;
+  dislike?: Snippet;
+  reset?: Snippet;
+  delete?: Snippet;
+}
+
+export interface RenderActionProps {
+  message?: Message;
+  defaultActions?: Snippet;
+  className?: string;
+  defaultActionsObj?: DefaultActionNodes;
+}
+
+export interface FullChatBoxNodes {
+  avatar?: Snippet;
+  title?: Snippet;
+  content?: Snippet;
+  action?: Snippet;
+}
+
+export interface RenderFullChatBoxProps {
+  message?: Message;
+  role?: Metadata;
+  defaultNodes?: FullChatBoxNodes;
+  className?: string;
+}
+```
+
+通过 `renderChatBoxAvatar`、`renderChatBoxTitle` 自定义头像和标题：
 
 <DemoBox code={customRenderSrc}><CustomRender /></DemoBox>
 
@@ -94,19 +156,69 @@ import { Chat } from '@chenzy-design/svelte';
 
 ### 自定义渲染输入框
 
-通过 `renderInputArea` 自定义输入区：既可包裹默认节点 `defaultNode`，也可用 `detailProps` 拆分节点自由组合。
+通过 `renderInputArea` 自定义输入区，参数如下：
+
+```ts
+export interface RenderInputAreaProps {
+  /** 默认节点 */
+  defaultNode?: Snippet;
+  /** 如果自定义输入框，发送消息时需调用 */
+  onSend?: (content?: string, attachment?: FileItem[]) => void;
+  /** 如果自定义清除上下文按钮，点击清除上下文时需调用 */
+  onClear?: () => void;
+  /** 拆分节点，供自定义布局时挑选组合 */
+  detailProps?: {
+    /** 清除上下文按钮 */
+    clearContextNode?: Snippet;
+    /** 上传按钮 */
+    uploadNode?: Snippet;
+    /** 文本输入框 */
+    inputNode?: Snippet;
+    /** 发送按钮 */
+    sendNode?: Snippet;
+    /** 点击触发聚焦文本输入框的处理函数 */
+    onClick?: () => void;
+  };
+}
+```
+
+既可包裹默认节点 `defaultNode`，也可用 `detailProps` 拆分节点自由组合，`detailProps` 的使用示例如下：
+
+```svelte
+{#snippet inputAreaSnippet({ detailProps }: ChatRenderInputAreaProps)}
+  <div
+    style="margin:8px 16px;display:flex;flex-direction:row;align-items:flex-end;border-radius:16px;padding:10px;border:1px solid var(--cd-color-border);"
+    onclick={detailProps?.onClick}
+  >
+    {@render detailProps?.uploadNode?.()}
+    {@render detailProps?.inputNode?.()}
+    {@render detailProps?.sendNode?.()}
+  </div>
+{/snippet}
+```
+
+其他使用示例如下：
 
 <DemoBox code={customInputSrc}><CustomInput /></DemoBox>
 
 ### 提示信息
 
-通过 `hints` 提供快捷提问，点击时触发 `onHintClick`。
+通过 `hints` 可设置提示区域内容，点击提示内容后，提示内容将成为新的用户输入内容，并触发 `onHintClick` 回调。
 
 <DemoBox code={hintsSrc}><Hints /></DemoBox>
 
 ### 自定义提示信息渲染
 
-通过 `renderHintBox` 自定义每个提示项的渲染，可拿到 `content`、`index` 与 `onHintClick`。
+通过 `renderHintBox` 自定义提示区域内容，参数如下：
+
+```ts
+interface RenderHintBoxProps {
+  content: string;
+  index: number;
+  onHintClick: () => void;
+}
+// renderHintBox?: Snippet<[RenderHintBoxProps]>
+```
 
 <DemoBox code={customHintSrc}><CustomHint /></DemoBox>
 

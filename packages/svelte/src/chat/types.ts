@@ -32,6 +32,9 @@ export interface RenderInputAreaDetailProps {
   inputNode?: Snippet | undefined;
   /** 发送按钮节点。 */
   sendNode?: Snippet | undefined;
+  /** 点击触发聚焦文本输入框的处理函数（对齐 Semi detailProps.onClick）：完全自定义外层
+   *  容器结构时，绑到自定义容器上以保留「点击空白区域聚焦输入框」的默认体验。 */
+  onClick?: (() => void) | undefined;
 }
 
 /** renderInputArea snippet 参数（对齐 Semi RenderInputAreaProps）。 */

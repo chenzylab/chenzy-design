@@ -67,6 +67,12 @@
   let attachment = $state<UploadFileItem[]>([]);
   let dragActive = $state(false);
   let uploadApi = $state<{ addFiles: (files: File[]) => void } | undefined>();
+  let textareaApi = $state<{ focus: () => void } | undefined>();
+
+  // 点击输入区容器空白处聚焦文本框（对齐 Semi InputBox.onClick，挂在 -inner 上）。
+  function focusInput(): void {
+    textareaApi?.focus();
+  }
 
   // disableSend：显式 canSend 优先；否则按 Semi 推断（disableSend / 无文本无附件 / 附件有未 success）。
   const inferredDisableSend = $derived(
@@ -162,6 +168,7 @@
       uploadNode: clickUpload || dragUpload ? uploadNode : undefined,
       inputNode,
       sendNode,
+      onClick: focusInput,
     },
   })}
 {:else}
@@ -223,6 +230,7 @@
       TextArea.svelte 用隐藏克隆节点测量修复，见该文件注释。）
     -->
     <TextArea
+      bind:this={textareaApi}
       class="cd-chat-inputBox-textarea"
       value={content}
       placeholder={placeholder ?? ''}
@@ -268,7 +276,9 @@
         <span class="cd-chat-dropArea-text">{loc().t('Chat.dropAreaText')}</span>
       </div>
     {/if}
-    <div class="cd-chat-inputBox-inner">
+    <!-- 点击空白处聚焦输入框是辅助行为，非必需交互路径（真正可交互元素是内部的按钮/文本框），
+         role=presentation 表明此 div 不承担独立的可交互语义（对齐 Semi InputBox.onClick）。 -->
+    <div class="cd-chat-inputBox-inner" role="presentation" onclick={focusInput}>
       {#if showClearContext}{@render clearContextNode()}{/if}
       <div class="cd-chat-inputBox-container">
         {#if clickUpload || dragUpload}{@render uploadNode()}{/if}
