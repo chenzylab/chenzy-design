@@ -1,13 +1,12 @@
-// CodeHighlight a11y + 渲染验证（dom project / jsdom）。
+// CodeHighlight 渲染验证（dom project / jsdom）。
 //  - 底层用 prismjs 就地高亮 <code>；断言给 code+language 后确实产出 .token span。
-//  - role=region 滚动区需可访问名（aria-label 走 i18n CodeHighlight.codeBlock）。
-//  - tabindex=0 让长代码块可键盘滚动聚焦（a11y_no_noninteractive_tabindex 已知豁免）。
+//  - 根 <div> 严格对齐 Semi：无 role/aria-label/tabindex（Semi 源码无此增强，本库不额外加）。
 import { describe, it, expect, vi } from 'vitest';
 import { tick } from 'svelte';
 import { renderWithLocale, expectNoAxeViolations } from '../test-utils/a11y.js';
 import CodeHighlight from './CodeHighlight.svelte';
 
-describe('CodeHighlight a11y + render', () => {
+describe('CodeHighlight render', () => {
   it('给 code + language 渲染后 <code> 内含 .token span', async () => {
     const { container } = renderWithLocale(CodeHighlight, {
       props: { code: 'const a = 1;', language: 'javascript' },
@@ -24,19 +23,21 @@ describe('CodeHighlight a11y + render', () => {
     expect(code?.className).toContain('language-javascript');
   });
 
-  it('root <div> 为 role=region 且有 i18n aria-label（codeBlock），无 axe violations', async () => {
+  it('root <div> 对齐 Semi：无 role/aria-label/tabindex，class 顺序 class-name 在前', async () => {
     const { container } = renderWithLocale(CodeHighlight, {
-      props: { code: 'let x = 2;', language: 'javascript' },
+      props: { code: 'let x = 2;', language: 'javascript', class: 'my-extra' },
     });
     await tick();
 
-    // DOM 对齐 Semi：根为 div.cd-code-highlight（含 cd-light-scrollbar），承载 role/aria-label/tabindex。
+    // DOM 对齐 Semi：根为 div.cd-code-highlight（含 cd-light-scrollbar）。
     const root = container.querySelector('.cd-code-highlight');
     expect(root?.tagName).toBe('DIV');
     expect(root?.classList.contains('cd-light-scrollbar')).toBe(true);
-    expect(root?.getAttribute('role')).toBe('region');
-    expect(root?.getAttribute('aria-label')).toBe('Code block');
-    expect(root?.getAttribute('tabindex')).toBe('0');
+    // 对齐 Semi cls(className, PREFIX, "semi-light-scrollbar", ...)：外部 class 排最前。
+    expect(root?.className.split(' ')[0]).toBe('my-extra');
+    expect(root?.hasAttribute('role')).toBe(false);
+    expect(root?.hasAttribute('aria-label')).toBe(false);
+    expect(root?.hasAttribute('tabindex')).toBe(false);
     // defaultTheme 默认 true → 根含 cd-code-highlight-defaultTheme。
     expect(root?.classList.contains('cd-code-highlight-defaultTheme')).toBe(true);
     await expectNoAxeViolations(container);

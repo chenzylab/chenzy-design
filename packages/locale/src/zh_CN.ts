@@ -133,9 +133,6 @@ export const zh_CN: Locale = {
     closePreview: '关闭预览',
     previewCount: '第 {index} 张，共 {total} 张',
   },
-  CodeHighlight: {
-    codeBlock: '代码块',
-  },
   Cropper: {
     container: '图片裁切',
   },

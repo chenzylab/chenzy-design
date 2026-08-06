@@ -13,8 +13,8 @@
 - 与 `Highlight`（文本关键词高亮）区别：CodeHighlight 是**语法**高亮，Highlight 是**关键词命中**高亮。
 
 ## 3. 分层实现
-- **headless（core/）**：`packages/core/src/code-highlight.ts` —— 纯函数 `resolveCodeClassName(language, lineNumber)` 生成 `language-<lang>` / `line-numbers` class（对齐 Semi foundation 的 `highlightCode` 逻辑），以及一个薄封装 `highlightElement(el, opts)` 调 `Prism.highlightElement(el, false)`。`Prism.manual = true`。
-- **渲染（svelte/）**：`CodeHighlight.svelte` —— `<pre><code>` 结构，`$effect` 内在 code 元素挂载/更新后调 highlight。code 内容用 `{@html}` 前必须 Prism 处理后的 DOM，或直接把纯文本塞进 code 再 `Prism.highlightElement`（对齐 Semi：DOM 就地高亮，避免 XSS）。
+- **headless（core/）**：`packages/core/src/code-highlight.ts` —— 纯函数 `resolveCodeClassName(currentClassName, language, lineNumber)` 生成 `language-<lang>` / `line-numbers` class（对齐 Semi foundation `highlightCode` 的 class 拼接逻辑：已有 `language-*` 不重复加）。`Prism` 调用留在渲染层，core 不依赖 prismjs。
+- **渲染（svelte/）**：`CodeHighlight.svelte` —— `Prism.manual = true`；`div > pre > code` 结构，`$effect` 内对 code 元素设 class + `textContent`（纯文本写入，不经 `{@html}`），再 `Prism.highlightElement(el, false)` 就地高亮（对齐 Semi：DOM 就地高亮，避免 XSS）。根 class 顺序对齐 Semi `cls(className, PREFIX, "semi-light-scrollbar", {defaultTheme条件类})`：外部 class 在最前。
 
 ## 4. API（对齐 Semi）
 ### Props
@@ -32,28 +32,20 @@
 无（内容由 `code` prop 提供）。
 
 ## 5. 主题 / Token
-默认主题 CSS 对齐 prismjs 高亮 token 分类，但**颜色必须映射到本库 token / 暗色模式**，不直接拷 prismjs 默认 theme。
-| Token | 默认 | 用途 |
-|---|---|---|
-| `--cd-code-highlight-bg` | `--cd-color-fill-0` | 代码块背景 |
-| `--cd-code-highlight-text` | `--cd-color-text-0` | 普通文本 |
-| `--cd-code-highlight-comment` | `--cd-color-text-2` | 注释 |
-| `--cd-code-highlight-keyword` | 品牌/语义色 | 关键字 |
-| `--cd-code-highlight-string` | 语义色 | 字符串 |
-| `--cd-code-highlight-number` | 语义色 | 数字 |
-| `--cd-code-highlight-line-number` | `--cd-color-text-3` | 行号列 |
-（具体 token 分类由实现时对照 prismjs token 类补齐，全部走 token，禁写死色值。）
+严格对齐 Semi：无组件级 token 命名空间（对齐 Semi 空 `variables.scss`）。默认主题（dabblet 配色）按 Semi codeHighlight.scss 逐条实现：
+- 能映射到色板/语义色的位置直接引用本库既有 token（如 `color: var(--cd-color-text-0)` 对齐 Semi `var(--semi-color-text-0)`；`.token.keyword` 用 `var(--cd-color-purple-6)` 对齐 Semi `rgba(var(--semi-purple-6),1)`）。
+- Semi 写死的十六进制色值（如 `#895fe2` / `#f9f7f9` / `#6b7075` / `#999` / `#d0955f` / `#b3d4fc` / `#ebf4ff` / `#0064d2`）本库同样写死，不映射 token、不随暗色模式自适应（与 Semi 一致的真实行为，非本库缺陷）。
 
 ## 6. 无障碍
 - `<pre>` 语义即可；装饰性高亮 span 不需 aria。
-- 代码块可聚焦滚动（长代码）：`tabindex="0"` + `role="region"` + `aria-label` 走 i18n（如「代码块」）。
+- 严格对齐 Semi：根节点无 `tabindex`/`role`/`aria-label`（Semi 源码无此增强，本库不添加自造超集）。
 - reduced-motion：无动画。
 
 ## 7. 国际化
-- i18n key：`CodeHighlight.codeBlock`（代码块区域 aria-label）。
+- 无内置 i18n key（原 `CodeHighlight.codeBlock` 随 a11y 增强一并移除，避免无消费方的悬空键）。
 
 ## 8. 文案
-- 无内置可见文案（除 aria-label）。
+- 无内置可见文案。
 
 ## 9. 性能
 ### Perf Budget
@@ -69,7 +61,7 @@
 ## 11. 测试
 - 单测：`resolveCodeClassName` 各分支（含/不含 lineNumber、已有 language class 不重复加）。
 - e2e：给定 code+language，渲染后含 `.token` 高亮 span。
-- a11y：axe + 长代码块键盘可滚动。
+- render：根节点 class 顺序（外部 class 在前，对齐 Semi）、无 role/aria-label/tabindex、axe 无违规。
 
 ## 12. 验收标准
 - [ ] 分层正确 · [ ] 类型+JSDoc · [ ] Token 注册 · [ ] a11y 通过

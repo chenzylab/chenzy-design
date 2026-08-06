@@ -133,9 +133,6 @@ export const en_US: Locale = {
     closePreview: 'Close preview',
     previewCount: '{index} of {total}',
   },
-  CodeHighlight: {
-    codeBlock: 'Code block',
-  },
   Cropper: {
     container: 'Image cropper',
   },
