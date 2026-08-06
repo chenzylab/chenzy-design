@@ -19,6 +19,7 @@
   import TextArea from '../input/TextArea.svelte';
   import Tooltip from '../tooltip/Tooltip.svelte';
   import type { UploadFileItem } from '../upload/types.js';
+  import Attachment from './Attachment.svelte';
   import type { RenderInputAreaProps } from './types.js';
 
   interface Props {
@@ -86,6 +87,11 @@
 
   function handleAttachmentChange({ fileList }: { fileList: UploadFileItem[]; currentFile: UploadFileItem }): void {
     attachment = [...fileList];
+    emitInputChange();
+  }
+
+  function handleAttachmentClear(item: UploadFileItem): void {
+    attachment = attachment.filter((it) => it.uid !== item.uid);
     emitInputChange();
   }
 
@@ -226,6 +232,7 @@
       onInput={handleInput}
       onKeyDown={handleKeydown}
     />
+    <Attachment {attachment} onClear={handleAttachmentClear} />
   </div>
 {/snippet}
 
@@ -376,7 +383,10 @@
   /* —— dropArea 拖拽遮罩（对齐 Semi -dropArea） —— */
   .cd-chat-dropArea {
     position: absolute;
-    inset: 0;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
     background: var(--cd-chat-dropArea-bg);
     z-index: var(--cd-chat-dropArea-z);
     border: var(--cd-chat-dropArea-border-width) dotted var(--cd-chat-dropArea-border);
