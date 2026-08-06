@@ -270,6 +270,9 @@ importers:
       date-fns:
         specifier: ^2.30.0
         version: 2.30.0
+      esm-env:
+        specifier: ^1.2.2
+        version: 1.2.2
       lottie-web:
         specifier: ^5.13.0
         version: 5.13.0

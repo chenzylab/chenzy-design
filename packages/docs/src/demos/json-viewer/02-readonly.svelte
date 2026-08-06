@@ -11,4 +11,6 @@
   );
 </script>
 
-<JsonViewer {value} height={180} width="100%" options={{ readOnly: true }} />
+<div style="margin-bottom: 16px;">
+  <JsonViewer {value} height={180} width="100%" options={{ readOnly: true }} />
+</div>

@@ -12,14 +12,16 @@
 
 {#snippet searchIcon()}<IconSearch />{/snippet}
 
-<JsonViewer height={200} width={700} value={data}>
-  {#snippet renderSearchButton(defaultButton, controls)}
-    <div style="position: absolute; top: 10px; right: 10px; z-index: 10;">
-      {#if !controls.showSearchBar}
-        <Button icon={searchIcon} onclick={controls.onToggleSearchBar}>搜索</Button>
-      {:else}
-        {@render defaultButton()}
-      {/if}
-    </div>
-  {/snippet}
-</JsonViewer>
+<div style="margin-bottom: 16px;">
+  <JsonViewer height={200} width={700} value={data}>
+    {#snippet renderSearchButton(defaultButton, controls)}
+      <div style="position: absolute; top: 10px; right: 10px; z-index: 10;">
+        {#if !controls.showSearchBar}
+          <Button icon={searchIcon} onclick={controls.onToggleSearchBar}>搜索</Button>
+        {:else}
+          {@render defaultButton()}
+        {/if}
+      </div>
+    {/snippet}
+  </JsonViewer>
+</div>

@@ -7,4 +7,6 @@
 }`;
 </script>
 
-<JsonViewer height={100} width={700} value={data} />
+<div style="margin-bottom: 16px;">
+  <JsonViewer height={100} width={700} value={data} />
+</div>

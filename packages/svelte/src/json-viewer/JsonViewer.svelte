@@ -3,7 +3,9 @@
   底层：Semi 自研内核 `@douyinfe/semi-json-viewer-core`（框架无关）。Svelte 层只写
   渲染壳 + 生命周期驱动，逻辑全在内核。
 
-  红线 · 非受控（对齐 Semi）：`value` 仅作初始内容建实例，不在 onChange 里回写 value。
+  红线 · 非受控（对齐 Semi）：`value` 仅作初始内容建实例，不在 onChange 里回写 value——
+    但外部主动传入新的 value 字面量会重建内核实例（对齐 Semi componentDidUpdate 的
+    dispose+init），故不建议在 onChange 回调里做任何反馈进 value 的操作，否则死循环重建。
   红线 · 动态 import（spec §9 硬要求，内核 ~203kb）：内核不静态进主 bundle，
     在 $effect 挂载时 `await import(...)` 异步 new，加载中显示 loading 态。
   红线 · cleanup：$effect cleanup 中 `dispose()` 销毁内核实例、置空引用，防泄漏。
@@ -72,6 +74,8 @@
     onChange?: (value: string) => void;
     /** 只读模式下命中 customRenderRule 时透出 customRenderMap（Svelte 侧据此渲染）。 */
     onCustomRender?: (customRenderMap: Map<HTMLElement, unknown>) => void;
+    /** 自定义 hover tooltip 内容（对齐 Semi renderTooltip）：返回的 HTMLElement 会被内核挂载到 tooltip 容器。 */
+    renderTooltip?: (value: string, el: HTMLElement) => HTMLElement;
     class?: string;
     style?: string;
   }
@@ -86,6 +90,7 @@
     options,
     onChange,
     onCustomRender,
+    renderTooltip,
     class: className,
     style,
   }: Props = $props();
@@ -127,26 +132,40 @@
   const widthCss = $derived(toSize(width));
 
   // 内核生命周期：editorEl 就绪时动态 import 并 new，cleanup dispose。
-  // 依赖仅 editorEl —— value/options 是非受控初始值，变化不重建（对齐 Semi）。
+  // 非受控：onChange 不回写 value，故内容输入不会触发这里重建；
+  // 但外部主动改 value 字面量会重建（对齐 Semi componentDidUpdate 的 dispose+init）。
   $effect(() => {
     const el = editorEl;
+    // 显式读取以纳入 $effect 依赖追踪（异步 .then 内的读取不会被追踪）。
+    // 只用 value 做依赖 key，不比较 options：customRenderRule 等含函数字段不可
+    // 序列化比较，且 options 字面量随父组件每次渲染都会变引用，纳入依赖会导致
+    // 几乎每次渲染都重建；这里对齐 Semi 语义里最关键的一条——value 变化必重建。
+    const initialValue = value;
+    const currentOptions = options;
     if (!el) return;
 
     let disposed = false;
     let instance: JsonViewerKernel | null = null;
+    let resizeObserver: ResizeObserver | null = null;
     loading = true;
     loadError = false;
 
     import('@douyinfe/semi-json-viewer-core')
       .then(({ JsonViewer }) => {
         if (disposed) return;
-        instance = new JsonViewer(el, value, {
+        instance = new JsonViewer(el, initialValue, {
           prefixCls: 'cd-json-viewer',
-          ...options,
+          ...currentOptions,
         });
         // customRender 事件 → 透出 customRenderMap（仅只读 + customRenderRule 命中时触发）。
         instance.emitter.on('customRender', (e) => {
           onCustomRender?.(e.customRenderMap);
+        });
+        // hoverNode 事件（对齐 Semi notifyHover）：内核 hover 700ms 后 emit {value,target}，
+        // renderTooltip 返回的 HTMLElement 经 renderHoverNode 事件传回内核挂载到 tooltip 容器。
+        instance.emitter.on('hoverNode', (e) => {
+          const el = renderTooltip?.(e.value, e.target);
+          if (el) instance?.emitter.emit('renderHoverNode', { el });
         });
         // contentChanged 事件 → onChange（非受控：不回写 value）。
         instance.emitter.on('contentChanged', () => {
@@ -158,6 +177,27 @@
         instance.layout();
         kernel = instance;
         loading = false;
+
+        // autoWrap 时容器宽度变化会改变换行结果，需重新测量（对齐 Semi ResizeObserver）。
+        if (currentOptions?.autoWrap) {
+          let lastWidth = el.getBoundingClientRect().width;
+          let rafId: number | null = null;
+          resizeObserver = new ResizeObserver((entries) => {
+            const nextWidth = entries[0]?.contentRect?.width;
+            if (typeof nextWidth !== 'number' || Math.abs(nextWidth - lastWidth) < 0.5) return;
+            lastWidth = nextWidth;
+            if (rafId !== null) cancelAnimationFrame(rafId);
+            rafId = requestAnimationFrame(() => {
+              rafId = null;
+              // 内部实现细节（非公开 API）：清空已测量行高缓存，强制 layout() 重新计算换行。
+              const view = (instance as unknown as { _view?: { _measuredHeights?: Record<number, number> } })
+                ?._view;
+              if (view?._measuredHeights) view._measuredHeights = {};
+              instance?.layout();
+            });
+          });
+          resizeObserver.observe(el);
+        }
       })
       .catch(() => {
         if (disposed) return;
@@ -167,6 +207,8 @@
 
     return () => {
       disposed = true;
+      resizeObserver?.disconnect();
+      resizeObserver = null;
       instance?.dispose();
       instance = null;
       kernel = null;
@@ -584,9 +626,38 @@
   }
   .cd-json-viewer :global(.cd-json-viewer-line-number) {
     color: var(--cd-color-json-viewer-line-number);
+    text-align: center;
   }
   .cd-json-viewer :global(.cd-json-viewer-line-number-container) {
     background: var(--cd-color-json-viewer-line-number-bg);
+  }
+  /* 隐藏原生滚动条（对齐 Semi content-container，三端写法）。 */
+  .cd-json-viewer :global(.cd-json-viewer-content-container) {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .cd-json-viewer :global(.cd-json-viewer-content-container::-webkit-scrollbar) {
+    display: none;
+  }
+  /* 自动补全下拉（对齐 Semi complete-* 系列）。 */
+  .cd-json-viewer :global(.cd-json-viewer-complete-container) {
+    position: absolute;
+    z-index: 1000;
+  }
+  .cd-json-viewer :global(.cd-json-viewer-complete-suggestions-container) {
+    border-radius: var(--cd-radius-json-viewer-toolbar);
+    background-color: var(--cd-color-json-viewer-toolbar-bg);
+    box-shadow: var(--cd-shadow-elevated);
+    z-index: 1000;
+    min-inline-size: 200px;
+    max-inline-size: 400px;
+    list-style: none;
+    padding: 4px 0;
+  }
+  .cd-json-viewer :global(.cd-json-viewer-complete-suggestions-item) {
+    padding: 8px 16px;
+    color: var(--cd-color-json-viewer-text);
+    cursor: pointer;
   }
   .cd-json-viewer :global(.cd-json-viewer-search-result) {
     background: var(--cd-color-json-viewer-search-highlight);
@@ -598,6 +669,7 @@
   .cd-json-viewer :global(.cd-json-viewer-error) {
     text-decoration: underline wavy var(--cd-color-json-viewer-error);
     text-decoration-thickness: 1px;
+    text-underline-position: under;
   }
   /* 容器纵向内边距（对齐 Semi paddingY 12px / paddingX 0） */
   .cd-json-viewer :global(.cd-json-viewer-view-line) {
