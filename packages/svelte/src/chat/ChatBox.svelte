@@ -32,6 +32,8 @@
 
   interface Props {
     message: Message;
+    /** 上一条消息（对齐 Semi previousMessage，用于计算 continueSend：连续同角色折叠 title）。 */
+    previousMessage?: Message | undefined;
     role?: Metadata | undefined;
     align?: ChatAlign;
     mode?: ChatMode;
@@ -54,6 +56,7 @@
 
   let {
     message,
+    previousMessage,
     role,
     align = CHAT_ALIGN.LEFT_RIGHT,
     mode = CHAT_MODE.BUBBLE,
@@ -86,6 +89,10 @@
   );
   // 右侧布局：user + leftRight（对齐 Semi chatBox-right）。
   const isRight = $derived(isUser && align === CHAT_ALIGN.LEFT_RIGHT);
+  // 连续同角色消息（对齐 Semi continueSend）：title 不重复渲染；
+  // avatar 挂 -avatar-hidden class 做 visibility:hidden（对齐 Semi chat.scss:142-144，
+  // 保留布局占位、仅视觉隐藏，非 display:none）。
+  const continueSend = $derived(message.role === previousMessage?.role);
 
   const title = $derived(role?.name ?? message.name ?? message.role ?? '');
 
@@ -122,7 +129,7 @@
   <div class="cd-chat-chatBox" class:cd-chat-chatBox-right={isRight}>
     {@render avatarNode()}
     <div class="cd-chat-chatBox-wrap">
-      {@render titleNode()}
+      {#if !continueSend}{@render titleNode()}{/if}
       {@render contentNode()}
       {@render actionNode()}
     </div>
@@ -130,7 +137,7 @@
 {/if}
 
 {#snippet avatarNode()}
-  <ChatBoxAvatar {message} {role} {title} {renderChatBoxAvatar} />
+  <ChatBoxAvatar {message} {role} {title} {continueSend} {renderChatBoxAvatar} />
 {/snippet}
 {#snippet titleNode()}
   <ChatBoxTitle {message} {role} {title} {renderChatBoxTitle} />
@@ -185,6 +192,10 @@
 
   .cd-chat-chatBox :global(.cd-chat-chatBox-avatar) {
     flex-shrink: 0;
+  }
+  /* 连续同角色消息头像占位不可见（对齐 Semi chat.scss:142-144 &-avatar-hidden）。 */
+  .cd-chat-chatBox :global(.cd-chat-chatBox-avatar-hidden) {
+    visibility: hidden;
   }
 
   .cd-chat-chatBox-wrap {

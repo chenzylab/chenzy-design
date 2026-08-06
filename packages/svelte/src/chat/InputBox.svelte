@@ -217,11 +217,10 @@
     <!--
       严格对齐 Semi（chat/inputBox/index.tsx:14,107）：只传
       `autosize={{ minRows: 1, maxRows: 5 }}`，**不传 rows**。
-      实测 Semi 官网该 textarea `rows=4`（TextArea 默认值）、无内联 height、
-      计算高 90px = 4×20px 行高 + 10px 纵向 padding —— 即 Semi 的初始框是 4 行高，
-      autosize 只在输入时增高、不会收缩到 minRows。
-      本库原先显式 `rows={1}` 会让初始框收成 31px 单行，文字贴着顶部、
-      与 Semi 视觉不符（用户反馈「输入内容未垂直居中」的根因）。
+      初始态紧凑单行（minRows:1 对应高度），随内容增高，封顶 maxRows:5。
+      （曾误判「Semi 初始框是 4 行高」——那是 TextArea autosize 测量被原生
+      rows 属性污染的本库 bug 导致的假象，非 Semi 真实行为，已在
+      TextArea.svelte 用隐藏克隆节点测量修复，见该文件注释。）
     -->
     <TextArea
       class="cd-chat-inputBox-textarea"

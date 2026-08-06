@@ -40,7 +40,7 @@ export interface MetricBaseline {
 /** Chat 输入框 textarea —— 实测 semi.design/zh-CN/plus/chat */
 export const CHAT_INPUT_TEXTAREA: MetricBaseline = {
   source: 'https://semi.design/zh-CN/plus/chat',
-  measuredAt: '2026-07-31',
+  measuredAt: '2026-08-06',
   semiSelector: '.semi-chat-inputBox-container textarea',
   computed: {
     // 源码依据：Semi input/textarea.scss:158 `@include font-size-regular`，
@@ -48,8 +48,12 @@ export const CHAT_INPUT_TEXTAREA: MetricBaseline = {
     lineHeight: '20px',
     fontSize: '14px',
     padding: '5px 12px',
-    // 初始 4 行（TextArea 默认 rows=4；autosize 只增高不收缩到 minRows）
-    height: '90px',
+    // 初始 minRows:1 单行（chat/inputBox/index.tsx 传 autosize={{minRows:1,maxRows:5}}，
+    // Semi calculateNodeHeight 用 minRows 求初始高度，非 rows 默认值 4）：
+    // 1×20 行高 + 10 纵向 padding = 30px。真机截图核实（用户提供 Semi 官网截图为紧凑单行）。
+    // 前一版「90px/4行」是本库 TextArea autosize 测量被原生 rows 属性污染产生的假象，
+    // 误当作 Semi 真实行为写入了这条基线，见 TextArea.svelte 隐藏克隆节点测量修复。
+    height: '30px',
   },
 };
 

@@ -302,6 +302,15 @@ export {
   type ChatMode,
   type SendHotKey,
   type EnableUploadProps as ChatEnableUploadProps,
+  type RenderInputAreaProps as ChatRenderInputAreaProps,
+  type RenderTitleProps as ChatRenderTitleProps,
+  type RenderAvatarProps as ChatRenderAvatarProps,
+  type RenderContentProps as ChatRenderContentProps,
+  type RenderActionProps as ChatRenderActionProps,
+  type RenderFullChatBoxProps as ChatRenderFullChatBoxProps,
+  type RenderHintBoxProps as ChatRenderHintBoxProps,
+  type DefaultActionNodes as ChatDefaultActionNodes,
+  type FullChatBoxNodes as ChatFullChatBoxNodes,
 } from './chat/index.js';
 export {
   AIChatDialogue,
