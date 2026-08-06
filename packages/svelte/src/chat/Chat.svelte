@@ -398,6 +398,14 @@
             {renderDivider}
           />
         {/each}
+        <!-- hint 区域对齐 Semi：与消息列表同在 .cd-chat-container 内（非独立于外），共享
+             滚动容器的横向 padding（chat_container-paddingX 16px）与滚动行为——本库此前
+             把 Hint 挂在 container 外层（与 .cd-chat-content 平级），导致 hint 卡片右侧
+             缺失这段 padding，真机对比 Semi 官网发现自定义渲染 hint 紧贴容器边缘
+             （gap:0 vs Semi gap:16px）。 -->
+        {#if hints && hints.length > 0}
+          <Hint {hints} onHintClick={doHintClick} {renderHintBox} class={hintCls} style={hintStyle} />
+        {/if}
       </div>
       <div class="cd-chat-toast">
         <ToastHolder store={toastHolderStore} />
@@ -432,10 +440,6 @@
 
     {#if bottomSlot}
       <div class="cd-chat-bottomSlot">{@render bottomSlot()}</div>
-    {/if}
-
-    {#if hints && hints.length > 0}
-      <Hint {hints} onHintClick={doHintClick} {renderHintBox} class={hintCls} style={hintStyle} />
     {/if}
 
     <InputBox
