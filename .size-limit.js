@@ -217,7 +217,9 @@ const components = [
   // + Avatar/Button/TextArea/Upload + chatBox 拆分子组件，实测 9.96 KB，预算 +~5% 校准。
   // 补齐 Semi attachment.tsx 独立文件（Attachment/FileAttachment/ImageAttachment，
   // InputBox 已选附件预览 clear/progress/fail 三态 + Progress 组件依赖）后实测 11.36 KB，预算按 +~5% buffer 校准。
-  ['chat', '{ Chat }', '12 KB'],
+  // 操作区角色显隐（showFeedback/complete/showReset 对齐 Semi render() 条件渲染）+
+  // Toast 局部 Hook 定位修复 + Tooltip custom trigger 盒模型修复后实测 12.11 KB，预算按 +~5% buffer 校准。
+  ['chat', '{ Chat }', '12.5 KB'],
   ['cropper', '{ Cropper }', '4 KB'],
   // 引用区（references）+ dialogueRenderConfig 四区块 snippet 结构后实测 6.71 KB，预算按 +15% buffer 校准。
   // 7.7 → 10.5 KB：补齐 Semi 有而本库完全没有的两个内容类型后实测 9.57 KB（纯功能增长，

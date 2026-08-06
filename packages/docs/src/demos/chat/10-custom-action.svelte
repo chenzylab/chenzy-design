@@ -56,11 +56,11 @@
   {#snippet renderChatBoxAction({ defaultActionsObj, className })}
     <span class={className}>
       {#if defaultActionsObj}
-        {@render defaultActionsObj.copy?.()}
-        {@render defaultActionsObj.reset?.()}
-        {@render defaultActionsObj.like?.()}
-        {@render defaultActionsObj.dislike?.()}
-        {@render defaultActionsObj.delete?.()}
+        {@render defaultActionsObj.copyNode?.()}
+        {@render defaultActionsObj.likeNode?.()}
+        {@render defaultActionsObj.dislikeNode?.()}
+        {@render defaultActionsObj.resetNode?.()}
+        {@render defaultActionsObj.deleteNode?.()}
       {/if}
       <Dropdown trigger="click" position="top">
         <Button icon={moreIcon} theme="borderless" type="tertiary" />

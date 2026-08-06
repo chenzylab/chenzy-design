@@ -309,7 +309,7 @@ export {
   type RenderActionProps as ChatRenderActionProps,
   type RenderFullChatBoxProps as ChatRenderFullChatBoxProps,
   type RenderHintBoxProps as ChatRenderHintBoxProps,
-  type DefaultActionNodes as ChatDefaultActionNodes,
+  type DefaultActionNodeObj as ChatDefaultActionNodeObj,
   type FullChatBoxNodes as ChatFullChatBoxNodes,
 } from './chat/index.js';
 export {

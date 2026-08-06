@@ -396,6 +396,7 @@ export const en_US: Locale = {
     clear: 'Clear context',
     copy: 'Copy',
     copied: 'Copied',
+    copySuccess: 'Copy successful.',
     delete: 'Delete',
     deleteConfirm: 'Are you sure you want to delete this session?',
     reset: 'Regenerate',

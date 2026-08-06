@@ -584,6 +584,7 @@
   <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
   <span
     class="cd-tooltip-trigger"
+    class:cd-tooltip-trigger-custom={isCustom}
     bind:this={triggerEl}
     role={isDialog && !isCustom ? 'button' : undefined}
     tabindex={isDialog && !isCustom ? 0 : undefined}
@@ -680,6 +681,24 @@
     display: inline-block;
     inline-size: auto;
     block-size: auto;
+  }
+  /* trigger=custom 时此包裹不承载任何 role/tabindex/aria 语义（上面模板全部置 undefined，
+     对齐 Semi trigger.tsx：`if (trigger !== 'custom') children = wrapSpan(children)`——
+     custom 模式本就不需要包裹）。Svelte 没有 React cloneElement，无法像 Semi 一样把事件
+     直接注入 children 本身、完全省略这层 DOM，只能退而求其次：物理上仍渲染这层 span
+     （保留 anchorEl = firstElementChild 的定位基准职责），但用 display:contents 让它
+     不参与盒模型/flex 布局——避免这层 inline-block 在外层 flex 容器（如 chat 操作区）里
+     产生额外的对齐基线，导致被包裹的按钮比同级直接渲染的按钮视觉上更高。 */
+  .cd-tooltip-trigger-custom {
+    display: contents;
+  }
+  /* 最外层 .cd-tooltip 是事件承载根（pointerenter/leave/focus/click，不能 display:contents
+     否则丢事件语义），custom 模式下仍是 inline-block——inline-block 按 line-height
+     保留基线空间，即使内部子元素都是 flex/block，这层自身仍会比子内容高出一截
+     （典型 inline-block 基线坑）。归零 line-height 消除这份多余高度，使 custom 触发器
+     在外层 flex 容器里与其他直接子项高度完全一致。 */
+  .cd-tooltip:has(> .cd-tooltip-trigger-custom) {
+    line-height: 0;
   }
 
   /* 浮层 portal 到 body，由 JS 写 position:fixed + transform 定位。

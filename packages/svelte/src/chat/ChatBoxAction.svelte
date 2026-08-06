@@ -6,7 +6,7 @@
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
-  import type { Message } from '@chenzy-design/core';
+  import { CHAT_ROLE, MESSAGE_STATUS, type Message } from '@chenzy-design/core';
   import {
     IconCopyStroked,
     IconLikeThumb,
@@ -17,10 +17,13 @@
   import { useLocale } from '../locale-provider/index.js';
   import Button from '../button/Button.svelte';
   import Popconfirm from '../popconfirm/Popconfirm.svelte';
+  import type { ToastHookApi } from '../toast/index.js';
   import type { RenderActionProps } from './types.js';
 
   interface Props {
     message: Message;
+    /** 局部 Toast 实例（对齐 Semi copyToClipboardAndToast）。 */
+    toast?: ToastHookApi | undefined;
     lastChat: boolean;
     contentText: string;
     onMessageCopy?: ((message: Message) => void) | undefined;
@@ -33,6 +36,7 @@
 
   let {
     message,
+    toast,
     lastChat,
     contentText,
     onMessageCopy,
@@ -45,12 +49,15 @@
 
   const loc = useLocale();
 
-  async function handleCopy(): Promise<void> {
-    try {
-      await navigator.clipboard?.writeText(contentText);
-    } catch {
-      // 剪贴板不可用时静默；仍派发回调交由使用方兜底。
-    }
+  // 对齐 Semi copyToClipboardAndToast：同步发起复制 + 立即弹 toast，不等待写入结果
+  // （Semi 用同步的 copy-text-to-clipboard，不 await、不判断成功与否）。此前用
+  // `await navigator.clipboard.writeText` 会在剪贴板权限受限/挂起的场景下卡住，
+  // 导致 toast 与 onMessageCopy 永远执行不到；不等待可确保用户始终能看到反馈。
+  function handleCopy(): void {
+    void navigator.clipboard?.writeText(contentText).catch(() => {
+      // 剪贴板不可用时静默；toast/onMessageCopy 仍照常触发（对齐 Semi 不判断结果）。
+    });
+    toast?.success({ content: loc().t('Chat.copySuccess') });
     onMessageCopy?.(message);
   }
 
@@ -60,6 +67,20 @@
   // hideDeletePopup 关闭气泡后延迟 150ms 再收起操作区，避免 visible 直接联动致操作区闪动。
   let deleteVisible = $state(false);
   let showAction = $state(false);
+
+  // 最后一条 assistant 消息（有 reset 按钮）在非 loading/incomplete 状态下操作区常驻可见，
+  // 无需 hover（对齐 Semi chatBoxAction.tsx：wrapCls 的 `-show` = showReset && finished || showAction，
+  // showReset = lastChat && role === assistant；finished = status 不是 loading/incomplete）。
+  const showReset = $derived(lastChat && message.role === CHAT_ROLE.ASSISTANT);
+  const finished = $derived(
+    message.status !== MESSAGE_STATUS.LOADING && message.status !== MESSAGE_STATUS.INCOMPLETE,
+  );
+  const alwaysShow = $derived((showReset && finished) || showAction);
+  // complete 才显示复制；赞踩仅非 user 角色且 complete 才显示；delete 恒显示
+  // （对齐 Semi render()：`complete && copyNode`、`showFeedback && like/dislikeNode`，
+  // showFeedback = role !== user && complete）。
+  const complete = $derived(message.status === MESSAGE_STATUS.COMPLETE || message.status === undefined);
+  const showFeedback = $derived(message.role !== CHAT_ROLE.USER && complete);
 
   function showDeletePopup(): void {
     deleteVisible = true;
@@ -82,14 +103,14 @@
 {#if renderChatBoxAction}
   {@render renderChatBoxAction({
     message,
-    className: 'cd-chat-chatBox-action',
+    className: `cd-chat-chatBox-action${alwaysShow ? ' cd-chat-chatBox-action-show' : ''}${!finished ? ' cd-chat-chatBox-action-hidden' : ''}`,
     defaultActions,
     defaultActionsObj: {
-      copy: actionCopy,
-      like: actionLike,
-      dislike: actionDislike,
-      reset: actionReset,
-      delete: actionDelete,
+      copyNode: complete ? actionCopy : undefined,
+      likeNode: showFeedback ? actionLike : undefined,
+      dislikeNode: showFeedback ? actionDislike : undefined,
+      resetNode: showReset ? actionReset : undefined,
+      deleteNode: actionDelete,
     },
   })}
 {:else}
@@ -97,13 +118,21 @@
 {/if}
 
 {#snippet defaultActions()}
-  <div class="cd-chat-chatBox-action" class:cd-chat-chatBox-action-show={showAction}>
-    {@render actionCopy()}
-    {#if lastChat}
+  <div
+    class="cd-chat-chatBox-action"
+    class:cd-chat-chatBox-action-show={alwaysShow}
+    class:cd-chat-chatBox-action-hidden={!finished}
+  >
+    <!-- 节点顺序与显隐条件对齐 Semi render()：complete&&copy / showFeedback&&like,dislike /
+         showReset&&reset / delete 恒显示。showFeedback = role!==user && complete。 -->
+    {#if complete}{@render actionCopy()}{/if}
+    {#if showFeedback}
+      {@render actionLike()}
+      {@render actionDislike()}
+    {/if}
+    {#if showReset}
       {@render actionReset()}
     {/if}
-    {@render actionLike()}
-    {@render actionDislike()}
     {@render actionDelete()}
   </div>
 {/snippet}
@@ -140,7 +169,7 @@
 
 {#snippet actionLike()}
   <Button
-    class={`cd-chat-chatBox-action-btn${message.like ? ' cd-chat-chatBox-action-btn-active' : ''}`}
+    class="cd-chat-chatBox-action-btn"
     theme="borderless"
     type="tertiary"
     size="small"
@@ -157,7 +186,7 @@
 
 {#snippet actionDislike()}
   <Button
-    class={`cd-chat-chatBox-action-btn${message.dislike ? ' cd-chat-chatBox-action-btn-active' : ''}`}
+    class="cd-chat-chatBox-action-btn"
     theme="borderless"
     type="tertiary"
     size="small"
@@ -201,8 +230,13 @@
 {#snippet deleteIcon()}<IconDeleteStroked />{/snippet}
 
 <style>
-  /* —— 操作区（对齐 Semi -action，默认隐藏 hover 显示） —— */
-  .cd-chat-chatBox-action {
+  /* —— 操作区（对齐 Semi -action，默认隐藏 hover 显示） ——
+     以下几条核心规则用 :global()：renderChatBoxAction 自定义渲染分支会把 className
+     字符串传给消费方组件自己渲染的 DOM 节点（如 10-custom-action.svelte 的
+     <span class={className}>），该节点不在本组件模板内，不会被 Svelte 自动打上
+     scoped hash class；不加 :global() 这些规则将永远选不中它，-show/-hidden 状态
+     在自定义渲染场景下全部失效（曾出现：所有消息操作区无差别常驻显示）。 */
+  :global(.cd-chat-chatBox-action) {
     visibility: hidden;
     display: flex;
     align-items: center;
@@ -211,24 +245,31 @@
     margin-left: var(--cd-chat-chatBox-action-marginX);
     margin-right: var(--cd-chat-chatBox-action-marginX);
   }
-  .cd-chat-chatBox-action :global(.cd-chat-chatBox-action-btn) {
+  /* 图标色对齐 Semi chat_chatBox_action_icon(-hover)；hover/active 背景不覆盖，
+     沿用 Button borderless 自身的面性背景（对齐 Semi：chat_chatBox_action-bg-hover
+     虽定义为 transparent，但 Semi 实际视觉背景来自 .semi-button-borderless:hover
+     的 fill-0/fill-1，chat 层从未 override 掉它）。 */
+  :global(.cd-chat-chatBox-action .cd-chat-chatBox-action-btn) {
     color: var(--cd-chat-chatBox-action-icon);
   }
-  .cd-chat-chatBox-action :global(.cd-chat-chatBox-action-btn:hover) {
+  :global(.cd-chat-chatBox-action .cd-chat-chatBox-action-btn:hover) {
     color: var(--cd-chat-chatBox-action-icon-hover);
-    background-color: var(--cd-chat-chatBox-action-bg-hover);
-  }
-  .cd-chat-chatBox-action :global(.cd-chat-chatBox-action-btn-active) {
-    color: var(--cd-color-primary);
   }
   .cd-chat-chatBox-action-icon-flip {
     display: inline-flex;
     transform: scaleY(-1);
   }
   /* 删除二次确认展开期间强制操作区常驻可见（对齐 Semi -action-show），
-     覆盖默认 visibility:hidden，鼠标移出 chatBox 去点确认/取消按钮时操作区不消失。 */
-  .cd-chat-chatBox-action.cd-chat-chatBox-action-show {
+     覆盖默认 visibility:hidden，鼠标移出 chatBox 去点确认/取消按钮时操作区不消失。
+     最后一条 assistant 消息（finished 态）同样恒 -show（对齐 Semi showReset && finished）。 */
+  :global(.cd-chat-chatBox-action.cd-chat-chatBox-action-show) {
     visibility: visible;
+  }
+  /* -hidden 优先级最高（对齐 Semi `&.-hidden, &:hover.-hidden { hidden }`）：loading/incomplete
+     消息即使命中 -show 或 hover 也不显示操作区，覆盖上面两条 visible 规则。 */
+  :global(.cd-chat-chatBox-action.cd-chat-chatBox-action-hidden),
+  :global(.cd-chat-chatBox-action.cd-chat-chatBox-action-hidden.cd-chat-chatBox-action-show) {
+    visibility: hidden;
   }
   .cd-chat-chatBox-action-delete-wrap {
     display: inline-flex;
