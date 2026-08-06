@@ -115,7 +115,9 @@ const components = [
   ['form', '{ FormField, FormInput, FieldArray }', '14 KB'],
   // TextArea 迁入 input/ 目录、与 Input/InputGroup 同为 input 条目导出（对齐 Semi 目录结构，
   // 原独立 textarea 条目随目录迁移移除）。三者共享 input.scss token/locale，合并测量。
-  ['input', '{ Input, InputGroup, TextArea }', '9 KB'],
+  // autosize 测量改用隐藏克隆节点（对齐 Semi calculateNodeHeight.ts，修复原生 rows 属性
+  // 污染 scrollHeight 测量导致 minRows 收缩失效的 bug）后实测 9.06 KB，预算 +微量 buffer 校准。
+  ['input', '{ Input, InputGroup, TextArea }', '9.2 KB'],
   ['input-number', '{ InputNumber }', '5 KB'],
   ['pincode', '{ PinCode }', '3.5 KB'],
   ['radio', '{ Radio, RadioGroup }', '4.8 KB'],

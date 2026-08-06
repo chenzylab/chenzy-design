@@ -360,6 +360,7 @@
         {#each currentChats as message, i (message.id ?? i)}
           <ChatBox
             {message}
+            previousMessage={i > 0 ? currentChats[i - 1] : undefined}
             role={roleOf(message)}
             {align}
             {mode}

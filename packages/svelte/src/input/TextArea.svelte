@@ -259,6 +259,53 @@
     taEl?.blur();
   }
 
+  // 隐藏克隆节点测量（对齐 Semi calculateNodeHeight.ts：单例复用、不带 rows 属性、
+  // height:0 强制隐藏）。直接在可见 textarea 自身上 style.height='auto' 测 scrollHeight
+  // 会被原生 rows 属性污染——height:auto 且无 rows 覆盖时浏览器按 rows（默认 4）撑出最小高度，
+  // 导致 minRows:1 的收缩意图落空（1 个字符也测出 4 行高）。
+  let hiddenTextarea: HTMLTextAreaElement | undefined;
+  const SIZING_STYLE_KEYS = [
+    'borderBottomWidth',
+    'borderLeftWidth',
+    'borderRightWidth',
+    'borderTopWidth',
+    'boxSizing',
+    'fontFamily',
+    'fontSize',
+    'fontStyle',
+    'fontWeight',
+    'letterSpacing',
+    'lineHeight',
+    'paddingBottom',
+    'paddingLeft',
+    'paddingRight',
+    'paddingTop',
+    'tabSize',
+    'textIndent',
+    'textRendering',
+    'textTransform',
+    'width',
+  ] as const;
+
+  function getHiddenTextarea(): HTMLTextAreaElement {
+    if (!hiddenTextarea) {
+      hiddenTextarea = document.createElement('textarea');
+      hiddenTextarea.setAttribute('tab-index', '-1');
+      hiddenTextarea.setAttribute('aria-hidden', 'true');
+      hiddenTextarea.style.minHeight = '0';
+      hiddenTextarea.style.maxHeight = 'none';
+      hiddenTextarea.style.height = '0';
+      hiddenTextarea.style.visibility = 'hidden';
+      hiddenTextarea.style.overflow = 'hidden';
+      hiddenTextarea.style.position = 'absolute';
+      hiddenTextarea.style.zIndex = '-1000';
+      hiddenTextarea.style.top = '0';
+      hiddenTextarea.style.right = '0';
+    }
+    if (!hiddenTextarea.parentNode) document.body.appendChild(hiddenTextarea);
+    return hiddenTextarea;
+  }
+
   // 命令式测量并设定 autosize 高度（不写 $state，不参与 effect 依赖）。
   function measureAutosize(el: HTMLTextAreaElement): number {
     const cs = getComputedStyle(el);
@@ -266,8 +313,11 @@
     const verticalPadding = parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom);
     const verticalBorder = parseFloat(cs.borderTopWidth) + parseFloat(cs.borderBottomWidth);
 
-    el.style.height = 'auto';
-    const scrollHeight = el.scrollHeight + verticalBorder;
+    const hidden = getHiddenTextarea();
+    for (const key of SIZING_STYLE_KEYS) hidden.style[key] = cs[key];
+    hidden.value = el.value;
+    const scrollHeight = hidden.scrollHeight + verticalBorder;
+
     const result = computeAutosizeHeight({
       scrollHeight,
       lineHeight,
