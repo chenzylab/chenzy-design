@@ -75,12 +75,16 @@ export interface RenderContentProps {
 }
 
 /** 默认操作节点集合（对齐 Semi DefaultActionNodeObj）。 */
-export interface DefaultActionNodes {
-  copy?: Snippet;
-  like?: Snippet;
-  dislike?: Snippet;
-  reset?: Snippet;
-  delete?: Snippet;
+export interface DefaultActionNodeObj {
+  /** complete 状态才存在（对齐 Semi `complete && copyNode`）。 */
+  copyNode?: Snippet | undefined;
+  /** 仅非 user 角色且 complete 才存在（对齐 Semi showFeedback）。 */
+  likeNode?: Snippet | undefined;
+  dislikeNode?: Snippet | undefined;
+  /** 仅最后一条 assistant 消息才存在（对齐 Semi showReset）。 */
+  resetNode?: Snippet | undefined;
+  /** 恒存在（对齐 Semi 无条件渲染 deleteNode）。 */
+  deleteNode?: Snippet | undefined;
 }
 
 /** renderChatBoxAction snippet 参数。 */
@@ -90,7 +94,7 @@ export interface RenderActionProps {
   defaultActions?: Snippet;
   className?: string;
   /** 拆分的默认操作节点，供自定义排布。 */
-  defaultActionsObj?: DefaultActionNodes;
+  defaultActionsObj?: DefaultActionNodeObj;
 }
 
 /** 完整 chatBox 各部分节点（对齐 Semi FullChatBoxNodes）。 */

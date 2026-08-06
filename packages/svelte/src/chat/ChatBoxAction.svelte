@@ -76,6 +76,11 @@
     message.status !== MESSAGE_STATUS.LOADING && message.status !== MESSAGE_STATUS.INCOMPLETE,
   );
   const alwaysShow = $derived((showReset && finished) || showAction);
+  // complete 才显示复制；赞踩仅非 user 角色且 complete 才显示；delete 恒显示
+  // （对齐 Semi render()：`complete && copyNode`、`showFeedback && like/dislikeNode`，
+  // showFeedback = role !== user && complete）。
+  const complete = $derived(message.status === MESSAGE_STATUS.COMPLETE || message.status === undefined);
+  const showFeedback = $derived(message.role !== CHAT_ROLE.USER && complete);
 
   function showDeletePopup(): void {
     deleteVisible = true;
@@ -101,11 +106,11 @@
     className: `cd-chat-chatBox-action${alwaysShow ? ' cd-chat-chatBox-action-show' : ''}${!finished ? ' cd-chat-chatBox-action-hidden' : ''}`,
     defaultActions,
     defaultActionsObj: {
-      copy: actionCopy,
-      like: actionLike,
-      dislike: actionDislike,
-      reset: actionReset,
-      delete: actionDelete,
+      copyNode: complete ? actionCopy : undefined,
+      likeNode: showFeedback ? actionLike : undefined,
+      dislikeNode: showFeedback ? actionDislike : undefined,
+      resetNode: showReset ? actionReset : undefined,
+      deleteNode: actionDelete,
     },
   })}
 {:else}
@@ -118,12 +123,16 @@
     class:cd-chat-chatBox-action-show={alwaysShow}
     class:cd-chat-chatBox-action-hidden={!finished}
   >
-    {@render actionCopy()}
-    {#if lastChat}
+    <!-- 节点顺序与显隐条件对齐 Semi render()：complete&&copy / showFeedback&&like,dislike /
+         showReset&&reset / delete 恒显示。showFeedback = role!==user && complete。 -->
+    {#if complete}{@render actionCopy()}{/if}
+    {#if showFeedback}
+      {@render actionLike()}
+      {@render actionDislike()}
+    {/if}
+    {#if showReset}
       {@render actionReset()}
     {/if}
-    {@render actionLike()}
-    {@render actionDislike()}
     {@render actionDelete()}
   </div>
 {/snippet}
@@ -221,8 +230,13 @@
 {#snippet deleteIcon()}<IconDeleteStroked />{/snippet}
 
 <style>
-  /* —— 操作区（对齐 Semi -action，默认隐藏 hover 显示） —— */
-  .cd-chat-chatBox-action {
+  /* —— 操作区（对齐 Semi -action，默认隐藏 hover 显示） ——
+     以下几条核心规则用 :global()：renderChatBoxAction 自定义渲染分支会把 className
+     字符串传给消费方组件自己渲染的 DOM 节点（如 10-custom-action.svelte 的
+     <span class={className}>），该节点不在本组件模板内，不会被 Svelte 自动打上
+     scoped hash class；不加 :global() 这些规则将永远选不中它，-show/-hidden 状态
+     在自定义渲染场景下全部失效（曾出现：所有消息操作区无差别常驻显示）。 */
+  :global(.cd-chat-chatBox-action) {
     visibility: hidden;
     display: flex;
     align-items: center;
@@ -235,10 +249,10 @@
      沿用 Button borderless 自身的面性背景（对齐 Semi：chat_chatBox_action-bg-hover
      虽定义为 transparent，但 Semi 实际视觉背景来自 .semi-button-borderless:hover
      的 fill-0/fill-1，chat 层从未 override 掉它）。 */
-  .cd-chat-chatBox-action :global(.cd-chat-chatBox-action-btn) {
+  :global(.cd-chat-chatBox-action .cd-chat-chatBox-action-btn) {
     color: var(--cd-chat-chatBox-action-icon);
   }
-  .cd-chat-chatBox-action :global(.cd-chat-chatBox-action-btn:hover) {
+  :global(.cd-chat-chatBox-action .cd-chat-chatBox-action-btn:hover) {
     color: var(--cd-chat-chatBox-action-icon-hover);
   }
   .cd-chat-chatBox-action-icon-flip {
@@ -248,13 +262,13 @@
   /* 删除二次确认展开期间强制操作区常驻可见（对齐 Semi -action-show），
      覆盖默认 visibility:hidden，鼠标移出 chatBox 去点确认/取消按钮时操作区不消失。
      最后一条 assistant 消息（finished 态）同样恒 -show（对齐 Semi showReset && finished）。 */
-  .cd-chat-chatBox-action.cd-chat-chatBox-action-show {
+  :global(.cd-chat-chatBox-action.cd-chat-chatBox-action-show) {
     visibility: visible;
   }
   /* -hidden 优先级最高（对齐 Semi `&.-hidden, &:hover.-hidden { hidden }`）：loading/incomplete
      消息即使命中 -show 或 hover 也不显示操作区，覆盖上面两条 visible 规则。 */
-  .cd-chat-chatBox-action.cd-chat-chatBox-action-hidden,
-  .cd-chat-chatBox-action.cd-chat-chatBox-action-hidden.cd-chat-chatBox-action-show {
+  :global(.cd-chat-chatBox-action.cd-chat-chatBox-action-hidden),
+  :global(.cd-chat-chatBox-action.cd-chat-chatBox-action-hidden.cd-chat-chatBox-action-show) {
     visibility: hidden;
   }
   .cd-chat-chatBox-action-delete-wrap {

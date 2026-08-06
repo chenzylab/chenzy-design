@@ -106,19 +106,19 @@ export interface RenderContentProps {
   className?: string;
 }
 
-export interface DefaultActionNodes {
-  copy?: Snippet;
-  like?: Snippet;
-  dislike?: Snippet;
-  reset?: Snippet;
-  delete?: Snippet;
+export interface DefaultActionNodeObj {
+  copyNode?: Snippet;
+  likeNode?: Snippet;
+  dislikeNode?: Snippet;
+  resetNode?: Snippet;
+  deleteNode?: Snippet;
 }
 
 export interface RenderActionProps {
   message?: Message;
   defaultActions?: Snippet;
   className?: string;
-  defaultActionsObj?: DefaultActionNodes;
+  defaultActionsObj?: DefaultActionNodeObj;
 }
 
 export interface FullChatBoxNodes {
@@ -140,7 +140,7 @@ export interface RenderFullChatBoxProps {
 
 <DemoBox code={customRenderSrc}><CustomRender /></DemoBox>
 
-鼠标移动到会话上，即可显示会话操作区，通过 `renderChatBoxAction` 自定义渲染操作区。`defaultActionsObj` 提供拆分好的默认操作节点（copy / like / dislike / reset / delete），可与自定义节点（如 Dropdown 菜单）自由组合。
+鼠标移动到会话上，即可显示会话操作区，通过 `renderChatBoxAction` 自定义渲染操作区。`defaultActionsObj` 提供拆分好的默认操作节点（copyNode / likeNode / dislikeNode / resetNode / deleteNode），可与自定义节点（如 Dropdown 菜单）自由组合。
 
 <DemoBox code={customActionSrc}><CustomAction /></DemoBox>
 

@@ -20,6 +20,6 @@ export type {
   RenderActionProps,
   RenderFullChatBoxProps,
   RenderHintBoxProps,
-  DefaultActionNodes,
+  DefaultActionNodeObj,
   FullChatBoxNodes,
 } from './types.js';
