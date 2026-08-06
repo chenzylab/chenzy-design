@@ -585,6 +585,8 @@ export interface Locale {
     copied: string;
     /** delete-message action aria-label */
     delete: string;
+    /** 删除消息二次确认气泡文案（对齐 Semi Chat.deleteConfirm） */
+    deleteConfirm: string;
     /** reset/regenerate-message action aria-label */
     reset: string;
     /** like/good-feedback action aria-label */

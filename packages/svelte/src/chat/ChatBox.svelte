@@ -18,6 +18,7 @@
     type ChatMode,
   } from '@chenzy-design/core';
   import { useLocale } from '../locale-provider/index.js';
+  import Divider from '../divider/Divider.svelte';
   import ChatBoxAvatar from './ChatBoxAvatar.svelte';
   import ChatBoxTitle from './ChatBoxTitle.svelte';
   import ChatBoxContent from './ChatBoxContent.svelte';
@@ -114,9 +115,7 @@
   {#if renderDivider}
     {@render renderDivider(message)}
   {:else}
-    <div class="cd-chat-divider" role="separator">
-      {loc().t('Chat.clearContext')}
-    </div>
+    <Divider class="cd-chat-divider">{loc().t('Chat.clearContext')}</Divider>
   {/if}
 {:else if renderFullChatBox}
   {@render renderFullChatBox({
@@ -207,12 +206,9 @@
     max-width: calc(100% - var(--cd-chat-chatBox-columnGap) - var(--cd-chat-chatBox-avatar-width));
   }
 
-  /* —— divider（对齐 Semi -divider） —— */
-  .cd-chat-divider {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
+  /* —— divider（对齐 Semi -divider：叠加在 Divider 组件自身布局之上的文字/间距覆盖，
+       不再自建 flex 布局——真正的分割线两侧横线由 Divider 组件负责） —— */
+  :global(.cd-chat-divider) {
     color: var(--cd-chat-divider);
     font-size: var(--cd-chat-divider-font-size);
     font-weight: var(--cd-chat-divider-font-weight);

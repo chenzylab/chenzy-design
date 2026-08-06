@@ -16,6 +16,7 @@
   } from '@chenzy-design/icons';
   import { useLocale } from '../locale-provider/index.js';
   import Button from '../button/Button.svelte';
+  import Popconfirm from '../popconfirm/Popconfirm.svelte';
   import type { RenderActionProps } from './types.js';
 
   interface Props {
@@ -52,6 +53,30 @@
     }
     onMessageCopy?.(message);
   }
+
+  // 删除二次确认（对齐 Semi chatBoxActionFoundation showDeletePopup/hideDeletePopup）：
+  // deleteVisible 控制 Popconfirm 显隐；showAction 在确认气泡展开期间强制操作区常驻可见
+  // （鼠标为点确认/取消移出 chatBox 时，纯 CSS :hover 会让操作区连带气泡一起消失）。
+  // hideDeletePopup 关闭气泡后延迟 150ms 再收起操作区，避免 visible 直接联动致操作区闪动。
+  let deleteVisible = $state(false);
+  let showAction = $state(false);
+
+  function showDeletePopup(): void {
+    deleteVisible = true;
+    showAction = true;
+  }
+
+  function hideDeletePopup(): void {
+    deleteVisible = false;
+    setTimeout(() => {
+      showAction = false;
+    }, 150);
+  }
+
+  function confirmDelete(): void {
+    onMessageDelete?.(message);
+    hideDeletePopup();
+  }
 </script>
 
 {#if renderChatBoxAction}
@@ -72,7 +97,7 @@
 {/if}
 
 {#snippet defaultActions()}
-  <div class="cd-chat-chatBox-action">
+  <div class="cd-chat-chatBox-action" class:cd-chat-chatBox-action-show={showAction}>
     {@render actionCopy()}
     {#if lastChat}
       {@render actionReset()}
@@ -151,16 +176,27 @@
 {/snippet}
 
 {#snippet actionDelete()}
-  <Button
-    class="cd-chat-chatBox-action-btn"
-    theme="borderless"
-    type="tertiary"
-    size="small"
-    onclick={() => onMessageDelete?.(message)}
-    aria-label={loc().t('Chat.delete')}
-    title={loc().t('Chat.delete')}
-    icon={deleteIcon}
-  />
+  <Popconfirm
+    trigger="custom"
+    visible={deleteVisible}
+    title={loc().t('Chat.deleteConfirm')}
+    position="top"
+    onConfirm={confirmDelete}
+    onCancel={hideDeletePopup}
+  >
+    <span class="cd-chat-chatBox-action-delete-wrap">
+      <Button
+        class="cd-chat-chatBox-action-btn"
+        theme="borderless"
+        type="tertiary"
+        size="small"
+        onclick={showDeletePopup}
+        aria-label={loc().t('Chat.delete')}
+        title={loc().t('Chat.delete')}
+        icon={deleteIcon}
+      />
+    </span>
+  </Popconfirm>
 {/snippet}
 {#snippet deleteIcon()}<IconDeleteStroked />{/snippet}
 
@@ -188,6 +224,14 @@
   .cd-chat-chatBox-action-icon-flip {
     display: inline-flex;
     transform: scaleY(-1);
+  }
+  /* 删除二次确认展开期间强制操作区常驻可见（对齐 Semi -action-show），
+     覆盖默认 visibility:hidden，鼠标移出 chatBox 去点确认/取消按钮时操作区不消失。 */
+  .cd-chat-chatBox-action.cd-chat-chatBox-action-show {
+    visibility: visible;
+  }
+  .cd-chat-chatBox-action-delete-wrap {
+    display: inline-flex;
   }
 
   /* —— RTL（对齐 Semi chat/rtl.scss）：重做图标水平翻转（箭头指向随书写方向） —— */
