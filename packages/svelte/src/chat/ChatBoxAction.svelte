@@ -6,7 +6,7 @@
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
-  import type { Message } from '@chenzy-design/core';
+  import { CHAT_ROLE, MESSAGE_STATUS, type Message } from '@chenzy-design/core';
   import {
     IconCopyStroked,
     IconLikeThumb,
@@ -68,6 +68,15 @@
   let deleteVisible = $state(false);
   let showAction = $state(false);
 
+  // 最后一条 assistant 消息（有 reset 按钮）在非 loading/incomplete 状态下操作区常驻可见，
+  // 无需 hover（对齐 Semi chatBoxAction.tsx：wrapCls 的 `-show` = showReset && finished || showAction，
+  // showReset = lastChat && role === assistant；finished = status 不是 loading/incomplete）。
+  const showReset = $derived(lastChat && message.role === CHAT_ROLE.ASSISTANT);
+  const finished = $derived(
+    message.status !== MESSAGE_STATUS.LOADING && message.status !== MESSAGE_STATUS.INCOMPLETE,
+  );
+  const alwaysShow = $derived((showReset && finished) || showAction);
+
   function showDeletePopup(): void {
     deleteVisible = true;
     showAction = true;
@@ -89,7 +98,7 @@
 {#if renderChatBoxAction}
   {@render renderChatBoxAction({
     message,
-    className: 'cd-chat-chatBox-action',
+    className: `cd-chat-chatBox-action${alwaysShow ? ' cd-chat-chatBox-action-show' : ''}${!finished ? ' cd-chat-chatBox-action-hidden' : ''}`,
     defaultActions,
     defaultActionsObj: {
       copy: actionCopy,
@@ -104,7 +113,11 @@
 {/if}
 
 {#snippet defaultActions()}
-  <div class="cd-chat-chatBox-action" class:cd-chat-chatBox-action-show={showAction}>
+  <div
+    class="cd-chat-chatBox-action"
+    class:cd-chat-chatBox-action-show={alwaysShow}
+    class:cd-chat-chatBox-action-hidden={!finished}
+  >
     {@render actionCopy()}
     {#if lastChat}
       {@render actionReset()}
@@ -233,9 +246,16 @@
     transform: scaleY(-1);
   }
   /* 删除二次确认展开期间强制操作区常驻可见（对齐 Semi -action-show），
-     覆盖默认 visibility:hidden，鼠标移出 chatBox 去点确认/取消按钮时操作区不消失。 */
+     覆盖默认 visibility:hidden，鼠标移出 chatBox 去点确认/取消按钮时操作区不消失。
+     最后一条 assistant 消息（finished 态）同样恒 -show（对齐 Semi showReset && finished）。 */
   .cd-chat-chatBox-action.cd-chat-chatBox-action-show {
     visibility: visible;
+  }
+  /* -hidden 优先级最高（对齐 Semi `&.-hidden, &:hover.-hidden { hidden }`）：loading/incomplete
+     消息即使命中 -show 或 hover 也不显示操作区，覆盖上面两条 visible 规则。 */
+  .cd-chat-chatBox-action.cd-chat-chatBox-action-hidden,
+  .cd-chat-chatBox-action.cd-chat-chatBox-action-hidden.cd-chat-chatBox-action-show {
+    visibility: hidden;
   }
   .cd-chat-chatBox-action-delete-wrap {
     display: inline-flex;

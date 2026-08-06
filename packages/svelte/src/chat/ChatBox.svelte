@@ -183,7 +183,9 @@
     column-gap: var(--cd-chat-chatBox-columnGap);
   }
 
-  .cd-chat-chatBox:hover :global(.cd-chat-chatBox-action) {
+  /* -hidden 态（loading/incomplete 消息）即使 hover 也不显示操作区（对齐 Semi
+     `:hover { .action:not(.-hidden) { visible } }`：内容未生成完整时不该出现复制/删除等操作）。 */
+  .cd-chat-chatBox:hover :global(.cd-chat-chatBox-action:not(.cd-chat-chatBox-action-hidden)) {
     visibility: visible;
   }
 
