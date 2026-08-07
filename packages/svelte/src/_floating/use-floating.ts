@@ -217,12 +217,40 @@ export function useFloating(
     onPlacement?.({ placement: result.placement, arrowOffset: result.arrowOffset });
   }
 
-  function schedule() {
-    if (frame) return;
+  // Last trigger rect seen by the chase loop, to detect when native momentum/
+  // kinetic scrolling (trackpad fling, smooth-scroll) has actually settled.
+  let lastChaseX = 0;
+  let lastChaseY = 0;
+  let stableFrames = 0;
+
+  // 'scroll' events are not guaranteed to fire once per visual frame: the
+  // browser may coalesce/throttle them (most visibly during trackpad momentum
+  // scrolling), dispatching only one or two events for a fling that spans many
+  // frames. A single schedule()-then-stop reposition can therefore snapshot the
+  // trigger mid-fling and then never correct itself once the fling settles,
+  // leaving the popup stuck away from the trigger. Chase: keep repositioning on
+  // every rAF until the trigger's rect stops moving for two consecutive frames,
+  // not just once after the triggering event.
+  function chase() {
     frame = window.requestAnimationFrame(() => {
       frame = 0;
       position();
+      const r = trigger.getBoundingClientRect();
+      if (r.x === lastChaseX && r.y === lastChaseY) {
+        stableFrames++;
+      } else {
+        stableFrames = 0;
+        lastChaseX = r.x;
+        lastChaseY = r.y;
+      }
+      if (stableFrames < 2) chase();
     });
+  }
+
+  function schedule() {
+    stableFrames = 0;
+    if (frame) return;
+    chase();
   }
 
   // initial position before paint, then keep aligned on scroll/resize.

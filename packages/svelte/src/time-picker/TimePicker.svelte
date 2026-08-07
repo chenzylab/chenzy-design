@@ -36,8 +36,8 @@
   import { strings } from './constants.js';
   import {
     createTimePickerState,
-    toDate,
     type TimeInputValue,
+    type Pair,
   } from './time-picker-foundation.svelte.js';
 
   type Size = 'small' | 'default' | 'large';
@@ -252,6 +252,9 @@
     disabledTime,
     onChange,
     onOpenChange,
+    formatDisplay,
+    rangeSeparator,
+    inputReadOnly,
   }));
 
   const isRange = $derived(st.isRange);
@@ -274,7 +277,7 @@
   function onComboboxChange(panelIndex: 0 | 1, timeStampValue: number) {
     const t = new Date(timeStampValue);
     st.commit(panelIndex, t.getHours(), t.getMinutes(), t.getSeconds());
-    invalid = false; // 面板选择是有效操作，清 invalid（对齐 Semi）
+    st.clearInvalid(); // 面板选择是有效操作，清 invalid（对齐 Semi）
   }
 
   /**
@@ -307,67 +310,33 @@
     placeholder ?? loc().t(isRange ? 'TimePicker.placeholder.timeRange' : 'TimePicker.placeholder.time'),
   );
 
-  const displayText = $derived.by(() => {
+  function formatDisplay(pair: Pair): string {
     if (isRange) {
-      const [s, e] = currentPair;
+      const [s, e] = pair;
       if (!s && !e) return '';
       return `${s ? displayOne(s) : ''}${rangeSeparator}${e ? displayOne(e) : ''}`;
     }
-    return current ? displayOne(current) : '';
-  });
+    return pair[0] ? displayOne(pair[0]) : '';
+  }
 
   const hasValue = $derived(isRange ? currentPair[0] !== null || currentPair[1] !== null : current !== null);
 
   // --- 触发器可键入：解析输入串回写（镜像 Semi inputFoundation.handleInputChange/handleBlur）---
-  // 输入过程只做本地展示，Enter/Blur 时解析并提交（单选整串 → 时间；范围按 rangeSeparator 拆两端）。
-  let inputDraft = $state<string | null>(null);
-  const inputValue = $derived(inputDraft ?? displayText);
-  // invalid 校验态（对齐 Semi foundation invalid）：手输非法/无法解析时置 true，触发器显示 error 样式。
-  let invalid = $state(false);
-
-  function parseAndCommit(raw: string) {
-    if (inputReadOnly) return;
-    const text = raw.trim();
-    if (text === '') {
-      st.emit([null, null]);
-      inputDraft = null;
-      invalid = false;
-      return;
-    }
-    if (isRange) {
-      const parts = text.split(rangeSeparator.trim() === '' ? '~' : rangeSeparator.trim());
-      const s = parts[0] ? toDate(parts[0].trim()) : null;
-      const e = parts[1] ? toDate(parts[1].trim()) : null;
-      if (s || e) {
-        st.emit([s, e]);
-        invalid = false;
-      } else {
-        invalid = true; // 两端都解析失败
-      }
-    } else {
-      const d = toDate(text);
-      if (d) {
-        st.emit([d, currentPair[1]]);
-        invalid = false;
-      } else {
-        invalid = true; // 解析失败：标记 invalid，回落展示但给 error 反馈（对齐 Semi）
-      }
-    }
-    inputDraft = null;
-  }
+  // 草稿态/invalid/解析提交全在 foundation（time-picker-foundation.svelte.ts），本文件只转发 DOM 事件。
+  const inputValue = $derived(st.inputValue);
+  const invalid = $derived(st.invalid);
 
   function onInputChange(v: string) {
-    inputDraft = v;
+    st.onInputChange(v);
   }
   function onInputBlur(e: FocusEvent) {
-    if (inputDraft !== null) parseAndCommit(inputDraft);
+    st.onInputBlur();
     onBlur?.(e);
   }
   function onInputKeydown(e: KeyboardEvent) {
     if (disabled) return;
     if (e.key === 'Enter') {
-      if (inputDraft !== null) parseAndCommit(inputDraft);
-      setOpen(true);
+      st.commitDraftAndOpen();
     } else if (e.key === 'ArrowDown') {
       if (!isOpen) setOpen(true);
     } else if (e.key === 'Escape') {
@@ -380,8 +349,7 @@
 
   function clear() {
     if (disabled) return;
-    inputDraft = null;
-    st.emit([null, null]);
+    st.clear();
   }
 
   // 时间列面板（h/m/s/ampm 滚轮）已拆分为 Combobox（复用，对齐 Semi）；此处仅保留触发器/浮层/值模型。
@@ -710,7 +678,7 @@
   }
   /* 双列中间分割线（左列 body 右侧描边）。 */
   .cd-time-picker-lists :global(.cd-scrolllist:not(:last-child) .cd-scrolllist-body) {
-    border-inline-end: var(--cd-width-time-picker-range-panel-scrolllist-body-border) solid var(--cd-color-time-picker-range-picker-panel-split-border);
+    border-right: var(--cd-width-time-picker-range-panel-scrolllist-body-border) solid var(--cd-color-time-picker-range-picker-panel-split-border);
   }
   /* range 面板里 body 与 header 的 padding 覆盖为 0（镜像 Semi timePicker.scss L111-115
      `.semi-scrolllist { .semi-scrolllist-body, .semi-scrolllist-header { padding: 0 } }`）。
@@ -725,5 +693,14 @@
     .cd-time-picker-panel {
       transition: none;
     }
+  }
+
+  /* —— RTL（逐条对齐 Semi timePicker/rtl.scss）——
+     面板/range 分割线部分 Semi 挂在 `.semi-portal-rtl` 上：面板 portal 到 body 后脱离
+     `.semi-rtl`/`.cd-rtl` 祖先，而 `.semi-portal-rtl` 在 Semi 全仓 51 处 rtl.scss 引用却
+     0 处被赋值（上游死代码，见 Layout/Space 同类注释），故面板部分本就不生效，此处不搬。
+     仅触发器根节点（不 portal，`.cd-rtl` 祖先选择器可达）落地方向镜像。 */
+  :global(.cd-rtl) .cd-time-picker {
+    direction: rtl;
   }
 </style>
