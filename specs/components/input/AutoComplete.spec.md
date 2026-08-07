@@ -87,7 +87,7 @@ AutoComplete（输入联想补全）是一个文本输入框，用户键入时�
 | onFocus | `(e: FocusEvent) => void` | `undefined` |  |
 | onClear | `() => void` | `undefined` |  |
 | autoFocus | `boolean` | `false` | 挂载自动聚焦 |
-| position | `'bottomLeft'\|'bottomRight'\|'topLeft'\|'topRight'` | `'bottomLeft'` | 浮层位置 |
+| position | `'top'\|'topLeft'\|'topRight'\|'left'\|'leftTop'\|'leftBottom'\|'right'\|'rightTop'\|'rightBottom'\|'bottom'\|'bottomLeft'\|'bottomRight'` | `'bottomLeft'` | 浮层位置（对齐 Semi Tooltip 12 方位） |
 | maxHeight | `number\|string` | `300` | 下拉浮层最大高度，number→px（对齐 Semi 默认 300） |
 | zIndex | `number` | `undefined` | 下拉浮层 z-index（对齐 Semi） |
 | class | `string` | `''` | 根节点 className |

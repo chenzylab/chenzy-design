@@ -18,6 +18,10 @@
   暂缓（本轮保留自绘）：
   - 下拉浮层用 use:floating（与本库 Select 同架构）承载，未包 <Popover>：Popover 的 .cd-popover 卡片
     结构/内边距面向气泡卡而非选项列表，Select 亦直接用 use:floating；保持二者一致的 -option-list 结构。
+  - position 复用 tooltip/placement.ts 的 Semi 12 方位映射（Semi AutoComplete position 类型即 Tooltip
+    Position，文档明确「可选值参考 Tooltip position」），不含 …Over 覆盖态（AutoComplete 无 insetInput
+    覆盖场景，Semi 本身也未在此使用）。
+  - 单个候选项渲染拆分至 Option.svelte（对齐 Semi index.tsx + option.tsx 两文件结构）。
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
@@ -26,8 +30,9 @@
   import { floating } from '../_floating/use-floating.js';
   import Input from '../input/Input.svelte';
   import Spin from '../spin/Spin.svelte';
-  import Highlight from '../highlight/Highlight.svelte';
+  import Option from './Option.svelte';
   import { getInputGroupContext } from '../input/context.js';
+  import { positionToPlacement, type Position } from '../tooltip/placement.js';
 
   type ItemValue = string | number;
   type Item = ItemValue | ({ value: ItemValue; label?: string; disabled?: boolean } & Record<string, unknown>);
@@ -36,7 +41,6 @@
   type NormalizedItem = { value: ItemValue; label: string; disabled: boolean } & Record<string, unknown>;
   type Size = 'small' | 'large' | 'default';
   type ValidateStatus = 'default' | 'warning' | 'error';
-  type Position = 'bottomLeft' | 'bottomRight' | 'topLeft' | 'topRight';
 
   interface Props {
     /** 受控输入值（string | number）。 */
@@ -103,7 +107,7 @@
     onClear?: () => void;
     /** 挂载自动聚焦。 */
     autoFocus?: boolean;
-    /** 浮层位置。 */
+    /** 浮层位置（对齐 Semi Tooltip 12 方位 position）。 */
     position?: Position;
     /** 浮层溢出视口时自动翻转到反向 placement（默认 true，对齐 Semi autoAdjustOverflow）。 */
     autoAdjustOverflow?: boolean;
@@ -358,16 +362,7 @@
     return Object.entries(dropdownStyle).map(([k, v]) => `${k}: ${v}`).join('; ');
   });
 
-  const dropdownPlacement = $derived(
-    (
-      {
-        bottomLeft: 'bottomStart',
-        bottomRight: 'bottomEnd',
-        topLeft: 'topStart',
-        topRight: 'topEnd',
-      } as const
-    )[position],
-  );
+  const dropdownPlacement = $derived(positionToPlacement(position));
 
   // 根 wrapper class：尺寸/校验态/禁用外观全由内部 <Input> 承担，此处只留语义状态钩子 + 用户 class。
   const cls = $derived(
@@ -381,10 +376,10 @@
       .join(' '),
   );
 
-  // 浮层最大高度：number→px，string 原样（对齐 Semi maxHeight 默认 300）。
+  // 浮层最大高度：number→px，string 原样（对齐 Semi maxHeight 默认 300；Semi style.maxHeight 是物理属性）。
   const maxHeightStyle = $derived.by(() => {
     const v = typeof maxHeight === 'number' ? `${maxHeight}px` : maxHeight;
-    return `max-block-size: ${v}`;
+    return `max-height: ${v}`;
   });
 
   const zIndexStyle = $derived(zIndex === undefined ? '' : `z-index: ${zIndex}`);
@@ -418,41 +413,6 @@
     </span>
   {/if}
   {#if typeof suffix === 'string'}{suffix}{:else if suffix}{@render suffix()}{/if}
-{/snippet}
-
-{#snippet optionRow(opt: NormalizedItem, i: number)}
-  <!-- svelte-ignore a11y_click_events_have_key_events -->
-  <div
-    class="cd-autocomplete-option"
-    class:cd-autocomplete-option-focused={i === activeIndex}
-    class:cd-autocomplete-option-selected={opt.label === displayValue}
-    class:cd-autocomplete-option-disabled={opt.disabled}
-    id={`${listId}-opt-${i}`}
-    role="option"
-    aria-selected={i === activeIndex}
-    aria-disabled={opt.disabled || undefined}
-    tabindex="-1"
-    onpointerenter={() => {
-      if (!opt.disabled) activeIndex = i;
-    }}
-    onclick={() => commit(opt)}
-  >
-    {#if renderItem}
-      {@render renderItem({ item: opt, isSelected: opt.label === displayValue })}
-    {:else}
-      <div class="cd-autocomplete-option-text">
-        {#if displayValue}
-          <Highlight
-            sourceString={opt.label}
-            searchWords={[displayValue]}
-            highlightClassName="cd-autocomplete-option-keyword"
-          />
-        {:else}
-          {opt.label}
-        {/if}
-      </div>
-    {/if}
-  </div>
 {/snippet}
 
 <div class={cls} style={style || undefined} bind:this={rootEl}>
@@ -512,16 +472,47 @@
           <Spin size="small" />
         </div>
       {:else if options.length === 0}
-        <div class="cd-autocomplete-option cd-autocomplete-option-empty">
-          {#if emptyContent}
-            {#if typeof emptyContent === 'string'}{emptyContent}{:else}{@render emptyContent()}{/if}
-          {:else}
-            {loc().t('AutoComplete.emptyText')}
-          {/if}
-        </div>
+        {#snippet defaultEmptyText()}
+          {loc().t('AutoComplete.emptyText')}
+        {/snippet}
+        <Option
+          empty
+          emptyContent={typeof emptyContent === 'string' ? emptyContent : (emptyContent ?? defaultEmptyText)}
+          onSelect={() => {}}
+        />
       {:else}
         {#each options as opt, i (opt.value)}
-          {@render optionRow(opt, i)}
+          {#if renderItem}
+            <Option
+              value={opt.value}
+              label={opt.label}
+              disabled={opt.disabled}
+              selected={opt.label === displayValue}
+              focused={i === activeIndex}
+              inputValue={displayValue}
+              id={`${listId}-opt-${i}`}
+              onSelect={() => commit(opt)}
+              onMouseEnter={() => {
+                if (!opt.disabled) activeIndex = i;
+              }}
+            >
+              {@render renderItem({ item: opt, isSelected: opt.label === displayValue })}
+            </Option>
+          {:else}
+            <Option
+              value={opt.value}
+              label={opt.label}
+              disabled={opt.disabled}
+              selected={opt.label === displayValue}
+              focused={i === activeIndex}
+              inputValue={displayValue}
+              id={`${listId}-opt-${i}`}
+              onSelect={() => commit(opt)}
+              onMouseEnter={() => {
+                if (!opt.disabled) activeIndex = i;
+              }}
+            />
+          {/if}
         {/each}
       {/if}
     </div>
@@ -529,11 +520,18 @@
 </div>
 
 <style>
-  /* 根 wrapper：触发器整个复用 <Input>（自带 wrapper/边框/背景/尺寸/校验态），此处只做定位 + 占宽。 */
+  /*
+    根 wrapper：对齐 Semi .semi-autocomplete（cursor/display/vertical-align/box-sizing）；
+    position:relative + width:100% 为 use:floating 定位锚点的本库补偿（Semi 靠 Popover trigger 处理，
+    见文件头「暂缓」说明），width 用物理属性对齐 Semi 写法习惯。
+  */
   .cd-autocomplete {
-    position: relative;
+    cursor: text;
     display: inline-flex;
-    inline-size: 100%;
+    vertical-align: middle;
+    box-sizing: border-box;
+    position: relative;
+    width: 100%;
   }
   /* renderSelectedItem 折入 Input suffix 时的内联容器。 */
   .cd-autocomplete-selected {
@@ -542,79 +540,30 @@
     flex: 0 0 auto;
   }
 
-  /* --- 下拉列表：对齐 Semi .semi-autocomplete-option-list --- */
+  /*
+    下拉列表：对齐 Semi .semi-autocomplete-option-list（overflow/定位）。
+    Semi 的卡片背景/圆角/阴影由外层 <Popover> 提供；本库未包 Popover（见文件头注释），
+    故在此自行补上等价视觉，使浮层呈现为卡片而非透明容器。
+  */
   .cd-autocomplete-option-list {
     /* 定位由 use:floating 接管；此处只定义外观 + 滚动。 */
     z-index: var(--cd-z-popover);
     overflow-x: hidden;
     overflow-y: auto;
-    padding-block: var(--cd-spacing-extra-tight);
+    padding-top: var(--cd-spacing-extra-tight);
+    padding-bottom: var(--cd-spacing-extra-tight);
     background: var(--cd-color-bg-3);
     border-radius: var(--cd-border-radius-medium);
     box-shadow: var(--cd-shadow-elevated);
   }
-  /* 选项：对齐 Semi .semi-autocomplete-option */
-  .cd-autocomplete-option {
-    display: flex;
-    flex-wrap: nowrap;
-    align-items: center;
-    position: relative;
-    box-sizing: border-box;
-    word-break: break-all;
-    padding-inline-start: var(--cd-autocomplete-option-padding-left);
-    padding-inline-end: var(--cd-autocomplete-option-padding-right);
-    padding-block-start: var(--cd-autocomplete-option-padding-top);
-    padding-block-end: var(--cd-autocomplete-option-padding-bottom);
-    color: var(--cd-autocomplete-option-main-text);
-    background-color: var(--cd-autocomplete-option-bg-default);
-    border-radius: var(--cd-autocomplete-option-radius);
-    cursor: pointer;
-  }
-  .cd-autocomplete-option:first-of-type {
-    margin-block-start: var(--cd-autocomplete-option-first-margin-top);
-  }
-  .cd-autocomplete-option:last-of-type {
-    margin-block-end: var(--cd-autocomplete-option-last-margin-bottom);
-  }
-  .cd-autocomplete-option:active {
-    background-color: var(--cd-autocomplete-option-bg-active);
-  }
-  /* focused（键盘高亮 / 悬停）对齐 Semi .semi-autocomplete-option-focused */
-  .cd-autocomplete-option-focused {
-    background-color: var(--cd-autocomplete-option-bg-hover);
-  }
-  /* selected 对齐 Semi .semi-autocomplete-option-selected（加粗） */
-  .cd-autocomplete-option-selected {
-    font-weight: var(--cd-font-weight-bold);
-  }
-  .cd-autocomplete-option-disabled {
-    color: var(--cd-autocomplete-option-disabled-text);
-    cursor: not-allowed;
-  }
-  /* option-text 层对齐 Semi .semi-autocomplete-option-text */
-  .cd-autocomplete-option-text {
-    display: flex;
-    flex-wrap: wrap;
-    white-space: pre;
-  }
-  /* 关键词高亮对齐 Semi .semi-autocomplete-option-keyword（primary 色 + 600 字重） */
-  :global(.cd-autocomplete-option-keyword) {
-    color: var(--cd-autocomplete-option-keyword-text);
-    background-color: inherit;
-    font-weight: var(--cd-autocomplete-keyword-font-weight);
-  }
-  /* 空态：对齐 Semi .semi-autocomplete-option-empty（居中 + disabled 文字） */
-  .cd-autocomplete-option-empty {
-    justify-content: center;
-    color: var(--cd-autocomplete-option-disabled-text);
-    cursor: not-allowed;
-  }
   /* 加载区：对齐 Semi .semi-autocomplete-loading-wrapper（复用 Spin） */
   .cd-autocomplete-loading-wrapper {
-    display: flex;
-    justify-content: center;
-    padding-block-start: var(--cd-autocomplete-loading-wrapper-padding-top);
-    padding-block-end: var(--cd-autocomplete-loading-wrapper-padding-bottom);
+    padding-top: var(--cd-autocomplete-loading-wrapper-padding-top);
+    padding-bottom: var(--cd-autocomplete-loading-wrapper-padding-bottom);
     cursor: not-allowed;
+    height: 20px;
+  }
+  .cd-autocomplete-loading-wrapper :global(.cd-spin) {
+    width: 100%;
   }
 </style>

@@ -11,16 +11,16 @@
 <div>
   <AutoComplete
     {data}
-    position="topLeft"
+    position="top"
     onSearch={change}
     placeholder="选项菜单在上方显示"
     style="width: 200px; margin: 10px"
   />
   <AutoComplete
     {data}
-    position="bottomRight"
+    position="rightTop"
     onSearch={change}
-    placeholder="选项菜单靠右显示"
+    placeholder="选项菜单在右侧显示"
     style="width: 200px; margin: 10px"
   />
 </div>
