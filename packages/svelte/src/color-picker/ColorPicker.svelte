@@ -145,7 +145,6 @@
 
 {#if usePopover}
   <Popover
-    trigger="click"
     {...popoverProps}
     class={['cd-color-picker-popover', popoverProps?.class].filter(Boolean).join(' ')}
     content={picker}
@@ -155,6 +154,8 @@
     {:else}
       <div
         class="cd-color-picker-popover-defaultchildren"
+        role="button"
+        tabindex="0"
         aria-label={loc().t('ColorPicker.hex')}
         style:background-color={currentColor.hex}
       ></div>

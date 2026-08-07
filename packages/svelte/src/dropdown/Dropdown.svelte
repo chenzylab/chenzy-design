@@ -24,7 +24,13 @@
 -->
 <script lang="ts">
   import { setContext, getContext, untrack, type Snippet } from 'svelte';
-  import { useId, useDismiss, type Placement, resolveDefault } from '@chenzy-design/core';
+  import {
+    useId,
+    useDismiss,
+    registerOverlayRoot,
+    type Placement,
+    resolveDefault,
+  } from '@chenzy-design/core';
   import { getGlobalPopupContainer } from '../config-provider/index.js';
   import { floating } from '../_floating/use-floating.js';
   import DropdownMenu from './DropdownMenu.svelte';
@@ -287,6 +293,13 @@
   // --- DOM 引用 ---
   let rootEl = $state<HTMLSpanElement | null>(null);
   let menuWrapperEl = $state<HTMLDivElement | null>(null);
+
+  // 全局浮层注册（见 core registerOverlayRoot 注释）：menu portal 到 body 后与祖先
+  // hover 浮层脱节，登记后祖先的 pointerleave 判断能识别"鼠标去了合法子浮层"。
+  $effect(() => {
+    if (!menuWrapperEl) return;
+    return registerOverlayRoot(menuWrapperEl);
+  });
 
   // floating 定位锚点：非嵌套时 = rootEl（inline-block span，有正常 rect）；
   // 嵌套时 rootEl 为 display:contents 的 span（rect 全 0，不可锚定），改锚定其内部真实元素

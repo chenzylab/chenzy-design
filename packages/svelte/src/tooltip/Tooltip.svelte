@@ -24,6 +24,8 @@
     useDismiss,
     useScrollLock,
     useFocusTrap,
+    registerOverlayRoot,
+    isInsideAnyOverlay,
     type Placement,
     type Side,
     resolveDefault,
@@ -311,8 +313,13 @@
     enterTimer = setTimeout(() => setOpen(true), mouseEnterDelay);
   }
 
-  function onPointerLeave() {
+  function onPointerLeave(e: PointerEvent) {
     if (!allowShow || isCustom || !triggers.includes('hover')) return;
+    // 鼠标去向若落在任一已注册浮层内（如本浮层内 Select 的 dropdown，portal 到
+    // body 后与本浮层是 DOM 兄弟节点而非子孙），不是真的离开——忽略这次 leave。
+    // 对齐 Semi：React 合成 mouseleave 对 portal 子浮层有天然容忍，原生
+    // pointerleave 靠此处显式判断补齐（见 registerOverlayRoot 注释）。
+    if (isInsideAnyOverlay(e.relatedTarget as Node | null)) return;
     clearTimers();
     leaveTimer = setTimeout(() => setOpen(false), mouseLeaveDelay);
   }
@@ -399,6 +406,14 @@
     if (isOpen) hasBeenOpened = true;
   });
   const shouldRender = $derived(isOpen || (hasBeenOpened && keepDOM));
+
+  // --- 全局浮层注册（见 registerOverlayRoot 注释）：本浮层挂载时登记，供祖先/兄弟
+  //     浮层的 pointerleave 判断"鼠标去向是否落在合法子浮层内"，避免嵌套浮层
+  //     （如本组件内的 Select 下拉）portal 到 body 后被误判为已离开。 ---
+  $effect(() => {
+    if (!popEl) return;
+    return registerOverlayRoot(popEl);
+  });
 
   // --- useDismiss (红线 #3)：Esc 对所有触发模式生效（WCAG 1.4.13 Content on Hover/Focus：
   //     hover/focus 浮层也须可由 Esc 关闭；Semi closeOnEsc 默认关仅指 click 触发的专用行为，

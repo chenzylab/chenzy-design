@@ -62,9 +62,7 @@ export const meta = {
     '--cd-spacing-color-picker-slider-margintop',
     '--cd-spacing-color-picker-datapart-margintop',
     '--cd-font-color-picker-inputnumbersuffix-fontsize',
-    // chenzy 补充消费段（Semi 无对应字面量 token；把手边长/滑块高走 props 同 Semi，不建 token）
-    '--cd-color-picker-handle-shadow',
-    // 跨组件共享语义 token
+    // 跨组件共享语义 token（focus-visible 环，Semi 无对应但属通用无障碍基建，非本组件自造视觉）
     '--cd-focus-ring',
   ],
 } as const;

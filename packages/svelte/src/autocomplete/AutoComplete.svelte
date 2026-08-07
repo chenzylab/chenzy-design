@@ -40,7 +40,7 @@
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
-  import { useId, useDismiss, resolveDefault } from '@chenzy-design/core';
+  import { useId, useDismiss, registerOverlayRoot, resolveDefault } from '@chenzy-design/core';
   import { useLocale } from '../locale-provider/index.js';
   import { floating } from '../_floating/use-floating.js';
   import Input from '../input/Input.svelte';
@@ -487,6 +487,13 @@
   let rootEl = $state<HTMLDivElement | null>(null);
   // 浮层经 use:floating portal 到 body，列入 extraTargets 避免误判 outsideClick。
   let dropdownEl = $state<HTMLDivElement | null>(null);
+
+  // 全局浮层注册（见 core registerOverlayRoot 注释）：dropdown portal 到 body 后与祖先
+  // hover 浮层脱节，登记后祖先的 pointerleave 判断能识别"鼠标去了合法子浮层"。
+  $effect(() => {
+    if (!dropdownEl) return;
+    return registerOverlayRoot(dropdownEl);
+  });
 
   $effect(() => {
     if (!isOpen || !rootEl) return;

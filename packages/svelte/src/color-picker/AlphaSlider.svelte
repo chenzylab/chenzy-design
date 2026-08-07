@@ -138,7 +138,6 @@
     border: var(--cd-width-color-picker-handle-border) solid
       var(--cd-color-color-picker-handle-border);
     border-radius: var(--cd-radius-color-picker-handle);
-    box-shadow: var(--cd-color-picker-handle-shadow);
     cursor: grab;
     pointer-events: none;
   }

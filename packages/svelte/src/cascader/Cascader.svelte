@@ -28,6 +28,7 @@
   import {
     useId,
     useDismiss,
+    registerOverlayRoot,
     conduct,
     toggleCheck,
     rovingKeyFromEvent,
@@ -1456,6 +1457,13 @@
   // --- DOM 引用：触发根 + portal 面板（定位由 use:floating action 接管）---
   let rootEl = $state<HTMLDivElement | null>(null);
   let panelEl = $state<HTMLDivElement | null>(null);
+
+  // 全局浮层注册（见 core registerOverlayRoot 注释）：panel portal 到 body 后与祖先
+  // hover 浮层脱节，登记后祖先的 pointerleave 判断能识别"鼠标去了合法子浮层"。
+  $effect(() => {
+    if (!panelEl) return;
+    return registerOverlayRoot(panelEl);
+  });
 
   // 同构 Slider.svelte isRtl()：读根节点 computed direction（非 document.documentElement，
   // 本库 RTL 靠 `:global(.cd-rtl) .cd-cascader { direction: rtl }` 作用域覆盖，只在组件

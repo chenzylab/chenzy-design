@@ -54,7 +54,7 @@
     IconTreeTriangleRight,
   } from '@chenzy-design/icons';
   import { floating } from '../_floating/use-floating.js';
-  import { useDismiss } from '@chenzy-design/core';
+  import { useDismiss, registerOverlayRoot } from '@chenzy-design/core';
   import { useLocale } from '../locale-provider/index.js';
   import {
     buildGridCols,
@@ -549,6 +549,13 @@
   // 各列漏斗按钮引用（trigger）+ 当前浮层引用（dismiss extraTargets）
   const filterTriggers: Record<string, HTMLButtonElement | null> = $state({});
   let filterPanelEl = $state<HTMLDivElement | null>(null);
+
+  // 全局浮层注册（见 core registerOverlayRoot 注释）：filter panel portal 到 body 后
+  // 与祖先 hover 浮层脱节，登记后祖先的 pointerleave 判断能识别"鼠标去了合法子浮层"。
+  $effect(() => {
+    if (!filterPanelEl) return;
+    return registerOverlayRoot(filterPanelEl);
+  });
 
   // 打开/关闭筛选浮层（统一入口：同步 temp 快照 + onFilterDropdownVisibleChange 通知）。
   function setFilterOpen(col: ColumnDef<T>, colKey: string, open: boolean) {
