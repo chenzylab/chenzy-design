@@ -102,4 +102,39 @@ export const cascaderTokens = {
   // —— 搜索结果扁平列表右内边距（组件消费）——
   // 值对齐 Semi：$spacing-cascader_flatten_list-paddingRight（64px，为层级面包屑留白）。独立字面量。
   'spacing-cascader-flatten-list-padding-right': { value: '64px', category: 'spacing', label: '扁平列表右内边距', usage: '级联选择搜索结果菜单右侧内边距（组件消费，RTL 下镜像为左）' },
+
+  // —— 触发器最小宽度 / 空态圆角（组件消费）——
+  // 值对齐 Semi：$width-cascader（80px，触发器最小宽度）/ $radius-cascader_option_empty（border-radius-medium，空态圆角）。
+  'width-cascader-trigger-min': { value: '80px', category: 'width', label: '触发器最小宽度', usage: '级联选择触发器最小宽度（组件消费）' },
+  'radius-cascader-option-empty': { value: 'var(--cd-border-radius-medium)', category: 'radius', label: '空态圆角', usage: '级联选择菜单空状态圆角' },
+
+  // —— 菜单项图标左右外边距（组件消费）——
+  // 值对齐 Semi：$spacing-cascader_empty_icon-marginRight（8px，tick/empty 图标右边距）/
+  // $spacing-cascader_option-icon-marginLeft（8px，展开箭头/loading 左边距）。均为独立字面量。
+  'spacing-cascader-empty-icon-margin-right': { value: '8px', category: 'spacing', label: '选中态图标右边距', usage: '级联选择菜单项 tick/empty 占位图标右侧外边距（组件消费）' },
+  'spacing-cascader-option-icon-margin-left': { value: '8px', category: 'spacing', label: '展开图标左边距', usage: '级联选择菜单项展开箭头/loading 图标左侧外边距（组件消费）' },
+
+  // —— warning / error 校验态触发器背景+描边（组件消费，触发器复用 Select token 之外的专属态）——
+  // 值对齐 Semi：$color-cascader_warning-*/$color-cascader_danger-*（与 Input 同源，warning 走
+  // warning-light-*，error 走 danger-light-*，focus 态描边分别用 warning/danger 主色非 light）。
+  'color-cascader-warning-bg-default': { value: 'var(--cd-color-warning-light-default)', category: 'color', label: 'warning 背景色', usage: '级联选择触发器警告背景颜色' },
+  'color-cascader-warning-border-default': { value: 'var(--cd-color-warning-light-default)', category: 'color', label: 'warning 描边色', usage: '级联选择触发器警告描边颜色' },
+  'color-cascader-warning-bg-hover': { value: 'var(--cd-color-warning-light-hover)', category: 'color', label: 'warning 背景色 - 悬浮', usage: '级联选择触发器警告背景颜色 - 悬浮' },
+  'color-cascader-warning-border-hover': { value: 'var(--cd-color-warning-light-hover)', category: 'color', label: 'warning 描边色 - 悬浮', usage: '级联选择触发器警告描边颜色 - 悬浮' },
+  'color-cascader-warning-bg-focus': { value: 'var(--cd-color-warning-light-default)', category: 'color', label: 'warning 背景色 - 选中', usage: '级联选择触发器警告背景颜色 - 选中' },
+  'color-cascader-warning-border-focus': { value: 'var(--cd-color-warning)', category: 'color', label: 'warning 描边色 - 选中', usage: '级联选择触发器警告描边颜色 - 选中' },
+  'color-cascader-warning-bg-active': { value: 'var(--cd-color-warning-light-active)', category: 'color', label: 'warning 背景色 - 按下', usage: '级联选择触发器警告背景颜色 - 按下' },
+  'color-cascader-warning-border-active': { value: 'var(--cd-color-warning-light-active)', category: 'color', label: 'warning 描边色 - 按下', usage: '级联选择触发器警告描边颜色 - 按下' },
+  'color-cascader-danger-bg-default': { value: 'var(--cd-color-danger-light-default)', category: 'color', label: 'error 背景色', usage: '级联选择触发器危险背景颜色' },
+  'color-cascader-danger-border-default': { value: 'var(--cd-color-danger-light-default)', category: 'color', label: 'error 描边色', usage: '级联选择触发器危险描边颜色' },
+  'color-cascader-danger-bg-hover': { value: 'var(--cd-color-danger-light-hover)', category: 'color', label: 'error 背景色 - 悬浮', usage: '级联选择触发器危险背景颜色 - 悬浮' },
+  'color-cascader-danger-border-hover': { value: 'var(--cd-color-danger-light-hover)', category: 'color', label: 'error 描边色 - 悬浮', usage: '级联选择触发器危险描边颜色 - 悬浮' },
+  'color-cascader-danger-bg-focus': { value: 'var(--cd-color-danger-light-default)', category: 'color', label: 'error 背景色 - 选中', usage: '级联选择触发器危险背景颜色 - 选中' },
+  'color-cascader-danger-border-focus': { value: 'var(--cd-color-danger)', category: 'color', label: 'error 描边色 - 选中', usage: '级联选择触发器危险描边颜色 - 选中' },
+  'color-cascader-danger-bg-active': { value: 'var(--cd-color-danger-light-active)', category: 'color', label: 'error 背景色 - 按下', usage: '级联选择触发器危险背景颜色 - 按下' },
+  'color-cascader-danger-border-active': { value: 'var(--cd-color-danger-light-active)', category: 'color', label: 'error 描边色 - 按下', usage: '级联选择触发器危险描边颜色 - 按下' },
+
+  // —— tag 禁用态背景（组件消费）——
+  // 值对齐 Semi：$color-cascader_tag_disabled-bg-default（transparent）。
+  'color-cascader-tag-disabled-bg-default': { value: 'transparent', category: 'color', label: 'tag 禁用背景色', usage: '级联选择菜单禁用 Tag 背景颜色' },
 } satisfies TokenGroup;

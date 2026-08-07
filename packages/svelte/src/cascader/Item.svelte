@@ -20,7 +20,7 @@
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
-  import { IconChevronRight, IconSpin } from '@chenzy-design/icons';
+  import { IconChevronRight, IconTick, IconSpin } from '@chenzy-design/icons';
   import Checkbox from '../checkbox/Checkbox.svelte';
   import { VirtualList } from '../virtual-list/index.js';
   import type { CascaderNode } from './types.js';
@@ -70,6 +70,8 @@
     emptyText: string;
     /** 空态自定义 Snippet（emptyContent 为函数时） */
     emptySnippet?: Snippet | undefined;
+    /** emptyContent === null 时完全不渲染空态 UI（对齐 Semi item.tsx renderEmpty） */
+    hideEmpty: boolean;
     /** 搜索结果虚拟滚动配置（对齐 Semi virtualizeInSearch） */
     virtualizeInSearch?: { height: number; width: number; itemSize: number } | undefined;
     /** 自定义搜索结果项渲染（对齐 Semi filterRender） */
@@ -86,6 +88,8 @@
     /** id 生成（供 aria-activedescendant 指向） */
     colItemId: (colIndex: number, value: Key) => string;
     flatItemId: (values: Key[]) => string;
+    /** 该列节点的父节点 id（对齐 Semi aria-owns：非首列时子项指向其父项 id） */
+    columnParentId: (colIndex: number) => string | undefined;
     /** 命中文本高亮拆分（搜索态，逐条 label 节点处理，Snippet 项原样保留） */
     highlightPathParts: (labelNodes: (string | Snippet)[]) => PathPart[];
 
@@ -120,6 +124,7 @@
     separator,
     emptyText,
     emptySnippet,
+    hideEmpty,
     virtualizeInSearch,
     filterRender,
     expandIcon,
@@ -130,6 +135,7 @@
     loadingLabel,
     colItemId,
     flatItemId,
+    columnParentId,
     highlightPathParts,
     isActiveAt,
     isKbActive,
@@ -179,8 +185,7 @@
       id={flatItemId(p.values)}
       class="cd-cascader-option cd-cascader-option-flatten"
       class:cd-cascader-option-active={isFlatActive(fi)}
-      role="option"
-      aria-selected={isFlatActive(fi)}
+      role="menuitem"
       aria-disabled={p.disabled || undefined}
       onclick={() => onSelectFlatPath(p)}
       tabindex={-1}
@@ -199,7 +204,6 @@
     <!-- 搜索结果虚拟滚动：仅在传入 virtualizeInSearch 且有命中时启用 -->
     <div
       class="cd-cascader-option-lists cd-cascader-flatten"
-      role="listbox"
       id={flatListId}
       aria-label={searchResultsLabel}
       style:inline-size="{virtualizeInSearch.width}px"
@@ -217,16 +221,17 @@
     </div>
   {:else}
     <ul
-      class="cd-cascader-option-lists cd-cascader-flatten"
-      role="listbox"
+      class={['cd-cascader-option-lists', 'cd-cascader-flatten', filteredPaths.length === 0 && 'cd-cascader-option-lists-empty'].filter(Boolean).join(' ')}
       id={flatListId}
       aria-label={searchResultsLabel}
     >
       {#if filteredPaths.length === 0}
-        {#if emptySnippet}
-          <li class="cd-cascader-option-empty">{@render emptySnippet()}</li>
-        {:else}
-          <li class="cd-cascader-option-empty">{emptyText}</li>
+        {#if !hideEmpty}
+          {#if emptySnippet}
+            <li class="cd-cascader-option-empty">{@render emptySnippet()}</li>
+          {:else}
+            <li class="cd-cascader-option-empty">{emptyText}</li>
+          {/if}
         {/if}
       {:else}
         {#each filteredPaths as p, fi (p.values.join('/'))}
@@ -236,15 +241,15 @@
     </ul>
   {/if}
 {:else}
-  <div class="cd-cascader-option-lists">
+  <div class={['cd-cascader-option-lists', (columns[0]?.length ?? 0) === 0 && 'cd-cascader-option-lists-empty'].filter(Boolean).join(' ')}>
     {#each columns as column, colIndex (colIndex)}
       <ul
         class="cd-cascader-option-list"
-        role="listbox"
+        role="menu"
         aria-label={columnLabel(colIndex + 1)}
         onscroll={(e) => onListScroll(e, colIndex)}
       >
-        {#if column.length === 0}
+        {#if column.length === 0 && !hideEmpty}
           {#if emptySnippet}
             <li class="cd-cascader-option-empty">{@render emptySnippet()}</li>
           {:else}
@@ -262,15 +267,28 @@
             class:cd-cascader-option-kbactive={isKbActive(colIndex, node)}
             class:cd-cascader-option-select={isSelectedLeaf(colIndex, node)}
             class:cd-cascader-option-disabled={node.disabled}
-            role="option"
-            aria-selected={isActiveAt(colIndex, node)}
+            role="menuitem"
+            aria-expanded={isActiveAt(colIndex, node)}
+            aria-haspopup={canExpand(node) || undefined}
             aria-disabled={node.disabled || undefined}
+            aria-owns={columnParentId(colIndex)}
             onclick={() => onSelectNode(colIndex, node)}
             onpointerenter={() => onHoverExpand(colIndex, node)}
             onpointerleave={onHoverLeave}
             tabindex={-1}
           >
             <span class="cd-cascader-option-label">
+              {#if !multiple}
+                <!-- 单选：选中态 tick / 未选中 empty 占位二选一必渲染（对齐 Semi renderIcon('tick'|'empty')，
+                     保证两态左侧文字起始位置一致，non-selected 也占据同样宽度）。 -->
+                {#if isSelectedLeaf(colIndex, node)}
+                  <span class="cd-cascader-option-icon cd-cascader-option-icon-active" aria-hidden="true">
+                    <IconTick aria-hidden="true" />
+                  </span>
+                {:else}
+                  <span class="cd-cascader-option-icon cd-cascader-option-icon-empty" aria-hidden="true"></span>
+                {/if}
+              {/if}
               {#if multiple}
                 <!-- 复用已对齐的 Checkbox：勾选由其 onChange 驱动 toggleCheckNode；
                      stopPropagation 阻止冒泡到 li（否则 onSelectNode 会二次触发）。 -->
@@ -296,11 +314,11 @@
               {/if}
             </span>
             {#if isLoading(node)}
-              <span class="cd-cascader-option-icon cd-cascader-option-spin-icon" aria-label={loadingLabel}>
+              <span class="cd-cascader-option-icon cd-cascader-option-spin-icon cd-cascader-option-icon-left" aria-label={loadingLabel}>
                 <IconSpin aria-hidden="true" />
               </span>
             {:else if canExpand(node)}
-              <span class="cd-cascader-option-icon" aria-hidden="true">
+              <span class="cd-cascader-option-icon cd-cascader-option-icon-left" aria-hidden="true">
                 {#if expandIcon}{@render expandIcon()}{:else}<IconChevronRight aria-hidden="true" />{/if}
               </span>
             {/if}
@@ -320,6 +338,12 @@
     margin: 0;
     padding: 0;
     height: var(--cd-height-cascader-option-list);
+  }
+  /* 空态：容器收缩为内容自适应高度并居中（对齐 Semi &-lists-empty，非固定 180px）。 */
+  .cd-cascader-option-lists-empty {
+    height: auto;
+    justify-content: center;
+    cursor: not-allowed;
   }
   /* 搜索结果扁平列表：单列纵向滚动 */
   .cd-cascader-option-lists.cd-cascader-flatten {
@@ -354,8 +378,13 @@
   .cd-cascader-option-empty {
     padding: var(--cd-spacing-cascader-option-empty-padding-y) var(--cd-spacing-cascader-option-empty-padding-x);
     color: var(--cd-color-cascader-option-empty-text-default);
+    border-radius: var(--cd-radius-cascader-option-empty);
+    margin: 0;
     text-align: center;
     cursor: not-allowed;
+  }
+  .cd-cascader-option-empty:hover {
+    background-color: transparent;
   }
   /* 对齐 Semi .semi-cascader-option：Semi 是全局 CSS，这个类名本身就是完整样式
      契约，不管元素渲染在哪里、由谁渲染都生效。本库 Svelte scoped 样式默认只对
@@ -373,7 +402,8 @@
        一层 gap 会让 checkbox 与文字间距变成 margin+gap 双倍叠加，比 Semi 更宽。 */
     color: var(--cd-color-cascader-option-main-text-default);
     cursor: pointer;
-    transition: background-color var(--cd-motion-duration-fast) var(--cd-motion-ease-standard);
+    /* 无过渡（对齐 Semi $transition_duration-cascader_option-bg 实际解析值为
+       --semi-transition_duration-none=0，hover/active 背景色瞬时切换，非渐变）。 */
     /* 对齐 Semi `.semi-cascader-option { @include font-size-regular }`（14px/20px，
        非全局默认 16px/24px）：面板容器未单独声明字号时靠继承，虚拟化 filterRender
        场景下 padding(8+8) + 继承来的 24px 行高 = 40px，超出 itemSize:36 的虚拟行
@@ -458,6 +488,17 @@
     width: var(--cd-width-cascader-option-icon);
     color: var(--cd-color-cascader-option-icon-default);
   }
+  /* 单选 tick（选中）/ empty（未选中占位）：右边距分隔与文字（对齐 Semi
+     &-icon-active/&-icon-empty 共用 $spacing-cascader_empty_icon-marginRight）。 */
+  .cd-cascader-option-icon-active,
+  .cd-cascader-option-icon-empty {
+    margin-right: var(--cd-spacing-cascader-empty-icon-margin-right);
+  }
+  /* 展开箭头 / loading：左边距分隔与文字（对齐 Semi &-icon-left
+     $spacing-cascader_option-icon-marginLeft，tick/empty 不带此边距）。 */
+  .cd-cascader-option-icon-left {
+    margin-left: var(--cd-spacing-cascader-option-icon-margin-left);
+  }
   .cd-cascader-option-spin-icon :global(svg) {
     animation: cd-cascader-spin 0.7s linear infinite;
   }
@@ -494,8 +535,20 @@
     padding-right: 0;
     padding-left: var(--cd-spacing-cascader-flatten-list-padding-right);
   }
-  /* 展开箭头图标镜像翻转（Semi rtl.scss L100-104 对 chevron_right 做 scaleX(-1)）。 */
-  :global(.cd-rtl) .cd-cascader-option-icon {
+  /* tick/empty 图标：右边距改左边距（Semi rtl.scss L86-92，仅对调不翻转）。 */
+  :global(.cd-rtl) .cd-cascader-option-icon-active,
+  :global(.cd-rtl) .cd-cascader-option-icon-empty {
+    margin-right: 0;
+    margin-left: var(--cd-spacing-cascader-empty-icon-margin-right);
+  }
+  /* 展开箭头（含 loading）图标：左边距改右边距 + 镜像翻转（Semi rtl.scss L94-98，
+     仅 chevron_right 本体做 scaleX(-1)，tick/empty/spin 均不翻转）。 */
+  :global(.cd-rtl) .cd-cascader-option-icon-left {
+    margin-left: 0;
+    margin-right: var(--cd-spacing-cascader-option-icon-margin-left);
+  }
+  /* 仅翻转展开箭头本体（Semi 只对 chevron_right 做镜像，loading spin 不翻转）。 */
+  :global(.cd-rtl) .cd-cascader-option-icon-left:not(.cd-cascader-option-spin-icon) :global(svg) {
     transform: scaleX(-1);
   }
 </style>

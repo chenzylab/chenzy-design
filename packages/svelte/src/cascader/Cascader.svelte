@@ -33,7 +33,6 @@
     rovingKeyFromEvent,
     nextRovingIndex,
     type TreeNodeData,
-    type CascaderFlatPath,
     resolveDefault,
   } from '@chenzy-design/core';
   import { SvelteSet } from 'svelte/reactivity';
@@ -51,8 +50,8 @@
 
   type Key = string | number;
   type Size = 'small' | 'default' | 'large';
-  /** 校验状态（对齐 Semi validateStatus）：默认 / 警告 / 错误 */
-  type ValidateStatus = 'default' | 'warning' | 'error';
+  /** 校验状态（对齐 Semi validateStatus）：默认 / 成功 / 警告 / 错误 */
+  type ValidateStatus = 'default' | 'success' | 'warning' | 'error';
 
   interface Props {
     /** 单选为单条路径 Key[]；多选为多条路径 Key[][] */
@@ -85,8 +84,8 @@
     separator?: string;
     /** 多选 Tag 溢出折叠阈值：超出显示前 N 个 + +M */
     maxTagCount?: number;
-    /** 列为空（无可选项）时内容；缺省走 i18n */
-    emptyContent?: string | Snippet;
+    /** 列为空（无可选项）时内容；缺省走 i18n；显式传 null 时完全不渲染空态 UI（对齐 Semi） */
+    emptyContent?: string | Snippet | null;
     /** 浮层层级 */
     zIndex?: number;
     /** 浮层挂载容器，缺省 document.body。非 body 容器时改 absolute 定位相对该容器。 */
@@ -247,8 +246,8 @@
     showNext?: 'click' | 'hover';
 
     // --- 事件 ---
-    /** 清空回调（对齐 Semi `onClear: (e: React.MouseEvent) => void`） */
-    onClear?: (e: MouseEvent) => void;
+    /** 清空回调（对齐 Semi `onClear: () => void`，零参数——DOM 事件在组件内部已消费不透传） */
+    onClear?: () => void;
     /** 异步加载完成回调（对齐 Semi onLoad：`(newLoadedKeys: Set<string>, data: CascaderData) => void`） */
     onLoad?: (loadedKeys: Set<Key>, data: CascaderNode) => void;
     /** 节点选中回调（单选叶子选中时） */
@@ -1323,7 +1322,7 @@
       setValue([]);
     }
     activePath = [];
-    onClear?.(e);
+    onClear?.();
   }
 
   // --- 键盘 roving 导航（aria-activedescendant 模型）---
@@ -1403,6 +1402,12 @@
       return;
     }
     const node = kbCurrentNode();
+    // RTL 下左右键义对调（对齐 WAI-ARIA APG 水平复合部件惯例：视觉上的「进下一列」
+    // 恒由视觉右侧方向键触发——LTR 是 →，RTL 是 ←，Semi 自身无此按键逻辑可对齐，
+    // 本库依这套通用惯例自建，同构 Slider.svelte isRtl() 读根节点 computed direction）。
+    const rtl = isRtl();
+    const enterKey = rtl ? 'ArrowLeft' : 'ArrowRight';
+    const backKey = rtl ? 'ArrowRight' : 'ArrowLeft';
     switch (e.key) {
       case 'ArrowUp':
         e.preventDefault();
@@ -1420,7 +1425,7 @@
         e.preventDefault();
         moveInCol(kbCol, 'last');
         break;
-      case 'ArrowRight':
+      case enterKey:
         e.preventDefault();
         // 展开高亮节点的下一列并进入它。
         if (node && canExpand(node)) {
@@ -1428,7 +1433,7 @@
           enterCol(kbCol + 1);
         }
         break;
-      case 'ArrowLeft':
+      case backKey:
         e.preventDefault();
         if (kbCol > 0) enterCol(kbCol - 1);
         break;
@@ -1452,6 +1457,14 @@
   let rootEl = $state<HTMLDivElement | null>(null);
   let panelEl = $state<HTMLDivElement | null>(null);
 
+  // 同构 Slider.svelte isRtl()：读根节点 computed direction（非 document.documentElement，
+  // 本库 RTL 靠 `:global(.cd-rtl) .cd-cascader { direction: rtl }` 作用域覆盖，只在组件
+  // 根节点上生效，读根节点自身最准确）。
+  function isRtl(): boolean {
+    if (!rootEl) return false;
+    return getComputedStyle(rootEl).direction === 'rtl';
+  }
+
   // 浮层 DOM 保活：首开后保留（仅 -hidden 切显隐），对齐 Semi Popover motion（无 destroyOnClose）。
   let hasBeenOpened = $state(false);
   $effect(() => {
@@ -1473,6 +1486,8 @@
     typeof emptyContent === 'string' ? emptyContent : loc().t('Cascader.emptyText'),
   );
   const isEmptySnippet = $derived(typeof emptyContent === 'function');
+  // 对齐 Semi item.tsx renderEmpty：`emptyContent === null` 时完全不渲染空态 UI（非兜底文案）。
+  const hideEmpty = $derived(emptyContent === null);
 
   // --- useDismiss (红线 #3): panel portal 出 root 子树后列入 extraTargets ---
   $effect(() => {
@@ -1499,7 +1514,9 @@
           validateStatus === 'warning' && 'cd-cascader-warning',
           disabled && 'cd-cascader-disabled',
           isOpen && 'cd-cascader-focus',
-          multiple ? 'cd-cascader-multiple' : 'cd-cascader-single',
+          // 对齐 Semi renderSelection：根节点恒定加 `-single`（无论 multiple 与否，
+          // Semi 从未见 `-multiple` 类），非视觉修饰类，纯粹是历史命名遗留。
+          'cd-cascader-single',
           isFilterable && 'cd-cascader-filterable',
           borderless && 'cd-cascader-borderless',
           (prefix || insetLabel) && 'cd-cascader-with-prefix',
@@ -1535,7 +1552,7 @@
     value={searchValue}
     aria-label={ariaLabel}
     role="combobox"
-    aria-haspopup="listbox"
+    aria-haspopup="menu"
     aria-expanded={isOpen}
     aria-controls={searchActive ? flatListId : listId}
     aria-activedescendant={activeDescId}
@@ -1583,7 +1600,7 @@
   bind:this={rootEl}
   {style}
   role={showBuiltinSearch ? undefined : 'combobox'}
-  aria-haspopup={showBuiltinSearch ? undefined : 'listbox'}
+  aria-haspopup={showBuiltinSearch ? undefined : 'menu'}
   aria-expanded={showBuiltinSearch ? undefined : isOpen}
   aria-controls={showBuiltinSearch ? undefined : listId}
   aria-activedescendant={!triggerRender && !showBuiltinSearch && isOpen && !searchActive ? activeDescId : undefined}
@@ -1629,7 +1646,10 @@
     })}
   {:else}
     {#if prefix || insetLabel}
-      <div class="cd-cascader-prefix" aria-hidden="true">
+      <div
+        class={['cd-cascader-prefix', prefix && typeof prefix !== 'string' && 'cd-cascader-prefix-icon'].filter(Boolean).join(' ')}
+        aria-hidden="true"
+      >
         {#if prefix}
           {#if typeof prefix === 'string'}
             <span class="cd-cascader-prefix-text">{prefix}</span>
@@ -1653,9 +1673,10 @@
           搜索输入内建在 TagInput（Semi 同构，无独立搜索 Input）；不可搜索时 TagInput 输入框仅占位不生效。
         -->
         <TagInput
+          class="cd-cascader-tagInput-wrapper"
           {disabled}
           size={size === 'large' ? 'large' : size === 'small' ? 'small' : 'default'}
-          {validateStatus}
+          validateStatus={validateStatus === 'success' ? 'default' : validateStatus}
           value={tagInputValue}
           {showRestTagsPopover}
           expandRestTagsOnClick={false}
@@ -1670,13 +1691,15 @@
         >
           {#snippet renderTagItem({ value: nodeKey, index: idx, onClose })}
             {@const leaf = tagKeyToLeaf.get(nodeKey)}
+            {@const leafNodeDisabled = !!leaf?.nodes[leaf.nodes.length - 1]?.disabled}
+            {@const isTagDisabled = disabled || leafNodeDisabled}
             {#if leaf}
               <Tag
-                class="cd-cascader-selection-tag"
+                class={['cd-cascader-selection-tag', isTagDisabled && 'cd-cascader-selection-tag-disabled'].filter(Boolean).join(' ')}
                 size={size === 'large' ? 'large' : 'small'}
                 color="white"
                 type="light"
-                closable={!disabled}
+                closable={!isTagDisabled}
                 onClose={(_children, e) => {
                   e.preventDefault();
                   onClose();
@@ -1714,7 +1737,10 @@
     </div>
 
     {#if suffix}
-      <div class="cd-cascader-suffix" aria-hidden="true">
+      <div
+        class={['cd-cascader-suffix', typeof suffix !== 'string' && 'cd-cascader-suffix-icon'].filter(Boolean).join(' ')}
+        aria-hidden="true"
+      >
         {#if typeof suffix === 'string'}
           <span class="cd-cascader-suffix-text">{suffix}</span>
         {:else}{@render (suffix as Snippet)()}{/if}
@@ -1781,6 +1807,7 @@
         {separator}
         {emptyText}
         emptySnippet={isEmptySnippet ? (emptyContent as Snippet) : undefined}
+        {hideEmpty}
         {virtualizeInSearch}
         {filterRender}
         {expandIcon}
@@ -1791,6 +1818,10 @@
         loadingLabel={loc().t('Cascader.loading')}
         {colItemId}
         {flatItemId}
+        columnParentId={(colIndex) =>
+          colIndex > 0 && activePath[colIndex - 1] !== undefined
+            ? colItemId(colIndex - 1, activePath[colIndex - 1] as Key)
+            : undefined}
         {highlightPathParts}
         {isActiveAt}
         {isKbActive}
@@ -1829,6 +1860,7 @@
     display: inline-flex;
     align-items: center;
     width: 100%;
+    min-width: var(--cd-width-cascader-trigger-min);
     min-height: var(--cd-select-height-default);
     box-sizing: border-box;
     font-size: var(--cd-select-font-size);
@@ -1860,8 +1892,29 @@
     background: var(--cd-select-bg);
     border-color: var(--cd-select-border-active);
   }
+  .cd-cascader-warning {
+    background: var(--cd-color-cascader-warning-bg-default);
+    border-color: var(--cd-color-cascader-warning-border-default);
+  }
+  .cd-cascader-warning:not(.cd-cascader-focus):not(.cd-cascader-disabled):hover {
+    background: var(--cd-color-cascader-warning-bg-hover);
+    border-color: var(--cd-color-cascader-warning-border-hover);
+  }
+  .cd-cascader-warning.cd-cascader-focus {
+    background: var(--cd-color-cascader-warning-bg-focus);
+    border-color: var(--cd-color-cascader-warning-border-focus);
+  }
   .cd-cascader-error {
-    border-color: var(--cd-select-border-error);
+    background: var(--cd-color-cascader-danger-bg-default);
+    border-color: var(--cd-color-cascader-danger-border-default);
+  }
+  .cd-cascader-error:not(.cd-cascader-focus):not(.cd-cascader-disabled):hover {
+    background: var(--cd-color-cascader-danger-bg-hover);
+    border-color: var(--cd-color-cascader-danger-border-hover);
+  }
+  .cd-cascader-error.cd-cascader-focus {
+    background: var(--cd-color-cascader-danger-bg-focus);
+    border-color: var(--cd-color-cascader-danger-border-focus);
   }
   .cd-cascader-disabled {
     background: var(--cd-color-disabled-fill, var(--cd-color-fill-0));
@@ -1926,9 +1979,35 @@
   }
   .cd-cascader-selection-multiple :global(.cd-tag-input) {
     width: 100%;
-    min-height: auto;
     border: none;
     background: transparent;
+  }
+  /* TagInput wrapper 精细化覆盖（对齐 Semi .cascader-tagInput-wrapper + .semi-tagInput 三档
+     min-height：22/30/38px，与触发器搜索框高度同一套数值，非任意值）。 */
+  :global(.cd-cascader-tagInput-wrapper) {
+    min-height: var(--cd-height-cascader-selection-search-wrapper);
+    margin-left: calc(-1 * var(--cd-spacing-extra-tight));
+  }
+  :global(.cd-cascader-tagInput-wrapper.cd-tag-input-small) {
+    min-height: var(--cd-height-cascader-selection-search-wrapper-small);
+  }
+  :global(.cd-cascader-tagInput-wrapper.cd-tag-input-large) {
+    min-height: var(--cd-height-cascader-selection-search-wrapper-large);
+  }
+  /* 节点自身 disabled 的 tag：置灰 + 不可关闭（对齐 Semi &-tag-disabled.#{$prefix}-tag 复合选择器，
+     节点级禁用，独立于组件级 disabled；组件级 disabled 走既有 .cd-cascader-disabled 分支）。
+     复合选择器（.cd-cascader-selection-tag-disabled.cd-tag）而非单类——Tag 自身 color=white
+     变体也是单类选择器 .cd-tag-white-light，同特异性下source order 不可靠，需复合类拿高特异性
+     确定性覆盖，同构 Semi 的 &-tag-disabled.#{$prefix}-tag 写法。 */
+  :global(.cd-cascader-selection-tag-disabled.cd-tag) {
+    color: var(--cd-color-text-3);
+    background-color: var(--cd-color-cascader-tag-disabled-bg-default);
+    cursor: not-allowed;
+  }
+  :global(.cd-cascader-selection-tag-disabled.cd-tag) :global(.cd-tag-close) {
+    color: var(--cd-color-text-3);
+    cursor: not-allowed;
+    pointer-events: none;
   }
   .cd-cascader-clearbtn,
   .cd-cascader-arrow {
@@ -2013,8 +2092,8 @@
      原生 input 自身内边距归零——外层 .cascader-selection 已有左右 padding，Input 组件
      默认再叠一层 padding 会让光标/文字比 span 占位符整体偏右一个 padding 的距离。 */
   .cd-cascader-search-wrapper :global(.cd-cascader-search-input .cd-input) {
-    padding-inline-start: 0;
-    padding-inline-end: 0;
+    padding-left: 0;
+    padding-right: 0;
   }
   /* 对齐 Semi .semi-input-wrapper-focus { border: $color-cascader_input-border-default }
      （值为 none）：聚焦态也不显示 Input 自身边框——触发器的聚焦视觉完全由外层
@@ -2041,6 +2120,15 @@
   .cd-cascader-borderless:focus-within:not(:active) {
     background: transparent;
   }
+  /* borderless + warning/error：边框始终显色（对齐 Semi，不随 borderless 透明规则隐藏）。 */
+  .cd-cascader-borderless.cd-cascader-error:not(:focus-within),
+  .cd-cascader-borderless.cd-cascader-error:focus-within {
+    border-color: var(--cd-color-cascader-danger-border-focus);
+  }
+  .cd-cascader-borderless.cd-cascader-warning:not(:focus-within),
+  .cd-cascader-borderless.cd-cascader-warning:focus-within {
+    border-color: var(--cd-color-cascader-warning-border-focus);
+  }
   .cd-cascader-no-motion,
   .cd-cascader-no-motion .cd-cascader-arrow {
     transition: none;
@@ -2059,6 +2147,13 @@
     margin-right: var(--cd-spacing-base-tight);
     font-weight: var(--cd-font-cascader-label-fontweight);
     color: var(--cd-color-cascader-prefix-suffix-text-default);
+  }
+  /* 图标型 prefix/suffix：margin 比文字型窄（对齐 Semi $spacing-cascader_icon-marginX 4px vs
+     文字型 $spacing-cascader_text-marginX 8px，isSemiIcon 判断落到 Svelte 侧简化为「非字符串」）。 */
+  .cd-cascader-prefix-icon,
+  .cd-cascader-suffix-icon {
+    margin-left: var(--cd-spacing-tight);
+    margin-right: var(--cd-spacing-tight);
   }
   .cd-cascader-with-prefix .cd-cascader-selection {
     padding-left: 0;
