@@ -21,7 +21,13 @@ export {
   type LiveAnnouncer,
   type Politeness,
 } from './live-announcer.js';
-export { useDismiss, type DismissOptions, type DismissReason } from './dismiss.js';
+export {
+  useDismiss,
+  registerOverlayRoot,
+  isInsideAnyOverlay,
+  type DismissOptions,
+  type DismissReason,
+} from './dismiss.js';
 export { useScrollLock, __resetScrollLock } from './scroll-lock.js';
 export {
   useInertBackground,

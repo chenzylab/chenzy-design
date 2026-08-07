@@ -160,7 +160,7 @@
     background-color: var(--cd-autocomplete-option-bg-default);
     border-radius: var(--cd-autocomplete-option-radius);
     cursor: pointer;
-    transition: background-color var(--cd-motion-duration-none) var(--cd-motion-easing-ease-in) var(--cd-motion-delay-none);
+    transition: background-color var(--cd-transition-duration-autocomplete-option-bg) var(--cd-transition-function-autocomplete-option-bg) var(--cd-transition-delay-autocomplete-option-bg);
   }
   .cd-autocomplete-option:first-of-type {
     margin-top: var(--cd-autocomplete-option-first-margin-top);

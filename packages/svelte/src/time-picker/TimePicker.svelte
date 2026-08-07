@@ -21,6 +21,7 @@
   import {
     useId,
     useDismiss,
+    registerOverlayRoot,
     meridiemOf,
     formatTime,
     localeFormat,
@@ -389,6 +390,13 @@
   let rootEl = $state<HTMLDivElement | null>(null);
   let triggerComp = $state<{ focus: () => void; blur: () => void } | null>(null);
   let panelEl = $state<HTMLDivElement | null>(null);
+
+  // 全局浮层注册（见 core registerOverlayRoot 注释）：panel portal 到 body 后与祖先
+  // hover 浮层脱节，登记后祖先的 pointerleave 判断能识别"鼠标去了合法子浮层"。
+  $effect(() => {
+    if (!panelEl) return;
+    return registerOverlayRoot(panelEl);
+  });
 
   $effect(() => {
     if (!isOpen || !rootEl) return;

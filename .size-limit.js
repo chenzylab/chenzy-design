@@ -207,7 +207,9 @@ const components = [
   ['timeline', '{ TimelineItem }', '5.4 KB'],
   // 对齐 Semi 破坏性重写：单 path 箭头 + .cd-tooltip-wrapper[x-placement] 12 方位定位 CSS
   // 全部内联进基座（原 3.07 KB → 4.2 KB 实测）；预算按 +15% buffer 校准（见浮层三件套注）。
-  ['tooltip', '{ Tooltip }', '5 KB'],
+  // 新增 registerOverlayRoot 全局浮层注册（修复嵌套 portal 浮层 pointerleave 误关闭，
+  // 见 nested-portal-overlay-pointerleave-false-close）后实测 5.03 KB，预算按小幅 headroom 校准。
+  ['tooltip', '{ Tooltip }', '5.1 KB'],
   ['tree', '{ Tree }', '11 KB'],
   ['user-guide', '{ UserGuide }', '5.5 KB'],
   ['virtual-list', '{ VirtualList }', '2.65 KB'],

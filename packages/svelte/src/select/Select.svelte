@@ -30,6 +30,7 @@
   import {
     useId,
     useDismiss,
+    registerOverlayRoot,
     fixedRange,
     scrollOffsetForIndex,
     type Placement,
@@ -860,6 +861,14 @@
   let dropdownRootEl = $state<HTMLDivElement | null>(null);
   // dropdownEl：内层 role=listbox 滚动容器（onListScroll/虚拟化/触底/浮层搜索聚焦均以它为准）。
   let dropdownEl = $state<HTMLDivElement | null>(null);
+
+  // --- 全局浮层注册（见 core registerOverlayRoot 注释）：dropdown portal 到 body 后
+  //     与祖先浮层（如包裹本 Select 的 hover 触发 Popover）在真实 DOM 树上脱节，
+  //     登记后祖先浮层的 pointerleave 判断能识别"鼠标去了合法子浮层"而非真的离开。---
+  $effect(() => {
+    if (!dropdownRootEl) return;
+    return registerOverlayRoot(dropdownRootEl);
+  });
 
   // --- 虚拟化滚动监听（命令式 + rAF 节流 + cleanup，红线 #3）---
   // 开启下拉后绑定到滚动容器；scrollTop 写本地 $state 驱动 vRange 派生。

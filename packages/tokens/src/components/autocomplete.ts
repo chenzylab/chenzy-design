@@ -25,6 +25,12 @@ export const autocompleteTokens = {
   // 注：Semi variables.scss 另有 option-border-default（分组描边，autoComplete 无分组结构），
   // 本库 option 无对应结构，故不镜像该死变量。
 
+  // —— animation：选项背景过渡（Semi autoComplete/animation.scss，组件直接消费）——
+  // 默认无动画（duration/delay=0ms），主题或 DSM 可单独开启过渡。
+  'transition-duration-autocomplete-option-bg': { value: 'var(--cd-motion-duration-none)', category: 'animation', label: '选项过渡时长', usage: '自动完成菜单选项背景色-动画持续时间（Semi $transition_duration-autoComplete_option-bg）' },
+  'transition-function-autocomplete-option-bg': { value: 'var(--cd-motion-ease-in)', category: 'animation', label: '选项过渡曲线', usage: '自动完成菜单选项背景色-过渡曲线（Semi $transition_function-autoComplete_option-bg）' },
+  'transition-delay-autocomplete-option-bg': { value: 'var(--cd-motion-delay-none)', category: 'animation', label: '选项过渡延迟', usage: '自动完成菜单选项背景色-延迟时间（Semi $transition_delay-autoComplete_option-bg）' },
+
   // —— 选项尺寸/内边距（Semi $spacing-autoComplete_option-* / $radius-autoComplete_option）——
   'autocomplete-option-padding-left': { value: 'var(--cd-spacing-base-tight)', category: 'spacing', label: '选项左内边距', usage: '自动完成菜单项左侧内边距（Semi $spacing-autoComplete_option-paddingLeft）' },
   'autocomplete-option-padding-right': { value: 'var(--cd-spacing-base-tight)', category: 'spacing', label: '选项右内边距', usage: '自动完成菜单项右侧内边距（Semi $spacing-autoComplete_option-paddingRight）' },

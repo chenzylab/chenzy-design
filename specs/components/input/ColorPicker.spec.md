@@ -88,32 +88,36 @@ ColorPicker 含拖拽、键盘、浮层、焦点管理等交互逻辑，采用 h
 
 ## 5. 主题 / Token
 
-组件仅消费 Alias 与 Component 级 Token，禁止写死值。
+> 本表由 `packages/tokens/src/components/color-picker.ts` 真源生成（2026-08-07 重校，严格对齐 Semi `semi-foundation/colorPicker/variables.scss`）。此前本表列的 `--cd-color-picker-trigger-*`/`--cd-color-picker-panel-*`/`--cd-color-picker-preset-gap` 等均为 M2 早期规划稿，Semi 无对应字面量，未落地实现，已删；改 token 时请同步该文件，勿手写「规划中」的 token，见 [[dont-force-map-when-semi-lacks-the-var]]。
+
+组件仅消费 Alias 与 Component 级 Token，禁止写死值。全部 20 个均严格对齐 Semi `variables.scss`（`$radius-colorPicker-*` 等），零自造补充。
 
 | Component Token | 默认引用（Alias/Global） | 用途 |
 | --- | --- | --- |
-| `--cd-color-picker-trigger-size-sm` | `--cd-size-sm`（如 20px） | small 色块边长 |
-| `--cd-color-picker-trigger-size` | `--cd-size-md`（如 24px） | default 色块边长 |
-| `--cd-color-picker-trigger-size-lg` | `--cd-size-lg`（如 32px） | large 色块边长 |
-| `--cd-color-picker-trigger-radius` | `--cd-radius-sm` | 色块圆角 |
-| `--cd-color-picker-trigger-border` | `--cd-color-border` | 色块/输入边框 |
-| `--cd-color-picker-trigger-border-hover` | `--cd-color-border-hover` | hover 边框 |
-| `--cd-color-picker-panel-bg` | `--cd-color-bg-0` | 面板背景 |
-| `--cd-color-picker-panel-radius` | `--cd-radius-md` | 面板圆角 |
-| `--cd-color-picker-panel-shadow` | `--cd-shadow-popover` | 面板阴影 |
-| `--cd-color-picker-panel-width` | `240px`（→ Global 间距标度） | 面板宽度 |
-| `--cd-color-picker-board-height` | `160px` | 饱和度方块高度 |
-| `--cd-color-picker-handle-size` | `--cd-size-handle`（如 14px） | 滑块/方块手柄直径 |
-| `--cd-color-picker-handle-border` | `--cd-color-bg-0` | 手柄白色描边 |
-| `--cd-color-picker-handle-shadow` | `--cd-shadow-sm` | 手柄投影 |
-| `--cd-color-picker-slider-height` | `--cd-size-xs`（如 10px） | hue/alpha 轨道高度 |
-| `--cd-color-picker-slider-radius` | `--cd-radius-pill` | 轨道圆角 |
-| `--cd-color-picker-checker-color` | `--cd-color-fill-1` | 透明棋盘格深块颜色 |
-| `--cd-color-picker-focus-ring` | `--cd-color-primary` | focus 高亮 |
-| `--cd-color-picker-preset-gap` | `--cd-spacing-2` | 预设格间距 |
-| `--cd-color-picker-text` | `--cd-color-text-0` | 输入文字 |
+| `--cd-radius-color-picker-topleft` | `8px` | 圆角 - 左上（saturation 方块） |
+| `--cd-radius-color-picker-topright` | `8px` | 圆角 - 右上（saturation 方块） |
+| `--cd-radius-color-picker-bottomleft` | `0px` | 圆角 - 左下（saturation 方块） |
+| `--cd-radius-color-picker-bottomright` | `0px` | 圆角 - 右下（saturation 方块） |
+| `--cd-radius-color-picker-handle` | `--cd-border-radius-full` | 圆角 - 拖拽把手 / 滑块条 |
+| `--cd-radius-color-picker-alphasliderinner` | `4px` | 圆角 - 透明度 Slider inner |
+| `--cd-radius-color-picker-demoblock` | `4px` | 圆角 - 颜色手动输入区域左侧当前选中颜色色块 |
+| `--cd-radius-color-picker-defaulttrigger` | `4px` | popover 模式默认 trigger 圆角 |
+| `--cd-width-color-picker-handle-border` | `2px` | 把手边框宽度 |
+| `--cd-width-color-picker-colorpickerinputnumber` | `58px` | alpha 数字输入器宽度 |
+| `--cd-width-color-picker-formatselect` | `80px` | 格式选择下拉 Select 宽度 |
+| `--cd-width-color-picker-defaulttrigger` | `24px` | popover 模式默认 trigger 边长 |
+| `--cd-color-color-picker-handle-border` | `--cd-color-white` | 拖拽把手 / 滑块把手边框颜色 |
+| `--cd-spacing-color-picker-inputnumbersuffix-horizontal` | `4px` | alpha 数字输入框后百分比水平内边距 |
+| `--cd-spacing-color-picker-inputgroup-marginleft` | `4px` | 颜色手动输入区域左侧距离色块距离 |
+| `--cd-spacing-color-picker-popover-padding` | `8px` | popover 模式浮层整体内边距 |
+| `--cd-spacing-color-picker-inputnumbersuffix-vertical` | `4px` | alpha 数字输入框后百分比垂直内边距 |
+| `--cd-spacing-color-picker-slider-margintop` | `6px` | hue / alpha 滑动选择器上边距 |
+| `--cd-spacing-color-picker-datapart-margintop` | `8px` | 颜色手动输入区域上边距 |
+| `--cd-font-color-picker-inputnumbersuffix-fontsize` | `14px` | alpha 数字输入框后百分比字体大小 |
 
-暗色模式由 Alias 层（`--cd-color-bg-0` 等）自动切换；棋盘格深块用 `--cd-color-fill-1` 保证两套主题下都有对比。状态色：warning → `--cd-color-warning`，error → `--cd-color-danger`。
+跨组件共享语义 token：`--cd-focus-ring`（三个滑块 `:focus-visible` 环，Semi 原生浏览器默认 focus 样式，本库统一用全局无障碍 token 表达，非本组件自造视觉）。
+
+暗色模式：Semi 把手边框色 `$color-colorPicker_handle-border: var(--semi-color-white)` 在暗色下仍为白色（非反色），本库同步引用 `--cd-color-white` 忠实镜像；透明度棋盘格用内联 SVG data-URI（`fill-opacity=".05"`），两套主题下均为低对比度深块，无需额外深浅两色。把手无投影（Semi 原生无 box-shadow，本库不加自造增强）。
 
 ## 6. 无障碍（WCAG 2.1 AA）
 
