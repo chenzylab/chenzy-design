@@ -54,6 +54,15 @@ export interface TimePickerFoundationProps {
     | undefined;
   onChange?: ((v: (Date | null) | [Date | null, Date | null]) => void) | undefined;
   onOpenChange?: ((open: boolean) => void) | undefined;
+  /**
+   * 已提交值对 → 触发器展示文案（未处于输入草稿态时的回落值）。对齐 Semi formatValue(value)。
+   * 依赖 currentPair 而 currentPair 由本 foundation 派生，故用回调而非现成字符串，避免循环依赖。
+   */
+  formatDisplay: (pair: Pair) => string;
+  /** 范围模式分隔符，用于拆分输入串两端。对齐 Semi rangeSeparator。 */
+  rangeSeparator: string;
+  /** 输入框 readonly 时不解析键入（仅允许面板选择）。对齐 Semi inputReadOnly。 */
+  inputReadOnly: boolean;
 }
 
 /** 字符串/Date 入参归一化为 Date|null（字符串经 core parseTimeString）。 */
@@ -111,6 +120,45 @@ export function createTimePickerState(getProps: () => TimePickerFoundationProps)
 
   // 面板首次打开后常驻 DOM，关闭仅 CSS 隐藏（对齐 Semi Popover 惰性挂载）。
   let hasOpened = $state(getInitialOpen());
+
+  // --- 触发器可键入：解析输入串回写（镜像 Semi inputFoundation.handleInputChange/handleBlur）---
+  // 输入过程只做本地展示，Enter/Blur 时解析并提交（单选整串 → 时间；范围按 rangeSeparator 拆两端）。
+  let inputDraft = $state<string | null>(null);
+  const inputValue = $derived(inputDraft ?? p().formatDisplay(currentPair));
+  // invalid 校验态（对齐 Semi foundation invalid）：手输非法/无法解析时置 true，触发器显示 error 样式。
+  let invalid = $state(false);
+
+  function parseAndCommit(raw: string) {
+    if (p().inputReadOnly) return;
+    const text = raw.trim();
+    const sep = p().rangeSeparator;
+    if (text === '') {
+      emit([null, null]);
+      inputDraft = null;
+      invalid = false;
+      return;
+    }
+    if (isRange) {
+      const parts = text.split(sep.trim() === '' ? '~' : sep.trim());
+      const s = parts[0] ? toDate(parts[0].trim()) : null;
+      const e = parts[1] ? toDate(parts[1].trim()) : null;
+      if (s || e) {
+        emit([s, e]);
+        invalid = false;
+      } else {
+        invalid = true; // 两端都解析失败
+      }
+    } else {
+      const d = toDate(text);
+      if (d) {
+        emit([d, currentPair[1]]);
+        invalid = false;
+      } else {
+        invalid = true; // 解析失败：标记 invalid，回落展示但给 error 反馈（对齐 Semi）
+      }
+    }
+    inputDraft = null;
+  }
 
   return {
     get isRange() {
@@ -206,6 +254,37 @@ export function createTimePickerState(getProps: () => TimePickerFoundationProps)
 
     /** 直接提交一对值（输入框解析 / 清除走此口）。 */
     emit,
+
+    /** 触发器输入框展示值：草稿态优先，否则回落已提交值的格式化文案。 */
+    get inputValue() {
+      return inputValue;
+    },
+    /** 校验失败态（对齐 Semi aria-invalid / 触发器 error 样式）。 */
+    get invalid() {
+      return invalid;
+    },
+    /** 键入过程：仅更新本地草稿，不解析提交（对齐 Semi setInputValue 展示态）。 */
+    onInputChange(v: string) {
+      inputDraft = v;
+    },
+    /** 失焦：草稿非空则解析提交（对齐 Semi handleInputBlur）。 */
+    onInputBlur() {
+      if (inputDraft !== null) parseAndCommit(inputDraft);
+    },
+    /** Enter：草稿非空则解析提交并打开面板（对齐 Semi handleInputBlur + 打开语义）。 */
+    commitDraftAndOpen() {
+      if (inputDraft !== null) parseAndCommit(inputDraft);
+      this.setOpen(true);
+    },
+    /** 清除：清空草稿与 invalid，提交空值对（对齐 Semi clear）。 */
+    clear() {
+      inputDraft = null;
+      emit([null, null]);
+    },
+    /** 面板选择是有效操作，清 invalid（对齐 Semi）。 */
+    clearInvalid() {
+      invalid = false;
+    },
   };
 }
 

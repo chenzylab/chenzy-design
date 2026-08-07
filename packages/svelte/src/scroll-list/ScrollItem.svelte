@@ -475,7 +475,7 @@
     display: none;
   }
   .cd-scrolllist-item:not(:last-child) {
-    border-inline-end: var(--cd-width-scroll-list-item-border) solid var(--cd-color-scroll-list-border);
+    border-right: var(--cd-width-scroll-list-item-border) solid var(--cd-color-scroll-list-border);
   }
 
   /* wheel: -item-wheel */
@@ -485,7 +485,7 @@
     overflow: hidden;
   }
   .cd-scrolllist-item-wheel:not(:last-child) {
-    border-inline-end: var(--cd-width-scroll-list-item-wheel-border) solid var(--cd-color-scroll-list-border);
+    border-right: var(--cd-width-scroll-list-item-wheel-border) solid var(--cd-color-scroll-list-border);
   }
   .cd-scrolllist-item-wheel .cd-scrolllist-item-selected {
     font-weight: var(--cd-font-scroll-list-item-wheel-item-selected-fontweight);
@@ -498,7 +498,7 @@
     overflow-y: auto;
     block-size: 100%;
     inline-size: 100%;
-    padding-inline-end: var(--cd-spacing-scroll-list-item-wheel-list-outer-paddingright);
+    padding-right: var(--cd-spacing-scroll-list-item-wheel-list-outer-paddingright);
     scrollbar-width: none;
   }
   .cd-scrolllist-list-outer::-webkit-scrollbar {
@@ -596,7 +596,7 @@
     color: var(--cd-color-scroll-list-selected-item-icon);
     inline-size: var(--cd-width-scroll-list-item-sel-svg);
     block-size: var(--cd-width-scroll-list-item-sel-svg);
-    margin-inline-end: var(--cd-spacing-scroll-list-item-sel-svg-marginright);
+    margin-right: var(--cd-spacing-scroll-list-item-sel-svg-marginright);
   }
   /* hover / active（非禁用、非选中）*/
   .cd-scrolllist-item > ul > li:not(.cd-scrolllist-item-disabled):not(.cd-scrolllist-item-sel):not(.cd-scrolllist-item-selected):hover,
@@ -612,5 +612,24 @@
   .cd-scrolllist-list-outer > ul > li.cd-scrolllist-item-disabled {
     color: var(--cd-color-scroll-list-disabled-item-text);
     cursor: not-allowed;
+  }
+
+  /* —— RTL（逐条对齐 Semi scrollList/rtl.scss）—— */
+  :global(.cd-rtl) .cd-scrolllist-item:not(:last-child) {
+    border-right: 0;
+    border-left: var(--cd-width-scroll-list-item-border) solid var(--cd-color-scroll-list-border);
+  }
+  :global(.cd-rtl) .cd-scrolllist-item-wheel:not(:last-child) {
+    border-right: 0;
+    border-left: var(--cd-width-scroll-list-item-wheel-border) solid var(--cd-color-scroll-list-border);
+  }
+  :global(.cd-rtl) .cd-scrolllist-item-wheel .cd-scrolllist-list-outer {
+    padding-right: 0;
+    padding-left: var(--cd-spacing-scroll-list-item-wheel-list-outer-paddingright);
+  }
+  :global(.cd-rtl) .cd-scrolllist-item > ul > li.cd-scrolllist-item-sel > :global(svg),
+  :global(.cd-rtl) .cd-scrolllist-list-outer > ul > li.cd-scrolllist-item-sel > :global(svg) {
+    margin-right: 0;
+    margin-left: var(--cd-spacing-scroll-list-item-sel-svg-marginright);
   }
 </style>

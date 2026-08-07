@@ -105,4 +105,9 @@
     border-block-start: var(--cd-width-scroll-list-footer-border) solid var(--cd-color-scroll-list-footer-border);
     padding: var(--cd-spacing-scroll-list-footer-padding);
   }
+
+  /* —— RTL（逐条对齐 Semi scrollList/rtl.scss）—— */
+  :global(.cd-rtl) .cd-scrolllist {
+    direction: rtl;
+  }
 </style>
