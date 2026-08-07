@@ -20,8 +20,8 @@ export interface CheckboxGroupContext {
   toggle: (v: CheckboxValue, e: CheckboxEvent) => void;
   /** getter to stay reactive across the context boundary */
   getDisabled: () => boolean;
-  /** getter to stay reactive across the context boundary */
-  getName: () => string | undefined;
+  /** getter to stay reactive across the context boundary（对齐 Semi getFormatName，未传 name 兜底 'default'） */
+  getName: () => string;
   /** getter to stay reactive across the context boundary */
   getType: () => CheckboxType;
 }

@@ -103,7 +103,11 @@ const components = [
   // （aria-owns/haspopup/expanded）、RTL 键义对调、TagInput wrapper 精细化覆盖等
   // 真实功能补齐（非无谓膨胀），实测 13.95 KB，预算随之上调。
   ['cascader', '{ Cascader }', '14.1 KB'],
-  ['checkbox', '{ Checkbox, CheckboxGroup }', '4 KB'],
+  // 2026-08-07 全量严格对齐 Semi：拆分 CheckboxInner.svelte（对齐 checkboxInner.tsx 文件结构），
+  // 去掉 pointer-events:none 点击互斥 hack 改为单一入口，补 JS focusVisible/clickState 状态机
+  // （对齐 handleFocusVisible，替代纯 CSS :focus-visible 在“JS 主动 focus()”场景的误判），
+  // 真实功能补齐非无谓膨胀，实测 4.46 KB，预算随之上调。
+  ['checkbox', '{ Checkbox, CheckboxGroup }', '4.6 KB'],
   ['color-picker', '{ ColorPicker }', '7.5 KB'],
   // DatePicker 从零重写并严格对齐 Semi（7 type + range 双框触发器 + dateTime + 手输解析 +
   // multiple/max + needConfirm+Footer + preset + inset + 触发器/面板定制 + 四向 slot + 时区），
