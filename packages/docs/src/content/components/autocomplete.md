@@ -114,7 +114,7 @@ import { AutoComplete } from '@chenzy-design/svelte';
 | position | 下拉菜单的显示位置，可选值同 Tooltip 组件 | string | bottomLeft |
 | prefix | 选择框的前缀标签 | `string \| Snippet` | - |
 | renderItem | 控制下拉列表候选项的渲染 | `Snippet<[{ item, isSelected }]>` | - |
-| renderSelectedItem | 自定义候选项选中后在选择框中的渲染内容（仅支持返回 string） | `Snippet<[{ item }]>` | - |
+| renderSelectedItem | 决定候选项选中后输入框实际显示的文本，返回值同时也是 value/onChange 的实际值（仅支持返回 string） | `(item: Item) => string` | - |
 | showClear | 是否展示清除按钮 | boolean | false |
 | size | 尺寸，可选 `small`、`default`、`large` | string | default |
 | style | 样式 | string | - |

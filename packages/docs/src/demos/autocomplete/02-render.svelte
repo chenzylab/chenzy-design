@@ -23,6 +23,7 @@
   {data}
   showClear
   onSearch={handleStringSearch}
+  renderSelectedItem={(item) => (item as unknown as Person).email}
   style="width: 280px"
 >
   {#snippet prefix()}
@@ -37,8 +38,5 @@
         <div style="margin-left: 4px">{p.email}</div>
       </div>
     </div>
-  {/snippet}
-  {#snippet renderSelectedItem({ item })}
-    {(item as unknown as Person).email}
   {/snippet}
 </AutoComplete>
