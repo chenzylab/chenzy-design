@@ -613,8 +613,6 @@ export {
   isValidHotKeys,
   matchHotKeys,
   attachHotKeys,
-  isApplePlatform,
-  modifierSymbol,
   type HotKey,
   type MatchHotKeysOptions,
   type AttachHotKeysOptions,

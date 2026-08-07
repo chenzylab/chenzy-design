@@ -40,8 +40,6 @@ import { HotKeys } from '@chenzy-design/svelte';
 
 当设定快捷键与常用快捷键如 `Ctrl/Meta + C` 相同时，可以通过设置 `preventDefault` 控制默认事件是否触发。
 
-> 本库差异：修饰键的**显示文本**走 i18n（`HotKeys.ctrl` / `meta` / `alt` / `shift`），在 Apple 平台自动显示为 `⌘⌥⌃⇧` 符号；Semi 直接把 `hotKeys` 数组原样渲染。二者都可用 `content` 覆盖显示文本，且显示文本不影响监听匹配。
-
 ### 基本用法
 
 基本使用，通过 `hotKeys` 传入快捷键组合，通过 `onHotKey` 绑定快捷键处理函数，作出响应动作。
@@ -82,7 +80,6 @@ import { HotKeys } from '@chenzy-design/svelte';
 | --- | --- | --- | --- |
 | class | 类名 | string | - |
 | content | 设置显示内容 | (string \| Snippet)[] | - |
-| disabled | 是否禁用监听（不绑定、不触发） | boolean | false |
 | getListenerTarget | 用于设置监听器挂载的 DOM | () => HTMLElement \| null | document.body |
 | hotKeys | 设置快捷键组合，[取值参考](https://developer.mozilla.org/en-US/docs/Web/API/UI_Events/Keyboard_event_key_values) | KeyboardEvent.key[] | - |
 | mergeMetaCtrl | 跨平台把 Cmd(Meta) 与 Ctrl 视为同一修饰键 | boolean | false |
