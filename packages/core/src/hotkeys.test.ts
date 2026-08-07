@@ -1,14 +1,6 @@
 // @vitest-environment jsdom
 import { describe, expect, it, vi } from 'vitest';
-import {
-  Keys,
-  keyToCode,
-  isValidHotKeys,
-  matchHotKeys,
-  attachHotKeys,
-  modifierSymbol,
-  isApplePlatform,
-} from './hotkeys.js';
+import { Keys, keyToCode, isValidHotKeys, matchHotKeys, attachHotKeys } from './hotkeys.js';
 
 /** 构造一个满足 matchHotKeys 入参的最小事件对象。 */
 function ev(
@@ -17,22 +9,26 @@ function ev(
   return { code: '', key: '', metaKey: false, ctrlKey: false, shiftKey: false, altKey: false, ...partial };
 }
 
-describe('Keys 常量枚举', () => {
-  it('覆盖字母/数字/修饰/符号/方向/功能/编辑', () => {
-    expect(Keys.A).toBe('A');
+describe('Keys 常量枚举（严格镜像 Semi enum Keys，值为小写）', () => {
+  it('覆盖字母/数字/修饰/符号/方向/功能/编辑/小键盘', () => {
+    expect(Keys.A).toBe('a');
     expect(Keys.Digit1).toBe('1');
-    expect(Keys.Control).toBe('Control');
-    expect(Keys.Meta).toBe('Meta');
+    expect(Keys.Control).toBe('control');
+    expect(Keys.Meta).toBe('meta');
     expect(Keys.Slash).toBe('/');
-    expect(Keys.ArrowUp).toBe('ArrowUp');
-    expect(Keys.F12).toBe('F12');
-    expect(Keys.Enter).toBe('Enter');
+    expect(Keys.ArrowUp).toBe('arrowup');
+    expect(Keys.F12).toBe('f12');
+    expect(Keys.Enter).toBe('enter');
     expect(Keys.Space).toBe(' ');
+    expect(Keys.Exclamation).toBe('!');
+    expect(Keys.LeftParenthesis).toBe('(');
+    expect(Keys.Numpad0).toBe('numpad0');
+    expect(Keys.Pause).toBe('pause');
   });
 });
 
-describe('keyToCode', () => {
-  it('字母 → KeyX（大写归一）', () => {
+describe('keyToCode（严格镜像 Semi keyCodeMap）', () => {
+  it('字母 → KeyX（大小写不敏感）', () => {
     expect(keyToCode('a')).toBe('KeyA');
     expect(keyToCode('A')).toBe('KeyA');
     expect(keyToCode('z')).toBe('KeyZ');
@@ -41,47 +37,66 @@ describe('keyToCode', () => {
     expect(keyToCode('1')).toBe('Digit1');
     expect(keyToCode('0')).toBe('Digit0');
   });
-  it('符号 → 对应 code', () => {
+  it('符号 → 对应 code，Shift+数字别名 → 对应 Digit', () => {
     expect(keyToCode('/')).toBe('Slash');
+    expect(keyToCode('?')).toBe('Slash');
     expect(keyToCode('-')).toBe('Minus');
     expect(keyToCode('[')).toBe('BracketLeft');
     expect(keyToCode(' ')).toBe('Space');
+    expect(keyToCode('!')).toBe('Digit1');
+    expect(keyToCode('@')).toBe('Digit2');
+    expect(keyToCode(')')).toBe('Digit0');
   });
-  it('多字符键（方向/功能/编辑）原样返回（key 与 code 同名）', () => {
+  it('多字符键（方向/功能/编辑，小写归一）', () => {
+    expect(keyToCode('arrowup')).toBe('ArrowUp');
     expect(keyToCode('ArrowUp')).toBe('ArrowUp');
-    expect(keyToCode('Enter')).toBe('Enter');
-    expect(keyToCode('F1')).toBe('F1');
+    expect(keyToCode('enter')).toBe('Enter');
+    expect(keyToCode('f1')).toBe('F1');
+  });
+  it('修饰键映射到左侧变体（对齐 Semi keyCodeMap）', () => {
+    expect(keyToCode('shift')).toBe('ShiftLeft');
+    expect(keyToCode('control')).toBe('ControlLeft');
+    expect(keyToCode('meta')).toBe('MetaLeft');
+  });
+  it('未收录的键返回 undefined', () => {
+    expect(keyToCode('unknownkey')).toBeUndefined();
   });
 });
 
-describe('isValidHotKeys', () => {
-  it('合法：1 普通键 + 0~多修饰键', () => {
+describe('isValidHotKeys（严格镜像 Semi foundation：已知键名校验 + 恰 1 个普通键，不查重）', () => {
+  it('合法：1 普通键 + 0~多修饰键（大小写均可）', () => {
     expect(isValidHotKeys(['A'])).toBe(true);
+    expect(isValidHotKeys(['a'])).toBe(true);
     expect(isValidHotKeys(['Control', 'A'])).toBe(true);
-    expect(isValidHotKeys(['Control', 'Shift', 'A'])).toBe(true);
+    expect(isValidHotKeys(['control', 'shift', 'a'])).toBe(true);
     expect(isValidHotKeys(['Meta', 'Alt', 'Shift', 'K'])).toBe(true);
   });
   it('非法：0 个普通键（全修饰键）', () => {
-    expect(() => isValidHotKeys(['Control', 'Shift'])).toThrow(/恰含 1 个普通键/);
+    expect(() => isValidHotKeys(['Control', 'Shift'])).toThrow(/one common key/);
   });
   it('非法：2 个普通键', () => {
-    expect(() => isValidHotKeys(['A', 'B'])).toThrow(/恰含 1 个普通键/);
-    expect(() => isValidHotKeys(['Control', 'A', 'B'])).toThrow(/恰含 1 个普通键/);
+    expect(() => isValidHotKeys(['A', 'B'])).toThrow(/one common key/);
+    expect(() => isValidHotKeys(['Control', 'A', 'B'])).toThrow(/one common key/);
   });
-  it('非法：空数组', () => {
-    expect(() => isValidHotKeys([])).toThrow(/非空数组/);
+  it('非法：空数组（0 个普通键）', () => {
+    expect(() => isValidHotKeys([])).toThrow(/one common key/);
   });
-  it('非法：重复键', () => {
-    expect(() => isValidHotKeys(['Control', 'Control', 'A'])).toThrow(/重复键/);
+  it('不校验重复键（对齐 Semi：重复的修饰键不报错，只按普通键计数）', () => {
+    expect(isValidHotKeys(['Control', 'Control', 'A'])).toBe(true);
   });
-  it('非法：空字符串项', () => {
-    expect(() => isValidHotKeys(['', 'A'])).toThrow(/非法键名/);
+  it('非法：未知键名（不属于 Keys 枚举值）', () => {
+    expect(() => isValidHotKeys(['NotAKey'])).toThrow(/is not a valid key/);
   });
 });
 
-describe('matchHotKeys — 修饰键精确匹配', () => {
+describe('matchHotKeys — 修饰键精确匹配（大小写不敏感）', () => {
   it('命中：修饰键与普通键（code）全对', () => {
     expect(matchHotKeys(ev({ code: 'KeyA', key: 'a', ctrlKey: true, shiftKey: true }), ['Control', 'Shift', 'A'])).toBe(
+      true,
+    );
+  });
+  it('命中：小写修饰键写法（对齐 Semi 原生 Keys 值）', () => {
+    expect(matchHotKeys(ev({ code: 'KeyA', key: 'a', ctrlKey: true, shiftKey: true }), ['control', 'shift', 'a'])).toBe(
       true,
     );
   });
@@ -130,27 +145,7 @@ describe('matchHotKeys — mergeMetaCtrl 是死 prop（严格对齐 Semi：声�
   });
 });
 
-describe('modifierSymbol / isApplePlatform', () => {
-  it('Apple 平台用符号', () => {
-    expect(modifierSymbol('Meta', true)).toBe('⌘');
-    expect(modifierSymbol('Control', true)).toBe('⌃');
-    expect(modifierSymbol('Alt', true)).toBe('⌥');
-    expect(modifierSymbol('Shift', true)).toBe('⇧');
-  });
-  it('非 Apple 平台用文字', () => {
-    expect(modifierSymbol('Meta', false)).toBe('Win');
-    expect(modifierSymbol('Control', false)).toBe('Ctrl');
-  });
-  it('普通键返回 undefined', () => {
-    expect(modifierSymbol('A', true)).toBeUndefined();
-    expect(modifierSymbol('Enter', false)).toBeUndefined();
-  });
-  it('isApplePlatform 返回布尔', () => {
-    expect(typeof isApplePlatform()).toBe('boolean');
-  });
-});
-
-describe('attachHotKeys — 监听挂载 / 触发 / 解绑 / disabled', () => {
+describe('attachHotKeys — 监听挂载 / 触发 / 解绑', () => {
   it('绑定后命中触发 onHotKey，解绑后不再触发', () => {
     const target = document.createElement('div');
     const onHotKey = vi.fn();
@@ -168,15 +163,6 @@ describe('attachHotKeys — 监听挂载 / 触发 / 解绑 / disabled', () => {
     attachHotKeys(target, ['Control', 'K'], onHotKey);
     target.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyJ', key: 'j', ctrlKey: true }));
     expect(onHotKey).not.toHaveBeenCalled();
-  });
-
-  it('disabled：不绑定监听（返回 noop）', () => {
-    const target = document.createElement('div');
-    const onHotKey = vi.fn();
-    const detach = attachHotKeys(target, ['Control', 'K'], onHotKey, { disabled: true });
-    target.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyK', key: 'k', ctrlKey: true }));
-    expect(onHotKey).not.toHaveBeenCalled();
-    expect(() => detach()).not.toThrow();
   });
 
   it('preventDefault：命中时调用 event.preventDefault', () => {

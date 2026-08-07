@@ -95,12 +95,6 @@ export const en_US: Locale = {
     ariaLabel: 'Verification code',
     cellAriaLabel: 'Digit {index} of {count}',
   },
-  HotKeys: {
-    ctrl: 'Ctrl',
-    meta: 'Win',
-    alt: 'Alt',
-    shift: 'Shift',
-  },
   List: {
     emptyText: 'No data',
   },

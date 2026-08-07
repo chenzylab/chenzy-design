@@ -33,9 +33,9 @@ describe('HotKeys a11y', () => {
     await expectNoAxeViolations(container);
   });
 
-  it('普通字母键大写显示', () => {
+  it('键位原样渲染，不做大小写转换（对齐 Semi renderContent.map 直接渲染 hotKeys 数组）', () => {
     const { container } = renderWithLocale(HotKeys, { props: { hotKeys: ['a'] } });
-    expect(contents(container)[0]?.textContent).toBe('A');
+    expect(contents(container)[0]?.textContent).toBe('a');
   });
 
   it('content 自定义显示内容（字符串）', () => {
@@ -44,6 +44,14 @@ describe('HotKeys a11y', () => {
     });
     const texts = contents(container).map((k) => k.textContent);
     expect(texts).toEqual(['Ctrl', 'K']);
+  });
+
+  it('content 整体覆盖渲染（对齐 Semi content ?? hotKeys，长度可与 hotKeys 不同）', () => {
+    const { container } = renderWithLocale(HotKeys, {
+      props: { hotKeys: ['Control', 'Shift', 'K'], content: ['⌘', 'K'] },
+    });
+    const texts = contents(container).map((k) => k.textContent);
+    expect(texts).toEqual(['⌘', 'K']);
   });
 
   it('render=null：不渲染提示 UI，仅保留监听（无 .cd-hotKeys 节点，仍能触发）', () => {
@@ -101,17 +109,6 @@ describe('HotKeys 行为', () => {
     expect(spy).toHaveBeenCalledTimes(1);
   });
 
-  it('disabled：不绑定监听', () => {
-    const onHotKey = vi.fn();
-    renderWithLocale(HotKeys, {
-      props: { hotKeys: ['Control', 'K'], disabled: true, onHotKey },
-    });
-    document.body.dispatchEvent(
-      new KeyboardEvent('keydown', { code: 'KeyK', key: 'k', ctrlKey: true, bubbles: true }),
-    );
-    expect(onHotKey).not.toHaveBeenCalled();
-  });
-
   it('getListenerTarget：局部监听，目标外的事件不触发', () => {
     const local = document.createElement('div');
     document.body.appendChild(local);
@@ -139,10 +136,10 @@ describe('HotKeys 行为', () => {
     expect(onHotKey).not.toHaveBeenCalled();
   });
 
-  it('非法组合抛错（2 个普通键）', () => {
+  it('非法组合抛错（2 个普通键，对齐 Semi 错误消息）', () => {
     expect(() =>
       renderWithLocale(HotKeys, { props: { hotKeys: ['A', 'B'] } }),
-    ).toThrow(/恰含 1 个普通键/);
+    ).toThrow(/one common key/);
   });
 
   it('onClick：点击提示根节点触发回调（对齐 Semi onClick）', () => {

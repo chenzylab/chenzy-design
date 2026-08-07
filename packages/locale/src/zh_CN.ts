@@ -96,12 +96,6 @@ export const zh_CN: Locale = {
     ariaLabel: '验证码',
     cellAriaLabel: '第 {index} 位，共 {count} 位',
   },
-  HotKeys: {
-    ctrl: 'Ctrl',
-    meta: 'Win',
-    alt: 'Alt',
-    shift: 'Shift',
-  },
   List: {
     emptyText: '暂无数据',
   },
