@@ -35,7 +35,7 @@ export const meta = {
     { name: 'dropdownStyle', type: 'string | Record<string, string>', default: 'undefined', desc: '浮层样式' },
     { name: 'triggerRender', type: 'Snippet<[{ value: string; placeholder: string; disabled: boolean }]>', default: 'undefined', desc: '完全自定义触发器' },
     { name: 'renderItem', type: 'Snippet<[{ item: NormalizedItem; isSelected: boolean }]>', default: 'undefined', desc: '自定义候选项渲染' },
-    { name: 'renderSelectedItem', type: 'Snippet<[{ item: NormalizedItem }]>', default: 'undefined', desc: '自定义已选项显示（仅 string）' },
+    { name: 'renderSelectedItem', type: '(item: NormalizedItem) => string', default: 'undefined', desc: '决定选中后输入框显示文本，返回值同时是 value/onChange 实际值（对齐 Semi，非仅用于渲染）' },
     { name: 'emptyContent', type: 'Snippet | string', default: 'undefined', desc: '无候选时展示内容' },
     { name: 'prefix', type: 'Snippet | string', default: 'undefined', desc: '输入框前缀' },
     { name: 'suffix', type: 'Snippet | string', default: 'undefined', desc: '输入框后缀' },
