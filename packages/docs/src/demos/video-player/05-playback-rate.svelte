@@ -15,4 +15,4 @@
   ];
 </script>
 
-<VideoPlayer {src} {poster} height={360} {playbackRateList} defaultPlaybackRate={1} />
+<VideoPlayer {src} {poster} height={630} {playbackRateList} defaultPlaybackRate={1} />
