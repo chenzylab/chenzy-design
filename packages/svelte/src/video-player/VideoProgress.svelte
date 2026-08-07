@@ -45,7 +45,7 @@
   // 段列表（对齐 Semi initMarkerList：含 left/width 百分比 + start/end/title）。
   const segments = $derived(buildMarkerSegments(markers, safeMax));
 
-  // 核心定位（对齐 Semi handleMouseEvent）：算 percentage/value，拖拽/mousedown 时 onChange，总更新 movingInfo。
+  // 核心定位（对齐 Semi handleMouseEvent）：算 percentage/value，拖拽/mousedown 时 setActiveIndex + onChange，总更新 movingInfo。
   function handleMouseEvent(e: MouseEvent, shouldSetValue: boolean): void {
     if (!sliderEl || safeMax <= 0) return;
     const r = sliderEl.getBoundingClientRect();
@@ -55,9 +55,20 @@
       safeMax,
     );
     if (shouldSetValue && (isDragging || e.type === 'mousedown')) {
+      setActiveIndexByValue(v);
       onChange(v);
     }
     movingInfo = { progress: percentage, offset, value: v };
+  }
+
+  // 拖拽中按当前 value 落在哪段自动高亮该段（对齐 Semi setActiveIndex：遍历命中即置 hover+activeIndex，不重置）。
+  function setActiveIndexByValue(v: number): void {
+    segments.forEach((seg, index) => {
+      if (v < seg.end && v > seg.start) {
+        isHandleHovering = true;
+        activeIndex = index;
+      }
+    });
   }
 
   function onMouseDown(e: MouseEvent): void {
@@ -80,14 +91,20 @@
   function onMouseMove(e: MouseEvent): void {
     handleMouseEvent(e, true);
   }
-  // marker hover：value 落在段区间时切 handle hover + 记 activeIndex（对齐 Semi）。
+  // marker hover：仅当前播放值（非鼠标位置）落在该段区间时才切 handle hover（对齐 Semi handleSliderMouseEnter/Leave，不动 activeIndex）。
   function onSliderMouseEnter(index: number): void {
-    isHandleHovering = true;
-    activeIndex = index;
+    const seg = segments[index];
+    if (seg && safeValue > seg.start && safeValue < seg.end) {
+      isHandleHovering = true;
+    } else {
+      isHandleHovering = false;
+    }
   }
-  function onSliderMouseLeave(): void {
-    isHandleHovering = false;
-    activeIndex = -1;
+  function onSliderMouseLeave(index: number): void {
+    const seg = segments[index];
+    if (seg && safeValue > seg.start && safeValue < seg.end) {
+      isHandleHovering = false;
+    }
   }
 
   // 每段的 left/width 百分比（对齐 Semi initMarkerList）。
@@ -133,7 +150,7 @@
           style:left={segLeft(seg)}
           style:width={segWidth(seg)}
           onmouseenter={() => onSliderMouseEnter(i)}
-          onmouseleave={onSliderMouseLeave}
+          onmouseleave={() => onSliderMouseLeave(i)}
           role="presentation"
         >
           <div class="cd-videoPlayer-progress-slider-list"></div>
@@ -157,7 +174,11 @@
 {/snippet}
 
 {#if showTooltip}
-  <Tooltip position="top" style={`left:${movingInfo?.offset ?? 0}px`}>
+  <Tooltip
+    position="top"
+    style={`left:${movingInfo?.offset ?? 0}px`}
+    triggerStyle="display:block;width:100%"
+  >
     {#snippet content()}
       {#if hasMarkerTooltip && movingInfo}
         <div class="cd-videoPlayer-progress-tooltip-content">
@@ -177,6 +198,15 @@
 {/if}
 
 <style>
+  /* Tooltip 根 span(.cd-tooltip) 已用 triggerStyle 撑满；内层触发包裹(.cd-tooltip-trigger)
+     无对应 prop 可传，仍默认 inline-block + width:auto（shrink-to-fit），本组件根节点又是
+     display:flex 无自身宽度——不撑满会塌陷成内容最小宽度（实测仅 16px），进度条与 markers
+     视觉不可见。Semi 无此问题是因为 React 不产生这层包裹 DOM。仅在该场景局部撑满，不改
+     Tooltip 组件本身（避免影响其余消费方的 shrink-to-fit 语义，如包在按钮/图标上的 Tooltip）。 */
+  :global(.cd-tooltip-trigger:has(> .cd-videoPlayer-progress)) {
+    display: block;
+    width: 100%;
+  }
   /* 严格镜像 Semi videoPlayer.scss .semi-videoPlayer-progress。 */
   .cd-videoPlayer-progress {
     position: relative;

@@ -8,4 +8,4 @@
     'https://lf3-static.bytednsdoc.com/obj/eden-cn/ptlz_zlp/ljhwZthlaukjlkulzlp/poster2.jpeg';
 </script>
 
-<VideoPlayer {src} {poster} height={360} theme="light" />
+<VideoPlayer {src} {poster} height={630} theme="light" />

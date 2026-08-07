@@ -635,9 +635,13 @@
     opacity: 0;
   }
 
+  /* Semi 源码未定义该类样式，本库补齐居中定位（物理属性，非 Semi 缺陷复刻点）。 */
   .cd-videoPlayer-resource-not-found {
     position: absolute;
-    inset: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -760,6 +764,12 @@
   }
   :global(.cd-videoPlayer-controls-popup-menu-item:hover) {
     background-color: var(--cd-color-videoPlayer-controls-item-popup-bg-hover) !important;
+  }
+  /* 选中态（对齐 Semi .semi-dropdown-item-active 覆盖，写法对齐 NavPopupNode 同类先例）。 */
+  :global(.cd-videoPlayer-controls-popup-menu .cd-dropdown-item.cd-dropdown-item-active) {
+    color: var(--cd-color-videoPlayer-controls-popup-item-text-active);
+    font-weight: var(--cd-font-videoPlayer-controls-popup-item-fontWeight);
+    cursor: pointer;
   }
 
   /* Popover 容器透明（对齐 Semi -controls-popover）。 */

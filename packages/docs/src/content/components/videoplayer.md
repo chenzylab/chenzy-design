@@ -28,6 +28,8 @@ brief: 用于播放视频。
   import themeSrc from '../../demos/video-player/09-theme.svelte?raw';
   import RefDemo from '../../demos/video-player/10-ref.svelte';
   import refSrc from '../../demos/video-player/10-ref.svelte?raw';
+  import NoResource from '../../demos/video-player/11-no-resource.svelte';
+  import noResourceSrc from '../../demos/video-player/11-no-resource.svelte?raw';
 </script>
 
 ## 代码演示
@@ -101,6 +103,12 @@ import { VideoPlayer } from '@chenzy-design/svelte';
 > Semi 该 prop 名为 `forwardRef`（React ref 转发）；Svelte 无 ref 转发概念，本库改为 `videoRef` 回调，在 video 元素挂载时回传原生元素。
 
 <DemoBox code={refSrc}><RefDemo /></DemoBox>
+
+### 无资源态
+
+不传 `src` 时展示无资源提示。
+
+<DemoBox code={noResourceSrc}><NoResource /></DemoBox>
 
 ### API
 
