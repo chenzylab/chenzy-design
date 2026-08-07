@@ -6,6 +6,7 @@
 -->
 <script lang="ts">
   import Tooltip from '../tooltip/Tooltip.svelte';
+  import { formatTime } from './utils.js';
 
   interface Props {
     value: number;
@@ -82,13 +83,6 @@
 
   const percent = $derived(max > 0 ? (value / max) * 100 : 0);
 
-  // 秒 → m:ss（对齐 Semi utils.formatTime，无小时/NaN 保护——严格照搬）。
-  function formatTime(time: number): string {
-    const minutes = Math.floor(time / 60);
-    const seconds = Math.floor(time % 60);
-    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
-  }
-
   // Tooltip 预览内容（movingInfo 为 null 时 undefined*max=NaN → 显示 NaN:NaN，严格照搬 Semi 缺陷）。
   const tooltipContent = $derived(formatTime((movingInfo?.progress as number) * max));
   // 轨道厚度：hover 时 4→8px（对齐 Semi）。
@@ -104,6 +98,10 @@
     vertical
       ? `left:50%;bottom:calc(${percent}% - 8px);transform:translateX(-50%);opacity:${isHovering ? 1 : 0}`
       : `left:calc(${percent}% - 8px);top:50%;transform:translateY(-50%);opacity:${isHovering ? 1 : 0}`,
+  );
+  // Tooltip 随鼠标沿轴微调（对齐 Semi style={[vertical?'top':'left']:offset}）。
+  const tooltipStyle = $derived(
+    movingInfo ? `${vertical ? 'top' : 'left'}:${movingInfo.offset}px` : '',
   );
 </script>
 
@@ -154,7 +152,20 @@
 {/snippet}
 
 {#if showTooltip}
-  <Tooltip position={vertical ? 'right' : 'top'} content={tooltipContent}>
+  <!-- 对齐 Semi：Tooltip 随鼠标沿轴微调（style={[vertical?'top':'left']:offset}）。
+       triggerStyle + wrapperClassName 让两层触发包裹 span 都继承宽度：Semi React Tooltip 用
+       cloneElement 把事件直接注入 children 本身（不额外包 DOM），本库 Svelte 架构上必须多包两层
+       inline-block span（.cd-tooltip 外层 + .cd-tooltip-trigger 内层），若不显式撑宽会导致内部
+       display:flex 的 slider-wrapper 宽度塌陷为 0（fit-content 特性，真机验证发现）。外层用
+       triggerStyle 撑宽；内层无对应 prop，借 wrapperClassName 打特征类 + CSS 选择器精确命中，
+       不影响其它 Tooltip 消费方。语义对齐 Semi wrapSpan 的 blockDisplays 逻辑。 -->
+  <Tooltip
+    position={vertical ? 'right' : 'top'}
+    content={tooltipContent}
+    style={tooltipStyle}
+    triggerStyle={vertical ? '' : 'width:100%'}
+    wrapperClassName={vertical ? '' : 'cd-audio-player-slider-tooltip'}
+  >
     {@render sliderContent()}
   </Tooltip>
 {:else}

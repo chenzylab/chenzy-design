@@ -41,6 +41,7 @@
   import Tooltip from '../tooltip/Tooltip.svelte';
   import Image from '../image/Image.svelte';
   import AudioSlider from './AudioSlider.svelte';
+  import { formatTime } from './utils.js';
 
   interface Props {
     /** 音频地址（对齐 Semi 四形态：string | string[] | AudioInfo | AudioInfo[]）。 */
@@ -184,13 +185,6 @@
   const rootClass = $derived(
     ['cd-audio-player', `cd-audio-player-${theme}`, className].filter(Boolean).join(' '),
   );
-
-  // 秒 → m:ss（对齐 Semi utils.formatTime，无小时/NaN 保护——严格照搬）。
-  function formatTime(time: number): string {
-    const minutes = Math.floor(time / 60);
-    const seconds = Math.floor(time % 60);
-    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
-  }
 
   // —— 事件桥接到 headless（命令式）——
   const onStatusClick = () => api?.handleStatusClick();
@@ -485,10 +479,9 @@
     border-radius: var(--cd-border-radius-audio-player-speed);
     font-size: var(--cd-font-size-audio-player-small);
     line-height: var(--cd-line-height-audio-player-small);
-    color: var(--cd-color-grey-0);
+    color: var(--cd-color-default);
     font-weight: 600;
     user-select: none;
-    cursor: pointer;
   }
 
   .cd-audio-player :global(.cd-audio-player-control-speed-menu) {
@@ -575,6 +568,12 @@
     display: flex;
     align-items: center;
     justify-content: center;
+  }
+  /* Tooltip 内层触发包裹 .cd-tooltip-trigger（inline-block）需显式撑宽，否则内部
+     display:flex 的 slider-wrapper 宽度塌陷为 0（Svelte Tooltip 架构必经的额外包裹层，
+     Semi React 用 cloneElement 无此层，故 Semi 源码无需这条规则——见 AudioSlider.svelte 说明）。 */
+  :global(.cd-audio-player-slider-tooltip .cd-tooltip-trigger) {
+    width: 100%;
   }
   :global(.cd-audio-player-slider-wrapper-vertical) {
     width: 100%;

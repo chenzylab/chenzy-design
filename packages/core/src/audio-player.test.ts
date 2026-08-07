@@ -244,6 +244,14 @@ describe('createAudioPlayer — volumeChange 钳制', () => {
     expect(p.getState().volume).toBe(0);
     expect(media.volume).toBe(0);
   });
+
+  it('对连续浮点值 Math.floor 取整（对齐 Semi handleVolumeChange）', () => {
+    const { adapter, media } = makeAdapter();
+    const p = createAudioPlayer(adapter, { audioUrl: 'a.mp3' });
+    p.handleVolumeChange(66.87);
+    expect(p.getState().volume).toBe(66);
+    expect(media.volume).toBe(0.66);
+  });
 });
 
 describe('createAudioPlayer — endHandler（对齐 Semi）', () => {
@@ -272,25 +280,41 @@ describe('createAudioPlayer — endHandler（对齐 Semi）', () => {
     // handleTrackChange 设 isPlaying=true（切曲自动播放，对齐 Semi resetAudioState）。
     expect(p.getState().isPlaying).toBe(true);
   });
+
+  it('切曲显式回写 audio.playbackRate=1（对齐 Semi resetAudioState adapter 回写）', () => {
+    const { adapter, media } = makeAdapter();
+    const p = createAudioPlayer(adapter, { audioUrl: ['a.mp3', 'b.mp3'] });
+    p.handleSpeedChange({ label: '2.0x', value: 2 });
+    expect(media.playbackRate).toBe(2);
+    p.handleTrackChange('next');
+    // playbackRate 跨 src 不会自动重置，必须 adapter 显式写回，否则 UI 显示 1.0x 但实际仍 2x。
+    expect(media.playbackRate).toBe(1);
+    expect(p.getState().playbackRate).toEqual({ label: '1.0x', value: 1 });
+  });
 });
 
 describe('createAudioPlayer — errorHandler / initAudioState / subscribe', () => {
-  it('errorHandler 置 isError 并停播', () => {
+  it('errorHandler 仅置 isError，不改 isPlaying（对齐 Semi foundation.errorHandler）', () => {
     const { adapter } = makeAdapter();
     const p = createAudioPlayer(adapter, { audioUrl: 'a.mp3' });
+    p.handleStatusClick(); // 先播放，isPlaying=true
+    expect(p.getState().isPlaying).toBe(true);
     p.errorHandler();
     expect(p.getState().isError).toBe(true);
-    expect(p.getState().isPlaying).toBe(false);
+    // 对齐 Semi：errorHandler 不触碰 isPlaying，播放态原样保留。
+    expect(p.getState().isPlaying).toBe(true);
   });
 
-  it('initAudioState 从 audio 回读时长/音量/倍速', () => {
-    const { adapter } = makeAdapter({ getDuration: () => 200, getVolume: () => 0.8 });
+  it('initAudioState 从 audio 回读时长/音量；倍速 label 固定 1.0x（对齐 Semi 硬编码行为）', () => {
+    const { adapter } = makeAdapter({ getDuration: () => 200, getVolume: () => 0.8, getPlaybackRate: () => 2 });
     const p = createAudioPlayer(adapter, { audioUrl: 'a.mp3', autoPlay: true });
     p.initAudioState();
     const s = p.getState();
     expect(s.totalTime).toBe(200);
     expect(s.volume).toBe(80);
     expect(s.isPlaying).toBe(true);
+    // 对齐 Semi foundation.initAudioState：label 硬编码 '1.0x'，即便 audio.playbackRate=2 也不重算。
+    expect(s.playbackRate).toEqual({ label: '1.0x', value: 2 });
   });
 
   it('subscribe 收到状态更新，取消后不再收到', () => {

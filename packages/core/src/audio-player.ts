@@ -261,8 +261,10 @@ export function createAudioPlayer(
       direction === 'next'
         ? (state.currentTrackIndex + 1) % len
         : (state.currentTrackIndex - 1 + len) % len;
-    // 切曲重置进度并自动播放（对齐 Semi resetAudioState：isPlaying=true, currentTime=0, rate=1x）。
-    // src 由 render 层随 index 更新后 load()，见 render 层 isPlaying 续播逻辑。
+    // 切曲重置进度并自动播放（对齐 Semi resetAudioState：isPlaying=true, currentTime=0, rate=1x，
+    // 且显式回写 audio.playbackRate=1——playbackRate 跨 src/load() 不会自动重置，必须 adapter 显式写回）。
+    // currentTime 由 render 层随 index 更新 src 后 load() 天然归零，无需 adapter.setCurrentTime。
+    adapter.setPlaybackRate(DEFAULT_RATE.value);
     state.currentTime = 0;
     state.totalTime = 0;
     state.isError = false;
@@ -303,7 +305,8 @@ export function createAudioPlayer(
   }
 
   function handleVolumeChange(value: number): void {
-    const clamped = clampVolume(value);
+    // 对齐 Semi handleVolumeChange：Math.floor 取整（拖拽产生的连续浮点值需去小数）。
+    const clamped = Math.floor(clampVolume(value));
     adapter.setVolume(clamped / 100);
     state.volume = clamped;
     emit();
@@ -320,8 +323,10 @@ export function createAudioPlayer(
     const vol = adapter.getVolume();
     const rate = adapter.getPlaybackRate();
     state.totalTime = Number.isNaN(duration) ? 0 : duration;
-    state.volume = Number.isNaN(vol) ? 100 : Math.round(vol * 100);
-    state.playbackRate = { label: `${rate.toFixed(1)}x`, value: rate || 1 };
+    // 对齐 Semi initAudioState：volume 用 0–100 原始值（非四舍五入百分比）。
+    state.volume = Number.isNaN(vol) ? 100 : vol * 100;
+    // label 硬编码 '1.0x'（照搬 Semi foundation.ts 的行为：即便 audio.playbackRate 非 1 也不重算 label）。
+    state.playbackRate = { label: DEFAULT_RATE.label, value: rate || 1 };
     state.isPlaying = autoPlay;
     emit();
   }
@@ -344,8 +349,8 @@ export function createAudioPlayer(
   }
 
   function errorHandler(): void {
+    // 对齐 Semi errorHandler：仅置 isError，不改 isPlaying。
     state.isError = true;
-    state.isPlaying = false;
     emit();
   }
 

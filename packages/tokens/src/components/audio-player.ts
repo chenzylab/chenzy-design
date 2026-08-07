@@ -238,10 +238,10 @@ export const audioPlayerTokens = {
 
   // —— 补充颜色（5）——
   'color-audio-player-text-default': {
-    value: 'var(--cd-color-grey-0)',
+    value: 'var(--cd-color-default)',
     category: 'color',
     label: '默认文字色',
-    usage: '倍速菜单项 / 音量标题文字（对齐 Semi color-default=grey-0）',
+    usage: '倍速菜单项 / 音量标题文字（对齐 Semi var(--semi-color-default)）',
   },
   'color-audio-player-light-disabled-bg': {
     value: 'var(--cd-color-disabled-text)',
