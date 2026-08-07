@@ -45,7 +45,7 @@ export const meta = {
     { name: 'onFocus', type: '(e: FocusEvent) => void', default: 'undefined' },
     { name: 'onClear', type: '() => void', default: 'undefined' },
     { name: 'autoFocus', type: 'boolean', default: 'false', desc: '挂载自动聚焦' },
-    { name: 'position', type: "'bottomLeft'|'bottomRight'|'topLeft'|'topRight'", default: "'bottomLeft'", desc: '浮层位置' },
+    { name: 'position', type: "'top'|'topLeft'|'topRight'|'left'|'leftTop'|'leftBottom'|'right'|'rightTop'|'rightBottom'|'bottom'|'bottomLeft'|'bottomRight'", default: "'bottomLeft'", desc: '浮层位置（对齐 Semi Tooltip 12 方位）' },
     { name: 'maxHeight', type: 'number|string', default: '300', desc: '下拉浮层最大高度，number→px（对齐 Semi 默认 300）' },
     { name: 'zIndex', type: 'number', default: 'undefined', desc: '下拉浮层 z-index（对齐 Semi）' },
     { name: 'class', type: 'string', default: "''", desc: '根节点 className' },

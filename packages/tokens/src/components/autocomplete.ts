@@ -16,9 +16,14 @@ export const autocompleteTokens = {
   'autocomplete-option-bg-active': { value: 'var(--cd-color-fill-1)', category: 'color', label: '选项背景色-按下', usage: '自动完成菜单选项背景颜色 - 按下态（Semi $color-autoComplete_option-bg-active）' },
   'autocomplete-option-disabled-text': { value: 'var(--cd-color-disabled-text)', category: 'color', label: '禁用选项文字色', usage: '禁用自动完成菜单选项文字颜色（Semi $color-autoComplete_option_disabled-text）' },
   'autocomplete-option-keyword-text': { value: 'var(--cd-color-primary)', category: 'color', label: '关键词高亮色', usage: '自动完成菜单选项匹配搜索结果文本颜色（Semi $color-autoComplete_option_keyword-text）' },
-  // 注：Semi variables.scss 另有 option-icon-default/active、option-tick-width/margin-right（仅作用于
-  // 选中对勾 .semi-autocomplete-option-icon，而 autoComplete 恒传 showTick=false 从不渲染该 DOM）与
-  // option-border-default（分组描边，autoComplete 无分组），本库 option 无对应结构，故不镜像这些死变量。
+  // —— 选中对勾（Semi $color-autoComplete_option-icon-* / $width-autoComplete_option_tick / $spacing-autoComplete_option_tick-marginRight）——
+  // 文件拆分对齐 Semi option.tsx 后 Option.svelte 完整实现 showTick 分支，这组 token 从「死变量」转为活消费。
+  'autocomplete-option-icon-default': { value: 'transparent', category: 'color', label: '选项图标色-默认', usage: '自动完成菜单选项图标颜色 - 默认态（Semi $color-autoComplete_option-icon-default）' },
+  'autocomplete-option-icon-active': { value: 'var(--cd-color-text-2)', category: 'color', label: '选项图标色-选中', usage: '自动完成菜单选项图标颜色 - 选中态（Semi $color-autoComplete_option-icon-active）' },
+  'autocomplete-option-tick-width': { value: 'var(--cd-width-icon-small)', category: 'width', label: '选中对勾图标宽度', usage: '自动完成菜单项选中对勾图标大小（Semi $width-autoComplete_option_tick）' },
+  'autocomplete-option-tick-margin-right': { value: 'var(--cd-spacing-tight)', category: 'spacing', label: '选中对勾右侧外边距', usage: '自动完成菜单选中对勾右侧外边距（Semi $spacing-autoComplete_option_tick-marginRight）' },
+  // 注：Semi variables.scss 另有 option-border-default（分组描边，autoComplete 无分组结构），
+  // 本库 option 无对应结构，故不镜像该死变量。
 
   // —— 选项尺寸/内边距（Semi $spacing-autoComplete_option-* / $radius-autoComplete_option）——
   'autocomplete-option-padding-left': { value: 'var(--cd-spacing-base-tight)', category: 'spacing', label: '选项左内边距', usage: '自动完成菜单项左侧内边距（Semi $spacing-autoComplete_option-paddingLeft）' },
