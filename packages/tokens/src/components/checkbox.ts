@@ -80,6 +80,7 @@ export const checkboxTokens = {
   'font-checkbox-cardtype-extra-lineheight': { value: '20px', category: 'font', label: '卡片副标题行高', usage: '卡片类型复选框副标题文字行高' },
 
   // —— animation（对齐 Semi checkbox/animation.scss；none/easeIn/none） ——
+  'transform-scale-checkbox': { value: 'var(--cd-motion-scale-none)', category: 'other', label: '复选框放大', usage: '复选框-放大' },
   'transition-duration-checkbox-bg': { value: 'var(--cd-motion-duration-none)', category: 'animation', label: '背景过渡时长', usage: '复选框-背景色-动画持续时间' },
   'transition-function-checkbox-bg': { value: 'var(--cd-motion-ease-in)', category: 'animation', label: '背景过渡曲线', usage: '复选框-背景色-过渡曲线' },
   'transition-delay-checkbox-bg': { value: 'var(--cd-motion-delay-none)', category: 'animation', label: '背景过渡延迟', usage: '复选框-背景色-延迟时间' },

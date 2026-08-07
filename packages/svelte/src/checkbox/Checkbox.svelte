@@ -6,7 +6,7 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
   import { useId } from '@chenzy-design/core';
-  import { IconCheckboxTick, IconCheckboxIndeterminate } from '@chenzy-design/icons';
+  import CheckboxInner from './CheckboxInner.svelte';
   import {
     getCheckboxGroupContext,
     type CheckboxValue,
@@ -41,10 +41,13 @@
     ariaRequired?: boolean;
     /** a11y: 标记为无效（校验失败时，对齐 Semi aria-invalid）。 */
     ariaInvalid?: boolean;
-    /** a11y: wrapper role（Group 内为 listitem）。 */
+    /** a11y: wrapper role（对齐 Semi 默认不设置——role=checkbox 语义由内层原生 input 天然承载；
+     *  Group 内由 CheckboxGroup 显式传入 listitem）。 */
     role?: string;
     /** 根 wrapper 的 tabindex（对齐 Semi tabIndex，a11y: wrapper tabIndex；grid roving 场景用，缺省不设）。 */
     tabindex?: number | undefined;
+    /** 挂载后自动聚焦（对齐 Semi autoFocus）。 */
+    autoFocus?: boolean;
     /** 根容器内联样式（对齐 Semi style，可设 width 等）。 */
     style?: string;
     /** 根容器自定义类名（与内置 cd-checkbox 并存，对齐 Semi className）。 */
@@ -74,6 +77,7 @@
     ariaInvalid,
     role,
     tabindex,
+    autoFocus,
     style,
     class: className,
     onChange,
@@ -93,21 +97,30 @@
 
   const isControlled = $derived(checked !== undefined);
   let inner = $state(getInitialChecked());
-  let inputEl = $state<HTMLInputElement | null>(null);
+  let innerEntity = $state<CheckboxInner | null>(null);
+  // 对齐 Semi checkboxFoundation clickState/focusVisible：区分「点击触发的 focus」与
+  // 「键盘导航触发的 focus」。纯 CSS :focus-visible 在“JS 主动 focus()”场景会被浏览器
+  // 判定为需要展示焦点环（与 Semi 鼠标点击后无焦点环的实测行为不符），故用 JS 显式过滤。
+  let clickState = false;
+  let focusVisible = $state(false);
 
   function getInitialChecked(): boolean {
     return defaultChecked;
   }
 
-  /** Imperatively focus the native checkbox input (honors `preventScroll`). */
+  /** Imperatively focus the native checkbox input (honors `preventScroll`，对齐 Semi Checkbox.focus). */
   export function focus(): void {
-    inputEl?.focus(preventScroll !== undefined ? { preventScroll } : undefined);
+    innerEntity?.focus(preventScroll !== undefined ? { preventScroll } : undefined);
   }
 
-  /** Imperatively blur the native checkbox input. */
+  /** Imperatively blur the native checkbox input（对齐 Semi Checkbox.blur）. */
   export function blur(): void {
-    inputEl?.blur();
+    innerEntity?.blur();
   }
+
+  $effect(() => {
+    if (autoFocus) focus();
+  });
 
   const isChecked = $derived(
     group && value !== undefined
@@ -136,11 +149,13 @@
     };
   }
 
-  // 对齐 Semi：点击整个 checkbox（含 addon 文本 / extra / card）都切换（checkbox.tsx:299
-  // onClick={handleChange}）。点击与键盘走互斥两条路径，避免双触发：
-  //   · 指针点击 → 根 wrapper 的 onclick（input pointer-events:none，故 target 恒非 input，
-  //     无原生 checkbox toggle 干扰）；
-  //   · 键盘 Space / 聚焦态 → 原生 input 自身产生 change，走 input 的 onchange。
+  // 对齐 Semi：切换的唯一入口是根 span 的 onClick={handleChange}（checkbox.tsx:299）。
+  // 原生 input 铺满 inner 且可交互（无 pointer-events:none），点击 input 时浏览器会先原生翻转
+  // input.checked，但该原生 click 冒泡到根 span 后仍会走同一 handleChange —— newChecked 由
+  // isChecked（受控派生值）取反算出，与 DOM 当前值无关；随后重渲染把 input.checked 强制回写为
+  // isChecked，两者结果一致，不会有二次跳变（对齐 Semi CheckboxInner input onChange=noop，
+  // 真正状态变更只发生一次）。键盘 Space 在聚焦的原生 checkbox 上会自动派发 click 并冒泡到此，
+  // 天然复用同一入口，无需为 Space 单独写逻辑（对齐 Semi 未处理 Space，只处理 Enter）。
   function commit(next: boolean, e: Event) {
     const evt = makeEvent(next, e);
     if (group && value !== undefined) {
@@ -155,19 +170,39 @@
     onChange?.(evt);
   }
 
-  /** 指针点击 wrapper（含文本/额外区）触发切换（对齐 Semi onClick）。input 已 pointer-events:none，
-   *  指针命中恒不落在 input 上；键盘 Space 会在 input 上派发 click（target===input）并冒泡到此，
-   *  那条路径交给 input 的 onchange 处理，此处按 target 跳过，避免与 change 双触发。 */
-  function handleWrapperClick(e: MouseEvent) {
+  /** 根 span 的 click（对齐 Semi handleChange，唯一切换入口）。点击先置 clickState，
+   *  紧随其后的 focus() 触发 input 的 focus 事件时会被 handleInputFocus 读到并跳过，
+   *  不产生焦点环（对齐 Semi handleChange: e.type==='click' 时 this.clickState=true）。 */
+  function handleChange(e: MouseEvent) {
     if (resolvedDisabled) return;
-    if (e.target === inputEl) return; // 键盘 Space 派发的 click：让 onchange 处理
-    inputEl?.focus(preventScroll !== undefined ? { preventScroll } : undefined);
+    clickState = true;
+    focus();
     commit(indeterminate && !isChecked ? true : !isChecked, e);
   }
 
-  /** 原生 input 的 change（键盘 Space / 聚焦态切换的唯一入口）。 */
-  function handleInputChange(e: Event & { currentTarget: HTMLInputElement }) {
-    commit(e.currentTarget.checked, e);
+  /** input 的 change 是 noop（对齐 Semi CheckboxInner onChange=noop）：原生 toggle 已被上面
+   *  的根 span click 处理并受控回写，这里只需阻止浏览器对未受控属性做任何额外反应。 */
+  function handleInputChange(_e: Event) {}
+
+  /** 对齐 Semi handleFocusVisible：点击引发的 focus 消费掉 clickState 后直接跳过；
+   *  其余（Tab 键盘导航）情形才依据浏览器 :focus-visible 判定决定是否显示焦点环。 */
+  function handleInputFocus(e: FocusEvent) {
+    if (clickState) {
+      clickState = false;
+      return;
+    }
+    const target = e.target as HTMLElement;
+    try {
+      if (target.matches(':focus-visible')) focusVisible = true;
+    } catch {
+      // 当前浏览器不支持 :focus-visible（对齐 Semi warning 分支，静默降级不展示焦点环）。
+    }
+  }
+
+  /** 对齐 Semi handleBlur：失焦清空 clickState 与 focusVisible。 */
+  function handleInputBlur(_e: FocusEvent) {
+    clickState = false;
+    focusVisible = false;
   }
 
   /** Enter 切换（对齐 Semi handleEnterPress）。原生 checkbox 只认 Space，Enter 是 Semi 额外行为。 */
@@ -179,10 +214,11 @@
     }
   }
 
-  /** Set the indeterminate DOM property (not a reflected attribute). */
-  function indeterminateAttach(node: HTMLInputElement) {
-    node.indeterminate = indeterminate && !isChecked;
-  }
+  // 对齐 Semi：focusOuter = isCardType || isPureCardType（card/pureCard 整卡展示焦点环，
+  // 否则焦点环画在 inner-display 上）。
+  const focusOuter = $derived(isCardType || isPureCardType);
+  const showInnerFocus = $derived(focusVisible && !focusOuter);
+  const showOuterFocus = $derived(focusVisible && focusOuter);
 
   const cls = $derived(
     [
@@ -195,77 +231,52 @@
       isCardType && !resolvedDisabled && 'cd-checkbox-cardType_enable',
       isCardType && isChecked && !resolvedDisabled && 'cd-checkbox-cardType_checked',
       isCardType && isChecked && resolvedDisabled && 'cd-checkbox-cardType_checked_disabled',
+      showOuterFocus && 'cd-checkbox-focus',
       className,
     ]
       .filter(Boolean)
       .join(' '),
   );
 
-  const innerCls = $derived(
-    [
-      'cd-checkbox-inner',
-      isChecked && 'cd-checkbox-inner-checked',
-      isPureCardType && 'cd-checkbox-inner-pureCardType',
-    ]
-      .filter(Boolean)
-      .join(' '),
-  );
-
   const extraIsString = $derived(typeof extra === 'string');
-
-  // 合并内部生成的关联 id 与外部（withField）注入的 aria id：
-  // labelledby = 内部 addonId（有可见 children 时）拼外部 ariaLabelledby；
-  // describedby = 内部 extraId（有 extra 时）拼外部 ariaDescribedby。
-  const resolvedLabelledby = $derived(
-    [children ? resolvedAddonId : undefined, ariaLabelledby].filter(Boolean).join(' ') || undefined,
-  );
-  const resolvedDescribedby = $derived(
-    [extraId, ariaDescribedby].filter(Boolean).join(' ') || undefined,
-  );
 </script>
 
 <!-- Semi 注释：label 更好，但用 span 是为规避 gitlab #364（对齐 Semi 根用 span 非 label）。
      切换挂在根 span 的 click 上（对齐 Semi onClick={handleChange}），点击整个 checkbox（含
-     addon 文本 / extra / card）都切换；原生 input 只承载焦点 / a11y，其 change 被 preventDefault
-     旁路，状态由受控 checked 驱动。 -->
+     addon 文本 / extra / card）都切换；原生 input 只承载焦点 / a11y / 受控 checked。
+     根 span 的 aria-labelledby 只回显外部传入值（对齐 checkbox.tsx render），内部 addonId 关联
+     另在 CheckboxInner 的 input 上单独设置（对齐 checkboxInner.tsx input aria-labelledby={addonId}）。 -->
 <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
 <span
   class={cls}
   {style}
-  id={id}
+  {id}
   {role}
   {tabindex}
-  aria-labelledby={resolvedLabelledby}
-  onclick={handleWrapperClick}
-  onkeydown={handleKeydown}
+  aria-labelledby={ariaLabelledby}
+  onclick={handleChange}
+  onkeypress={handleKeydown}
 >
-  <span class={innerCls}>
-    <input
-      bind:this={inputEl}
-      {@attach indeterminateAttach}
-      id={fieldId}
-      class="cd-checkbox-input"
-      type="checkbox"
-      name={resolvedName}
-      value={value !== undefined ? String(value) : undefined}
-      checked={isChecked}
-      disabled={resolvedDisabled}
-      aria-label={!children ? ariaLabel : undefined}
-      aria-labelledby={resolvedLabelledby}
-      aria-describedby={resolvedDescribedby}
-      aria-errormessage={ariaErrormessage}
-      aria-required={ariaRequired || undefined}
-      aria-invalid={ariaInvalid || undefined}
-      onchange={handleInputChange}
-    />
-    <span class="cd-checkbox-inner-display" aria-hidden="true">
-      {#if indeterminate && !isChecked}
-        <IconCheckboxIndeterminate size="inherit" />
-      {:else if isChecked}
-        <IconCheckboxTick size="inherit" />
-      {/if}
-    </span>
-  </span>
+  <CheckboxInner
+    bind:this={innerEntity}
+    indeterminate={indeterminate && !isChecked}
+    checked={isChecked}
+    disabled={resolvedDisabled}
+    name={resolvedName}
+    {value}
+    {isPureCardType}
+    addonId={children ? resolvedAddonId : undefined}
+    extraId={extra ? extraId : undefined}
+    aria-label={ariaLabel}
+    ariaDescribedby={ariaDescribedby}
+    ariaErrormessage={ariaErrormessage}
+    ariaRequired={ariaRequired}
+    ariaInvalid={ariaInvalid}
+    focusInner={showInnerFocus}
+    onInputChange={handleInputChange}
+    onInputFocus={handleInputFocus}
+    onInputBlur={handleInputBlur}
+  />
   {#if children || extra}
     <div class="cd-checkbox-content">
       {#if children}<span class="cd-checkbox-addon" id={resolvedAddonId}>{@render children()}</span>{/if}
@@ -294,6 +305,7 @@
     /* 对齐 Semi checkbox.scss:44 `line-height: $font-checkbox_label-lineHeight`
        —— Semi 用的是组件专属变量，本库对应 token 同名同值，故消费它而非通用刻度。 */
     line-height: var(--cd-font-checkbox-label-lineheight);
+    transform: var(--cd-transform-scale-checkbox);
     transition:
       background-color var(--cd-transition-duration-checkbox-bg) var(--cd-transition-function-checkbox-bg)
         var(--cd-transition-delay-checkbox-bg),
@@ -304,93 +316,48 @@
     cursor: not-allowed;
   }
 
-  /* —— inner：三层 span.inner > input + span.inner-display —— */
-  .cd-checkbox-inner {
-    position: relative;
-    display: flex;
-    align-items: center;
-    flex-shrink: 0;
-    inline-size: var(--cd-checkbox-size-default);
-    block-size: var(--cd-checkbox-inner-height);
-    user-select: none;
-    cursor: pointer;
-  }
-  /* 原生 input 铺满 inner，opacity:0 承载键盘焦点与 a11y（对齐 Semi checkbox.scss:22-30）。
-     pointer-events:none：切换由根 wrapper 的 click 承载（对齐 Semi onClick），若 input 仍接收指针
-     则点框时浏览器会先原生 toggle input.checked，再与受控 checked 绑定打架 —— 表现为根 class 已
-     checked 但 input.checked 停在旧值（受控值未变时 Svelte 跳过 DOM 纠正），真机点框失灵。
-     焦点改由 handleToggle 内 inputEl.focus() 显式承载（对齐 Semi focusCheckboxEntity）。 */
-  .cd-checkbox-input {
-    position: absolute;
-    inset: 0;
-    inline-size: 100%;
-    block-size: 100%;
-    margin: 0;
-    padding: 0;
-    opacity: 0;
-    cursor: inherit;
-    pointer-events: none;
-  }
-  .cd-checkbox-inner-display {
-    box-sizing: border-box;
-    position: relative;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    inline-size: var(--cd-checkbox-size-default);
-    block-size: var(--cd-checkbox-size-default);
-    /* Semi 图标经字号驱动填满整盒（图标 viewBox 自带视觉内边距）。 */
-    font-size: var(--cd-checkbox-size-default);
-    background: var(--cd-color-checkbox-default-bg-default);
-    border-radius: var(--cd-radius-checkbox-inner);
-    /* Semi 用 inset box-shadow 画描边（checkbox.scss:110）。 */
-    box-shadow: inset 0 0 0 var(--cd-size-checkbox-inner-shadow) var(--cd-color-checkbox-default-border-default);
-    color: var(--cd-color-checkbox-checked-icon-default);
-    transition:
-      background-color var(--cd-transition-duration-checkbox-bg) var(--cd-transition-function-checkbox-bg)
-        var(--cd-transition-delay-checkbox-bg),
-      box-shadow var(--cd-transition-duration-checkbox-border) var(--cd-transition-function-checkbox-border)
-        var(--cd-transition-delay-checkbox-border);
-  }
+  /* inner/input/inner-display 现在渲染自子组件 CheckboxInner.svelte，样式定义随 DOM 迁移到那边
+     （Svelte scoped CSS 按文件生效，父组件里写这些选择器不会命中子组件渲染的元素）。此处仅保留
+     跨组件边界的组合选择器（:hover 等状态类在父 wrapper 上，需 :global() 打透子组件的 inner-display）。 */
 
   /* 未选中态悬浮（对齐 Semi：描边 focus-border、背景 fill-0） */
   .cd-checkbox:hover:not(.cd-checkbox-disabled):not(.cd-checkbox-checked):not(.cd-checkbox-indeterminate)
-    .cd-checkbox-inner-display {
+    :global(.cd-checkbox-inner-display) {
     background: var(--cd-color-checkbox-default-bg-hover);
     box-shadow: inset 0 0 0 var(--cd-size-checkbox-inner-shadow) var(--cd-color-checkbox-default-border-hover);
   }
   /* 未选中态按下 */
   .cd-checkbox:active:not(.cd-checkbox-disabled):not(.cd-checkbox-checked):not(.cd-checkbox-indeterminate)
-    .cd-checkbox-inner-display {
+    :global(.cd-checkbox-inner-display) {
     background: var(--cd-color-checkbox-default-bg-active);
   }
 
   /* 选中 / 半选态 */
-  .cd-checkbox-checked .cd-checkbox-inner-display,
-  .cd-checkbox-indeterminate .cd-checkbox-inner-display {
+  .cd-checkbox-checked :global(.cd-checkbox-inner-display),
+  .cd-checkbox-indeterminate :global(.cd-checkbox-inner-display) {
     background: var(--cd-color-checkbox-checked-bg-default);
     color: var(--cd-color-checkbox-checked-icon-default);
     box-shadow: inset 0 0 0 var(--cd-size-checkbox-inner-shadow) var(--cd-color-checkbox-checked-border-default);
   }
-  .cd-checkbox-checked:hover:not(.cd-checkbox-disabled) .cd-checkbox-inner-display,
-  .cd-checkbox-indeterminate:hover:not(.cd-checkbox-disabled) .cd-checkbox-inner-display {
+  .cd-checkbox-checked:hover:not(.cd-checkbox-disabled) :global(.cd-checkbox-inner-display),
+  .cd-checkbox-indeterminate:hover:not(.cd-checkbox-disabled) :global(.cd-checkbox-inner-display) {
     background: var(--cd-color-checkbox-checked-bg-hover);
     box-shadow: inset 0 0 0 var(--cd-size-checkbox-inner-shadow) var(--cd-color-checkbox-checked-border-hover);
   }
-  .cd-checkbox-checked:active:not(.cd-checkbox-disabled) .cd-checkbox-inner-display,
-  .cd-checkbox-indeterminate:active:not(.cd-checkbox-disabled) .cd-checkbox-inner-display {
+  .cd-checkbox-checked:active:not(.cd-checkbox-disabled) :global(.cd-checkbox-inner-display),
+  .cd-checkbox-indeterminate:active:not(.cd-checkbox-disabled) :global(.cd-checkbox-inner-display) {
     background: var(--cd-color-checkbox-checked-bg-active);
     box-shadow: inset 0 0 0 var(--cd-size-checkbox-inner-shadow) var(--cd-color-checkbox-checked-border-active);
   }
 
   /* 禁用态 */
-  .cd-checkbox-disabled .cd-checkbox-inner-display {
+  .cd-checkbox-disabled :global(.cd-checkbox-inner-display) {
     background: var(--cd-color-checkbox-disabled-bg-default);
     box-shadow: inset 0 0 0 var(--cd-size-checkbox-inner-shadow) var(--cd-color-checkbox-disabled-border-default);
     color: var(--cd-color-checkbox-checked-icon-disabled);
   }
-  .cd-checkbox-disabled.cd-checkbox-checked .cd-checkbox-inner-display,
-  .cd-checkbox-disabled.cd-checkbox-indeterminate .cd-checkbox-inner-display {
+  .cd-checkbox-disabled.cd-checkbox-checked :global(.cd-checkbox-inner-display),
+  .cd-checkbox-disabled.cd-checkbox-indeterminate :global(.cd-checkbox-inner-display) {
     opacity: 0.75;
     background: var(--cd-color-checkbox-checked-bg-disabled);
     box-shadow: inset 0 0 0 var(--cd-size-checkbox-inner-shadow) var(--cd-color-checkbox-checked-bg-disabled);
@@ -401,10 +368,10 @@
     color: var(--cd-color-checkbox-label-text-disabled);
   }
 
-  /* 焦点环：input focus-visible 时给 inner-display 描 focus ring */
-  .cd-checkbox-input:focus-visible + .cd-checkbox-inner-display {
+  /* 焦点环（card/pureCard 整卡态，对齐 Semi checkbox.scss:366-368 `&-focus`）：由 JS 计算的
+     focusVisible && focusOuter 驱动，非纯 CSS :focus-visible（理由见 CheckboxInner.svelte 同名注释）。 */
+  .cd-checkbox-focus {
     outline: var(--cd-width-checkbox-outline) solid var(--cd-color-checkbox-primary-outline-focus);
-    outline-offset: 0;
   }
 
   /* —— 内容区 —— */
@@ -437,13 +404,12 @@
     background: transparent;
     border: var(--cd-width-checkbox-cardtype-border) solid var(--cd-color-checkbox-cardtype-border-default);
   }
-  .cd-checkbox-cardType .cd-checkbox-inner-display {
+  /* 仅未选中态用卡片内框底色（对齐 Semi checkbox.scss:195-201 该规则嵌套在 &-cardType 内、
+     早于 &-checked 声明，源码顺序上被选中态覆盖；此处直接排除选中/半选态达到同等效果，
+     不依赖跨规则块的源码顺序，更不易在后续重排样式时再次踩坑）。 */
+  .cd-checkbox-cardType:not(.cd-checkbox-checked):not(.cd-checkbox-indeterminate)
+    :global(.cd-checkbox-inner-display) {
     background: var(--cd-color-checkbox-cardtype-inner-bg-default);
-  }
-  /* pureCard：隐藏勾选框但保留 input 承载 a11y 焦点（对齐 Semi checkbox.scss:204-210） */
-  .cd-checkbox-inner-pureCardType {
-    opacity: 0;
-    width: 0;
   }
   .cd-checkbox-cardType .cd-checkbox-addon {
     font-weight: var(--cd-font-checkbox-cardtype-addon-fontweight);
@@ -486,7 +452,7 @@
 
   @media (prefers-reduced-motion: reduce) {
     .cd-checkbox,
-    .cd-checkbox-inner-display {
+    :global(.cd-checkbox-inner-display) {
       transition: none;
     }
   }
