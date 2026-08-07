@@ -98,7 +98,11 @@ const components = [
   // 2026-08-04 逐 demo 真机对齐 Semi 一轮修复（loadData 重构为 Semi 同构、拆出
   // Item.svelte 承载面板渲染、triggerRender onClear 事件透传、filterRender 虚拟化
   // 字号/padding/gap 对齐等真实功能/bug 修复，非无谓膨胀），实测 13.15 KB，预算随之上调。
-  ['cascader', '{ Cascader }', '13.3 KB'],
+  // 2026-08-07 全量严格对齐 Semi 第二轮修复：warning/error 触发器背景+边框、单选
+  // IconTick/empty 占位图标、tag 节点级 disabled 态、ARIA menu/menuitem 模型改造
+  // （aria-owns/haspopup/expanded）、RTL 键义对调、TagInput wrapper 精细化覆盖等
+  // 真实功能补齐（非无谓膨胀），实测 13.95 KB，预算随之上调。
+  ['cascader', '{ Cascader }', '14.1 KB'],
   ['checkbox', '{ Checkbox, CheckboxGroup }', '4 KB'],
   ['color-picker', '{ ColorPicker }', '7.5 KB'],
   // DatePicker 从零重写并严格对齐 Semi（7 type + range 双框触发器 + dateTime + 手输解析 +

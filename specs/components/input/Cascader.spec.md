@@ -193,11 +193,11 @@ Cascader（级联选择器）用于从一组有层级关系的数据集合中进
 
 ## 6. 无障碍
 
-遵循 WAI-ARIA APG Combobox + 多列 listbox/tree 模式（AA）。
+对齐 Semi item.tsx 的 combobox + menu/menuitem 模式（非标准 APG listbox/tree，是 Semi 源生模式，严格对齐 Semi 优先于套用标准模式）。
 
 角色与属性：
-- 触发器：`role="combobox"`，`aria-haspopup="tree"`，`aria-expanded`，`aria-controls=<popup-id>`，`aria-activedescendant` 指向当前激活项。
-- 浮层：可搜索时容器配搜索 `input`；列区域 `role="tree"`，每列 `role="group"`，列项 `role="treeitem"`，含 `aria-level`、`aria-expanded`（有子级时）、`aria-selected`/`aria-checked`（多选）、`aria-disabled`、加载中 `aria-busy="true"`。
+- 触发器：`role="combobox"`，`aria-haspopup="menu"`（浮层内容为 menu/menuitem，非 listbox），`aria-expanded`，`aria-controls=<popup-id>`，`aria-activedescendant` 指向当前激活项。可搜索时该语义整体下移到触发器内搜索 `input`，根容器不再是 combobox（避免嵌套双 combobox）。
+- 浮层：可搜索时切换为扁平结果列表，列项 `role="menuitem"`；非搜索时列区域每列 `role="menu"`（`aria-label` 走 `Cascader.columnLabel`），列项 `role="menuitem"`，含 `aria-expanded`（有子级且展开中）、`aria-haspopup`（可展开）、`aria-owns`（非首列指向其父项 id）、`aria-disabled`；多选勾选态由内嵌 Checkbox 自身 `aria-checked` 承载（非列项本身）。浮层根容器本身不设 role（Semi 字面 DOM 是 `role="listbox"` 包裹 `role="menu"`，但该嵌套违反 ARIA `aria-required-children` 规则，本库有 axe 零违规闸门，故浮层根节点省略 role，仅内部列/列项保留 Semi 的 menu/menuitem 语义）。
 - 多选 Tag 区：每个 Tag 关闭按钮配 `aria-label`（走 `Tag.closeAriaLabel` 由 Tag 组件产出；Cascader slice 无 `removeTag` 键）。
 
 键盘交互：
@@ -266,7 +266,7 @@ LiveAnnouncer：当前仅「加载中」走 `Cascader.loading`；「加载完成
 - `capabilities`: ['multi-level-select','multiple','dynamic-load','searchable','change-on-select']。
 - `props`/`events`/`slots` 的结构化签名（类型、默认值、是否受控、关联事件）供 AI 生成代码与校验。
 - `controlledPairs`: [['value','change'],['open','openChange']]。
-- `a11yRoles`: ['combobox','tree','treeitem','group']。
+- `a11yRoles`: ['combobox','menu','menuitem']。
 - `i18nKeys`: 第 7 节全部 key。
 - `tokens`: 第 5 节 Component Token 清单。
 - `examples`: 静态级联、动态加载、多选级联勾选、可搜索四个最小可运行片段。
@@ -284,7 +284,7 @@ LiveAnnouncer：当前仅「加载中」走 `Cascader.loading`；「加载完成
 交互 / a11y（svelte + testing-library + axe）：
 - 键盘：Up/Down/Left/Right/Enter/Space/Esc/Home/End 全覆盖（含 RTL 键义对调）。
 - 焦点：打开聚焦激活路径、关闭归还触发器、Tab 不陷入。
-- ARIA：combobox/tree/treeitem 属性、aria-activedescendant 跟随、aria-busy 加载态、axe 0 violations。
+- ARIA：combobox/menu/menuitem 属性、aria-activedescendant 跟随、aria-busy 加载态、axe 0 violations。
 - LiveAnnouncer 播报展开/加载/选中。
 
 视觉 / 回归：三尺寸 × 三校验态、激活/hover/disabled、多选折叠 +N、空态/无结果/加载/失败快照；reduced-motion 关过渡。

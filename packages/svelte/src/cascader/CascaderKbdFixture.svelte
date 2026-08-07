@@ -7,6 +7,13 @@
   import { LocaleProvider } from '../locale-provider/index.js';
   import Cascader from './Cascader.svelte';
 
+  interface Props {
+    multiple?: boolean;
+    /** 真机 RTL 键义对调测试：包一层 .cd-rtl 令 direction:rtl 生效（本库 RTL 触发机制）。 */
+    rtl?: boolean;
+  }
+  const { multiple = false, rtl = false }: Props = $props();
+
   const treeData = [
     {
       label: 'Zhejiang',
@@ -27,5 +34,7 @@
 </script>
 
 <LocaleProvider locale="en_US">
-  <Cascader {treeData} aria-label="Region" placeholder="Select region" />
+  <div class={rtl ? 'cd-rtl' : undefined}>
+    <Cascader {treeData} {multiple} aria-label="Region" placeholder="Select region" />
+  </div>
 </LocaleProvider>

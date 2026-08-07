@@ -91,15 +91,6 @@ export {
   type DropPosition,
 } from './tree.js';
 export {
-  flattenCascaderPaths,
-  filterCascaderPaths,
-  resolveColumnWidth,
-  type CascaderKey,
-  type CascaderPathNode,
-  type CascaderFlatPath,
-  type CascaderFilterFn,
-} from './cascader.js';
-export {
   nextSortOrder,
   toggleSort,
   applySort,
