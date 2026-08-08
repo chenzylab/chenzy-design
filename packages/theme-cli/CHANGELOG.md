@@ -1,5 +1,13 @@
 # @chenzy-design/theme-cli
 
+## 0.4.2
+
+### Patch Changes
+
+- Updated dependencies [3dec738]
+- Updated dependencies [3c5e00e]
+  - @chenzy-design/tokens@0.4.2
+
 ## 0.4.1
 
 ### Patch Changes
