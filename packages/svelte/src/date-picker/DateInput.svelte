@@ -323,12 +323,12 @@
     color: var(--cd-color-date-picker-range-input-disabled-text-default, var(--cd-color-disabled-text));
     background-color: var(--cd-color-date-picker-range-input-disabled-bg-default, var(--cd-color-disabled-fill));
   }
-  /* range prefix / insetLabel（对齐 Semi -range-input-prefix）。 */
+  /* range prefix / insetLabel（对齐 Semi -range-input-prefix，实测左 12px 右 8px 非对称）。 */
   :global(.cd-datepicker-range-input-prefix) {
     display: flex;
     align-items: center;
     flex-shrink: 0;
-    padding: 0 8px;
+    padding: 0 8px 0 12px;
     color: var(--cd-color-text-2);
   }
   /* range 清除按钮（对齐 Semi -range-input-clearbtn）：flex center + text-2，hover 加深。
@@ -341,7 +341,8 @@
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
-    padding: 0 8px;
+    /* 实测 Semi clearbtn padding: 0 12px 0 8px（左 8px 右 12px 非对称，同 suffix）。 */
+    padding: 0 12px 0 8px;
     cursor: pointer;
     white-space: nowrap;
     color: var(--cd-color-text-2);
@@ -375,5 +376,19 @@
   :global(.cd-datepicker-range-input-warning) {
     border: 1px solid var(--cd-color-warning);
     background-color: var(--cd-color-warning-light-default);
+  }
+
+  /* —— RTL（逐条对齐 Semi datePicker/rtl.scss &-range-input，左右 padding 互换）—— */
+  :global(.cd-rtl) :global(.cd-datepicker-range-input-prefix) {
+    padding-left: 8px;
+    padding-right: 12px;
+  }
+  :global(.cd-rtl) :global(.cd-datepicker-range-input-suffix) {
+    padding-left: 12px;
+    padding-right: 8px;
+  }
+  :global(.cd-rtl) :global(.cd-datepicker-range-input-clearbtn) {
+    padding-left: 12px;
+    padding-right: 8px;
   }
 </style>

@@ -186,7 +186,7 @@
   }
 
   let {
-    type = 'date',
+    type: typeProp = 'date',
     value,
     defaultValue,
     defaultPickerValue,
@@ -275,6 +275,16 @@
     localeCode,
   }: Props = $props();
 
+  // format 归一化（对齐 Semi index.tsx propsObj 逻辑）：format 不含时间片段（无 [Hhms]）时，
+  // dateTime/dateTimeRange 静默降级为 date/dateRange —— 用户传了纯日期 format 却仍要时间面板无意义。
+  const type = $derived.by((): PickerType => {
+    if (typeof format === 'string' && format && !/[Hhms]+/.test(format)) {
+      if (typeProp === 'dateTime') return 'date';
+      if (typeProp === 'dateTimeRange') return 'dateRange';
+    }
+    return typeProp;
+  });
+
   const baseLoc = useLocale();
   const PREFIX = cssClasses.PREFIX;
 
@@ -327,6 +337,14 @@
   const configCtx = getContext<ConfigContextValue | undefined>(CONFIG_CONTEXT_KEY);
   const configTimeZone = $derived(configCtx?.current.timeZone);
 
+  // rangeSeparator 归一化（对齐 Semi index.tsx propsObj 逻辑）：两端补空格，避免分隔符与
+  // 日期内字符相连产生歧义（如自定义传 '-' 时与 yyyy-MM-dd 的连字符冲突）。
+  const effectiveRangeSeparator = $derived(
+    rangeSeparator && typeof rangeSeparator === 'string'
+      ? ` ${rangeSeparator.trim()} `
+      : strings.DEFAULT_SEPARATOR_RANGE,
+  );
+
   // foundation：值模型/格式化/open（rune 工厂，getProps 回调跨文件响应式）。
   const fProps: DatePickerFoundationProps = {
     get type() { return type; },
@@ -338,7 +356,7 @@
     get multiple() { return multiple; },
     get format() { return format; },
     get locale() { return loc().code; },
-    get rangeSeparator() { return rangeSeparator ?? strings.DEFAULT_SEPARATOR_RANGE; },
+    get rangeSeparator() { return effectiveRangeSeparator; },
     get timeZone() { return timeZone; },
     get configTimeZone() { return configTimeZone; },
     showSecond: true,
@@ -374,7 +392,7 @@
   // range 触发器展示串：走 type 的默认 format（对齐 Semi getDefaultFormatTokenByType），
   // 故 monthRange 显示 yyyy-MM 而非内部比较用的 yyyy-MM-dd；用户传 format 时以其为准。
   const displayToken = $derived(format ?? getDefaultFormatTokenByType(type) ?? rangeToken);
-  const rangeSep = $derived(rangeSeparator ?? strings.DEFAULT_SEPARATOR_RANGE);
+  const rangeSep = $derived(effectiveRangeSeparator);
   const rangeStartDisplay = $derived(
     st.isRange && st.currentRange[0] ? dateFnsFormat(st.currentRange[0]!, displayToken) : '',
   );
@@ -620,10 +638,10 @@
   const phText = $derived.by(() => {
     if (type === 'monthRange') {
       if (Array.isArray(placeholder)) {
-        return `${placeholder[0] ?? ''}${rangeSeparator}${placeholder[1] ?? ''}`;
+        return `${placeholder[0] ?? ''}${effectiveRangeSeparator}${placeholder[1] ?? ''}`;
       }
       if (placeholder !== undefined) return placeholder;
-      return `${phRangeDefault[0] ?? ''}${rangeSeparator}${phRangeDefault[1] ?? ''}`;
+      return `${phRangeDefault[0] ?? ''}${effectiveRangeSeparator}${phRangeDefault[1] ?? ''}`;
     }
     return Array.isArray(placeholder) ? (placeholder[0] ?? phDefault) : (placeholder ?? phDefault);
   });
@@ -921,7 +939,8 @@
                   {type}
                   value={insetValue}
                   {format}
-                  rangeSeparator={strings.DEFAULT_SEPARATOR_RANGE}
+                  rangeSeparator={effectiveRangeSeparator}
+                  {density}
                   onInsetChange={onInsetChange}
                 />
               {/key}
@@ -1053,6 +1072,15 @@
   :global(.cd-datepicker-container) {
     display: flex;
   }
+  /* —— RTL（对齐 Semi datePicker/rtl.scss 根声明）——
+     已知限制：面板默认 use:floating 挂载到 document.body（未传 getPopupContainer 时），
+     脱离 ConfigProvider 的 .cd-rtl 包裹层，此规则与本文件/Footer/Month/Switch/Navigation/
+     YearAndMonth/DateInput(range-input)/MonthsGrid/InsetInput 里的面板内 RTL 镜像默认场景
+     下不生效——与 Semi 自身 `.semi-portal-rtl` 从未被真正赋值是同一已知遗留现状（TimePicker
+     RTL 处理同此）。传入 getPopupContainer 把面板挂载到 .cd-rtl 作用域内时镜像生效。 */
+  :global(.cd-rtl) :global(.cd-datepicker) {
+    direction: rtl;
+  }
   /* density=compact —— 对齐 Semi datePicker.scss `.semi-datepicker-compact`。
      覆写尺寸变量即可让下游（day / day-main / month 宽 / weeks 高）整体跟随，
      实测 Semi compact：day 28×28 / day-main 24 / font-size 12 / line-height 20 /
@@ -1150,6 +1178,13 @@
       var(--cd-width-date-picker-day-compact, 28px) * 7 +
         var(--cd-spacing-date-picker-weeks-compact-padding, 10px) * 2
     );
+  }
+  /* compact + range 类型：左右面板分隔线（对齐 Semi datePicker.scss:1193-1194，仅
+     dateRange/dateTimeRange，monthRange 走单框无双面板分隔线场景）。 */
+  :global(.cd-datepicker-compact[x-type='dateRange'] .cd-datepicker-month-grid-left),
+  :global(.cd-datepicker-compact[x-type='dateTimeRange'] .cd-datepicker-month-grid-left) {
+    border-right: var(--cd-width-date-picker-border, 1px) solid
+      var(--cd-color-date-picker-border-bg-default);
   }
   /* 撑住 tpk/yam 覆盖层的保底高**只在覆盖层打开时生效**（Semi 把它挂在
      `.semi-datepicker-yam-showing` 上，见 datePicker.scss:1298）。

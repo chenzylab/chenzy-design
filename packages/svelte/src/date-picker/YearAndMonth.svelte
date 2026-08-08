@@ -219,4 +219,9 @@
   :global(.cd-datepicker-yearmonth-body > .cd-datepicker-yearmonth-panel:nth-child(2)) {
     border-left: 1px solid var(--cd-color-border);
   }
+
+  /* —— RTL（对齐 Semi datePicker/rtl.scss &-yam：返回按钮箭头水平翻转）—— */
+  :global(.cd-rtl) :global(.cd-datepicker-yearmonth-header .cd-icon-chevron_left) {
+    transform: scaleX(-1);
+  }
 </style>

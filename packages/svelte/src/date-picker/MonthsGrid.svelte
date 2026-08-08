@@ -442,4 +442,29 @@
   :global(.cd-datepicker-switch-text) {
     padding-left: 4px;
   }
+
+  /* compact：日期段与时间段之间竖分隔线 + 去 icon 后文字不需要左内边距
+     （对齐 Semi datePicker.scss:1471-1484）。 */
+  :global(.cd-datepicker-compact .cd-datepicker-switch-date) {
+    border-right: var(--cd-width-date-picker-border, 1px) solid
+      var(--cd-color-date-picker-border-bg-default);
+  }
+  :global(.cd-datepicker-compact .cd-datepicker-switch-text) {
+    padding-left: 0;
+  }
+
+  /* —— RTL（逐条对齐 Semi datePicker/rtl.scss &-switch-text）—— */
+  :global(.cd-rtl) :global(.cd-datepicker-switch-text) {
+    padding-left: 0;
+    padding-right: 4px;
+  }
+  /* compact RTL（对齐 Semi rtl.scss compact &-switch，167-177 行）。 */
+  :global(.cd-rtl) :global(.cd-datepicker-compact .cd-datepicker-switch-date) {
+    border-right: 0;
+    border-left: var(--cd-width-date-picker-border, 1px) solid
+      var(--cd-color-date-picker-border-bg-default);
+  }
+  :global(.cd-rtl) :global(.cd-datepicker-compact .cd-datepicker-switch-text) {
+    padding-right: 0;
+  }
 </style>

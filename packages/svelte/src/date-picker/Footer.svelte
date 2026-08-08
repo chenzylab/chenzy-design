@@ -47,4 +47,19 @@
   :global(.cd-datepicker-footer .cd-button:first-of-type) {
     margin-right: var(--cd-spacing-date-picker-footer-cancel-button-margin-right, 12px);
   }
+
+  /* —— RTL（逐条对齐 Semi datePicker/rtl.scss &-footer）—— */
+  :global(.cd-rtl) :global(.cd-datepicker-footer) {
+    padding-right: 0;
+    padding-left: var(--cd-spacing-date-picker-footer-padding-right, 8px);
+    text-align: left;
+  }
+  :global(.cd-rtl) :global(.cd-datepicker-footer .cd-button:first-of-type) {
+    margin-left: 0;
+    margin-right: 0;
+  }
+  :global(.cd-rtl) :global(.cd-datepicker-footer .cd-button:nth-of-type(2)) {
+    margin-right: var(--cd-spacing-date-picker-footer-cancel-button-margin-right, 12px);
+    margin-left: 0;
+  }
 </style>
