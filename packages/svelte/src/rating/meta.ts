@@ -39,7 +39,7 @@ export const meta = {
     { name: 'focus()', desc: '命令式聚焦当前分值对应星（对齐 Semi focus()）' },
     { name: 'blur()', desc: '命令式失焦（对齐 Semi blur()）' },
   ],
-  i18nKeys: ['Rating.ariaLabel', 'Rating.valueText', 'Rating.cleared', 'Rating.unrated'],
+  i18nKeys: ['Rating.aria-label', 'Rating.valueText', 'Rating.cleared', 'Rating.unrated'],
   a11y: {
     role: 'radio',
     keyboard: ['ArrowRight/Up', 'ArrowLeft/Down'],

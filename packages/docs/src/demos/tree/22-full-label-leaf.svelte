@@ -1,8 +1,8 @@
 <script lang="ts">
   import { Tree, Checkbox } from '@chenzy-design/svelte';
-  import type { TreeNode } from '@chenzy-design/svelte';
+  import type { TreeNodeData } from '@chenzy-design/core';
 
-  const treeData: TreeNode[] = [
+  const treeData: TreeNodeData[] = [
     {
       label: '亚洲',
       key: 'asia',
@@ -23,7 +23,7 @@
 
 <div style="width:260px">
   <!-- renderFullLabel：只有叶子渲染勾选框（父节点仅分组），配合 multiple + leafOnly -->
-  <Tree style="width: 260px; height: 420px; border: 1px solid var(--cd-color-border); border-radius: 6px; box-sizing: border-box" {treeData} multiple leafOnly defaultExpandAll ariaLabel="叶子分组勾选树">
+  <Tree style="width: 260px; height: 420px; border: 1px solid var(--cd-color-border); border-radius: 6px; box-sizing: border-box" {treeData} multiple leafOnly defaultExpandAll aria-label="叶子分组勾选树">
     {#snippet renderFullLabel(ctx)}
       <div
         class={ctx.className}

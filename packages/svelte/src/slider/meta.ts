@@ -31,7 +31,7 @@ export const meta = {
     { name: 'id', type: 'string', default: 'undefined', desc: '根节点 id' },
     { name: 'class', type: 'string', default: 'undefined', desc: '根节点自定义类名' },
     { name: 'style', type: 'string', default: 'undefined', desc: '根节点自定义内联样式' },
-    { name: 'ariaLabel', type: 'string', default: 'undefined' },
+    { name: 'aria-label', type: 'string', default: 'undefined' },
     { name: 'ariaLabelledby', type: 'string', default: 'undefined', desc: 'group 与各手柄 aria-labelledby（指向外部 label id）' },
     { name: 'ariaValuetext', type: 'string', default: 'undefined', desc: '覆盖 getAriaValueText 的 aria-valuetext 文案' },
     { name: 'onChange', type: '(value: number | [number, number]) => void', default: 'undefined', desc: '值变化（拖拽中实时/键盘），range 时回传已排序数组' },

@@ -20,7 +20,7 @@ const treeData = [
 describe('TreeSelect a11y', () => {
   it('关闭态：触发器 role=combobox / aria-expanded=false，无 axe violations', async () => {
     const { container } = renderWithLocale(TreeSelect, {
-      props: { treeData, ariaLabel: 'Department', placeholder: 'Select node' },
+      props: { treeData, 'aria-label': 'Department', placeholder: 'Select node' },
     });
     const combobox = container.querySelector('[role="combobox"]');
     expect(combobox).not.toBeNull();
@@ -31,7 +31,7 @@ describe('TreeSelect a11y', () => {
 
   it('打开态：role=tree + treeitem 渲染（portal 到 body），无 axe violations', async () => {
     renderWithLocale(TreeSelect, {
-      props: { treeData, defaultOpen: true, defaultExpandAll: true, ariaLabel: 'Department' },
+      props: { treeData, defaultOpen: true, defaultExpandAll: true, 'aria-label': 'Department' },
     });
     const tree = document.querySelector('[role="tree"]');
     expect(tree).not.toBeNull();
@@ -42,7 +42,7 @@ describe('TreeSelect a11y', () => {
 
   it('有 children 节点：aria-expanded 标记展开态', async () => {
     renderWithLocale(TreeSelect, {
-      props: { treeData, defaultOpen: true, defaultExpandAll: true, ariaLabel: 'Department' },
+      props: { treeData, defaultOpen: true, defaultExpandAll: true, 'aria-label': 'Department' },
     });
     const expandable = document.querySelector('[role="treeitem"][aria-expanded]');
     expect(expandable).not.toBeNull();

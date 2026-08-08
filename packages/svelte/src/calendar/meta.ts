@@ -26,6 +26,13 @@ export const meta = {
     },
     { name: 'width', type: 'number | string', default: 'undefined', desc: '日历整体宽度' },
     { name: 'height', type: 'number | string', default: '600', desc: '日历整体高度' },
+    { name: 'class', type: 'string', default: 'undefined', desc: '根节点自定义类名（对齐 Semi className）' },
+    {
+      name: 'style',
+      type: 'string',
+      default: 'undefined',
+      desc: '根节点内联样式（对齐 Semi style：合并在 height/width 之后，可覆盖二者）',
+    },
     {
       name: 'onClick',
       type: '(e: Event, date: Date) => void',

@@ -1,9 +1,9 @@
 <script lang="ts">
   import { Tree, Button } from '@chenzy-design/svelte';
-  import type { TreeNode } from '@chenzy-design/svelte';
+  import type { TreeNodeData } from '@chenzy-design/core';
 
   // 大数据树：50 组 × 20 节点 = 1050 节点，虚拟化仅渲染视口内行
-  const treeData: TreeNode[] = Array.from({ length: 50 }, (_, g) => ({
+  const treeData: TreeNodeData[] = Array.from({ length: 50 }, (_, g) => ({
     key: `g${g}`,
     label: `分组 ${g + 1}`,
     children: Array.from({ length: 20 }, (_, c) => ({
@@ -25,6 +25,6 @@
     {treeData}
     virtualize={{ itemSize: 32, height: 320 }}
     defaultExpandAll
-    ariaLabel="大数据虚拟树"
+    aria-label="大数据虚拟树"
   />
 </div>

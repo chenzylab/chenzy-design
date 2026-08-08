@@ -373,21 +373,21 @@
     width: var(--cd-image-preview-footer-slider-width);
     padding-inline: var(--cd-image-preview-footer-slider-padding-x);
   }
-  .cd-image-preview-footer :global(.cd-slider__rail) {
+  .cd-image-preview-footer :global(.cd-slider-rail) {
     color: var(--cd-image-preview-footer-slider-rail-color);
     block-size: var(--cd-image-preview-footer-slider-height);
   }
-  .cd-image-preview-footer :global(.cd-slider__track) {
+  .cd-image-preview-footer :global(.cd-slider-track) {
     block-size: var(--cd-image-preview-footer-slider-height);
   }
-  .cd-image-preview-footer :global(.cd-slider__handle) {
+  .cd-image-preview-footer :global(.cd-slider-handle) {
     width: var(--cd-image-preview-footer-slider-handle-size);
     height: var(--cd-image-preview-footer-slider-handle-size);
     box-sizing: border-box;
   }
 
   /* 竖分割线：颜色对齐 Semi footer divider 覆盖 */
-  .cd-image-preview-footer :global(.cd-divider--vertical) {
+  .cd-image-preview-footer :global(.cd-divider-vertical) {
     background: var(--cd-image-preview-divider-bg);
     margin-inline: var(--cd-image-preview-footer-divider-margin-x);
   }

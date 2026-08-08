@@ -13,7 +13,7 @@
   import { Spin } from '../spin/index.js';
   import { Tooltip } from '../tooltip/index.js';
   import { Text } from '../typography/index.js';
-  import type { EllipsisShowTooltip } from '../typography/TypographyBase.svelte';
+  import type { EllipsisShowTooltip } from '../typography/types.js';
   import { IconAlertCircle, IconClose, IconClear, IconFile, IconRefresh } from '@chenzy-design/icons';
   import type {
     UploadFileItem,
@@ -331,7 +331,7 @@
           {#if showReplaceBtn}
             <Tooltip content={loc().t('Upload.replace')} trigger="hover" position="top" showArrow={false}>
               <span class="cd-upload-tooltip-children-wrapper cd-upload-file-card-replace">
-                <Button onclick={handleReplace} type="tertiary" theme="borderless" size="small" ariaLabel={loc().t('Upload.replace')} icon={directoryIcon} />
+                <Button onclick={handleReplace} type="tertiary" theme="borderless" size="small" aria-label={loc().t('Upload.replace')} icon={directoryIcon} />
               </span>
             </Tooltip>
           {/if}
@@ -356,7 +356,7 @@
     {#if renderFileOperation}
       {@render renderFileOperation(renderProps)}
     {:else}
-      <Button onclick={handleRemove} type="tertiary" theme="borderless" size="small" ariaLabel={loc().t('Upload.remove')} icon={closeIcon} class="cd-upload-file-card-close" />
+      <Button onclick={handleRemove} type="tertiary" theme="borderless" size="small" aria-label={loc().t('Upload.remove')} icon={closeIcon} class="cd-upload-file-card-close" />
     {/if}
   </div>
 {/if}

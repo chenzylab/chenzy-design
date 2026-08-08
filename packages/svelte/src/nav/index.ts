@@ -1,8 +1,8 @@
 import NavRoot from './Nav.svelte';
-import NavHeader from './NavHeader.svelte';
-import NavFooter from './NavFooter.svelte';
-import NavItem from './NavItem.svelte';
-import NavSub from './NavSub.svelte';
+import NavHeader from './Header.svelte';
+import NavFooter from './Footer.svelte';
+import NavItem from './Item.svelte';
+import NavSub from './SubNav.svelte';
 
 /** Named exports (also usable directly). */
 export { NavHeader, NavFooter, NavItem, NavSub };

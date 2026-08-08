@@ -92,12 +92,12 @@ describe('Space 渲染映射（class 驱动，对齐 Semi）', () => {
     expect(style(container)).toContain('color:red');
   });
 
-  it('...rest 透传 data-*/aria-* 到根 div', () => {
+  it('仅 data-* 透传到根 div（对齐 Semi getDataAttr，aria-*/on* 不透传）', () => {
     const { container } = render(Space, {
       props: { 'data-testid': 'sp', 'aria-label': '组' },
     });
     const el = root(container);
     expect(el.getAttribute('data-testid')).toBe('sp');
-    expect(el.getAttribute('aria-label')).toBe('组');
+    expect(el.getAttribute('aria-label')).toBeNull();
   });
 });

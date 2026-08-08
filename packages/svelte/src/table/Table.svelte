@@ -54,7 +54,7 @@
     IconTreeTriangleRight,
   } from '@chenzy-design/icons';
   import { floating } from '../_floating/use-floating.js';
-  import { useDismiss } from '@chenzy-design/core';
+  import { useDismiss, registerOverlayRoot } from '@chenzy-design/core';
   import { useLocale } from '../locale-provider/index.js';
   import {
     buildGridCols,
@@ -102,7 +102,7 @@
     tree,
     rowClassName,
     empty,
-    ariaLabel,
+    'aria-label': ariaLabel,
     onRowClick,
     onChange,
     onFilterChange,
@@ -201,7 +201,7 @@
     empty?: string;
     /** 空数据占位自定义渲染（富内容，如 Empty 组件；优先于 empty 文案，对齐 Semi empty: ReactNode） */
     emptySnippet?: Snippet;
-    ariaLabel?: string;
+    'aria-label'?: string;
     onRowClick?: (info: { record: T; index: number }) => void;
     /** 聚合事件：排序/筛选/分页任一变化的主入口（受控数据回流）。spec §4 */
     onChange?: (info: TableChangeInfo) => void;
@@ -549,6 +549,13 @@
   // 各列漏斗按钮引用（trigger）+ 当前浮层引用（dismiss extraTargets）
   const filterTriggers: Record<string, HTMLButtonElement | null> = $state({});
   let filterPanelEl = $state<HTMLDivElement | null>(null);
+
+  // 全局浮层注册（见 core registerOverlayRoot 注释）：filter panel portal 到 body 后
+  // 与祖先 hover 浮层脱节，登记后祖先的 pointerleave 判断能识别"鼠标去了合法子浮层"。
+  $effect(() => {
+    if (!filterPanelEl) return;
+    return registerOverlayRoot(filterPanelEl);
+  });
 
   // 打开/关闭筛选浮层（统一入口：同步 temp 快照 + onFilterDropdownVisibleChange 通知）。
   function setFilterOpen(col: ColumnDef<T>, colKey: string, open: boolean) {
@@ -1875,7 +1882,7 @@
     {#if rowSelection?.type === 'radio'}
       <Radio
         class="cd-table-selection-checkbox"
-        ariaLabel={loc().t('Table.selectRow')}
+        aria-label={loc().t('Table.selectRow')}
         checked={selected}
         disabled={rowDisabled}
         tabindex={gridTab}
@@ -1884,7 +1891,7 @@
     {:else}
       <Checkbox
         class="cd-table-selection-checkbox"
-        ariaLabel={loc().t('Table.selectRow')}
+        aria-label={loc().t('Table.selectRow')}
         checked={selected}
         disabled={rowDisabled}
         indeterminate={rowHalf}
@@ -2027,7 +2034,7 @@
               {#snippet headerSelectionOrigin()}
                 <Checkbox
                   class="cd-table-selection-checkbox"
-                  ariaLabel={loc().t('Table.selectAll')}
+                  aria-label={loc().t('Table.selectAll')}
                   checked={headerSelect.checked}
                   disabled={rowSelection?.disabled === true}
                   indeterminate={headerSelect.indeterminate}
@@ -2140,11 +2147,11 @@
         </FilterDropdownHost>
         <div class="cd-table-column-filter-actions">
           {#if confirmMode}
-            <button type="button" class="cd-table-column-filter-reset" onclick={() => resetTempFilter(col, colKey)}>{loc().t('Table.filterReset')}</button>
-            <button type="button" class="cd-table-column-filter-confirm" onclick={() => confirmFilter(col, colKey)}>{loc().t('Table.filterConfirm')}</button>
+            <button type="button" class="cd-table-column-filter-reset" onclick={() => resetTempFilter(col, colKey)}>{loc().t('Table.resetFilter')}</button>
+            <button type="button" class="cd-table-column-filter-confirm" onclick={() => confirmFilter(col, colKey)}>{loc().t('Table.confirmFilter')}</button>
           {:else}
-            <button type="button" class="cd-table-column-filter-reset" onclick={() => resetFilter(col, colKey)}>{loc().t('Table.filterReset')}</button>
-            <button type="button" class="cd-table-column-filter-confirm" onclick={() => setFilterOpen(col, colKey, false)}>{loc().t('Table.filterConfirm')}</button>
+            <button type="button" class="cd-table-column-filter-reset" onclick={() => resetFilter(col, colKey)}>{loc().t('Table.resetFilter')}</button>
+            <button type="button" class="cd-table-column-filter-confirm" onclick={() => setFilterOpen(col, colKey, false)}>{loc().t('Table.confirmFilter')}</button>
           {/if}
         </div>
         {/if}
@@ -2208,7 +2215,7 @@
               >
                 <span class="cd-table-row-head-title">{@render columnTitle(col)}</span>
                 {#if showTip}
-                  {@const tipKey = order === 'ascend' ? 'Table.sortDescend' : order === 'descend' ? 'Table.sortCancel' : 'Table.sortAscend'}
+                  {@const tipKey = order === 'ascend' ? 'Table.descend' : order === 'descend' ? 'Table.cancelSort' : 'Table.ascend'}
                   <Tooltip content={loc().t(tipKey)}>
                     {@render sorterIcons(order, col)}
                   </Tooltip>
@@ -2223,7 +2230,7 @@
                 {#if selectionEnabled}
                   <Checkbox
                     class="cd-table-selection-checkbox"
-                    ariaLabel={loc().t('Table.selectAll')}
+                    aria-label={loc().t('Table.selectAll')}
                     checked={headerSelect.checked}
                     disabled={rowSelection?.disabled === true}
                     indeterminate={headerSelect.indeterminate}
@@ -3269,5 +3276,20 @@
     .react-resizable-handle {
       transition: none;
     }
+  }
+
+  /* —— RTL（对齐 Semi table/rtl.scss）——
+     表体与表头的默认文字方向由左改右；`-align-right` 修饰类在 RTL 下
+     语义仍是「行末对齐」，故翻成 left（Semi 同）。
+     单元格内边距本库已用 padding-inline，会自己翻，不重复覆盖。 */
+  :global(.cd-rtl) .cd-table {
+    direction: rtl;
+    text-align: right;
+  }
+  :global(.cd-rtl) .cd-table-thead > .cd-table-row > .cd-table-row-head {
+    text-align: right;
+  }
+  :global(.cd-rtl) .cd-table-align-right {
+    text-align: left;
   }
 </style>

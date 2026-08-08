@@ -23,6 +23,7 @@
     useDismiss,
     useScrollLock,
     useInertBackground,
+    resolveDefault,
   } from '@chenzy-design/core';
   import { IconClose } from '@chenzy-design/icons';
   import { Button } from '../button/index.js';
@@ -106,7 +107,7 @@
     modalRender?: Snippet<[Snippet]>;
     /** 内容主体。 */
     children?: Snippet;
-    ariaLabel?: string;
+    'aria-label'?: string;
     /**
      * 指示浏览器是否应滚动文档以显示新聚焦的元素，作用于组件内的 focus 方法。
      * 对齐 Semi preventScroll。
@@ -137,43 +138,57 @@
     width = 448,
     height,
     size,
-    centered = false,
-    closable = true,
+    centered: centeredProp,
+    closable: closableProp,
     closeIcon,
-    maskClosable = true,
-    closeOnEsc = true,
+    maskClosable: maskClosableProp,
+    closeOnEsc: closeOnEscProp,
     confirmLoading = false,
     okText,
     cancelText,
-    okType = 'primary',
+    okType: okTypeProp,
     okButtonProps,
     cancelButtonProps,
-    hasCancel = true,
+    hasCancel: hasCancelProp,
     footer,
     footerFill = false,
-    mask = true,
+    mask: maskProp,
     maskStyle,
     bodyStyle,
     style,
     class: className,
     modalContentClass,
-    fullScreen = false,
-    motion = true,
+    fullScreen: fullScreenProp,
+    motion: motionProp,
     getPopupContainer,
     zIndex,
-    keepDOM = false,
-    lazyRender = true,
+    keepDOM: keepDOMProp,
+    lazyRender: lazyRenderProp,
     icon,
     modalRender,
     children,
-    ariaLabel,
+    'aria-label': ariaLabel,
     preventScroll = false,
     onOk,
     onCancel,
     afterClose,
     onVisibleChange,
-    maskFixed = true,
+    maskFixed: maskFixedProp,
   }: Props = $props();
+  // cdGlobal 全局默认 props（对齐 Semi semiGlobal.config.overrideDefaultProps）：
+  // 优先级 = 显式传值 > cdGlobal['Modal'] > 组件内置默认值。
+  const motion = $derived(resolveDefault(motionProp, 'Modal', 'motion', true));
+  const mask = $derived(resolveDefault(maskProp, 'Modal', 'mask', true));
+  const centered = $derived(resolveDefault(centeredProp, 'Modal', 'centered', false));
+  const closable = $derived(resolveDefault(closableProp, 'Modal', 'closable', true));
+  const okType = $derived(resolveDefault(okTypeProp, 'Modal', 'okType', 'primary'));
+  const maskClosable = $derived(resolveDefault(maskClosableProp, 'Modal', 'maskClosable', true));
+  const hasCancel = $derived(resolveDefault(hasCancelProp, 'Modal', 'hasCancel', true));
+  const maskFixed = $derived(resolveDefault(maskFixedProp, 'Modal', 'maskFixed', true));
+  const closeOnEsc = $derived(resolveDefault(closeOnEscProp, 'Modal', 'closeOnEsc', true));
+  const keepDOM = $derived(resolveDefault(keepDOMProp, 'Modal', 'keepDOM', false));
+  const lazyRender = $derived(resolveDefault(lazyRenderProp, 'Modal', 'lazyRender', true));
+  const fullScreen = $derived(resolveDefault(fullScreenProp, 'Modal', 'fullScreen', false));
 
   const titleId = useId('cd-modal-title');
   const bodyId = useId('cd-modal-body');
@@ -485,7 +500,7 @@
               block={footerFill}
               onclick={cancel}
               loading={cancelPending}
-              {...(cancelButtonProps ?? {})}>{cancelText ?? loc().t('Modal.cancelText')}</Button
+              {...(cancelButtonProps ?? {})}>{cancelText ?? loc().t('Modal.cancel')}</Button
             >
           {/if}
           <!-- 对齐 Semi 确认按钮：type=okType + theme=solid（实心）+ block=footerFill -->
@@ -495,7 +510,7 @@
             block={footerFill}
             onclick={ok}
             loading={confirmLoading || okPending}
-            {...(okButtonProps ?? {})}>{okText ?? loc().t('Modal.okText')}</Button
+            {...(okButtonProps ?? {})}>{okText ?? loc().t('Modal.confirm')}</Button
           >
         {/if}
       </div>
@@ -509,7 +524,7 @@
     type="tertiary"
     theme="borderless"
     size="small"
-    ariaLabel={loc().t('Modal.close')}
+    aria-label={loc().t('Modal.close')}
     onclick={cancel}
   >
     {#snippet icon()}

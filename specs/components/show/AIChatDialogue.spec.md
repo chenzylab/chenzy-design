@@ -29,21 +29,40 @@
 
 ## 4. API（对齐 Semi，核心）
 ### Props（节选，完整以 Semi 文档 + interface.d.ts 为准）
-| 名称 | 类型 | 默认 | 说明 |
-|---|---|---|---|
-| chats | `Message[]` | - | 受控对话列表 |
-| roleConfig | `RoleConfig` | **必填** | 角色配置（user/assistant/system → Metadata 或 Map） |
-| align | `'leftRight' \| 'leftAlign'` | `leftRight` | 布局 |
-| mode | `'bubble' \| 'noBubble' \| 'userBubble'` | `bubble` | 气泡模式 |
-| hints | `string[]` | - | 提示信息 |
-| selecting | `boolean` | `false` | 选择模式 |
-| showReference | `boolean` | `false` | 用户消息展示可引用图标 |
+
+> 本表由 `packages/svelte/src/ai-chat-dialogue/meta.ts` 真源生成（2026-07-30 重校）。此前本表列的 prop 多为 Semi 对齐前的旧名或已删除项（如 `value`→`activeKey`、`change`→`onChange`），改 prop 时请同步 meta.ts，勿手写「规划中」的 prop。
+
+| Prop | 类型 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| chats | `AIDialogueMessage[]` | `[]` | 受控对话列表（OpenAI 消息格式） |
+| roleConfig | `AIDialogueRoleConfig` | `undefined` | 角色配置（user/assistant/system → Metadata 或 Map，对齐 Semi 必填） |
+| align | `'leftRight'\|'leftAlign'` | `'leftRight'` | 布局对齐 |
+| mode | `'bubble'\|'noBubble'\|'userBubble'` | `'bubble'` | 气泡模式 |
+| hints | `string[]` | `undefined` | 提示信息 |
+| selecting | `boolean` | `false` | 选择模式（消息前置 checkbox） |
 | showReset | `boolean` | `true` | 展示重置操作 |
-| markdownRenderProps | `MarkdownRenderProps` | - | 透传内容渲染 |
-| renderDialogueContentItem | `DialogueContentItemRendererMap` | - | 按类型覆盖内容渲染 |
-| renderHintBox | `Snippet<[{content;index;onHintClick}]>` | - | 自定义提示项渲染 |
-| dialogueRenderConfig | `DialogueRenderConfig` | - | 自定义会话框各区块渲染（头像/标题/内容/操作/整块） |
-| escapeHtml | `boolean` | `true` | 转义用户消息 HTML |
+| showReference | `boolean` | `false` | 在 user 消息展示引用区（message.references） |
+| markdownRenderProps | `object` | `undefined` | 透传内容渲染的 MarkdownRender props |
+| renderDialogueContentItem | `Record<string, Snippet<[ContentItem]>>` | `undefined` | 按 ContentItem.type 覆盖渲染 |
+| renderHintBox | `Snippet<[{ content; index; onHintClick }]>` | `undefined` | 自定义提示项渲染 |
+| dialogueRenderConfig | `DialogueRenderConfig` | `undefined` | 自定义会话框各区块渲染（头像/标题/内容/操作，或整块） |
+
+**事件**（回调 prop 形式，对齐 Semi）：
+
+| 事件 | 说明 |
+| --- | --- |
+| `onChatsChange` | 对话列表变更 |
+| `onHintClick` | 点击提示 |
+| `onSelect` | 选择变更 |
+| `onMessageCopy` | 复制消息 |
+| `onMessageDelete` | 删除消息 |
+| `onMessageReset` | 重置消息 |
+| `onMessageGoodFeedback` | 正向反馈 |
+| `onMessageBadFeedback` | 负向反馈 |
+| `onFileClick` | 文件点击 |
+| `onImageClick` | 图片点击 |
+| `onMessageEdit` | 点击编辑操作（P1） |
+| `onReferenceClick` | 引用项点击 |
 ### Events（对齐 Semi）
 `onChatsChange` / `onHintClick` / `onSelect` / `onMessageCopy` / `onMessageDelete` / `onMessageReset` / `onMessageEdit` / `onMessageShare` / `onMessageGoodFeedback` / `onMessageBadFeedback` / `onReferenceClick` / `onAnnotationClick` / `onFileClick` / `onImageClick`。
 ### Methods（ref）

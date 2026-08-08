@@ -1,12 +1,32 @@
 <script lang="ts">
   import { Cascader } from '@chenzy-design/svelte';
-  import { treeData } from './_data';
+
+  const treeData = [
+    {
+      label: '亚洲',
+      value: 'Asia',
+      children: [
+        {
+          label: '中国',
+          value: 'China',
+          children: [
+            { label: '北京', value: 'Beijing' },
+            { label: '上海', value: 'Shanghai' },
+          ],
+        },
+      ],
+    },
+    {
+      label: '北美洲',
+      value: 'North America',
+    },
+  ];
 </script>
 
 <Cascader
+  multiple
+  defaultValue={[['Asia'], ['Asia', 'China', 'Beijing']]}
+  checkRelation="unRelated"
   style="width: 300px"
   {treeData}
-  multiple
-  checkRelation="unRelated"
-  placeholder="checkRelation=unRelated：节点选中互不影响"
 />

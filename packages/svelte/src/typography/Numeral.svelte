@@ -7,12 +7,8 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
   import { formatNumeral, type NumeralRule, type NumeralTruncate } from '@chenzy-design/core';
-  import TypographyBase, {
-    type TypoType,
-    type TypoSize,
-    type EllipsisConfig,
-    type CopyableConfig,
-  } from './TypographyBase.svelte';
+  import TypographyBase from './TypographyBase.svelte';
+  import type { TypoType, TypoSize, EllipsisConfig, CopyableConfig } from './types.js';
 
   interface Props {
     /** 解析规则（对齐 Semi）。 */

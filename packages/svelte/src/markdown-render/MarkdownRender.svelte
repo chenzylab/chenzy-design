@@ -6,8 +6,12 @@
 
   对齐 Semi（可观察结果）：
   - DOM 类名体系 cd-markdownRender → 本库 cd-markdown-render；元素映射到组件 + -component-* 类名。
+  - 文件结构对齐 Semi markdownRender/components/（h1.tsx~h6.tsx 各自独立文件、a.tsx/img.tsx/p.tsx/table.tsx/code.tsx），
+    本库 components/ 下同名 .svelte 文件逐一对应。
   - 默认组件映射（对齐 Semi SemiMarkdownComponents 11 键）：h1-h6→Typography.Title、p→Typography.Paragraph、
-    a→Typography.Text link、img→div>Image+alt、table→Table、code(行内)→span.simple-code、pre(围栏)→CodeHighlight。
+    a→Typography.Text link、img→div>Image+alt、table→Table、code→按 className 是否含 language-* 分流
+    （有→CodeHighlight、无→span.simple-code，行内 code 与无语言围栏代码块共用同一组件）。
+    不覆盖 pre 键（Semi 无此键，围栏代码块最终 DOM 是原生 <pre> 包裹 CodeHighlight/span，而非替换 pre）。
   - token 镜像 Semi variables.scss（20 个：simpleCode/image/header1-5 margin/list color/p strong）；
     标题字号/行高/颜色由 Typography 承担（Semi 也如此），故不自造这些 token。
   - 默认不渲染 raw HTML（对齐 Semi format='md' 剥离）；保留 HTML 由使用方传 rehype-raw 自负 XSS。
@@ -23,7 +27,7 @@
 </script>
 
 <script lang="ts">
-  import { compileToHast, type HastRoot, type UnifiedPluginEntry } from '@chenzy-design/core';
+  import { compileToHast, type HastRoot, type UnifiedPluginEntry, resolveDefault } from '@chenzy-design/core';
   import HastNode from './HastNode.svelte';
 
   interface Props {
@@ -48,13 +52,17 @@
   let {
     raw = '',
     components,
-    format = 'md',
-    remarkGfm = true,
+    format: formatProp,
+    remarkGfm: remarkGfmProp,
     remarkPlugins,
     rehypePlugins,
     class: className = '',
     style,
   }: Props = $props();
+  // cdGlobal 全局默认 props（对齐 Semi semiGlobal.config.overrideDefaultProps）：
+  // 优先级 = 显式传值 > cdGlobal['MarkdownRender'] > 组件内置默认值。
+  const format = $derived(resolveDefault(formatProp, 'MarkdownRender', 'format', 'md'));
+  const remarkGfm = $derived(resolveDefault(remarkGfmProp, 'MarkdownRender', 'remarkGfm', true));
 
   // 合并注册表：默认 + 使用方覆盖。
   const registry = $derived({ ...defaultComponents, ...(components ?? {}) });

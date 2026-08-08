@@ -3,7 +3,6 @@ title: Collapse 折叠面板
 name: collapse
 category: show
 brief: 可以展开或折叠展示内容区域。
-docMode: inline
 ---
 
 <script>

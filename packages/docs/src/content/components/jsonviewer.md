@@ -3,7 +3,6 @@ title: JsonViewer JSON 编辑器
 name: jsonviewer
 category: plus
 brief: 用于展示和编辑 JSON 数据。
-docMode: inline
 ---
 
 <script>
@@ -12,6 +11,8 @@ docMode: inline
 
   import Basic from '../../demos/json-viewer/01-basic.svelte';
   import basicSrc from '../../demos/json-viewer/01-basic.svelte?raw';
+  import Readonly from '../../demos/json-viewer/02-readonly.svelte';
+  import readonlySrc from '../../demos/json-viewer/02-readonly.svelte?raw';
   import LineHeight from '../../demos/json-viewer/04-line-height.svelte';
   import lineHeightSrc from '../../demos/json-viewer/04-line-height.svelte?raw';
   import AutoWrap from '../../demos/json-viewer/05-auto-wrap.svelte';
@@ -45,11 +46,17 @@ JsonViewer 的基本用法。传入 `height` 和 `width` 参数设置组件的�
 
 <Notice title="注意">
 
-JsonViewer 为非受控组件，`value` 仅用于初始化，后续内容变化不会因 `value` 改变而重建。若需获取组件的值，可通过 `bind:this` 拿到实例后调用方法，具体参考 [Methods](#methods)。
+JsonViewer 为非受控组件，`value` 仅用于初始化。若需获取组件的值，可通过 `bind:this` 拿到实例后调用方法，具体参考 [Methods](#methods)；不建议在 `onChange` 中反过来修改传入的 `value`，因为外部主动传入新的 `value` 会重建整个编辑器实例（丢失光标位置、折叠状态等）。
 
 </Notice>
 
 <DemoBox code={basicSrc}><Basic /></DemoBox>
+
+### 只读模式
+
+配置 `options` 的 `readOnly` 参数为 `true` 时，内容不可编辑，仅用于展示（此时搜索/替换工具条中的替换栏也不会渲染）。
+
+<DemoBox code={readonlySrc}><Readonly /></DemoBox>
 
 ### 设置行高
 
@@ -115,10 +122,12 @@ Semi 的 `render` 返回 React 节点；本库 core 契约要求 `render` 返回
 | class | 类名 | string | - |
 | style | 内联样式 | string | - |
 | showSearch | 是否显示搜索 Icon | boolean | true |
+| limitSearchButtonBounds | 是否限制搜索按钮拖动范围在容器内 | boolean | false |
 | renderSearchButton | 自定义渲染搜索按钮 | `Snippet<[Snippet, SearchControls]>` | - |
 | options | 编辑器配置 | JsonViewerOptions | - |
 | onChange | 内容变化回调 | `(value: string) => void` | - |
 | onCustomRender | 只读模式命中 customRenderRule 时透出 customRenderMap | `(map: Map<HTMLElement, unknown>) => void` | - |
+| renderTooltip | 自定义 hover 提示内容 | `(value: string, el: HTMLElement) => HTMLElement` | - |
 
 ### JsonViewerOptions
 

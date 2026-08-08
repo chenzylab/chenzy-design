@@ -86,16 +86,15 @@ export default MyComponent;
   </span>
 </div>
 
-<div style="border:1px solid var(--cd-color-border);border-radius:16px;margin:8px 0;height:550px;">
-  <Chat
-    {chats}
-    {roleConfig}
-    {mode}
-    {align}
-    {uploadProps}
-    {uploadTipProps}
-    onChatsChange={(n) => (chats = n)}
-    {onMessageSend}
-    {onMessageReset}
-  />
-</div>
+<Chat
+  {chats}
+  {roleConfig}
+  {mode}
+  {align}
+  {uploadProps}
+  {uploadTipProps}
+  onChatsChange={(n) => (chats = n)}
+  {onMessageSend}
+  {onMessageReset}
+  style="border:1px solid var(--cd-color-border);border-radius:16px;margin:8px 16px;height:550px;"
+/>

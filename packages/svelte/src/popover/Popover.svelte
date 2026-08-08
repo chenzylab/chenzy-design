@@ -17,7 +17,7 @@
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
-  import { useId } from '@chenzy-design/core';
+  import { useId, resolveDefault } from '@chenzy-design/core';
   import { Tooltip, type Position } from '../tooltip/index.js';
   import { useLocale } from '../locale-provider/index.js';
 
@@ -114,6 +114,13 @@
     wrapperClassName?: string;
     /** 外层包裹 span（定位参照宿主）的内联样式；用于让包裹 span 直接承载触发盒 */
     triggerStyle?: string;
+    /**
+     * 点击浮层内容时向 trigger 转发一个合成 click（默认 false）。浮层被 portal
+     * 到 body 后脱离 trigger 的真实 DOM 子树，点击浮层内容不会真实冒泡到
+     * trigger——本库无先例（无 Semi 对应 prop），仅在业务确实需要"点击浮层内容
+     * 等同点击 trigger"时开启，见 Tooltip.svelte / use-floating.ts 详细说明。
+     */
+    forwardClickToTrigger?: boolean;
     /** 触发元素（必填） */
     children?: Snippet;
   }
@@ -123,10 +130,10 @@
     title,
     visible,
     defaultVisible = false,
-    trigger = 'hover',
-    position = 'bottom',
-    autoAdjustOverflow = true,
-    showArrow = false,
+    trigger: triggerProp,
+    position: positionProp,
+    autoAdjustOverflow: autoAdjustOverflowProp,
+    showArrow: showArrowProp,
     arrowPointAtCenter = true,
     arrowStyle,
     spacing,
@@ -136,14 +143,14 @@
     condition = true,
     clickToHide = false,
     keepDOM = false,
-    disableFocusListener = false,
+    disableFocusListener: disableFocusListenerProp,
     disabled = false,
-    motion = true,
+    motion: motionProp,
     getPopupContainer,
     zIndex,
-    closeOnEsc = true,
+    closeOnEsc: closeOnEscProp,
     guardFocus,
-    returnFocusOnClose = true,
+    returnFocusOnClose: returnFocusOnCloseProp,
     stopPropagation = false,
     rePosKey,
     class: className = '',
@@ -155,8 +162,19 @@
     ariaLabelledby: ariaLabelledbyProp,
     wrapperClassName = '',
     triggerStyle = '',
+    forwardClickToTrigger = false,
     children,
   }: Props = $props();
+  // cdGlobal 全局默认 props（对齐 Semi semiGlobal.config.overrideDefaultProps）：
+  // 优先级 = 显式传值 > cdGlobal['Popover'] > 组件内置默认值。
+  const showArrow = $derived(resolveDefault(showArrowProp, 'Popover', 'showArrow', false));
+  const autoAdjustOverflow = $derived(resolveDefault(autoAdjustOverflowProp, 'Popover', 'autoAdjustOverflow', true));
+  const motion = $derived(resolveDefault(motionProp, 'Popover', 'motion', true));
+  const trigger = $derived(resolveDefault(triggerProp, 'Popover', 'trigger', 'hover'));
+  const position = $derived(resolveDefault(positionProp, 'Popover', 'position', 'bottom'));
+  const closeOnEsc = $derived(resolveDefault(closeOnEscProp, 'Popover', 'closeOnEsc', true));
+  const returnFocusOnClose = $derived(resolveDefault(returnFocusOnCloseProp, 'Popover', 'returnFocusOnClose', true));
+  const disableFocusListener = $derived(resolveDefault(disableFocusListenerProp, 'Popover', 'disableFocusListener', false));
 
   const loc = useLocale();
   const titleId = useId('cd-popover-title');
@@ -245,6 +263,7 @@
   {ariaLabelledby}
   {wrapperClassName}
   {triggerStyle}
+  {forwardClickToTrigger}
   content={popCard}
 >
   {@render children?.()}
@@ -255,7 +274,7 @@
      由 .cd-popover-wrapper[x-placement] 选择器控制显隐 + 定位（见 <style>）。 -->
 {#snippet popoverArrow()}
   <svg
-    class="cd-popover-icon-arrow cd-popover-icon-arrow--h"
+    class="cd-popover-icon-arrow cd-popover-icon-arrow-h"
     width="24"
     height="8"
     viewBox="0 0 24 7"
@@ -267,7 +286,7 @@
     <path d="M0 0L0 1C4 1, 5.5 2, 7.5 4S10,7 12,7S14.5  6, 16.5 4S20,1 24,1L24 0L0 0z" style="fill:{arrowBgColor}" />
   </svg>
   <svg
-    class="cd-popover-icon-arrow cd-popover-icon-arrow--v"
+    class="cd-popover-icon-arrow cd-popover-icon-arrow-v"
     width="8"
     height="24"
     viewBox="0 0 7 24"
@@ -283,7 +302,7 @@
 <!-- renderPopCard：对齐 Semi <div class="popover"><div class="popover-content">…</div></div>。
      标题区（可选）+ 内容区。内容函数形态注入 initialFocusRef。 -->
 {#snippet popCard()}
-  <div class="cd-popover" class:cd-popover--with-arrow={showArrow}>
+  <div class="cd-popover" class:cd-popover-with-arrow={showArrow}>
     {#if hasTitle}
       <div class="cd-popover-title" id={titleId}>
         {#if titleSnippet}
@@ -329,7 +348,7 @@
     box-sizing: border-box;
   }
   /* 带箭头时整卡内边距（对齐 Semi $spacing-popover_withArrow-padding: 12px）。 */
-  .cd-popover--with-arrow {
+  .cd-popover-with-arrow {
     padding: var(--cd-spacing-popover-witharrow-padding);
   }
   /* 标题区：下边框分隔，内边距对齐 Semi $spacing-popover_title-padding: 8px。 */
@@ -353,80 +372,80 @@
     display: none;
   }
   /* top/bottom 系显示水平箭头；left/right 系显示垂直箭头 */
-  :global(.cd-popover-wrapper[x-placement^='top']) :global(.cd-popover-icon-arrow--h),
-  :global(.cd-popover-wrapper[x-placement^='bottom']) :global(.cd-popover-icon-arrow--h) {
+  :global(.cd-popover-wrapper[x-placement^='top']) :global(.cd-popover-icon-arrow-h),
+  :global(.cd-popover-wrapper[x-placement^='bottom']) :global(.cd-popover-icon-arrow-h) {
     display: block;
     inline-size: var(--cd-width-popover-arrow);
     block-size: var(--cd-height-popover-arrow);
   }
-  :global(.cd-popover-wrapper[x-placement^='left']) :global(.cd-popover-icon-arrow--v),
-  :global(.cd-popover-wrapper[x-placement^='right']) :global(.cd-popover-icon-arrow--v) {
+  :global(.cd-popover-wrapper[x-placement^='left']) :global(.cd-popover-icon-arrow-v),
+  :global(.cd-popover-wrapper[x-placement^='right']) :global(.cd-popover-icon-arrow-v) {
     display: block;
     inline-size: var(--cd-width-popover-arrow-vertical);
     block-size: var(--cd-height-popover-arrow-vertical);
   }
 
   /* top 系：箭头在下缘 */
-  :global(.cd-popover-wrapper[x-placement='top']) :global(.cd-popover-icon-arrow--h) {
+  :global(.cd-popover-wrapper[x-placement='top']) :global(.cd-popover-icon-arrow-h) {
     inset-inline-start: var(--cd-tooltip-arrow-offset-x, 50%);
     transform: translateX(-50%);
     inset-block-end: calc(-1 * var(--cd-height-popover-arrow) + var(--cd-spacing-tooltip-arrow-offset-y));
   }
-  :global(.cd-popover-wrapper[x-placement='topLeft']) :global(.cd-popover-icon-arrow--h) {
+  :global(.cd-popover-wrapper[x-placement='topLeft']) :global(.cd-popover-icon-arrow-h) {
     inset-block-end: calc(-1 * var(--cd-height-popover-arrow) + var(--cd-spacing-tooltip-arrow-offset-y));
     inset-inline-start: var(--cd-spacing-popover-arrow-adjusted-offset-x);
   }
-  :global(.cd-popover-wrapper[x-placement='topRight']) :global(.cd-popover-icon-arrow--h) {
+  :global(.cd-popover-wrapper[x-placement='topRight']) :global(.cd-popover-icon-arrow-h) {
     inset-block-end: calc(-1 * var(--cd-height-popover-arrow) + var(--cd-spacing-tooltip-arrow-offset-y));
     inset-inline-end: var(--cd-spacing-popover-arrow-adjusted-offset-x);
   }
   /* bottom 系：箭头在上缘，旋转 180° */
-  :global(.cd-popover-wrapper[x-placement='bottom']) :global(.cd-popover-icon-arrow--h) {
+  :global(.cd-popover-wrapper[x-placement='bottom']) :global(.cd-popover-icon-arrow-h) {
     inset-block-start: calc(-1 * var(--cd-height-popover-arrow) + var(--cd-spacing-tooltip-arrow-offset-y));
     inset-inline-start: var(--cd-tooltip-arrow-offset-x, 50%);
     transform: translateX(-50%) rotate(180deg);
   }
-  :global(.cd-popover-wrapper[x-placement='bottomLeft']) :global(.cd-popover-icon-arrow--h) {
+  :global(.cd-popover-wrapper[x-placement='bottomLeft']) :global(.cd-popover-icon-arrow-h) {
     inset-block-start: calc(-1 * var(--cd-height-popover-arrow) + var(--cd-spacing-tooltip-arrow-offset-y));
     inset-inline-start: var(--cd-spacing-popover-arrow-adjusted-offset-x);
     transform: rotate(180deg);
   }
-  :global(.cd-popover-wrapper[x-placement='bottomRight']) :global(.cd-popover-icon-arrow--h) {
+  :global(.cd-popover-wrapper[x-placement='bottomRight']) :global(.cd-popover-icon-arrow-h) {
     inset-block-start: calc(-1 * var(--cd-height-popover-arrow) + var(--cd-spacing-tooltip-arrow-offset-y));
     inset-inline-end: var(--cd-spacing-popover-arrow-adjusted-offset-x);
     transform: rotate(180deg);
   }
   /* left 系：箭头在右缘 */
-  :global(.cd-popover-wrapper[x-placement='left']) :global(.cd-popover-icon-arrow--v),
-  :global(.cd-popover-wrapper[x-placement='leftTop']) :global(.cd-popover-icon-arrow--v),
-  :global(.cd-popover-wrapper[x-placement='leftBottom']) :global(.cd-popover-icon-arrow--v) {
+  :global(.cd-popover-wrapper[x-placement='left']) :global(.cd-popover-icon-arrow-v),
+  :global(.cd-popover-wrapper[x-placement='leftTop']) :global(.cd-popover-icon-arrow-v),
+  :global(.cd-popover-wrapper[x-placement='leftBottom']) :global(.cd-popover-icon-arrow-v) {
     inset-inline-end: calc(-1 * var(--cd-width-popover-arrow-vertical) + var(--cd-spacing-tooltip-arrow-offset-x));
   }
-  :global(.cd-popover-wrapper[x-placement='left']) :global(.cd-popover-icon-arrow--v) {
+  :global(.cd-popover-wrapper[x-placement='left']) :global(.cd-popover-icon-arrow-v) {
     inset-block-start: var(--cd-tooltip-arrow-offset-y, 50%);
     transform: translateY(-50%);
   }
-  :global(.cd-popover-wrapper[x-placement='leftTop']) :global(.cd-popover-icon-arrow--v) {
+  :global(.cd-popover-wrapper[x-placement='leftTop']) :global(.cd-popover-icon-arrow-v) {
     inset-block-start: var(--cd-spacing-popover-arrow-adjusted-offset-y);
   }
-  :global(.cd-popover-wrapper[x-placement='leftBottom']) :global(.cd-popover-icon-arrow--v) {
+  :global(.cd-popover-wrapper[x-placement='leftBottom']) :global(.cd-popover-icon-arrow-v) {
     inset-block-end: var(--cd-spacing-popover-arrow-adjusted-offset-y);
   }
   /* right 系：箭头在左缘，旋转 180° */
-  :global(.cd-popover-wrapper[x-placement='right']) :global(.cd-popover-icon-arrow--v),
-  :global(.cd-popover-wrapper[x-placement='rightTop']) :global(.cd-popover-icon-arrow--v),
-  :global(.cd-popover-wrapper[x-placement='rightBottom']) :global(.cd-popover-icon-arrow--v) {
+  :global(.cd-popover-wrapper[x-placement='right']) :global(.cd-popover-icon-arrow-v),
+  :global(.cd-popover-wrapper[x-placement='rightTop']) :global(.cd-popover-icon-arrow-v),
+  :global(.cd-popover-wrapper[x-placement='rightBottom']) :global(.cd-popover-icon-arrow-v) {
     inset-inline-start: calc(-1 * var(--cd-width-popover-arrow-vertical) + var(--cd-spacing-tooltip-arrow-offset-x));
   }
-  :global(.cd-popover-wrapper[x-placement='right']) :global(.cd-popover-icon-arrow--v) {
+  :global(.cd-popover-wrapper[x-placement='right']) :global(.cd-popover-icon-arrow-v) {
     inset-block-start: var(--cd-tooltip-arrow-offset-y, 50%);
     transform: translateY(-50%) rotate(180deg);
   }
-  :global(.cd-popover-wrapper[x-placement='rightTop']) :global(.cd-popover-icon-arrow--v) {
+  :global(.cd-popover-wrapper[x-placement='rightTop']) :global(.cd-popover-icon-arrow-v) {
     inset-block-start: var(--cd-spacing-popover-arrow-adjusted-offset-y);
     transform: rotate(180deg);
   }
-  :global(.cd-popover-wrapper[x-placement='rightBottom']) :global(.cd-popover-icon-arrow--v) {
+  :global(.cd-popover-wrapper[x-placement='rightBottom']) :global(.cd-popover-icon-arrow-v) {
     inset-block-end: var(--cd-spacing-popover-arrow-adjusted-offset-y);
     transform: rotate(180deg);
   }

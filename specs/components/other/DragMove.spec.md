@@ -48,23 +48,21 @@ DragMove 包裹一个子元素，使其可被拖拽在页面/约束容器内自�
 
 ## 5. 主题 / Token 表
 
-| Token | 含义 | 默认引用 |
-| --- | --- | --- |
-| `--cd-dragmove-cursor` | 拖拽把手光标 | `move` |
+无组件 token（对齐 Semi：`packages/semi-foundation/dragMove/` 无 scss、`packages/semi-ui/dragMove/` 无 className，纯逻辑组件无样式层）。`cursor: move` 由 core 在 `init()` 时命令式硬编码写入 `handler.style.cursor`（对齐 Semi foundation 同样硬编码字符串，非 token 变量）。
 
 （DragMove 主要是行为，视觉极少；光标/无障碍焦点由消费方决定。）
 
 ## 6. 无障碍
 
 - 拖拽把手 `cursor: move`。
-- **键盘可达**（超越 Semi——Semi 纯 pointer）：把手 `tabindex="0"` + 方向键移动位置（步长可配）+ `aria-label`（i18n「拖动」）。可选，视消费场景。
+- **纯 pointer，无键盘可达**（严格对齐 Semi：Semi 无 tabindex/方向键/aria-label，本库不新增超越 Semi 的能力）。
 - allowInputDrag=false 时不干扰表单文本选择。
-- 触摸拖拽 `touch-action: none` 防页面滚动冲突。
+- 触摸拖拽冲突/文字选中：靠 mousedown/touchstart 的 `e.preventDefault()` 阻止（对齐 Semi foundation `_preventDefault`），不用 CSS `touch-action`/`user-select` 兜底。
 - reduced-motion：拖拽即时无动画，无需特殊处理。
 
 ## 7. 国际化
 
-- i18n key：`DragMove.handleAriaLabel`（把手可访问名，zh「拖动」/ en「Drag to move」）。
+- i18n key：**无**。DragMove 不消费 locale（`useLocale` 出现 0 次），把手可访问名由调用方经 prop 传入；原 `DragMove.handleAriaLabel` 键已随悬空键清理删除，见 [[locale-dangling-keys-render-raw-key]]。
 
 ## 8. 文案
 
@@ -100,5 +98,5 @@ DragMove 包裹一个子元素，使其可被拖拽在页面/约束容器内自�
 
 ## 13. 验收标准（对照 AGENTS.md §5 DoD）
 
-- [ ] 分层正确（core createDragMove + svelte 壳） · [ ] 类型+JSDoc · [ ] Token 注册 · [ ] a11y 通过
+- [ ] 分层正确（core createDragMove + svelte 壳） · [ ] 类型+JSDoc · [ ] 无组件 token（对齐 Semi） · [ ] a11y 通过
 - [ ] i18n 无硬编码 · [ ] core/组件/a11y 测试达标 · [ ] Perf 达标 · [ ] meta 提供 · [ ] 文档页 + demo 完成

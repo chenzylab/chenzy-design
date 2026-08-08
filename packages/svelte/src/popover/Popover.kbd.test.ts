@@ -20,7 +20,7 @@ describe('Popover 键盘 e2e（dialog Esc 关闭 + 焦点归还）', () => {
     const { baseElement } = renderKbdFixture(PopoverKbdFixture);
 
     // dialog 模式触发器 = role=button + tabindex=0 的 span。
-    const trigger = baseElement.querySelector('.cd-tooltip__trigger') as HTMLElement;
+    const trigger = baseElement.querySelector('.cd-tooltip-trigger') as HTMLElement;
     expect(trigger).not.toBeNull();
     expect(trigger.getAttribute('role')).toBe('button');
 
@@ -50,7 +50,7 @@ describe('Popover 键盘 e2e（dialog Esc 关闭 + 焦点归还）', () => {
     const moreBtn = baseElement.querySelector('[data-testid="more"]') as HTMLElement;
     expect(moreBtn).not.toBeNull();
 
-    const trigger = baseElement.querySelector('.cd-tooltip__trigger') as HTMLElement;
+    const trigger = baseElement.querySelector('.cd-tooltip-trigger') as HTMLElement;
 
     // 点击带 stopPropagation 的 children 子元素。
     await userEvent.click(moreBtn);

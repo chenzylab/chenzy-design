@@ -3,7 +3,6 @@ title: Breadcrumb 面包屑
 name: breadcrumb
 category: navigation
 brief: 面包屑是用户界面中的一种辅助导航，可以显示当前页面在层级架构中的位置，并能返回之前的页面。
-docMode: inline
 ---
 
 <script>
@@ -67,7 +66,7 @@ import { Breadcrumb } from '@chenzy-design/svelte';
 
 当路径层级超过 4 个级别，则：第二层至倒数第三层省略，点击省略号展开显示全部级别；如果过长则自动换行。可以通过 `maxItemCount` 来控制超过多少个级别进行折叠。
 
-> 折叠能力作用于 `routes` 数据数组：Svelte 的 Snippet children 无法被父组件切片，故层级折叠走 `routes` 模式（这是与 Semi React children 的技术栈差异）。声明式 `<Breadcrumb.Item>` 适用于层级固定、无需折叠的场景。
+> `routes` 数据驱动与声明式 `<Breadcrumb.Item>` 两种写法都支持折叠。
 
 <DemoBox code={collapseSrc}><Collapse /></DemoBox>
 

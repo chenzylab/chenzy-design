@@ -18,7 +18,7 @@ BackTop（回到顶部）是一个浮于页面右下角的悬浮按钮，当目�
 ## 2. 设计语义
 
 - **视觉层级**：悬浮于内容之上，使用中性/低饱和背景的圆形按钮，避免与主操作（primary CTA）抢夺注意力。默认不使用 `--cd-color-primary`，而用 `--cd-color-bg-2` + 阴影做"次要悬浮控件"语义。
-- **进出场动画**：`fade + 轻微 translateY` 进出，时长走 token `--cd-backtop-motion-duration`（默认 200ms）。`prefers-reduced-motion` 下退化为瞬时显隐 + 瞬时跳转（`scrollTo` 不带 behavior:smooth）。
+- **进出场动画**：`fade + 轻微 translateY` 进出，时长走 token `--cd-back-top-motion-duration`（默认 200ms）。`prefers-reduced-motion` 下退化为瞬时显隐 + 瞬时跳转（`scrollTo` 不带 behavior:smooth）。
 - **尺寸**：默认 `default`（40px），`small`（32px）、`large`（48px）。圆形，图标居中。
 - **状态**：default / hover（提升阴影、背景变深）/ active（按下）/ focus-visible（2px 焦点环 `--cd-color-primary`）。无 disabled 语义（隐藏即不可交互）。
 - **定位语义**：相对最近定位上下文（target 为 window 时相对 viewport，`position: fixed`；target 为元素时建议 `position: absolute` 于容器内或 fixed 配合偏移）。
@@ -49,26 +49,29 @@ BackTop（回到顶部）是一个浮于页面右下角的悬浮按钮，当目�
 
 ### Props
 
+> 本表由 `packages/svelte/src/back-top/meta.ts` 真源生成（2026-07-30 重校）。此前本表列的 prop 多为 Semi 对齐前的旧名或已删除项（如 `value`→`activeKey`、`change`→`onChange`），改 prop 时请同步 meta.ts，勿手写「规划中」的 prop。
+
 | Prop | 类型 | 默认值 | 说明 |
-|---|---|---|---|
-| `target` | `() => HTMLElement \| Window \| string` | `() => window` | 滚动监听与回顶目标；string 视为选择器 |
-| `visibilityHeight` | `number` | `400` | 滚动超过该像素值（相对 target 顶部）显示按钮 |
-| `duration` | `number` | `450` | 回顶动画时长（ms）；`0` 表示瞬时 |
-| `bottom` | `number \| string` | `40` | 距底部偏移（number 视为 px） |
-| `right` | `number \| string` | `40` | 距右侧（RTL 下为左侧）偏移 |
-| `size` | `'small' \| 'default' \| 'large'` | `'default'` | 按钮尺寸 |
-| `visible` | `boolean` | `undefined` | 受控显隐；提供时由外部接管，内部不再依据阈值切换 |
-| `announceOnArrive` | `boolean` | `false` | 到顶后是否向屏幕阅读器播报 |
-| `class` | `string` | `''` | 透传根节点类名 |
-| `style` | `string` | `''` | 透传根节点行内样式 |
+| --- | --- | --- | --- |
+| target | `() => HTMLElement \| Window \| null` | `() => window` | 返回需要监听其滚动事件的元素对应 DOM 元素的函数（对齐 Semi） |
+| visibilityHeight | `number` | `400` | 出现 BackTop 需要达到的滚动高度(px) |
+| duration | `number` | `450` | 滚动到顶部的时间(ms) |
+| onClick | `(e: MouseEvent) => void` | `undefined` | 点击事件的回调函数 |
+| children | `Snippet` | `undefined` | 自定义按钮内容（替换默认 IconButton） |
+| style | `string` | `''` | 根节点内联样式 |
+| class | `string` | `''` | 根节点类名 |
+
+**事件**（回调 prop 形式，对齐 Semi）：
+
+| 事件 | 说明 |
+| --- | --- |
+| `onClick` | 按钮点击 |
 
 ### Events
 
-| Event | Payload | 说明 |
-|---|---|---|
-| `on:click` | `MouseEvent \| KeyboardEvent` | 用户触发回顶（点击或键盘）；可 `preventDefault` 阻止默认滚动 |
-| `on:visibleChange` | `{ visible: boolean }` | 按阈值导致的显隐变化（非受控模式触发） |
-| `on:scrollEnd` | `void` | 回顶动画完成（含 reduced-motion 瞬时完成） |
+| 事件 | 说明 |
+| --- | --- |
+| `onClick` | 按钮点击 |
 
 ### Slots
 
@@ -83,28 +86,28 @@ BackTop（回到顶部）是一个浮于页面右下角的悬浮按钮，当目�
 
 | Component Token | 回退（Alias） | 用途 |
 |---|---|---|
-| `--cd-backtop-size` | `40px`（default；small 32 / large 48 由 modifier 覆盖） | 按钮直径 |
-| `--cd-backtop-bg` | `var(--cd-color-bg-2)` | 默认背景 |
-| `--cd-backtop-bg-hover` | `var(--cd-color-bg-3)` | hover 背景 |
-| `--cd-backtop-bg-active` | `var(--cd-color-bg-4)` | active 背景 |
-| `--cd-backtop-color` | `var(--cd-color-text-0)` | 图标颜色 |
-| `--cd-backtop-border` | `var(--cd-color-border)` | 描边（默认透明，hover 显现可选） |
-| `--cd-backtop-shadow` | `var(--cd-shadow-elevated)` | 悬浮阴影 |
-| `--cd-backtop-radius` | `var(--cd-radius-full)` | 圆角（默认全圆） |
-| `--cd-backtop-z-index` | `var(--cd-z-affix)` | 层级 |
-| `--cd-backtop-focus-ring` | `var(--cd-color-primary)` | focus-visible 焦点环色 |
-| `--cd-backtop-motion-duration` | `200ms` | 进出场过渡时长 |
-| `--cd-backtop-offset-bottom` | 由 `bottom` prop 注入 | 底部偏移 |
-| `--cd-backtop-offset-inline-end` | 由 `right` prop 注入 | inline-end 偏移（RTL 自适应） |
+| `--cd-back-top-size` | `40px`（default；small 32 / large 48 由 modifier 覆盖） | 按钮直径 |
+| `--cd-back-top-bg` | `var(--cd-color-bg-2)` | 默认背景 |
+| `--cd-back-top-bg-hover` | `var(--cd-color-bg-3)` | hover 背景 |
+| `--cd-back-top-bg-active` | `var(--cd-color-bg-4)` | active 背景 |
+| `--cd-back-top-color` | `var(--cd-color-text-0)` | 图标颜色 |
+| `--cd-back-top-border` | `var(--cd-color-border)` | 描边（默认透明，hover 显现可选） |
+| `--cd-back-top-shadow` | `var(--cd-shadow-elevated)` | 悬浮阴影 |
+| `--cd-back-top-radius` | `var(--cd-radius-full)` | 圆角（默认全圆） |
+| `--cd-back-top-z-index` | `var(--cd-z-affix)` | 层级 |
+| `--cd-back-top-focus-ring` | `var(--cd-color-primary)` | focus-visible 焦点环色 |
+| `--cd-back-top-motion-duration` | `200ms` | 进出场过渡时长 |
+| `--cd-back-top-offset-bottom` | 由 `bottom` prop 注入 | 底部偏移 |
+| `--cd-back-top-offset-inline-end` | 由 `right` prop 注入 | inline-end 偏移（RTL 自适应） |
 
-类名结构：`cd-backtop`（根/按钮）、`cd-backtop__icon`、修饰符 `cd-backtop--small` / `cd-backtop--large` / `cd-backtop--visible` / `cd-backtop--hidden`。
+类名结构：`cd-back-top`（根/按钮）、`cd-back-top`（图标由 children/IconButton 承担，无独立类）、修饰符 `cd-back-top`（同上） / `cd-back-top`（尺寸由 style/class prop 自定义，无内置档位） / `cd-back-top`（显隐由条件渲染而非修饰类） / `cd-back-top`（隐藏由条件渲染而非修饰类）。
 
 ## 6. 无障碍（WCAG 2.1 AA）
 
 - **role / 语义**：根节点为原生 `<button type="button">`（首选；自动获得 button role 与键盘行为）。若用插槽渲染非按钮元素，则降级为 `role="button"` + `tabindex="0"`。
 - **aria**：`aria-label` 默认取 i18n `BackTop.ariaLabel`（"回到顶部"），可被插槽/prop 覆盖。隐藏态从 a11y 树移除（`visibility: hidden` + `aria-hidden` 由隐藏实现保证不可聚焦，使用 `tabindex` 移除或元素卸载）。
 - **键盘交互**：原生 button 自带 Enter / Space 触发。自定义元素时 core 的 `getTriggerProps` 显式处理 `keydown`（Enter、Space，且 Space 阻止默认页面滚动）。组件不抢占 Tab 顺序之外的焦点。
-- **焦点管理**：点击回顶后焦点保留在按钮（不强制移动焦点至页首，避免打断 SR 用户上下文）；可选 `announceOnArrive` 通过 `useLiveAnnouncer`（`polite`）播报 `BackTop.arrived`。
+- **焦点管理**：点击回顶后焦点保留在按钮（不强制移动焦点至页首，避免打断 SR 用户上下文）；到顶播报**未实现**（BackTop slice 只有 `ariaLabel` 一键，无 `arrived`；亦无 `announceOnArrive` prop）。
 - **对比度**：图标对背景 ≥ 4.5:1（`--cd-color-text-0` on `--cd-color-bg-2` 满足）；焦点环对相邻色 ≥ 3:1。
 - **reduced-motion**：`@media (prefers-reduced-motion: reduce)` 下进出场动画关闭，回顶使用瞬时 `scrollTo(0)`（不传 `behavior: 'smooth'`）。
 - **RTL**：偏移使用 `inset-inline-end` / `inline-end`，箭头图标方向不受影响（始终向上）。
@@ -114,10 +117,11 @@ BackTop（回到顶部）是一个浮于页面右下角的悬浮按钮，当目�
 
 用户可见文案零硬编码，经 i18n provider 注入。
 
-| i18n key | 默认（zh-CN） | 说明 |
-|---|---|---|
-| `BackTop.ariaLabel` | 回到顶部 | 按钮无障碍名称 |
-| `BackTop.arrived` | 已回到顶部 | `announceOnArrive` 时的 SR 播报 |
+> 本表由 `packages/locale/src/zh_CN.ts` 真源生成（2026-07-30 重校）。键名与键值都是 Semi 契约，勿手写「规划中」的键——历史上本表列过大量从未实现的键名，见 [[locale-dangling-keys-render-raw-key]]。
+
+| i18n key | 默认（zh-CN） |
+| --- | --- |
+| `BackTop.ariaLabel` | 回到顶部 |
 
 - 无日期/数字展示需求；若未来扩展"显示滚动百分比"等，需用 `Intl.NumberFormat` 格式化。
 - 文案随 locale 切换实时更新（响应式订阅 i18n store）。

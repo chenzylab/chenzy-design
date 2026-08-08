@@ -31,4 +31,29 @@ describe('Typography a11y', () => {
     expect(a?.textContent).toContain('Visit');
     await expectNoAxeViolations(container);
   });
+
+  it('Link：宿主恒为 span 且带 -link class，<a> 由装饰链在内容层单独包裹、自身无业务 class（对齐 Semi wrapperDecorations wrap(link, disabled?"span":"a") 施加于 children 而非容器）', () => {
+    const { container } = render(TypographyA11yFixture, {
+      props: { variant: 'link', text: 'Visit', props: { href: 'https://example.com' } },
+    });
+    const host = container.querySelector('span.cd-typography')!;
+    expect(host.classList.contains('cd-typography-link')).toBe(true);
+    const a = container.querySelector('a')!;
+    expect(a.parentElement).toBe(host);
+    expect(a.classList.contains('cd-typography')).toBe(false);
+    expect(a.classList.contains('cd-typography-link')).toBe(false);
+  });
+
+  it('Link + disabled：宿主退回不可点击的 span（对齐 Semi wrap(link, disabled?"span":"a")）', () => {
+    const { container } = render(TypographyA11yFixture, {
+      props: {
+        variant: 'link',
+        text: 'Visit',
+        props: { href: 'https://example.com', disabled: true },
+      },
+    });
+    expect(container.querySelector('a')).toBeNull();
+    const span = container.querySelector('.cd-typography-link');
+    expect(span?.tagName).toBe('SPAN');
+  });
 });

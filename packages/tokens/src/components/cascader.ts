@@ -44,6 +44,13 @@ export const cascaderTokens = {
   // —— 搜索高亮 ——
   'color-cascader-select-highlight': { value: 'var(--cd-color-primary)', category: 'color', label: '搜索高亮色', usage: '级联选择器搜索命中后文字高亮的颜色' },
 
+  // —— 触发器内搜索 Input 背景/描边（组件消费）——
+  // 值对齐 Semi：$color-cascader_input-bg-default（transparent）/
+  // $color-cascader_input-border-default（none）。均为独立字面量（非引用色板/border scale），
+  // 与 Semi 结构保持一致——即使数值恰好等于 CSS 关键字，也建专属 token 而非硬编码。
+  'color-cascader-input-bg-default': { value: 'transparent', category: 'color', label: '搜索框背景色', usage: '级联选择触发器内置搜索框背景颜色（组件消费）' },
+  'color-cascader-input-border-default': { value: 'none', category: 'color', label: '搜索框描边', usage: '级联选择触发器内置搜索框描边（组件消费）' },
+
   // —— font ——
   'font-cascader-label-fontweight': { value: '600', category: 'font', label: 'label 字重', usage: '级联选择 prefix 字重' },
   'font-cascader-select-fontweight': { value: 'var(--cd-font-weight-bold)', category: 'font', label: '命中项字重', usage: '级联选择菜单项字重 - 选中' },
@@ -52,4 +59,82 @@ export const cascaderTokens = {
   // 值对齐 Semi：$width-cascader_option（150px）/ $color-cascader_option_list-border-default（fill-0）。
   'cascader-column-width': { value: '150px', category: 'width', label: '列宽', usage: '级联选择各级菜单列宽（组件消费）' },
   'cascader-column-border': { value: 'var(--cd-color-fill-0)', category: 'color', label: '列分割线色', usage: '级联选择各级菜单分割线颜色（组件消费）' },
+
+  // —— 面板高度（组件消费）——
+  // 值对齐 Semi $height-cascader_option_list（180px）：面板固定 height（非 max-height），
+  // 各列 height:100% 继承此值。
+  'height-cascader-option-list': { value: '180px', category: 'height', label: '面板高度', usage: '级联选择下拉面板固定高度（组件消费）' },
+
+  // —— 触发器内搜索框高度（组件消费）——
+  // 值对齐 Semi $height-cascader_selection_wrapper/-small/-large（30/22/38px）：单选内置可
+  // 搜索时 search-wrapper 用固定像素高度（非百分比继承），因为其父级 .cascader-selection
+  // 是内容自适应高度的 flex 容器，"height:100%" 在此链路上无固定基准会解析成 0。
+  'height-cascader-selection-search-wrapper': { value: '30px', category: 'height', label: '搜索框高度 - 默认', usage: '级联选择触发器内置搜索框高度（组件消费）' },
+  'height-cascader-selection-search-wrapper-small': { value: '22px', category: 'height', label: '搜索框高度 - 小尺寸', usage: '级联选择触发器内置搜索框高度 - 小尺寸（组件消费）' },
+  'height-cascader-selection-search-wrapper-large': { value: '38px', category: 'height', label: '搜索框高度 - 大尺寸', usage: '级联选择触发器内置搜索框高度 - 大尺寸（组件消费）' },
+
+  // —— 列内边距（组件消费）——
+  // 值对齐 Semi：$spacing-cacader_option_list-paddingY（4px）/ -paddingX（0px）。
+  // Semi 这两个变量本身是独立字面量（非引用其他 spacing scale），故本库同样不接入通用
+  // --cd-spacing-* token，直接建 Cascader 专属字面量 token，与 Semi 结构保持一致。
+  'spacing-cascader-option-list-padding-y': { value: '4px', category: 'spacing', label: '列垂直内边距', usage: '级联选择各级菜单列垂直内边距（组件消费）' },
+  'spacing-cascader-option-list-padding-x': { value: '0px', category: 'spacing', label: '列水平内边距', usage: '级联选择各级菜单列水平内边距（组件消费）' },
+
+  // —— 触发器 / 菜单项图标尺寸（组件消费）——
+  // 值对齐 Semi：$width-cascader-icon（32px，触发器 arrow/clearbtn）/
+  // $width-cascader-option-icon（16px，菜单项展开箭头/loading spin）。均为独立字面量。
+  'width-cascader-icon': { value: '32px', category: 'width', label: '触发器图标尺寸', usage: '级联选择触发器图标尺寸（arrow/clearbtn，组件消费）' },
+  'width-cascader-option-icon': { value: '16px', category: 'width', label: '菜单项图标尺寸', usage: '级联选择菜单项图标尺寸（组件消费）' },
+
+  // —— 菜单项内边距（组件消费）——
+  // 值对齐 Semi：$spacing-cascader_option-paddingTop/-paddingBottom（均 8px）、
+  // -paddingLeft（12px）/ -paddingRight（16px，左右不对称）。均为独立字面量。
+  'spacing-cascader-option-padding-top': { value: '8px', category: 'spacing', label: '菜单项上内边距', usage: '级联选择菜单项顶部内边距（组件消费）' },
+  'spacing-cascader-option-padding-bottom': { value: '8px', category: 'spacing', label: '菜单项下内边距', usage: '级联选择菜单项底部内边距（组件消费）' },
+  'spacing-cascader-option-padding-left': { value: '12px', category: 'spacing', label: '菜单项左内边距', usage: '级联选择菜单项左侧内边距（组件消费，RTL 下镜像为右）' },
+  'spacing-cascader-option-padding-right': { value: '16px', category: 'spacing', label: '菜单项右内边距', usage: '级联选择菜单项右侧内边距（组件消费，RTL 下镜像为左）' },
+
+  // —— 空态内边距（组件消费）——
+  // 值对齐 Semi：$spacing-cascader_option_empty-paddingY（8px）/ -paddingX（12px）。独立字面量。
+  'spacing-cascader-option-empty-padding-y': { value: '8px', category: 'spacing', label: '空态垂直内边距', usage: '级联选择空结果垂直内边距（组件消费）' },
+  'spacing-cascader-option-empty-padding-x': { value: '12px', category: 'spacing', label: '空态水平内边距', usage: '级联选择空结果水平内边距（组件消费）' },
+
+  // —— 搜索结果扁平列表右内边距（组件消费）——
+  // 值对齐 Semi：$spacing-cascader_flatten_list-paddingRight（64px，为层级面包屑留白）。独立字面量。
+  'spacing-cascader-flatten-list-padding-right': { value: '64px', category: 'spacing', label: '扁平列表右内边距', usage: '级联选择搜索结果菜单右侧内边距（组件消费，RTL 下镜像为左）' },
+
+  // —— 触发器最小宽度 / 空态圆角（组件消费）——
+  // 值对齐 Semi：$width-cascader（80px，触发器最小宽度）/ $radius-cascader_option_empty（border-radius-medium，空态圆角）。
+  'width-cascader-trigger-min': { value: '80px', category: 'width', label: '触发器最小宽度', usage: '级联选择触发器最小宽度（组件消费）' },
+  'radius-cascader-option-empty': { value: 'var(--cd-border-radius-medium)', category: 'radius', label: '空态圆角', usage: '级联选择菜单空状态圆角' },
+
+  // —— 菜单项图标左右外边距（组件消费）——
+  // 值对齐 Semi：$spacing-cascader_empty_icon-marginRight（8px，tick/empty 图标右边距）/
+  // $spacing-cascader_option-icon-marginLeft（8px，展开箭头/loading 左边距）。均为独立字面量。
+  'spacing-cascader-empty-icon-margin-right': { value: '8px', category: 'spacing', label: '选中态图标右边距', usage: '级联选择菜单项 tick/empty 占位图标右侧外边距（组件消费）' },
+  'spacing-cascader-option-icon-margin-left': { value: '8px', category: 'spacing', label: '展开图标左边距', usage: '级联选择菜单项展开箭头/loading 图标左侧外边距（组件消费）' },
+
+  // —— warning / error 校验态触发器背景+描边（组件消费，触发器复用 Select token 之外的专属态）——
+  // 值对齐 Semi：$color-cascader_warning-*/$color-cascader_danger-*（与 Input 同源，warning 走
+  // warning-light-*，error 走 danger-light-*，focus 态描边分别用 warning/danger 主色非 light）。
+  'color-cascader-warning-bg-default': { value: 'var(--cd-color-warning-light-default)', category: 'color', label: 'warning 背景色', usage: '级联选择触发器警告背景颜色' },
+  'color-cascader-warning-border-default': { value: 'var(--cd-color-warning-light-default)', category: 'color', label: 'warning 描边色', usage: '级联选择触发器警告描边颜色' },
+  'color-cascader-warning-bg-hover': { value: 'var(--cd-color-warning-light-hover)', category: 'color', label: 'warning 背景色 - 悬浮', usage: '级联选择触发器警告背景颜色 - 悬浮' },
+  'color-cascader-warning-border-hover': { value: 'var(--cd-color-warning-light-hover)', category: 'color', label: 'warning 描边色 - 悬浮', usage: '级联选择触发器警告描边颜色 - 悬浮' },
+  'color-cascader-warning-bg-focus': { value: 'var(--cd-color-warning-light-default)', category: 'color', label: 'warning 背景色 - 选中', usage: '级联选择触发器警告背景颜色 - 选中' },
+  'color-cascader-warning-border-focus': { value: 'var(--cd-color-warning)', category: 'color', label: 'warning 描边色 - 选中', usage: '级联选择触发器警告描边颜色 - 选中' },
+  'color-cascader-warning-bg-active': { value: 'var(--cd-color-warning-light-active)', category: 'color', label: 'warning 背景色 - 按下', usage: '级联选择触发器警告背景颜色 - 按下' },
+  'color-cascader-warning-border-active': { value: 'var(--cd-color-warning-light-active)', category: 'color', label: 'warning 描边色 - 按下', usage: '级联选择触发器警告描边颜色 - 按下' },
+  'color-cascader-danger-bg-default': { value: 'var(--cd-color-danger-light-default)', category: 'color', label: 'error 背景色', usage: '级联选择触发器危险背景颜色' },
+  'color-cascader-danger-border-default': { value: 'var(--cd-color-danger-light-default)', category: 'color', label: 'error 描边色', usage: '级联选择触发器危险描边颜色' },
+  'color-cascader-danger-bg-hover': { value: 'var(--cd-color-danger-light-hover)', category: 'color', label: 'error 背景色 - 悬浮', usage: '级联选择触发器危险背景颜色 - 悬浮' },
+  'color-cascader-danger-border-hover': { value: 'var(--cd-color-danger-light-hover)', category: 'color', label: 'error 描边色 - 悬浮', usage: '级联选择触发器危险描边颜色 - 悬浮' },
+  'color-cascader-danger-bg-focus': { value: 'var(--cd-color-danger-light-default)', category: 'color', label: 'error 背景色 - 选中', usage: '级联选择触发器危险背景颜色 - 选中' },
+  'color-cascader-danger-border-focus': { value: 'var(--cd-color-danger)', category: 'color', label: 'error 描边色 - 选中', usage: '级联选择触发器危险描边颜色 - 选中' },
+  'color-cascader-danger-bg-active': { value: 'var(--cd-color-danger-light-active)', category: 'color', label: 'error 背景色 - 按下', usage: '级联选择触发器危险背景颜色 - 按下' },
+  'color-cascader-danger-border-active': { value: 'var(--cd-color-danger-light-active)', category: 'color', label: 'error 描边色 - 按下', usage: '级联选择触发器危险描边颜色 - 按下' },
+
+  // —— tag 禁用态背景（组件消费）——
+  // 值对齐 Semi：$color-cascader_tag_disabled-bg-default（transparent）。
+  'color-cascader-tag-disabled-bg-default': { value: 'transparent', category: 'color', label: 'tag 禁用背景色', usage: '级联选择菜单禁用 Tag 背景颜色' },
 } satisfies TokenGroup;

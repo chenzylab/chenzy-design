@@ -25,9 +25,13 @@
   const options = $derived(extension.options as Record<string, unknown>);
 
   function dragMainText(): string {
-    // Upload 文件项失败态（对齐 Semi 枚举）：网络失败 uploadFail / 校验失败 validateFail 均显示失败文案。
-    if (status === 'uploadFail' || status === 'validateFail') return loc().t('SideBar.uploadFail');
-    return loc().t('SideBar.uploadImage');
+    // 三态分派严格对齐 Semi `getDragMainText`（widget/imageSlot.tsx）：校验失败与上传失败
+    // 是**两条不同文案**——前者要用户换一张合法的（「验证失败，请重新上传」），后者是网络问题
+    // 让用户重试（「上传失败，请重试」）。本库原先两态合并成一条 uploadFail，
+    // 会把被校验拒绝的图片误导成「重试上传」。
+    if (status === 'validateFail') return loc().t('SideBar.validateFailInfo');
+    if (status === 'uploadFail') return loc().t('SideBar.uploadFailInfo');
+    return loc().t('SideBar.uploadImgInfo');
   }
 
   function handleChange({ fileList }: { fileList: UploadFileItem[]; currentFile: UploadFileItem }): void {

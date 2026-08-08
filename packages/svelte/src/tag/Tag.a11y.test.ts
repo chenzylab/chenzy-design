@@ -16,18 +16,18 @@ describe('Tag a11y', () => {
 
   it('closable：clickable 根 div role=button + tabindex，渲染关闭区，无 axe violations', async () => {
     const { container } = render(TagA11yFixture, {
-      props: { text: 'Done', props: { closable: true, ariaLabel: 'Closable Tag: Done' } },
+      props: { text: 'Done', props: { closable: true, 'aria-label': 'Closable Tag: Done' } },
     });
     const root = container.querySelector('.cd-tag');
     expect(root?.getAttribute('role')).toBe('button');
     expect(root?.getAttribute('tabindex')).toBe('0');
-    expect(container.querySelector('.cd-tag__close')).not.toBeNull();
+    expect(container.querySelector('.cd-tag-close')).not.toBeNull();
     await expectNoAxeViolations(container);
   });
 
   it('onClick：传入后变可交互（role=button + tabindex），无 axe violations', async () => {
     const { container } = render(TagA11yFixture, {
-      props: { text: 'Clickable', props: { onClick: () => {}, ariaLabel: 'Clickable Tag' } },
+      props: { text: 'Clickable', props: { onClick: () => {}, 'aria-label': 'Clickable Tag' } },
     });
     const root = container.querySelector('.cd-tag');
     expect(root?.getAttribute('role')).toBe('button');
@@ -37,7 +37,7 @@ describe('Tag a11y', () => {
 
   it('ariaLabel：透传到根元素，给纯符号 Tag 命名', async () => {
     const { container } = render(TagA11yFixture, {
-      props: { text: '+3', props: { ariaLabel: '还有 3 项' } },
+      props: { text: '+3', props: { 'aria-label': '还有 3 项' } },
     });
     const root = container.querySelector('.cd-tag');
     expect(root?.getAttribute('aria-label')).toBe('还有 3 项');

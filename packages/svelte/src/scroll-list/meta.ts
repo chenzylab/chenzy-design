@@ -33,7 +33,7 @@ export const meta = {
         { name: 'onSelect', type: '(data: ScrollItemSelectPayload) => void', default: 'undefined', desc: '选中回调，data 含 value/index/type' },
         { name: 'class', type: 'string', default: 'undefined', desc: '列样式类名' },
         { name: 'style', type: 'string', default: 'undefined', desc: '列内联样式' },
-        { name: 'ariaLabel', type: 'string', default: 'undefined', desc: '列无障碍标签' },
+        { name: 'aria-label', type: 'string', default: 'undefined', desc: '列无障碍标签' },
       ],
     },
   ],

@@ -41,47 +41,73 @@ TimePicker 是时间选择控件，用于在表单中精确选取时、分、秒
 
 ### Props
 
+> 本表由 `packages/svelte/src/time-picker/meta.ts` 真源生成（2026-07-30 重校）。此前本表列的 prop 多为 Semi 对齐前的旧名或已删除项（如 `value`→`activeKey`、`change`→`onChange`），改 prop 时请同步 meta.ts，勿手写「规划中」的 prop。
+
 | Prop | 类型 | 默认值 | 说明 |
-|---|---|---|---|
-| value | `Date \| string \| (Date\|string)[]` | — | 受控值；range 时为二元数组 |
-| defaultValue | `Date \| string \| ...` | — | 非受控初始值 |
-| open | `boolean` | — | 受控浮层显隐 |
-| defaultOpen | `boolean` | `false` | 非受控初始显隐 |
-| type | `'time' \| 'timeRange'` | `'time'` | 单选或时间区间 |
-| format | `string` | `'HH:mm:ss'` | 显示/解析格式，决定列 |
-| use12Hours | `boolean` | `false` | 启用 12 小时制（AM/PM 列） |
-| hourStep | `number` | `1` | 小时步进 |
-| minuteStep | `number` | `1` | 分钟步进 |
-| secondStep | `number` | `1` | 秒步进 |
-| disabledHours | `() => number[]` | — | 返回禁用的小时 |
-| disabledMinutes | `(h: number) => number[]` | — | 按小时返回禁用分钟 |
-| disabledSeconds | `(h, m) => number[]` | — | 按时分返回禁用秒 |
-| disabledTime | `(date: Date) => { disabledHours?, disabledMinutes?, disabledSeconds? }` | — | 按当前已选时间返回禁用规则；返回的字段覆盖顶层 `disabledHours`/`disabledMinutes`/`disabledSeconds`，未返回的回退顶层 |
-| hideDisabledOptions | `boolean` | `false` | 隐藏（而非置灰）禁用项 |
-| size | `'small' \| 'default' \| 'large'` | `'default'` | 尺寸 |
-| status | `'default' \| 'warning' \| 'error'` | `'default'` | 校验态 |
-| disabled | `boolean` | `false` | 整体禁用 |
-| readonly | `boolean` | `false` | 只读不可改 |
-| clearable | `boolean` | `true` | 显示清除按钮 |
-| placeholder | `string \| [string, string]` | i18n 默认 | 占位符 |
-| showNow | `boolean` | `true` | 显示「此刻」按钮 |
-| inputReadOnly | `boolean` | `false` | 禁止键盘直接输入文本 |
-| position | `Placement` | `'bottomLeft'` | 浮层定位 |
-| getPopupContainer | `() => HTMLElement` | `body` | 浮层挂载容器 |
-| destroyOnClose | `boolean` | `true` | 关闭时卸载浮层 DOM（内存/无障碍更干净）；`false` 则首次打开后保留 DOM（关闭仅 `hidden`） |
-| zIndex | `number` | `1030` | 浮层层级 |
-| panelHeader / panelFooter | `Snippet` | — | 自定义浮层头/尾 |
+| --- | --- | --- | --- |
+| value | `Date \| string \| [Date\|string\|null, Date\|string\|null] \| null` | `undefined` |  |
+| defaultValue | `Date \| string \| [Date\|string\|null, Date\|string\|null] \| null` | `null` |  |
+| type | `'time'\|'timeRange'` | `'time'` |  |
+| format | `string` | `'HH:mm:ss'` | 格式串，决定显示列与 12h（含 ss 显示秒列） |
+| open | `boolean` | `undefined` |  |
+| defaultOpen | `boolean` | `false` |  |
+| placeholder | `string` | `'请选择时间'` |  |
+| size | `'small'\|'default'\|'large'` | `'default'` |  |
+| validateStatus | `'default'\|'warning'\|'error'` | `'default'` |  |
+| disabled | `boolean` | `false` |  |
+| hourStep | `number` | `1` |  |
+| minuteStep | `number` | `1` |  |
+| secondStep | `number` | `1` |  |
+| use12Hours | `boolean` | `false` |  |
+| timeZone | `string \| number` | `undefined` | 时区（数字偏移 / GMT±HH:mm / IANA） |
+| disabledHours | `() => number[]` | `undefined` |  |
+| disabledMinutes | `(hour: number) => number[]` | `undefined` |  |
+| disabledSeconds | `(hour: number, minute: number) => number[]` | `undefined` |  |
+| hideDisabledOptions | `boolean` | `false` |  |
+| locale | `string` | `'zh-CN'` |  |
+| onChange | `(v: (Date\|null) \| [Date\|null, Date\|null]) => void` | `undefined` |  |
+| onOpenChange | `(open: boolean) => void` | `undefined` |  |
+| autoAdjustOverflow | `boolean` | `true` | 浮层溢出自动调整 |
+| autoFocus | `boolean` | `false` | 挂载时自动聚焦触发器 |
+| clearIcon | `Snippet` | `undefined` | 自定义清除按钮图标 |
+| showClear | `boolean` | `true` | 是否显示清除按钮 |
+| clearText | `string` | `'clear'` | 清除按钮 aria/title 文案 |
+| popupClassName | `string` | `undefined` | 浮层 className |
+| dropdownMargin | `number \| { x?: number; y?: number }` | `undefined` | 浮层溢出冗余 |
+| popupStyle | `string \| Record<string, string>` | `undefined` | 浮层内联样式 |
+| focusOnOpen | `boolean` | `false` | 打开面板时自动聚焦触发器 |
+| getPopupContainer | `() => HTMLElement` | `undefined` | 浮层挂载容器 |
+| motion | `boolean` | `true` | 面板展开动画 |
+| panelHeader | `string \| Snippet` | `undefined` | 面板顶部自定义内容 |
+| panelFooter | `string \| Snippet` | `undefined` | 面板底部自定义内容 |
+| position | `string` | `'bottomLeft'` | 浮层弹出位置 |
+| rangeSeparator | `string` | `' ~ '` | 范围模式分隔符 |
+| scrollItemProps | `Record<string, unknown>` | `undefined` | 滚动列 item 属性透传 |
+| stopPropagation | `boolean` | `true` | 阻止浮层点击事件冒泡 |
+| zIndex | `number` | `1030` | 浮层 z-index（对齐 Semi popoverNumbers.DEFAULT_Z_INDEX） |
+| onBlur | `(e: FocusEvent) => void` | `undefined` | 触发器失焦 |
+| onFocus | `(e: FocusEvent) => void` | `undefined` | 触发器聚焦 |
+| onChangeWithDateFirst | `boolean` | `true` | onChange 参数 dateFirst 模式 |
+| disabledTime | `(date: Date \| null, panelType?: 'left'\|'right') => { disabledHours?; disabledMinutes?; disabledSeconds? } \| undefined` | `undefined` | 按已选时间返回禁用规则，覆盖顶层 disabledHours/Minutes/Seconds |
+| inputStyle | `string \| Record<string, string>` | `undefined` | 输入框样式（透传到 Input） |
+| inputReadOnly | `boolean` | `false` | 输入框 readonly（仅允许通过面板选择） |
+| insetLabel | `Snippet \| string` | `undefined` | 内嵌标签（透传给 Input） |
+| insetLabelId | `string` | `undefined` | 内嵌标签容器 id（透传给 Input） |
+| triggerRender | `Snippet<[{ value: Date \| null; placeholder: string; open: boolean; disabled: boolean }]>` | `undefined` | 完全自定义触发器渲染 |
+| borderless | `boolean` | `false` | 无边框模式 |
+| preventScroll | `boolean` | `false` | focus 时阻止滚动 |
+| class | `string` | `undefined` | 根节点类名 |
+| style | `string` | `undefined` | 根节点内联样式 |
+| id | `string` | `undefined` | 根节点 id |
+| ariaLabelledby | `string` | `undefined` | aria-labelledby 透传 |
+| ariaDescribedby | `string` | `undefined` | aria-describedby 透传 |
+| ariaErrormessage | `string` | `undefined` | aria-errormessage 透传 |
+| ariaInvalid | `boolean` | `undefined` | aria-invalid 透传 |
+| ariaRequired | `boolean` | `undefined` | aria-required 透传 |
 
 ### Events
 
-| Event | payload | 说明 |
-|---|---|---|
-| on:change | `{ value: Date \| Date[], dateString: string \| string[] }` | 值变更（确认/列选中触发） |
-| on:openChange | `{ open: boolean }` | 浮层显隐变化 |
-| on:focus | `FocusEvent` | 触发器获焦 |
-| on:blur | `FocusEvent` | 触发器失焦 |
-| on:clear | `void` | 点击清除 |
-| on:panelChange | `{ value, panel: 'hour'\|'minute'\|'second'\|'meridiem' }` | 浮层内某列变更（未确认） |
+> 本组件无事件回调 prop（meta.events 为空）。此前本表列的回调均未实现，已删。
 
 ### Methods
 
@@ -150,22 +176,23 @@ TimePicker 是时间选择控件，用于在表单中精确选取时、分、秒
 
 - 用户可见文案零硬编码，全部走 i18n key：
 
+> 本表由 `packages/locale/src/zh_CN.ts` 真源生成（2026-07-30 重校）。键名与键值都是 Semi 契约，勿手写「规划中」的键——历史上本表列过大量从未实现的键名，见 [[locale-dangling-keys-render-raw-key]]。
+
 | i18n key | 默认（zh-CN） |
-|---|---|
-| TimePicker.placeholder | 请选择时间 |
-| TimePicker.placeholderStart | 开始时间 |
-| TimePicker.placeholderEnd | 结束时间 |
-| TimePicker.now | 此刻 |
-| TimePicker.confirm | 确定 |
-| TimePicker.clear | 清除 |
-| TimePicker.am | 上午 |
-| TimePicker.pm | 下午 |
-| TimePicker.hour | 时 |
-| TimePicker.minute | 分 |
-| TimePicker.second | 秒 |
-| TimePicker.columnHourLabel | 小时 |
-| TimePicker.columnMinuteLabel | 分钟 |
-| TimePicker.columnSecondLabel | 秒钟 |
+| --- | --- |
+| `TimePicker.placeholder.time` | 请选择时间 |
+| `TimePicker.placeholder.timeRange` | 请选择时间范围 |
+| `TimePicker.triggerLabel` | 选择时间 |
+| `TimePicker.hour` | 时 |
+| `TimePicker.minute` | 分 |
+| `TimePicker.second` | 秒 |
+| `TimePicker.hourLabel` | 小时 |
+| `TimePicker.minuteLabel` | 分钟 |
+| `TimePicker.secondLabel` | 秒 |
+| `TimePicker.AM` | 上午 |
+| `TimePicker.PM` | 下午 |
+| `TimePicker.begin` | 开始时间 |
+| `TimePicker.end` | 结束时间 |
 
 - 时间格式化使用 `Intl.DateTimeFormat`（结合 locale 的 hourCycle `h11/h12/h23/h24`），`use12Hours` 与 AM/PM 文案由 locale 决定，不写死 "AM/PM"。
 - `format` 字符串语义保持稳定（开发面向），展示层 locale 化。
@@ -216,7 +243,7 @@ TimePicker 是时间选择控件，用于在表单中精确选取时、分、秒
 ## 12. 验收标准 Checklist
 
 - [ ] 包名 `@chenzy-design/core` / `@chenzy-design/svelte`；core 暴露 `createTimePicker`。
-- [ ] 所有类名 `cd-timepicker` BEM-like，无写死样式值，仅消费 Alias/Component Token。
+- [ ] 所有类名 `cd-time-picker` BEM-like，无写死样式值，仅消费 Alias/Component Token。
 - [ ] API 遵循 `value`+`on:change`、`open`+`on:openChange`、`size`、`status` 约定。
 - [ ] 12/24 小时制与 `use12Hours` AM/PM 列正确，hourCycle 由 locale 驱动。
 - [ ] `hourStep/minuteStep/secondStep` 与 `disabledHours/Minutes/Seconds` 级联生效。

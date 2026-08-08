@@ -48,43 +48,36 @@ List 主体是数据渲染容器，纯展示部分（Item/Meta/Header/Footer/gri
 
 ### Props
 
-| 名称 | 类型 | 默认值 | 说明 |
-|---|---|---|---|
-| `dataSource` | `T[]` | `[]` | 数据数组；提供后配合 `renderItem` 渲染 |
-| `renderItem` | `(item: T, index: number) => Snippet` | — | 行渲染函数；与默认 slot 二选一 |
-| `rowKey` | `string \| ((item: T) => string \| number)` | `'key'` | 行唯一标识，虚拟化/选中必需 |
-| `size` | `'small' \| 'default' \| 'large'` | `'default'` | 行内边距尺寸 |
-| `bordered` | `boolean` | `false` | 是否显示外层边框 |
-| `split` | `boolean` | `true` | 是否显示行间分隔线 |
-| `header` | `string \| Snippet` | — | 列表头部内容 |
-| `footer` | `string \| Snippet` | — | 列表底部内容 |
-| `loading` | `boolean \| { spinning: boolean }` | `false` | 加载态；首屏覆盖 body |
-| `loadingSkeleton` | `boolean` | `false` | loading 时用骨架行代替 spinner |
-| `skeletonCount` | `number` | `3` | 骨架占位行数 |
-| `emptyContent` | `string \| Snippet` | 内置 `Empty` | 空数据展示内容 |
-| `grid` | `false \| GridConfig` | `false` | 网格布局，见 GridConfig |
-| `virtualized` | `false \| VirtualConfig` | `false` | 虚拟化配置 |
-| `pagination` | `false \| PaginationProps` | `false` | 内建分页配置（透传 Pagination） |
-| `loadMore` | `Snippet` | — | 「加载更多」footer 区，与 pagination 互斥 |
-| `selectable` | `false \| 'single' \| 'multiple'` | `false` | 行可选中模式 |
-| `value` | `(string \| number)[]` | — | 受控选中 key 列表 |
-| `defaultValue` | `(string \| number)[]` | `[]` | 非受控初始选中 |
-| `onRow` | `(item: T, index) => { onClick?, class?, ... }` | — | 行级属性/事件注入 |
-| `status` | `'default' \| 'warning' \| 'error'` | `'default'` | 整体校验/状态态（错误态展示错误文案区） |
+> 本表由 `packages/svelte/src/list/meta.ts` 真源生成（2026-07-30 重校）。此前本表列的 prop 多为 Semi 对齐前的旧名或已删除项（如 `value`→`activeKey`、`change`→`onChange`），改 prop 时请同步 meta.ts，勿手写「规划中」的 prop。
+
+| Prop | 类型 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| bordered | `boolean` | `false` | 是否显示外框 |
+| dataSource | `T[]` | `undefined` | 列表数据源 |
+| renderItem | `Snippet<[item: T, index: number]>` | `undefined` | 使用 dataSource 时自定义渲染列表项 |
+| emptyContent | `string \| Snippet` | `undefined` | 空列表展示内容，缺省回退 locale List.emptyText |
+| footer | `string \| Snippet` | `undefined` | 列表底部 |
+| header | `string \| Snippet` | `undefined` | 列表头部 |
+| layout | `'vertical' \| 'horizontal'` | `'vertical'` | 列表布局方向 |
+| loadMore | `Snippet` | `undefined` | 加载更多按钮区 |
+| loading | `boolean` | `false` | 加载态，列表体外包裹 Spin |
+| size | `'small' \| 'default' \| 'large'` | `'default'` | 列表尺寸 |
+| split | `boolean` | `true` | 是否展示分割线 |
+| grid | `ListGrid` | `undefined` | 栅格配置（复用 Row/Col）：gutter/align/justify/wrap → Row，span/offset/order/push/pull/flex/xs..xxl → Col |
+| style | `string` | `undefined` | 根容器行内样式 |
+| onClick | `(e: MouseEvent) => void` | `undefined` | 列表项点击回调（下发给 Item 作为回退） |
+| onRightClick | `(e: MouseEvent) => void` | `undefined` | 列表项右键回调（下发给 Item 作为回退） |
+| children | `Snippet` | `undefined` | 声明式用法：内嵌 <List.Item> |
+| class | `string` | `''` | 根类名 |
+
+**子组件**：``
 
 `GridConfig`: `{ columns?: number; gutter?: number | [number, number]; xs?, sm?, md?, lg?, xl?, xxl?: number }`
 `VirtualConfig`: `{ itemSize?: number | ((i) => number); height: number | string; overscan?: number; onScroll?: (e) => void }`
 
 ### Events
 
-| 事件 | payload | 触发时机 |
-|---|---|---|
-| `on:change` | `{ value: (string\|number)[]; item; selected: boolean }` | 选中态变更（selectable 启用） |
-| `on:rowClick` | `{ item: T; index: number; event }` | 行被点击 |
-| `on:scroll` | `{ scrollTop; startIndex; endIndex }` | 虚拟化滚动 |
-| `on:reachBottom` | `{ }` | 滚动至距底部阈值内（用于触发加载更多） |
-| `on:loadMore` | `{ }` | 点击 loadMore 触发器 |
-| `on:pageChange` | `{ currentPage; pageSize }` | 分页变更（透传 Pagination） |
+> 本组件无事件回调 prop（meta.events 为空）。此前本表列的回调均未实现，已删。
 
 ### Slots
 
@@ -156,16 +149,11 @@ LiveAnnouncer：加载更多/分页/选中数量变化时 polite 播报。
 
 用户可见文案零硬编码，经 i18n 注入；数字（计数、页码）用 `Intl.NumberFormat`。
 
-| i18n key | 默认值（zh-CN） | 用途 |
-|---|---|---|
-| `List.loading` | 加载中… | loading 提示 |
-| `List.loadMore` | 加载更多 | 加载更多按钮 |
-| `List.noMore` | 没有更多了 | 数据加载完毕 |
-| `List.empty` | 暂无数据 | 空态文案 |
-| `List.error` | 加载失败，请重试 | 错误态文案 |
-| `List.retry` | 重试 | 错误重试按钮 |
-| `List.selectedCount` | 已选 {count} 项 | 选中计数（count 经 Intl 格式化） |
-| `List.announceLoaded` | 已加载第 {start}–{end} 项，共 {total} 项 | LiveAnnouncer 播报 |
+> 本表由 `packages/locale/src/zh_CN.ts` 真源生成（2026-07-30 重校）。键名与键值都是 Semi 契约，勿手写「规划中」的键——历史上本表列过大量从未实现的键名，见 [[locale-dangling-keys-render-raw-key]]。
+
+| i18n key | 默认（zh-CN） |
+| --- | --- |
+| `List.emptyText` | 暂无数据 |
 
 Pagination 相关文案由 Pagination 组件自身 i18n 提供，List 不重复定义。
 

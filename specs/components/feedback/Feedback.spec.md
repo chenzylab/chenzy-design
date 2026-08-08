@@ -25,18 +25,23 @@ Feedback 弹出一个反馈收集面板，用户可选 emoji 表情评分、填�
 
 ### Props
 
-| 名称 | 类型 | 默认 | 说明 |
+> 本表由 `packages/svelte/src/feedback/meta.ts` 真源生成（2026-07-30 重校）。此前本表列的 prop 多为 Semi 对齐前的旧名或已删除项（如 `value`→`activeKey`、`change`→`onChange`），改 prop 时请同步 meta.ts，勿手写「规划中」的 prop。
+
+| Prop | 类型 | 默认值 | 说明 |
 | --- | --- | --- | --- |
-| `mode` | `'modal' \| 'popup'` | `'modal'` | 呈现形态：modal=Modal 弹窗；popup=SideSheet 抽屉。 |
-| `type` | `'text' \| 'emoji' \| 'radio' \| 'checkbox' \| 'custom'` | — | 反馈类型：文本 / emoji 评分 / 单选 / 多选 / 自定义。 |
-| `value` | `FeedbackValue` | — | 反馈值。`FeedbackValue = string \| string[] \| { emoji?: string; text?: string }`（emoji 类型为 EmojiResult）。 |
-| `onValueChange` | `(value: FeedbackValue) => void` | — | 反馈值变化。 |
-| `textAreaProps` | `TextAreaProps` | — | 文本输入透传本库 TextArea props。 |
-| `renderContent` | `(content) => Snippet` | — | 自定义/包裹反馈内容区。 |
-| `onOk` | `(e) => void \| Promise<any>` | — | 提交回调（可异步，await 期间 loading）。 |
-| `onCancel` | `(e) => void \| Promise<any>` | — | 取消回调。 |
-| `afterClose` | `() => void` | — | 关闭后回调。 |
-| `...Modal/SideSheet props` | — | — | 继承并透传外壳（visible/title/width/... 按 mode 分别透传 Modal 或 SideSheet）。 |
+| mode | `'popup' \| 'modal'` | `popup` | 展示模式：popup=SideSheet 抽屉；modal=Modal 弹窗 |
+| type | `'text' \| 'emoji' \| 'radio' \| 'checkbox' \| 'custom'` | `emoji` | 反馈内容类型 |
+| onValueChange | `(value: string \| string[] \| Object) => void` | `-` | 反馈内容变化时的回调 |
+| textAreaProps | `TextAreaProps` | `-` | 设置多行输入框的参数 |
+| radioGroupProps | `RadioGroupProps` | `-` | 设置单选的参数（含 options） |
+| checkboxGroupProps | `CheckboxGroupProps` | `-` | 设置多选的参数（含 options） |
+| renderContent | `(content: Snippet) => Snippet` | `-` | 自定义反馈内容展示（接收已渲染的默认内容） |
+| onOk | `(e) => void \| Promise<any>` | `-` | 点击确定回调，返回 promise 时 resolve 后自动关闭 |
+| onCancel | `(e) => void \| Promise<any>` | `-` | 取消回调，返回 promise 时 resolve 后自动关闭 |
+| okButtonProps | `ButtonProps` | `-` | 设置提交按钮的参数（type=custom 时可用 disabled 控制禁用） |
+| cancelButtonProps | `ButtonProps` | `-` | 设置取消按钮的参数 |
+| afterClose | `() => void` | `-` | 关闭后回调 |
+| ...rest | `ModalProps \| SideSheetProps` | `-` | mode=modal 透传 ModalProps；mode=popup 透传 SideSheetProps（含 visible/title/footer/width 等） |
 
 ### Events
 

@@ -6,7 +6,7 @@ import InputNumber from './InputNumber.svelte';
 describe('InputNumber a11y', () => {
   it('默认渲染：role=spinbutton + aria-valuenow/min/max，ariaLabel 提供可访问名', async () => {
     const { container } = renderWithLocale(InputNumber, {
-      props: { ariaLabel: 'Quantity', defaultValue: 5, min: 0, max: 10 },
+      props: { 'aria-label': 'Quantity', defaultValue: 5, min: 0, max: 10 },
     });
     const spin = container.querySelector('[role="spinbutton"]');
     expect(spin).not.toBeNull();
@@ -25,7 +25,7 @@ describe('InputNumber a11y', () => {
 
   it('error 状态：aria-invalid=true', async () => {
     const { container } = renderWithLocale(InputNumber, {
-      props: { ariaLabel: 'Amount', validateStatus: 'error' },
+      props: { 'aria-label': 'Amount', validateStatus: 'error' },
     });
     const spin = container.querySelector('[role="spinbutton"]');
     expect(spin?.getAttribute('aria-invalid')).toBe('true');
@@ -34,7 +34,7 @@ describe('InputNumber a11y', () => {
 
   it('readonly + hideButtons：aria-readonly，无 axe violations', async () => {
     const { container } = renderWithLocale(InputNumber, {
-      props: { ariaLabel: 'Score', defaultValue: 7, readonly: true, hideButtons: true },
+      props: { 'aria-label': 'Score', defaultValue: 7, readonly: true, hideButtons: true },
     });
     const spin = container.querySelector('[role="spinbutton"]');
     expect(spin?.getAttribute('aria-readonly')).toBe('true');

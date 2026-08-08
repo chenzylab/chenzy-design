@@ -3,7 +3,7 @@
   此例两个播放器同步播放/暂停。严格对齐 Semi「使用 ref 控制」（Semi 用 forwardRef/ref）。
 -->
 <script lang="ts">
-  import { VideoPlayer } from '@chenzy-design/svelte';
+  import { VideoPlayer, Button } from '@chenzy-design/svelte';
 
   const src =
     'https://lf3-static.bytednsdoc.com/obj/eden-cn/ptlz_zlp/ljhwZthlaukjlkulzlp/vchart/landingPage/vchart-show-video.mp4';
@@ -23,13 +23,13 @@
   }
 </script>
 
-<div style="display:flex;flex-direction:column;gap:12px">
-  <div style="display:flex;gap:8px">
-    <button type="button" onclick={playBoth}>同步播放</button>
-    <button type="button" onclick={pauseBoth}>同步暂停</button>
+<div>
+  <div style="margin-bottom:12px">
+    <Button onclick={playBoth} style="margin-right:8px">同时播放</Button>
+    <Button onclick={pauseBoth}>同时暂停</Button>
   </div>
-  <div style="display:flex;gap:12px;flex-wrap:wrap">
-    <VideoPlayer bind:videoRef={ref1} {src} {poster} width={320} height={200} />
-    <VideoPlayer bind:videoRef={ref2} {src} {poster} width={320} height={200} />
+  <div style="display:flex;gap:12px">
+    <VideoPlayer bind:videoRef={ref1} {src} {poster} width="50%" height={315} />
+    <VideoPlayer bind:videoRef={ref2} {src} {poster} width="50%" height={315} />
   </div>
 </div>

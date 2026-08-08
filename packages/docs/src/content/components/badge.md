@@ -3,7 +3,6 @@ title: Badge 徽章
 name: badge
 category: show
 brief: 用徽章来给用户提示。
-docMode: inline
 ---
 
 <script>

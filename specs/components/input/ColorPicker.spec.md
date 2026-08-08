@@ -19,7 +19,7 @@ ColorPicker 是一个颜色选择控件，用于让用户通过可视化的色�
 
 ## 2. 设计语义
 
-- **形态**：由 `cd-colorpicker`（根/Trigger 容器）与 `cd-colorpicker__panel`（浮层面板）两部分组成。面板自上而下为：饱和度-明度方块（`__board`）→ 色相滑块（`__hue`）→ 透明度滑块（`__alpha`，可选）→ 数值区（`__inputs`，含格式切换 `__format`）→ 预设区（`__presets`）。
+- **形态**：由 `cd-color-picker`（根/Trigger 容器）与 `cd-color-picker-popover`（浮层面板）两部分组成。面板自上而下为：饱和度-明度方块（`__board`）→ 色相滑块（`__hue`）→ 透明度滑块（`__alpha`，可选）→ 数值区（`__inputs`，含格式切换 `__format`）→ 预设区（`__presets`）。
 - **Trigger 默认形态**：一个圆角色块（`__swatch`）显示当前色值；透明色用棋盘格底纹（`__swatch--transparent` 叠加 conic/linear 棋盘）表达 Alpha。
 - **尺寸 size**：`small | default | large`，影响 Trigger 色块尺寸、滑块手柄直径与输入框高度。Token 化（见第 5 节），不写死像素。
 - **校验态 status**：`default | warning | error`，仅作用于内联输入框/Trigger 边框，复用 `--cd-color-warning` / `--cd-color-danger`。
@@ -48,50 +48,35 @@ ColorPicker 含拖拽、键盘、浮层、焦点管理等交互逻辑，采用 h
 - 子组件：`ColorBoard`、`HueSlider`、`AlphaSlider`、`ColorInputs`、`ColorPresets`、`ColorTrigger`，均为薄渲染层。
 - 浮层支持 `destroyOnClose` 惰性渲染 panel。
 
-纯展示场景（仅展示一个色块、不可交互）不应使用本组件，应直接用 `<span class="cd-colorpicker__swatch">`。
+纯展示场景（仅展示一个色块、不可交互）不应使用本组件，应直接用 `<span class="cd-color-picker-swatch">`。
 
 ## 4. API
 
 ### Props
 
-| 属性 | 类型 | 默认值 | 说明 |
+> 本表由 `packages/svelte/src/color-picker/meta.ts` 真源生成（2026-07-30 重校）。此前本表列的 prop 多为 Semi 对齐前的旧名或已删除项（如 `value`→`activeKey`、`change`→`onChange`），改 prop 时请同步 meta.ts，勿手写「规划中」的 prop。
+
+| Prop | 类型 | 默认值 | 说明 |
 | --- | --- | --- | --- |
-| `value` | `string \| { h:number; s:number; v:number; a?:number } \| { r:number; g:number; b:number; a?:number }` | — | 受控值。字符串接受 `#RGB/#RRGGBB/#RRGGBBAA/rgb()/rgba()`。配合 `on:change`。 |
-| `defaultValue` | 同 `value` | `'#000000'` | 非受控初始值。 |
-| `format` | `'hex' \| 'rgb' \| 'hsv'` | `'hex'` | 当前展示/输出格式。受控时配合 `on:formatChange`。 |
-| `defaultFormat` | `'hex' \| 'rgb' \| 'hsv'` | `'hex'` | 非受控初始格式。 |
-| `alpha` | `boolean` | `true` | 是否显示透明度滑块与 Alpha 输入。 |
-| `open` | `boolean` | — | 浮层显隐（受控），配合 `on:openChange`。`inline` 时忽略。 |
-| `defaultOpen` | `boolean` | `false` | 非受控初始显隐。 |
-| `inline` | `boolean` | `false` | 内联面板模式，不渲染 Trigger 与浮层。 |
-| `presets` | `Array<string \| { color:string; label?:string }>` | `[]` | 预设色板。`label` 用于 a11y/tooltip。 |
-| `recentColors` | `string[]` | — | 最近使用色（受控展示，配合 `on:recentChange`）。 |
-| `maxRecent` | `number` | `8` | 最近使用最大记录数。 |
-| `size` | `'small' \| 'default' \| 'large'` | `'default'` | 尺寸。 |
-| `status` | `'default' \| 'warning' \| 'error'` | `'default'` | 校验态。 |
-| `disabled` | `boolean` | `false` | 禁用。 |
-| `eyeDropper` | `boolean` | `false` | 启用屏幕吸管（依赖 `window.EyeDropper`，不支持时自动隐藏按钮）。 |
-| `outputUppercase` | `boolean` | `true` | HEX 输出/展示是否大写。 |
-| `placement` | `'top' \| 'bottom' \| 'top-start' \| ...` | `'bottom-start'` | 浮层方位。 |
-| `getPopupContainer` | `() => HTMLElement` | `() => document.body` | 浮层挂载容器。 |
-| `destroyOnClose` | `boolean` | `false` | 关闭时销毁面板 DOM。 |
-| `zIndex` | `number` | `--cd-z-popover` | 浮层层级。 |
-| `closeOnSelect` | `boolean` | `false` | 选中预设/确认后是否关闭浮层。 |
-| `triggerType` | `'click' \| 'hover'` | `'click'` | 浮层触发方式。 |
-| `id` | `string` | 自动生成 | 根 id，用于 label 关联。 |
-| `aria-label` | `string` | — | 无可见 label 时的可访问名。 |
+| value | `ColorValue` | `undefined` | 受控值（{ hsva, rgba, hex }，hsva 的 s/v 为 0-100） |
+| defaultValue | `ColorValue` | `品牌绿 #39c5bb` | 非受控初始值（对齐 Semi defaultProps） |
+| alpha | `boolean` | `false` | 是否开启透明度选择（显示 alpha 滑条与百分比输入）；Semi 无 defaultProps 同为 falsy |
+| width | `number` | `280` | 面板宽度 px（对齐 Semi width） |
+| height | `number` | `280` | saturation 方块高度 px（对齐 Semi height） |
+| defaultFormat | `'hex'\|'rgba'\|'hsva'` | `'hex'` | DataPart 输入区初始格式（不受控，对齐 Semi） |
+| eyeDropper | `boolean` | `true` | 是否开启滴管拾色器；需安全上下文（HTTPS/localhost）且浏览器支持 EyeDropper，否则按钮自动隐藏 |
+| usePopover | `boolean` | `false` | 浮层模式：包裹 Popover，children 作触发器（对齐 Semi usePopover） |
+| popoverProps | `PopoverProps` | `undefined` | 透传内部 Popover 属性（仅 usePopover） |
+| children | `Snippet` | `undefined` | 自定义触发器（仅 usePopover；缺省渲染默认色块，对齐 Semi children） |
+| topSlot | `Snippet` | `undefined` | 面板顶部 slot（对齐 Semi topSlot） |
+| bottomSlot | `Snippet` | `undefined` | 面板底部 slot（对齐 Semi bottomSlot） |
+| class | `string` | `undefined` | 根元素自定义类名（对齐 Semi className） |
+| style | `string` | `undefined` | 根元素内联样式（对齐 Semi style） |
+| onChange | `(value: ColorValue) => void` | `undefined` | 值变化回调（回 ColorValue 对象） |
 
 ### Events
 
-| 事件 | 回调签名 | 触发时机 |
-| --- | --- | --- |
-| `on:change` | `(detail: { value: string; hsva: {h,s,v,a}; rgba: {r,g,b,a}; hex: string }) => void` | 颜色变化（拖拽/键盘/输入/预设）。提交时（非每帧 throttle）触发。 |
-| `on:input` | 同 `change` | 拖拽过程中的实时高频变化（用于联动预览）。 |
-| `on:formatChange` | `(detail: { format: 'hex'\|'rgb'\|'hsv' }) => void` | 用户切换格式。 |
-| `on:openChange` | `(detail: { open: boolean }) => void` | 浮层显隐变化。 |
-| `on:recentChange` | `(detail: { recentColors: string[] }) => void` | 最近使用列表更新（提交新色后）。 |
-| `on:presetClick` | `(detail: { color: string; index: number }) => void` | 点击预设色。 |
-| `on:focus` / `on:blur` | `(e: FocusEvent) => void` | Trigger / 面板焦点进出。 |
+> 本组件无事件回调 prop（meta.events 为空）。此前本表列的回调均未实现，已删。
 
 ### Slots
 
@@ -103,40 +88,44 @@ ColorPicker 含拖拽、键盘、浮层、焦点管理等交互逻辑，采用 h
 
 ## 5. 主题 / Token
 
-组件仅消费 Alias 与 Component 级 Token，禁止写死值。
+> 本表由 `packages/tokens/src/components/color-picker.ts` 真源生成（2026-08-07 重校，严格对齐 Semi `semi-foundation/colorPicker/variables.scss`）。此前本表列的 `--cd-color-picker-trigger-*`/`--cd-color-picker-panel-*`/`--cd-color-picker-preset-gap` 等均为 M2 早期规划稿，Semi 无对应字面量，未落地实现，已删；改 token 时请同步该文件，勿手写「规划中」的 token，见 [[dont-force-map-when-semi-lacks-the-var]]。
+
+组件仅消费 Alias 与 Component 级 Token，禁止写死值。全部 20 个均严格对齐 Semi `variables.scss`（`$radius-colorPicker-*` 等），零自造补充。
 
 | Component Token | 默认引用（Alias/Global） | 用途 |
 | --- | --- | --- |
-| `--cd-colorpicker-trigger-size-sm` | `--cd-size-sm`（如 20px） | small 色块边长 |
-| `--cd-colorpicker-trigger-size` | `--cd-size-md`（如 24px） | default 色块边长 |
-| `--cd-colorpicker-trigger-size-lg` | `--cd-size-lg`（如 32px） | large 色块边长 |
-| `--cd-colorpicker-trigger-radius` | `--cd-radius-sm` | 色块圆角 |
-| `--cd-colorpicker-trigger-border` | `--cd-color-border` | 色块/输入边框 |
-| `--cd-colorpicker-trigger-border-hover` | `--cd-color-border-hover` | hover 边框 |
-| `--cd-colorpicker-panel-bg` | `--cd-color-bg-0` | 面板背景 |
-| `--cd-colorpicker-panel-radius` | `--cd-radius-md` | 面板圆角 |
-| `--cd-colorpicker-panel-shadow` | `--cd-shadow-popover` | 面板阴影 |
-| `--cd-colorpicker-panel-width` | `240px`（→ Global 间距标度） | 面板宽度 |
-| `--cd-colorpicker-board-height` | `160px` | 饱和度方块高度 |
-| `--cd-colorpicker-handle-size` | `--cd-size-handle`（如 14px） | 滑块/方块手柄直径 |
-| `--cd-colorpicker-handle-border` | `--cd-color-bg-0` | 手柄白色描边 |
-| `--cd-colorpicker-handle-shadow` | `--cd-shadow-sm` | 手柄投影 |
-| `--cd-colorpicker-slider-height` | `--cd-size-xs`（如 10px） | hue/alpha 轨道高度 |
-| `--cd-colorpicker-slider-radius` | `--cd-radius-pill` | 轨道圆角 |
-| `--cd-colorpicker-checker-color` | `--cd-color-fill-1` | 透明棋盘格深块颜色 |
-| `--cd-colorpicker-focus-ring` | `--cd-color-primary` | focus 高亮 |
-| `--cd-colorpicker-preset-gap` | `--cd-spacing-2` | 预设格间距 |
-| `--cd-colorpicker-text` | `--cd-color-text-0` | 输入文字 |
+| `--cd-radius-color-picker-topleft` | `8px` | 圆角 - 左上（saturation 方块） |
+| `--cd-radius-color-picker-topright` | `8px` | 圆角 - 右上（saturation 方块） |
+| `--cd-radius-color-picker-bottomleft` | `0px` | 圆角 - 左下（saturation 方块） |
+| `--cd-radius-color-picker-bottomright` | `0px` | 圆角 - 右下（saturation 方块） |
+| `--cd-radius-color-picker-handle` | `--cd-border-radius-full` | 圆角 - 拖拽把手 / 滑块条 |
+| `--cd-radius-color-picker-alphasliderinner` | `4px` | 圆角 - 透明度 Slider inner |
+| `--cd-radius-color-picker-demoblock` | `4px` | 圆角 - 颜色手动输入区域左侧当前选中颜色色块 |
+| `--cd-radius-color-picker-defaulttrigger` | `4px` | popover 模式默认 trigger 圆角 |
+| `--cd-width-color-picker-handle-border` | `2px` | 把手边框宽度 |
+| `--cd-width-color-picker-colorpickerinputnumber` | `58px` | alpha 数字输入器宽度 |
+| `--cd-width-color-picker-formatselect` | `80px` | 格式选择下拉 Select 宽度 |
+| `--cd-width-color-picker-defaulttrigger` | `24px` | popover 模式默认 trigger 边长 |
+| `--cd-color-color-picker-handle-border` | `--cd-color-white` | 拖拽把手 / 滑块把手边框颜色 |
+| `--cd-spacing-color-picker-inputnumbersuffix-horizontal` | `4px` | alpha 数字输入框后百分比水平内边距 |
+| `--cd-spacing-color-picker-inputgroup-marginleft` | `4px` | 颜色手动输入区域左侧距离色块距离 |
+| `--cd-spacing-color-picker-popover-padding` | `8px` | popover 模式浮层整体内边距 |
+| `--cd-spacing-color-picker-inputnumbersuffix-vertical` | `4px` | alpha 数字输入框后百分比垂直内边距 |
+| `--cd-spacing-color-picker-slider-margintop` | `6px` | hue / alpha 滑动选择器上边距 |
+| `--cd-spacing-color-picker-datapart-margintop` | `8px` | 颜色手动输入区域上边距 |
+| `--cd-font-color-picker-inputnumbersuffix-fontsize` | `14px` | alpha 数字输入框后百分比字体大小 |
 
-暗色模式由 Alias 层（`--cd-color-bg-0` 等）自动切换；棋盘格深块用 `--cd-color-fill-1` 保证两套主题下都有对比。状态色：warning → `--cd-color-warning`，error → `--cd-color-danger`。
+跨组件共享语义 token：`--cd-focus-ring`（三个滑块 `:focus-visible` 环，Semi 原生浏览器默认 focus 样式，本库统一用全局无障碍 token 表达，非本组件自造视觉）。
+
+暗色模式：Semi 把手边框色 `$color-colorPicker_handle-border: var(--semi-color-white)` 在暗色下仍为白色（非反色），本库同步引用 `--cd-color-white` 忠实镜像；透明度棋盘格用内联 SVG data-URI（`fill-opacity=".05"`），两套主题下均为低对比度深块，无需额外深浅两色。把手无投影（Semi 原生无 box-shadow，本库不加自造增强）。
 
 ## 6. 无障碍（WCAG 2.1 AA）
 
 遵循 WAI-ARIA APG 的 Slider 与 Dialog（浮层）模式。
 
 **角色与属性**
-- Trigger：`role="button"`，`aria-haspopup="dialog"`，`aria-expanded`，`aria-label`（默认 i18n `ColorPicker.triggerLabel`，含当前色值如 “选择颜色，当前 #1A73E8”）。
-- 浮层：`role="dialog"`，`aria-label`=`ColorPicker.panelLabel`，inline 模式用 `role="group"`。
+- Trigger：`role="button"`，`aria-haspopup="dialog"`，`aria-expanded`，`aria-label` **由调用方传入**（locale 无 `triggerLabel` 键——ColorPicker slice 只有 `saturation`/`hue`/`alpha`/`hex`/`eyeDropper`/`format` 六键，对齐 Semi 无此文案）。
+- 浮层：`role="dialog"`，`aria-label` 由调用方传入（locale 无 `panelLabel` 键），inline 模式用 `role="group"`。
 - 饱和度方块：`role="slider"` 二维语义有限，采用 `role="application"` 包裹 + 自定义键盘说明（`aria-roledescription`=本地化 “饱和度明度选择区”），并提供 `aria-valuetext`（如 “饱和度 60%，明度 80%”）。
 - 色相滑块：`role="slider"`，`aria-label`=`ColorPicker.hue`，`aria-valuemin=0` `aria-valuemax=360` `aria-valuenow` `aria-valuetext`（“色相 210 度”）。
 - 透明度滑块：`role="slider"`，`aria-valuemin=0` `aria-valuemax=100`，`aria-valuetext`=“不透明度 80%”。
@@ -160,26 +149,16 @@ ColorPicker 含拖拽、键盘、浮层、焦点管理等交互逻辑，采用 h
 
 用户可见文案零硬编码，全部走 i18n key；色值/角度/百分比用 `Intl.NumberFormat`（百分比与度数本地化）。
 
+> 本表由 `packages/locale/src/zh_CN.ts` 真源生成（2026-07-30 重校）。键名与键值都是 Semi 契约，勿手写「规划中」的键——历史上本表列过大量从未实现的键名，见 [[locale-dangling-keys-render-raw-key]]。
+
 | i18n key | 默认（zh-CN） |
 | --- | --- |
-| `ColorPicker.triggerLabel` | 选择颜色 |
-| `ColorPicker.triggerLabelWithValue` | 选择颜色，当前 {value} |
-| `ColorPicker.panelLabel` | 颜色选择器 |
-| `ColorPicker.board` | 饱和度与明度选择区 |
+| `ColorPicker.saturation` | 饱和度与明度 |
 | `ColorPicker.hue` | 色相 |
-| `ColorPicker.alpha` | 不透明度 |
-| `ColorPicker.hex` | 十六进制 |
-| `ColorPicker.red` / `.green` / `.blue` | 红 / 绿 / 蓝 |
-| `ColorPicker.formatLabel` | 颜色格式 |
-| `ColorPicker.presets` | 预设颜色 |
-| `ColorPicker.recent` | 最近使用 |
+| `ColorPicker.alpha` | 透明度 |
+| `ColorPicker.hex` | 十六进制颜色值 |
 | `ColorPicker.eyeDropper` | 屏幕取色 |
-| `ColorPicker.clear` | 清除 |
-| `ColorPicker.confirm` / `.cancel` | 确定 / 取消 |
-| `ColorPicker.valueText.hue` | 色相 {deg} 度 |
-| `ColorPicker.valueText.sv` | 饱和度 {s}，明度 {v} |
-| `ColorPicker.valueText.alpha` | 不透明度 {percent} |
-| `ColorPicker.invalidHex` | 无效的颜色值 |
+| `ColorPicker.format` | 颜色格式 |
 
 百分比经 `Intl.NumberFormat(locale, { style: 'percent' })`，度数与 RGB 整数经 `Intl.NumberFormat(locale)`。
 
@@ -188,11 +167,11 @@ ColorPicker 含拖拽、键盘、浮层、焦点管理等交互逻辑，采用 h
 遵循 content-guidelines：
 - label 用名词短语，简洁（“色相”而非“请选择色相”）。
 - 格式切换用大写缩写 `HEX / RGB / HSV`（约定俗成，不翻译，但读屏走 `aria-label` 本地化全称）。
-- 校验提示具体：`ColorPicker.invalidHex` = “无效的颜色值”，配合示例占位 `#1A73E8`。
+- 校验提示：非法 hex 直接不提交（无独立提示文案；locale 无 `invalidHex` 键，对齐 Semi），输入框示例占位 `#1A73E8`。
 - aria-valuetext 用完整句式，避免只读数字。
 
 **危险操作文案（单列）**：
-- “清除颜色” `ColorPicker.clear`：将当前选择重置为空/透明，属可逆操作，不需二次确认；按钮文案 “清除”，`aria-label` = “清除颜色选择”。
+- “清除颜色”：将当前选择重置为空/透明，属可逆操作，不需二次确认。文案由调用方提供（locale 无 `ColorPicker.clear` 键，对齐 Semi）。
 - 无破坏性数据删除操作；最近使用列表清空（若提供）走宿主自定义，不在组件内置危险确认。
 
 ## 9. 性能（Perf Budget）

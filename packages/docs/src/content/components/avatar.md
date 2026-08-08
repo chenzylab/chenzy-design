@@ -3,7 +3,6 @@ title: Avatar 头像
 name: avatar
 category: show
 brief: 头像，支持图片或字符展示。
-docMode: inline
 ---
 
 <script>
@@ -117,7 +116,7 @@ Avatar 支持 `onClick`、`onMouseEnter`、`onMouseLeave`。其中 `hover` 状�
 
 <DemoBox code={groupSrc}><Group /></DemoBox>
 
-可以通过 `maxCount` 设置展示的头像数量。因 Svelte 无法像 React `Children` 那样遍历 children 计数，折叠形态改用数据驱动的 `items` 数组（与 Semi `children` + `maxCount` 等价）。
+可以通过 `maxCount` 设置展示的头像数量，超出部分折叠为「+N」。组合式子 `<Avatar>` 与数据驱动的 `items` 两种写法都支持折叠。
 
 <DemoBox code={groupMaxSrc}><GroupMax /></DemoBox>
 
@@ -159,7 +158,7 @@ Avatar 支持 `onClick`、`onMouseEnter`、`onMouseLeave`。其中 `hover` 状�
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
-| items | 数据驱动的成员数组，启用 `maxCount` 折叠（对齐 Semi `children`；Svelte 折叠需数据驱动） | AvatarGroupItem[] | - |
+| items | 数据驱动的成员数组（与组合式 children 等价的另一种写法，同样支持 `maxCount` 折叠） | AvatarGroupItem[] | - |
 | maxCount | 最大数量限制，超出后显示 +N | number | - |
 | overlapFrom | 设置头像覆盖方向，支持 `start`、`end` | string | `start` |
 | renderMore | 自定义渲染 more 标签，参数 `{ restNumber, restAvatars }` | Snippet | - |

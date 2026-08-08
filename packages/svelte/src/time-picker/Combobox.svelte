@@ -102,8 +102,8 @@
     }),
   );
   const ampmList = $derived<ScrollItemData[]>([
-    { value: 'AM', text: loc().t('TimePicker.am') },
-    { value: 'PM', text: loc().t('TimePicker.pm') },
+    { value: 'AM', text: loc().t('TimePicker.AM') },
+    { value: 'PM', text: loc().t('TimePicker.PM') },
   ]);
 
   // onItemChange —— 照搬 Semi Combobox.onItemChange。
@@ -160,7 +160,7 @@
         selectedIndex={isAM ? 0 : 1}
         type="ampm"
         onSelect={onItemChange}
-        ariaLabel={loc().t('TimePicker.triggerLabel')}
+        aria-label={loc().t('TimePicker.triggerLabel')}
         {...scrollItemProps}
       />
     {/if}
@@ -172,7 +172,7 @@
         selectedIndex={hourOptionsAdj.indexOf(hourAdj)}
         type="hour"
         onSelect={onItemChange}
-        ariaLabel={loc().t('TimePicker.hour')}
+        aria-label={loc().t('TimePicker.hourLabel')}
         {...scrollItemProps}
       />
     {/if}
@@ -184,7 +184,7 @@
         selectedIndex={st.minuteOptions.indexOf(value.getMinutes())}
         type="minute"
         onSelect={onItemChange}
-        ariaLabel={loc().t('TimePicker.minute')}
+        aria-label={loc().t('TimePicker.minuteLabel')}
         {...scrollItemProps}
       />
     {/if}
@@ -196,7 +196,7 @@
         selectedIndex={st.secondOptions.indexOf(value.getSeconds())}
         type="second"
         onSelect={onItemChange}
-        ariaLabel={loc().t('TimePicker.second')}
+        aria-label={loc().t('TimePicker.secondLabel')}
         {...scrollItemProps}
       />
     {/if}

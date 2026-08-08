@@ -106,8 +106,9 @@
   function motionDurationMs(): number {
     if (!motion) return 0;
     if (typeof window === 'undefined' || !panelEl) return 0;
+    // 取「关闭」时长（出场过渡用），对齐 Semi $animation_duration_sidebar_inner-hide。
     const raw = getComputedStyle(panelEl)
-      .getPropertyValue('--cd-sidebar-motion-duration')
+      .getPropertyValue('--cd-sidebar-inner-hide-duration')
       .trim();
     if (!raw) return 0;
     if (raw.endsWith('ms')) return parseFloat(raw) || 0;
@@ -263,8 +264,18 @@
     stackZ !== undefined ? `--cd-sidebar-z:${stackZ}` : undefined,
   );
 
+  // Semi 用 CSSAnimation 在动画元素上切 -animation-content_show / _hide 两个类
+  // （container/index.tsx:167）。本库的出入场是 transition + 外层 -container-open 状态类驱动，
+  // 机制不同但效果等价（值已按 animation.scss 对齐）。这里把 Semi 的两个类名也挂到
+  // 同一个动画元素上，保持类名契约一致——外部若按 Semi 类名做定制，两边都能命中。
   const panelCls = $derived(
-    ['cd-sidebar-container__panel', className].filter(Boolean).join(' '),
+    [
+      'cd-sidebar-container-panel',
+      isOpen ? 'cd-sidebar-animation-content_show' : 'cd-sidebar-animation-content_hide',
+      className,
+    ]
+      .filter(Boolean)
+      .join(' '),
   );
 
   const handleLabel = $derived(loc().t('Resizable.handleAriaLabel'));
@@ -275,8 +286,8 @@
   <div
     bind:this={rootEl}
     class="cd-sidebar-container"
-    class:cd-sidebar-container--open={isOpen && entered}
-    class:cd-sidebar-container--no-motion={!motion}
+    class:cd-sidebar-container-open={isOpen && entered}
+    class:cd-sidebar-container-no-motion={!motion}
     style={rootStyle}
   >
     <div
@@ -291,7 +302,7 @@
         <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
         <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
         <div
-          class="cd-sidebar-container__handle"
+          class="cd-sidebar-container-handle"
           role="separator"
           tabindex="0"
           aria-orientation="vertical"
@@ -307,9 +318,9 @@
       {#if renderHeader}
         {@render renderHeader()}
       {:else if hasTitle || showClose}
-        <header class="cd-sidebar-container__header">
+        <header class="cd-sidebar-container-header">
           {#if hasTitle}
-            <h2 id={titleId} class="cd-sidebar-container__title">
+            <h2 id={titleId} class="cd-sidebar-container-header-title">
               {#if isTitleSnippet}
                 {@render (title as Snippet)()}
               {:else}
@@ -322,7 +333,7 @@
           {#if showClose}
             <button
               type="button"
-              class="cd-sidebar-container__close"
+              class="cd-sidebar-container-header-closeBtn"
               aria-label={closeLabel}
               onclick={(e) => emitCancel(e)}
             >
@@ -339,7 +350,7 @@
         </header>
       {/if}
 
-      <div class="cd-sidebar-container__body">
+      <div class="cd-sidebar-container-content">
         {@render children?.()}
       </div>
     </div>
@@ -355,7 +366,7 @@
     display: flex;
     pointer-events: none;
   }
-  .cd-sidebar-container__panel {
+  .cd-sidebar-container-panel {
     position: relative;
     box-sizing: border-box;
     display: flex;
@@ -370,27 +381,42 @@
     box-shadow: var(--cd-sidebar-shadow);
     border-start-start-radius: var(--cd-sidebar-radius);
     border-end-start-radius: var(--cd-sidebar-radius);
+    /* 位移与时长逐条对齐 Semi 的 slideShow_right / slideHide_right
+       （translateX 100%↔0，180ms，cubic-bezier(0.25,0.46,0.45,0.94)）。
+       Semi 只动 transform，没有透明度渐变——本库原来额外淡入淡出，且时长走的是
+       通用 --cd-motion-duration-mid(200ms)，与 Semi 的 180ms 不一致。
+       实现上 Semi 用两个 keyframe 类由 CSSAnimation 切换，本库用 transition +
+       -container-open 状态类驱动位移；效果等价。时长/曲线/延迟挂在 Semi 的同名类
+       -animation-content_show / _hide 上（见下），让这两个类名不只是装饰。 */
     transform: translateX(100%);
-    opacity: 0;
-    transition:
-      transform var(--cd-sidebar-motion-duration) var(--cd-motion-ease-standard, ease),
-      opacity var(--cd-sidebar-motion-duration) var(--cd-motion-ease-standard, ease);
-    will-change: transform, opacity;
+    will-change: transform;
+  }
+
+  /* 出场档（对齐 Semi -animation-content_hide 用 hide 组变量）。 */
+  .cd-sidebar-animation-content_hide {
+    transition: transform var(--cd-sidebar-inner-hide-duration)
+      var(--cd-sidebar-inner-hide-function) var(--cd-sidebar-inner-hide-delay);
+  }
+
+  /* 入场档（对齐 Semi -animation-content_show 用 show 组变量）。 */
+  .cd-sidebar-animation-content_show {
+    transition: transform var(--cd-sidebar-inner-show-duration)
+      var(--cd-sidebar-inner-show-function) var(--cd-sidebar-inner-show-delay);
   }
   /* RTL：面板贴左，圆角/边框镜像，位移方向翻转。 */
-  :global([dir='rtl']) .cd-sidebar-container {
+  :global(.cd-rtl) .cd-sidebar-container {
     inset-inline-end: auto;
     inset-inline-start: 0;
   }
-  :global([dir='rtl']) .cd-sidebar-container__panel {
+  :global(.cd-rtl) .cd-sidebar-container-panel {
     transform: translateX(-100%);
   }
-  .cd-sidebar-container--open .cd-sidebar-container__panel {
+  /* 展开态位移归零（时长/曲线由 -animation-content_show 提供）。 */
+  .cd-sidebar-container-open .cd-sidebar-container-panel {
     transform: translateX(0);
-    opacity: 1;
   }
   /* 把手：贴内容侧边缘（LTR 左、RTL 右），命中区 ≥12px 满足触控。 */
-  .cd-sidebar-container__handle {
+  .cd-sidebar-container-handle {
     position: absolute;
     inset-block: 0;
     inset-inline-start: 0;
@@ -400,12 +426,12 @@
     touch-action: none;
     transform: translateX(-50%);
   }
-  :global([dir='rtl']) .cd-sidebar-container__handle {
+  :global(.cd-rtl) .cd-sidebar-container-handle {
     inset-inline-start: auto;
     inset-inline-end: 0;
     transform: translateX(50%);
   }
-  .cd-sidebar-container__handle::after {
+  .cd-sidebar-container-handle::after {
     content: '';
     position: absolute;
     inset-block: 0;
@@ -415,33 +441,36 @@
     background: var(--cd-sidebar-handle-color);
     transition: background-color 0.15s;
   }
-  .cd-sidebar-container__handle:hover::after {
+  .cd-sidebar-container-handle:hover::after {
     background: var(--cd-sidebar-handle-color-hover);
   }
-  .cd-sidebar-container__handle:focus-visible {
+  .cd-sidebar-container-handle:focus-visible {
     outline: none;
     box-shadow: var(--cd-focus-ring);
   }
-  .cd-sidebar-container__header {
+  .cd-sidebar-container-header {
     display: flex;
     flex-shrink: 0;
     align-items: center;
     justify-content: space-between;
     gap: var(--cd-spacing-base-tight, 12px);
-    padding: var(--cd-sidebar-header-padding);
-    border-block-end: 1px solid var(--cd-sidebar-border);
+    padding: var(--cd-sidebar-container-header-padding-y) var(--cd-sidebar-container-header-padding-right)
+      var(--cd-sidebar-container-header-padding-y) var(--cd-sidebar-container-header-padding-left);
+    border-block-end: var(--cd-width-sidebar-container-header-border-bottom) solid
+      var(--cd-color-sidebar-container-header-border-bottom);
   }
-  .cd-sidebar-container__title {
+  .cd-sidebar-container-header-title {
     margin: 0;
     overflow: hidden;
     color: var(--cd-sidebar-title-color);
     font-size: var(--cd-sidebar-title-size);
     font-weight: var(--cd-sidebar-title-weight);
-    line-height: 1.4;
+    /* Semi sidebar.scss:45 @include font-size-header-6 → 22px */
+    line-height: var(--cd-line-height-header-6);
     text-overflow: ellipsis;
     white-space: nowrap;
   }
-  .cd-sidebar-container__close {
+  .cd-sidebar-container-header-closeBtn {
     display: inline-flex;
     flex-shrink: 0;
     align-items: center;
@@ -455,23 +484,23 @@
     color: var(--cd-sidebar-close-color);
     cursor: pointer;
   }
-  .cd-sidebar-container__close:hover {
+  .cd-sidebar-container-header-closeBtn:hover {
     background: var(--cd-sidebar-close-hover-bg);
   }
-  .cd-sidebar-container__close:focus-visible {
+  .cd-sidebar-container-header-closeBtn:focus-visible {
     outline: none;
     box-shadow: var(--cd-focus-ring);
   }
-  .cd-sidebar-container__body {
+  .cd-sidebar-container-content {
     flex: 1;
     overflow: auto;
     padding: var(--cd-sidebar-body-padding);
   }
-  .cd-sidebar-container--no-motion .cd-sidebar-container__panel {
+  .cd-sidebar-container-no-motion .cd-sidebar-container-panel {
     transition: none;
   }
   @media (prefers-reduced-motion: reduce) {
-    .cd-sidebar-container__panel {
+    .cd-sidebar-container-panel {
       transition: none;
     }
   }

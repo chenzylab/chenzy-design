@@ -1,18 +1,26 @@
 <script lang="ts">
-  import { HotKeys, Text, Space } from '@chenzy-design/svelte';
+  import { HotKeys, Modal, Tag } from '@chenzy-design/svelte';
 
-  let saved = $state(0);
+  let visible = $state(false);
+  const showDialog = () => {
+    visible = true;
+  };
+  const handleOk = () => {
+    visible = false;
+  };
+  const handleCancel = () => {
+    visible = false;
+  };
+  const hotKeys = [HotKeys.Keys.Control, HotKeys.Keys.R];
 </script>
 
-<Space vertical>
-  <Space align="center">
-    <Text>render 完全自定义提示：</Text>
-    <HotKeys hotKeys={['Meta', 'S']} onHotKey={() => (saved += 1)}>
-      {#snippet render()}
-        <span style="padding:2px 8px;border-radius:6px;background:var(--cd-color-fill-1);">⌘S 保存</span>
-      {/snippet}
-    </HotKeys>
-    <Text type="tertiary">保存次数：{saved}</Text>
-  </Space>
-  <Text type="tertiary" size="small">传 render 完全接管提示 UI；传 render 为 null 则只监听不显示。</Text>
-</Space>
+<div>
+  <HotKeys {hotKeys} onHotKey={showDialog}>
+    {#snippet render()}
+      <Tag>Press Ctrl+R to Open Modal</Tag>
+    {/snippet}
+  </HotKeys>
+  <Modal title="Dialog" {visible} onOk={handleOk} onCancel={handleCancel}>
+    This is the Modal opened by hotkey: {hotKeys.join('+')}.
+  </Modal>
+</div>

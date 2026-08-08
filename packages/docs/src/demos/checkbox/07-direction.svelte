@@ -7,4 +7,4 @@
   ];
 </script>
 
-<CheckboxGroup {options} direction="horizontal" ariaLabel="CheckboxGroup 示例" />
+<CheckboxGroup {options} direction="horizontal" aria-label="CheckboxGroup 示例" />

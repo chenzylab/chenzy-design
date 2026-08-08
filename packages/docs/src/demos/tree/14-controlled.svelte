@@ -1,8 +1,8 @@
 <script lang="ts">
   import { Tree, Button, Text } from '@chenzy-design/svelte';
-  import type { TreeNode } from '@chenzy-design/svelte';
+  import type { TreeNodeData } from '@chenzy-design/core';
 
-  const treeData: TreeNode[] = [
+  const treeData: TreeNodeData[] = [
     {
       label: '亚洲',
       key: 'asia',
@@ -31,7 +31,7 @@
     value={value}
     onExpand={(keys) => (expanded = keys)}
     onChange={(v) => (value = v as string | number)}
-    ariaLabel="受控树"
+    aria-label="受控树"
   />
   <Text type="tertiary" size="small">已选：{value ?? '（未选）'}</Text>
 </div>

@@ -1,8 +1,8 @@
 <script lang="ts">
   import { Tree, Text } from '@chenzy-design/svelte';
-  import type { TreeNode } from '@chenzy-design/svelte';
+  import type { TreeNodeData } from '@chenzy-design/core';
 
-  const treeData: TreeNode[] = [
+  const treeData: TreeNodeData[] = [
     {
       label: '亚洲',
       key: 'asia',
@@ -40,7 +40,7 @@
     defaultExpandAll
     value={checked}
     onChange={(value) => (checked = value as (string | number)[])}
-    ariaLabel="多选地区树"
+    aria-label="多选地区树"
   />
   <Text type="tertiary" size="small">已勾选 {checked.length} 项</Text>
 </div>

@@ -50,7 +50,7 @@ export const meta = {
     { name: 'onInputExceed', type: '(value: string) => void', default: 'undefined', desc: '单 tag 超出 maxLength 时触发' },
     { name: 'onFocus', type: '(e: FocusEvent) => void', default: 'undefined', desc: '输入框聚焦' },
     { name: 'onBlur', type: '(e: FocusEvent) => void', default: 'undefined', desc: '输入框失焦' },
-    { name: 'ariaLabel', type: 'string', default: 'undefined' },
+    { name: 'aria-label', type: 'string', default: 'undefined' },
   ],
   methods: [
     { name: 'focus()', desc: '命令式聚焦输入框（尊重 preventScroll，对齐 Semi）' },

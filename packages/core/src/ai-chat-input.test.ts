@@ -8,6 +8,9 @@ import {
   nextSuggestionIndex,
   referenceLabel,
   isImageReference,
+  isImageType,
+  getAttachmentType,
+  getContentType,
   skillLabel,
   getSkillSlotHTML,
   getSelectSlotHTML,
@@ -164,15 +167,79 @@ describe('ai-chat-input · referenceLabel', () => {
   });
 });
 
-describe('ai-chat-input · isImageReference', () => {
-  it("type='image' 判图", () => {
-    expect(isImageReference({ type: 'image', id: '1' })).toBe(true);
+describe('ai-chat-input · isImageType', () => {
+  it('name 后缀命中图片白名单', () => {
+    expect(isImageType({ name: 'a.png' })).toBe(true);
+    expect(isImageType({ name: 'a.webp' })).toBe(true);
+    expect(isImageType({ name: 'doc.pdf' })).toBe(false);
   });
-  it('url 图片扩展名判图（含 query/hash）', () => {
-    expect(isImageReference({ type: 'file', id: '1', url: 'a.png' })).toBe(true);
-    expect(isImageReference({ type: 'file', id: '1', url: 'https://x/y.JPG?v=2' })).toBe(true);
-    expect(isImageReference({ type: 'file', id: '1', url: 'doc.pdf' })).toBe(false);
+
+  it('fileInstance.type 以 image/ 开头即判图（后缀不看）', () => {
+    expect(isImageType({ name: 'blob', fileInstance: { type: 'image/png' } })).toBe(true);
+    expect(isImageType({ name: 'a.pdf', fileInstance: { type: 'application/pdf' } })).toBe(false);
+  });
+
+  it('对齐 Semi：白名单不含 svg、且大小写敏感', () => {
+    expect(isImageType({ name: 'a.svg' })).toBe(false);
+    expect(isImageType({ name: 'a.PNG' })).toBe(false);
+  });
+
+  it('对齐 Semi：只看 name 不看 url', () => {
+    expect(isImageType({ name: 'blob', url: 'https://x/y.png' })).toBe(false);
+  });
+
+  it('无 name 无 fileInstance 不判图', () => {
+    expect(isImageType({})).toBe(false);
+  });
+});
+
+describe('ai-chat-input · isImageReference', () => {
+  it('与 isImageType 同一判定（引用/附件共用）', () => {
+    expect(isImageReference({ type: 'file', id: '1', name: 'a.png' })).toBe(true);
+    expect(isImageReference({ type: 'file', id: '1', name: 'doc.pdf' })).toBe(false);
     expect(isImageReference({ type: 'file', id: '1' })).toBe(false);
+  });
+});
+
+describe('ai-chat-input · getAttachmentType', () => {
+  it('显式 type 优先于 name 后缀', () => {
+    expect(getAttachmentType({ type: 'pdf', name: 'a.png' })).toBe('pdf');
+  });
+
+  it('无 type 时取 name 后缀', () => {
+    expect(getAttachmentType({ name: 'report.docx' })).toBe('docx');
+  });
+
+  it('无 type 无后缀时取 fileInstance.type 尾段', () => {
+    expect(getAttachmentType({ fileInstance: { type: 'image/png' } })).toBe('png');
+  });
+
+  it('都缺省时返回 UNKNOWN', () => {
+    expect(getAttachmentType({})).toBe('UNKNOWN');
+  });
+});
+
+describe('ai-chat-input · getContentType', () => {
+  it('逐类映射对齐 Semi', () => {
+    expect(getContentType('docx')).toBe('word');
+    expect(getContentType('go')).toBe('code');
+    expect(getContentType('xlsx')).toBe('excel');
+    expect(getContentType('pptx')).toBe('ppt');
+    expect(getContentType('mp4')).toBe('video');
+    expect(getContentType('mp3')).toBe('audio');
+    expect(getContentType('png')).toBe('image');
+    expect(getContentType('pdf')).toBe('pdf');
+  });
+
+  it('未命中返回 unknown', () => {
+    expect(getContentType('zip')).toBe('unknown');
+    expect(getContentType('UNKNOWN')).toBe('unknown');
+  });
+
+  it("对齐 Semi 的既定行为：'ts' 后写覆盖前写取 video", () => {
+    // Semi 的 Map 里 ['ts','code'] 在前、['ts','video'] 在后，Map 后写生效。
+    // 这是 Semi 的实际契约（非本库自造），照搬不"修正"。
+    expect(getContentType('ts')).toBe('video');
   });
 });
 
@@ -266,10 +333,18 @@ describe('ai-chat-input · messageToChatInput', () => {
     const inner = (msg.content as { content: unknown[] }[])[0]!.content;
     expect(inner).toEqual([]);
   });
-  it('按 url 图片扩展名判图（attachment.type 是 file/directory 非 mime）', () => {
-    const msg = messageToChatInput({ attachments: [{ uid: '1', url: 'https://x/pic.webp' }] });
+  it('按 name 后缀判图（对齐 Semi isImageType，只看 name 不看 url）', () => {
+    const msg = messageToChatInput({
+      attachments: [{ uid: '1', name: 'pic.webp', url: 'https://x/pic.webp' }],
+    });
     const inner = (msg.content as { content: Record<string, unknown>[] }[])[0]!.content;
     expect(inner[0]!.type).toBe('input_image');
+  });
+
+  it('仅 url 像图片、name 不像时不判图（Semi 同此行为）', () => {
+    const msg = messageToChatInput({ attachments: [{ uid: '1', url: 'https://x/pic.webp' }] });
+    const inner = (msg.content as { content: Record<string, unknown>[] }[])[0]!.content;
+    expect(inner[0]!.type).toBe('input_file');
   });
 });
 

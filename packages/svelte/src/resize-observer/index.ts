@@ -6,4 +6,5 @@ export {
   getGlobalResizeObserver,
   type CDResizeEntry,
   type ResizeBox,
+  type ResizeObserverProperty,
 } from '@chenzy-design/core';

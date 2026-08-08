@@ -10,7 +10,7 @@
   {checked}
   mode="advanced"
   onChange={(e) => (checked = e.target.checked)}
-  ariaLabel="单选示例"
+  aria-label="单选示例"
   name="demo-radio-advanced"
 >
   允许取消选择

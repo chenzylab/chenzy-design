@@ -3,7 +3,6 @@ title: TreeSelect 树选择器
 name: treeselect
 category: input
 brief: 树选择器用于多层级树形数据的结构化展示 & 选取，例如显示文件夹与文件的列表、显示组织架构成员列表等等。
-docMode: inline
 ---
 
 <script>
@@ -110,6 +109,8 @@ import { TreeSelect } from '@chenzy-design/svelte';
 ### 默认展开
 
 `defaultExpandAll` 和 `expandAll` 均可以设置 TreeSelect 的默认展开/收起状态。二者的区别是，`defaultExpandAll` 只在初始化时生效，而 `expandAll` 不仅会在初始化时生效，当数据（`treeData`）发生动态更新时，`expandAll` 也仍然生效。
+
+在下面的 demo 中，`treeData` 更新后，`defaultExpandAll` 失效，`expandAll` 仍然生效。
 
 <DemoBox code={defaultExpandSrc}><DefaultExpand /></DemoBox>
 

@@ -208,7 +208,11 @@
   let rootEl: HTMLElement | null = null;
   function onKeydown(e: KeyboardEvent) {
     if (count <= 1) return;
-    const rtl = rootEl?.matches(':dir(rtl)') ?? false;
+    // ⚠️ 不能用 `matches(':dir(rtl)')`：`:dir()` 只认 HTML 的 `dir` 属性，
+    // 而 ConfigProvider（与 Semi 一致）只注入 `<div class="cd-rtl">` 不设 dir，
+    // 那样判定恒为 false、RTL 下左右键镜像从未生效。改读**实际计算方向**，
+    // 两种机制（dir 属性 / CSS direction）都能正确识别。
+    const rtl = rootEl ? getComputedStyle(rootEl).direction === 'rtl' : false;
     switch (e.key) {
       case 'ArrowLeft':
         e.preventDefault();
@@ -770,28 +774,38 @@
     }
   }
 
-  /* RTL（对齐 Semi rtl.scss）：方向翻转、箭头镜像、指示器 margin 换边 */
-  .cd-carousel:dir(rtl) .cd-carousel-arrow {
+  /* —— RTL（对齐 Semi carousel/rtl.scss）：方向翻转、箭头镜像、指示器 margin 换边 ——
+     ⚠️ 这里原本写的是 `.cd-carousel:dir(rtl)`，**从来没生效过**：
+     `:dir()` 只匹配 HTML 的 `dir` 属性，不认 CSS 的 `direction`；
+     而 ConfigProvider 与 Semi 一样只注入 `<div class="cd-rtl">`（不设 dir），
+     全站实测 `[dir]` 元素数为 0 → 整段规则是死代码。
+     改用 `.cd-rtl` 作用域，与 Semi rtl.scss 的 `.semi-rtl` 同构。 */
+  /* Semi 每个组件的 rtl.scss 都在自己根节点上声明 direction（.semi-rtl 本身不带样式，
+     只是作用域钩子），本库同构。这条同时也是 JS 侧判定方向的依据。 */
+  :global(.cd-rtl) .cd-carousel {
+    direction: rtl;
+  }
+  :global(.cd-rtl) .cd-carousel .cd-carousel-arrow {
     flex-direction: row-reverse;
   }
-  .cd-carousel:dir(rtl) .cd-carousel-arrow-prev {
+  :global(.cd-rtl) .cd-carousel .cd-carousel-arrow-prev {
     left: auto;
     right: var(--cd-carousel-spacing-arrow-right);
     transform: scaleX(-1) translateY(-50%);
   }
-  .cd-carousel:dir(rtl) .cd-carousel-arrow-next {
+  :global(.cd-rtl) .cd-carousel .cd-carousel-arrow-next {
     right: auto;
     left: var(--cd-carousel-spacing-arrow-left);
     transform: scaleX(-1) translateY(-50%);
   }
-  .cd-carousel:dir(rtl) .cd-carousel-indicator-dot .cd-carousel-indicator-item:not(:last-child),
-  .cd-carousel:dir(rtl) .cd-carousel-indicator-columnar .cd-carousel-indicator-item:not(:last-child) {
+  :global(.cd-rtl) .cd-carousel .cd-carousel-indicator-dot .cd-carousel-indicator-item:not(:last-child),
+  :global(.cd-rtl) .cd-carousel .cd-carousel-indicator-columnar .cd-carousel-indicator-item:not(:last-child) {
     margin-right: 0;
   }
-  .cd-carousel:dir(rtl) .cd-carousel-indicator-dot .cd-carousel-indicator-item:not(:last-child) {
+  :global(.cd-rtl) .cd-carousel .cd-carousel-indicator-dot .cd-carousel-indicator-item:not(:last-child) {
     margin-left: var(--cd-carousel-spacing-indicator-dot-marginx);
   }
-  .cd-carousel:dir(rtl) .cd-carousel-indicator-columnar .cd-carousel-indicator-item:not(:last-child) {
+  :global(.cd-rtl) .cd-carousel .cd-carousel-indicator-columnar .cd-carousel-indicator-item:not(:last-child) {
     margin-left: var(--cd-carousel-spacing-indicator-columnar-marginx);
   }
 

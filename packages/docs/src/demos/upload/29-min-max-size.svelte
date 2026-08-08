@@ -1,14 +1,13 @@
 <script lang="ts">
-  import { Upload, Space, Text, Button } from '@chenzy-design/svelte';
+  import { Upload, Space, Text, Button, Toast } from '@chenzy-design/svelte';
   import { IconUpload } from '@chenzy-design/icons';
   import type { UploadFileItem } from '@chenzy-design/svelte';
 
   let val = $state<UploadFileItem[]>([]);
-  let lastError = $state('');
 
   // onSizeError（对齐 Semi）：大小超限时回调（file, fileList）。
   function onSizeError(file: UploadFileItem) {
-    lastError = `${file.name} 大小不合法（限制 200KB ~ 1MB）`;
+    Toast.error(`${file.name} size invalid`);
   }
 </script>
 
@@ -30,7 +29,4 @@
       点击上传（最小 200KB，最大 1MB）
     </Button>
   </Upload>
-  {#if lastError}
-    <Text type="danger">{lastError}</Text>
-  {/if}
 </Space>

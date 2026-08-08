@@ -42,24 +42,22 @@ Icon 是纯展示组件，**无交互逻辑、无键盘处理、无浮层**，�
 
 ### Props
 
-| 名称 | 类型 | 默认值 | 说明 |
-|------|------|--------|------|
-| `size` | `'extra-small' \| 'small' \| 'default' \| 'large' \| 'extra-large' \| number` | `'default'` | 尺寸枚举或像素数值，映射到 `--cd-icon-size-*`。 |
-| `spin` | `boolean` | `false` | 持续旋转，用于 loading。受 reduced-motion 抑制。 |
-| `rotate` | `number` | `0` | 静态旋转角度（deg）。 |
-| `status` | `'default' \| 'warning' \| 'error' \| 'success' \| 'info'` | `'default'` | 语义状态色；`default` 继承 `currentColor`。 |
-| `color` | `string` | `undefined` | 显式覆盖颜色（建议传 token 变量，如 `var(--cd-color-primary)`），优先级高于 `status`。 |
-| `svg` | `string` | `undefined` | 直接传入 SVG 字符串（内部 `@html`，构建期已 SVGO 净化）。 |
-| `component` | `ComponentType` | `undefined` | 传入一个 Svelte 图标组件作为渲染源（与 slot 二选一）。 |
-| `label` | `string` | `undefined` | 语义图标的可访问名称。提供后 `role="img"`；缺省则视为装饰性，`aria-hidden="true"`。 |
-| `class` | `string` | `''` | 透传到根元素的附加类名。 |
-| `style` | `string` | `''` | 透传内联样式。 |
+> 本表由 `packages/svelte/src/icon/meta.ts` 真源生成（2026-07-30 重校）。此前本表列的 prop 多为 Semi 对齐前的旧名或已删除项（如 `value`→`activeKey`、`change`→`onChange`），改 prop 时请同步 meta.ts，勿手写「规划中」的 prop。
+
+| Prop | 类型 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| svg | `string \| Snippet` | `undefined` | SVG 字符串（{@html} 渲染，来源须可信）或自定义图标 Snippet（对齐 Semi svg） |
+| size | `'inherit'\|'extra-small'\|'small'\|'default'\|'large'\|'extra-large'` | `'default'` | font-size 驱动尺寸：extra-small(8)/small(12)/default(16)/large(20)/extra-large(24)；inherit 继承上下文字号 |
+| spin | `boolean` | `false` | 持续旋转，受 reduced-motion 抑制 |
+| rotate | `number` | `undefined` | 静态旋转角度（deg）；仅安全整数生效 |
+| type | `string` | `undefined` | 图标语义类型，映射到 aria-label 与 cd-icon-{type} 类（对齐 Semi） |
+| fill | `string` | `undefined` | 覆盖填充色（对齐 Semi fill；用于双色/多色图标改色） |
+| class | `string` | `''` |  |
+| style | `string` | `''` | 透传到根元素的内联样式 |
 
 ### Events
 
-| 名称 | payload | 说明 |
-|------|---------|------|
-| —    | —       | Icon 为纯展示组件，**不定义任何对外事件**。点击交互请用外层 Button 或可聚焦容器承载，避免给非交互元素绑定 `on:click` 造成 a11y 反模式。原生事件可通过 `$$restProps` 透传至根 `<span>`（如外层确需 `on:click`，由消费方自担键盘可达性责任）。 |
+> 本组件无事件回调 prop（meta.events 为空）。此前本表列的回调均未实现，已删。
 
 ### Slots
 
@@ -87,7 +85,7 @@ Icon 是纯展示组件，**无交互逻辑、无键盘处理、无浮层**，�
 | `--cd-icon-spin-duration` | `1s` | spin 动画周期 |
 | `--cd-icon-spin-timing` | `linear` | spin 缓动 |
 
-类名：根 `.cd-icon`，修饰 `.cd-icon--spin`、`.cd-icon--<size>`、`.cd-icon--status-<status>`。所有 `fill`/`stroke` 默认 `currentColor`，由 `color` 决定。暗色模式无需特殊处理（继承文本色 + 语义色已含主题切换）。
+类名：根 `.cd-icon`，修饰 `.cd-icon-animation-rotate`（spin 动画）、`.cd-icon-<size>`、`.cd-icon-status-<status>`。所有 `fill`/`stroke` 默认 `currentColor`，由 `color` 决定。暗色模式无需特殊处理（继承文本色 + 语义色已含主题切换）。
 
 ## 6. 无障碍
 
@@ -100,7 +98,7 @@ Icon 是纯展示组件，**无交互逻辑、无键盘处理、无浮层**，�
 
 - **对比度**：作为信息载体的语义图标需对背景满足 ≥3:1（WCAG 1.4.11 非文本对比度）；status 语义色 token 已按此校准。装饰性图标不强制。
 - **reduced-motion**：`@media (prefers-reduced-motion: reduce)` 下禁用 `spin` 动画（`animation: none`），保持静态以免前庭不适。
-- **RTL**：方向性图标（箭头、返回、列表缩进等）在 `[dir="rtl"]` 下需水平镜像，由 `@chenzy-design/icons` 标注 `directional` 元数据，容器加 `.cd-icon--flip-rtl` 应用 `transform: scaleX(-1)`；非方向性图标不翻转。
+- **RTL**：方向性图标（箭头、返回、列表缩进等）在 `[dir="rtl"]` 下需水平镜像，由 `@chenzy-design/icons` 标注 `directional` 元数据，容器加 RTL 镜像类（未实现，规划中）应用 `transform: scaleX(-1)`；非方向性图标不翻转。
 - **焦点管理**：Icon 本身不可聚焦，不进入 tab 序列；不承担焦点逻辑。
 - 不依赖颜色单独传达含义（status 色须配合形状/文案，符合 1.4.1）。
 

@@ -69,7 +69,7 @@ export const meta = {
       desc: '自定义渲染 Modal content；接收默认 content Snippet，返回包裹结构（可拖拽经此 + DragMove）',
     },
     { name: 'children', type: 'Snippet', default: 'undefined', desc: '内容主体' },
-    { name: 'ariaLabel', type: 'string', default: 'undefined', desc: '无 title 时的 aria-label' },
+    { name: 'aria-label', type: 'string', default: 'undefined', desc: '无 title 时的 aria-label' },
     { name: 'preventScroll', type: 'boolean', default: 'false', desc: '聚焦时是否阻止浏览器滚动文档以显示新聚焦元素（作用于组件内 focus）' },
     { name: 'onOk', type: '() => void | Promise<unknown>', default: 'undefined', desc: '点击确认；返回 Promise 时确认按钮自动 loading' },
     { name: 'onCancel', type: '() => void | Promise<unknown>', default: 'undefined', desc: '取消/关闭；返回 Promise 时取消按钮自动 loading' },

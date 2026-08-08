@@ -1,12 +1,12 @@
 <script lang="ts">
   import { Tree, Button, Text } from '@chenzy-design/svelte';
-  import type { TreeNode } from '@chenzy-design/svelte';
+  import type { TreeNodeData } from '@chenzy-design/core';
 
-  const initial: TreeNode[] = [
+  const initial: TreeNodeData[] = [
     { label: '节点 1', key: 'n1', children: [{ label: '节点 1-1', key: 'n1-1' }] },
   ];
 
-  let data = $state<TreeNode[]>(initial);
+  let data = $state<TreeNodeData[]>(initial);
   let count = 1;
 
   function addNode() {
@@ -30,7 +30,7 @@
         style="border: 1px solid var(--cd-color-border); border-radius: 6px"
         treeData={data}
         defaultExpandAll
-        ariaLabel="defaultExpandAll 树"
+        aria-label="defaultExpandAll 树"
       />
     </div>
     <div style="width:200px">
@@ -39,7 +39,7 @@
         style="border: 1px solid var(--cd-color-border); border-radius: 6px"
         treeData={data}
         expandAll
-        ariaLabel="expandAll 树"
+        aria-label="expandAll 树"
       />
     </div>
   </div>

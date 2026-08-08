@@ -3,7 +3,6 @@ title: TagInput 标签输入框
 name: taginput
 category: input
 brief: 标签输入框能够将输入的内容生成标签。
-docMode: inline
 ---
 
 <script>

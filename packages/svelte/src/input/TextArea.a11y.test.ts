@@ -8,7 +8,7 @@ import TextArea from './TextArea.svelte';
 describe('TextArea a11y', () => {
   it('默认渲染：ariaLabel 提供可访问名，无 axe violations', async () => {
     const { container } = renderWithLocale(TextArea, {
-      props: { ariaLabel: 'Bio', placeholder: 'Tell us about yourself' },
+      props: { 'aria-label': 'Bio', placeholder: 'Tell us about yourself' },
     });
     const ta = container.querySelector('textarea');
     expect(ta).not.toBeNull();
@@ -18,7 +18,7 @@ describe('TextArea a11y', () => {
 
   it('error 状态：aria-invalid=true', async () => {
     const { container } = renderWithLocale(TextArea, {
-      props: { ariaLabel: 'Notes', validateStatus: 'error' },
+      props: { 'aria-label': 'Notes', validateStatus: 'error' },
     });
     const ta = container.querySelector('textarea');
     expect(ta?.getAttribute('aria-invalid')).toBe('true');
@@ -28,7 +28,7 @@ describe('TextArea a11y', () => {
   it('showClear：清除按钮始终渲染，聚焦后才可见，严格对齐 Semi（无 aria-label 的 div）', async () => {
     const { container } = renderWithLocale(TextArea, {
       props: {
-        ariaLabel: 'Comment',
+        'aria-label': 'Comment',
         defaultValue: 'hello',
         showClear: true,
         showCount: true,
@@ -98,7 +98,7 @@ describe('TextArea autosize 宽度感知（ResizeObserver）', () => {
     const resizeCalls: { height: number }[] = [];
     const { container } = renderWithLocale(TextArea, {
       props: {
-        ariaLabel: 'Bio',
+        'aria-label': 'Bio',
         autosize: true,
         defaultValue: 'line1\nline2',
         onResize: (p: { height: number }) => resizeCalls.push(p),
@@ -128,7 +128,7 @@ describe('TextArea autosize 宽度感知（ResizeObserver）', () => {
     MockRO.instances = [];
     vi.stubGlobal('ResizeObserver', MockRO);
     renderWithLocale(TextArea, {
-      props: { ariaLabel: 'Plain', autosize: false, rows: 3 },
+      props: { 'aria-label': 'Plain', autosize: false, rows: 3 },
     });
     expect(MockRO.instances.length).toBe(0);
   });

@@ -14,6 +14,43 @@
   import type { Editor } from '@tiptap/core';
   import type { SideBarImageUploadOptions } from './file-extensions.js';
   import { useLocale } from '../locale-provider/index.js';
+  // 复用现有组件：Semi MenuBar 用的就是 Button / Divider / Dropdown / Input / Toast。
+  import { Button } from '../button/index.js';
+  import { Divider } from '../divider/index.js';
+  import { Dropdown } from '../dropdown/index.js';
+  import Input from '../input/Input.svelte';
+  import { Toast } from '../toast/index.js';
+  import {
+    IconUndo,
+    IconRedo,
+    IconHn,
+    IconH1,
+    IconH2,
+    IconH3,
+    IconH4,
+    IconH5,
+    IconH6,
+    IconText,
+    IconList,
+    IconOrderedList,
+    IconQuote,
+    IconMinus,
+    IconAlignLeft,
+    IconAlignCenter,
+    IconAlignRight,
+    IconAlignJustify,
+    IconBold,
+    IconItalic,
+    IconStrikeThrough,
+    IconCode,
+    IconLink,
+    IconImage,
+    IconCheckCircleStroked,
+    IconDeleteStroked,
+  } from '@chenzy-design/icons';
+
+  /** Hn 下拉里 H1–H6 六个图标，按 level 顺序取用。 */
+  const headingIcons = [IconH1, IconH2, IconH3, IconH4, IconH5, IconH6];
 
   interface Props {
     /** 初始富文本内容（HTML）。 */
@@ -50,15 +87,23 @@
   // 工具栏激活态（selectionUpdate/transaction 时刷新的纯 $state）。
   let toolbarState = $state<Record<string, boolean>>({});
 
+  /** 工具栏激活态。字段逐条对齐 Semi useEditorState 的 selector。 */
   function computeToolbarState(ed: Editor): Record<string, boolean> {
     return {
       isBold: ed.isActive('bold'),
       isItalic: ed.isActive('italic'),
       isStrike: ed.isActive('strike'),
       isCode: ed.isActive('code'),
-      isH1: ed.isActive('heading', { level: 1 }),
-      isH2: ed.isActive('heading', { level: 2 }),
-      isH3: ed.isActive('heading', { level: 3 }),
+      isCodeBlock: ed.isActive('codeBlock'),
+      // Hn 下拉：整体激活态 + 六级各自激活态（对齐 Semi isHeading / isHeading1..6）。
+      isHeading: ed.isActive('heading'),
+      isHeading1: ed.isActive('heading', { level: 1 }),
+      isHeading2: ed.isActive('heading', { level: 2 }),
+      isHeading3: ed.isActive('heading', { level: 3 }),
+      isHeading4: ed.isActive('heading', { level: 4 }),
+      isHeading5: ed.isActive('heading', { level: 5 }),
+      isHeading6: ed.isActive('heading', { level: 6 }),
+      isParagraph: ed.isActive('paragraph'),
       isBulletList: ed.isActive('bulletList'),
       isOrderedList: ed.isActive('orderedList'),
       isBlockquote: ed.isActive('blockquote'),
@@ -66,6 +111,7 @@
       isAlignLeft: ed.isActive({ textAlign: 'left' }),
       isAlignCenter: ed.isActive({ textAlign: 'center' }),
       isAlignRight: ed.isActive({ textAlign: 'right' }),
+      isAlignJustify: ed.isActive({ textAlign: 'justify' }),
       canUndo: ed.can().chain().undo().run(),
       canRedo: ed.can().chain().redo().run(),
     };
@@ -168,6 +214,72 @@
   function chain() {
     return editor?.chain().focus();
   }
+
+  // —— 链接弹层（逐条对齐 Semi handleConfirmLink / handleUnsetLink）——
+  let linkVisible = $state(false);
+  let linkValue = $state('');
+  // 打开弹层时记下选区：输入框会抢焦点，编辑器选区随后不可靠。
+  let linkRange = $state<{ from: number; to: number } | null>(null);
+
+  /**
+   * 开合弹层（对齐 Semi onVisibleChange）：
+   * 打开时记录选区 + 有选区则打 selectionMark（让用户输入时仍看得见选中区域），
+   * 回填当前链接地址；关闭时清掉 selectionMark。
+   */
+  function handleLinkVisibleChange(visible: boolean): void {
+    linkVisible = visible;
+    const ed = editor;
+    if (!ed) return;
+    if (visible) {
+      const { from, to } = ed.state.selection;
+      linkRange = { from, to };
+      if (from !== to) {
+        (ed.chain().focus() as never as { setMark(n: string): { run(): void } })
+          .setMark('selectionMark')
+          .run();
+      }
+      linkValue = (ed.getAttributes('link') as { href?: string })?.href ?? '';
+    } else {
+      (ed.chain().focus() as never as { unsetMark(n: string): { run(): void } })
+        .unsetMark('selectionMark')
+        .run();
+      linkRange = null;
+    }
+  }
+
+  function confirmLink(): void {
+    const href = linkValue.trim();
+    const ed = editor;
+    if (!href || !ed) return;
+    const { from, to } = linkRange ?? ed.state.selection;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const c = ed.chain().focus() as any;
+    if (from !== to) {
+      // 有选区：给选中文字加链接。
+      c.setTextSelection({ from, to }).extendMarkRange('link').setLink({ href }).unsetMark('selectionMark').run();
+    } else {
+      // 无选区只有光标：在光标处插入一段带链接的文字（文本即 href，对齐 Semi）。
+      c.setTextSelection(from)
+        .insertContent({ type: 'text', text: href, marks: [{ type: 'link', attrs: { href } }] })
+        .unsetMark('selectionMark')
+        .run();
+    }
+    Toast.success({ content: t('SideBar.linkAddSuccess') });
+    linkVisible = false;
+    linkRange = null;
+  }
+
+  function unsetLink(): void {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (editor?.chain().focus() as any)?.unsetLink().unsetMark('selectionMark').run();
+    Toast.success({ content: t('SideBar.linkRemoveSuccess') });
+    linkVisible = false;
+    linkRange = null;
+  }
+
+  function handleLinkKeydown(e: KeyboardEvent): void {
+    if (e.key === 'Enter') confirmLink();
+  }
 </script>
 
 <div class={rootCls} {style}>
@@ -181,8 +293,8 @@
     )}
       <button
         type="button"
-        class="cd-sidebar-file-item__btn"
-        class:cd-sidebar-file-item__btn--active={active}
+        class="cd-sidebar-file-menu-bar-btn"
+        class:cd-sidebar-file-item-btn-active={active}
         aria-label={label}
         aria-pressed={active ?? undefined}
         title={label}
@@ -193,49 +305,152 @@
       </button>
     {/snippet}
 
-    <div class="cd-sidebar-file-item__menu" role="toolbar" aria-label={t('SideBar.fileToolbar')}>
+    <!--
+      按钮顺序/分隔线位置/命令逐条对齐 Semi MenuBar：
+      undo redo │ Hn▾ Text List OrderedList Quote CB Minus │ Align×4 │ Bold Italic Strike Code Link▾ │ Image
+      共 4 条 Divider。图标全部换成具名图标（此前是 20 段手写 svg）。
+    -->
+    <div class="cd-sidebar-file-menu-bar" role="toolbar" aria-label={t('SideBar.fileToolbar')}>
       {@render toolBtn(t('SideBar.undo'), () => chain()?.undo().run(), false, !toolbarState.canUndo, undoIcon)}
       {@render toolBtn(t('SideBar.redo'), () => chain()?.redo().run(), false, !toolbarState.canRedo, redoIcon)}
-      <span class="cd-sidebar-file-item__sep" aria-hidden="true"></span>
-      {@render toolBtn(t('SideBar.heading1'), () => chain()?.toggleHeading({ level: 1 }).run(), toolbarState.isH1, false, h1Icon)}
-      {@render toolBtn(t('SideBar.heading2'), () => chain()?.toggleHeading({ level: 2 }).run(), toolbarState.isH2, false, h2Icon)}
-      {@render toolBtn(t('SideBar.heading3'), () => chain()?.toggleHeading({ level: 3 }).run(), toolbarState.isH3, false, h3Icon)}
-      <span class="cd-sidebar-file-item__sep" aria-hidden="true"></span>
+      <Divider layout="vertical" />
+
+      <!-- 标题下拉：H1–H6 六项，各带激活态（对齐 Semi Dropdown + IconHn 触发器）。 -->
+      <Dropdown
+        trigger="click"
+        position="bottomStart"
+        className="cd-sidebar-file-menu-bar-heading-dropdown"
+      >
+        {#snippet render()}
+          <Dropdown.Menu>
+            {#each [1, 2, 3, 4, 5, 6] as const as level (level)}
+              {@const HeadIcon = headingIcons[level - 1]!}
+              <Dropdown.Item
+                class={toolbarState[`isHeading${level}`]
+                  ? 'cd-sidebar-file-menu-bar-dropdown-item-active'
+                  : ''}
+                onClick={() => chain()?.toggleHeading({ level }).run()}
+              >
+                <HeadIcon />
+              </Dropdown.Item>
+            {/each}
+          </Dropdown.Menu>
+        {/snippet}
+        {@render toolBtn(t('SideBar.heading'), () => {}, toolbarState.isHeading, false, hnIcon)}
+      </Dropdown>
+
+      {@render toolBtn(t('SideBar.paragraph'), () => chain()?.setParagraph().run(), toolbarState.isParagraph, false, textIcon)}
       {@render toolBtn(t('SideBar.bulletList'), () => chain()?.toggleBulletList().run(), toolbarState.isBulletList, false, bulletIcon)}
       {@render toolBtn(t('SideBar.orderedList'), () => chain()?.toggleOrderedList().run(), toolbarState.isOrderedList, false, orderedIcon)}
-      {@render toolBtn(t('SideBar.blockquote'), () => chain()?.toggleBlockquote().run(), toolbarState.isBlockquote, false, quoteIcon)}
-      <span class="cd-sidebar-file-item__sep" aria-hidden="true"></span>
+      <!-- 对齐 Semi：这里用 setBlockquote（不是 toggle）。 -->
+      {@render toolBtn(t('SideBar.blockquote'), () => chain()?.setBlockquote().run(), toolbarState.isBlockquote, false, quoteIcon)}
+      <!-- 代码块：Semi 该按钮无图标，直接显示 "CB" 文字 + -btn-codeblock 类。 -->
+      <button
+        type="button"
+        class="cd-sidebar-file-menu-bar-btn cd-sidebar-file-menu-bar-btn-codeblock"
+        class:cd-sidebar-file-menu-bar-btn-active={toolbarState.isCodeBlock}
+        aria-label={t('SideBar.codeBlock')}
+        aria-pressed={toolbarState.isCodeBlock}
+        title={t('SideBar.codeBlock')}
+        onclick={() => chain()?.toggleCodeBlock().run()}
+      >
+        CB
+      </button>
+      {@render toolBtn(t('SideBar.divider'), () => chain()?.setHorizontalRule().run(), false, false, minusIcon)}
+      <Divider layout="vertical" />
+
       {@render toolBtn(t('SideBar.alignLeft'), () => chain()?.setTextAlign('left').run(), toolbarState.isAlignLeft, false, alignLeftIcon)}
       {@render toolBtn(t('SideBar.alignCenter'), () => chain()?.setTextAlign('center').run(), toolbarState.isAlignCenter, false, alignCenterIcon)}
       {@render toolBtn(t('SideBar.alignRight'), () => chain()?.setTextAlign('right').run(), toolbarState.isAlignRight, false, alignRightIcon)}
-      <span class="cd-sidebar-file-item__sep" aria-hidden="true"></span>
+      {@render toolBtn(t('SideBar.alignJustify'), () => chain()?.setTextAlign('justify').run(), toolbarState.isAlignJustify, false, alignJustifyIcon)}
+      <Divider layout="vertical" />
+
       {@render toolBtn(t('SideBar.bold'), () => chain()?.toggleBold().run(), toolbarState.isBold, false, boldIcon)}
       {@render toolBtn(t('SideBar.italic'), () => chain()?.toggleItalic().run(), toolbarState.isItalic, false, italicIcon)}
       {@render toolBtn(t('SideBar.strike'), () => chain()?.toggleStrike().run(), toolbarState.isStrike, false, strikeIcon)}
       {@render toolBtn(t('SideBar.code'), () => chain()?.toggleCode().run(), toolbarState.isCode, false, codeIcon)}
-      <span class="cd-sidebar-file-item__sep" aria-hidden="true"></span>
+
+      <!--
+        链接弹层（对齐 Semi）：开合时 set/unset selectionMark 保持选区可见
+        （否则输入框抢焦点后编辑区选区就看不见了）。
+      -->
+      <Dropdown
+        trigger="custom"
+        position="bottomStart"
+        className="cd-sidebar-file-menu-bar-link-dropdown"
+        visible={linkVisible}
+        onVisibleChange={handleLinkVisibleChange}
+      >
+        {#snippet render()}
+          <div class="cd-sidebar-file-menu-bar-link-dropdown-body">
+            <Input
+              size="small"
+              placeholder={t('SideBar.enterLinkAddress')}
+              value={linkValue}
+              className="cd-sidebar-file-menu-bar-link-input"
+              onInput={(v) => (linkValue = v)}
+              onKeydown={handleLinkKeydown}
+            />
+            <Button
+              size="small"
+              theme="borderless"
+              type="tertiary"
+              aria-label={t('SideBar.linkConfirm')}
+              disabled={!linkValue.trim()}
+              onclick={confirmLink}
+            >
+              {#snippet icon()}<IconCheckCircleStroked />{/snippet}
+            </Button>
+            <Button
+              size="small"
+              theme="borderless"
+              aria-label={t('SideBar.linkRemove')}
+              disabled={!toolbarState.isLink}
+              onclick={unsetLink}
+            >
+              {#snippet icon()}<IconDeleteStroked />{/snippet}
+            </Button>
+          </div>
+        {/snippet}
+        {@render toolBtn(
+          t('SideBar.link'),
+          () => handleLinkVisibleChange(!linkVisible),
+          toolbarState.isLink,
+          false,
+          linkIcon,
+        )}
+      </Dropdown>
+      <Divider layout="vertical" />
+
       {@render toolBtn(t('SideBar.image'), () => chain()?.insertContent({ type: 'imageUpload' }).run(), false, false, imageIcon)}
     </div>
   {/if}
-  <div bind:this={editorHost} class="cd-sidebar-file-item__editor"></div>
+  <!-- Semi widget/file.tsx:446 的 EditorContent 类名是 `${cssClasses.FILE}-editor`
+       = semi-sidebar-file-editor；本库原来漏了中间的 -file 段。 -->
+  <div bind:this={editorHost} class="cd-sidebar-file-editor"></div>
 </div>
 
-{#snippet undoIcon()}<svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 8a5 5 0 1 1 1.5 3.5M3 8V4.5M3 8h3.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>{/snippet}
-{#snippet redoIcon()}<svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M13 8a5 5 0 1 0-1.5 3.5M13 8V4.5M13 8H9.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>{/snippet}
-{#snippet h1Icon()}<svg width="16" height="15" viewBox="0 0 18 16" fill="none" aria-hidden="true"><path d="M2 3v10M8 3v10M2 8h6M12 6l2-1v8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>{/snippet}
-{#snippet h2Icon()}<svg width="16" height="15" viewBox="0 0 18 16" fill="none" aria-hidden="true"><path d="M2 3v10M8 3v10M2 8h6M12 6a1.5 1.5 0 1 1 2.6 1L12 13h3" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>{/snippet}
-{#snippet h3Icon()}<svg width="16" height="15" viewBox="0 0 18 16" fill="none" aria-hidden="true"><path d="M2 3v10M8 3v10M2 8h6M12 5.5a1.4 1.4 0 1 1 1.3 2M12 12a1.5 1.5 0 1 0 1.4-2.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>{/snippet}
-{#snippet bulletIcon()}<svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6 4h7M6 8h7M6 12h7" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><circle cx="3" cy="4" r="1" fill="currentColor"/><circle cx="3" cy="8" r="1" fill="currentColor"/><circle cx="3" cy="12" r="1" fill="currentColor"/></svg>{/snippet}
-{#snippet orderedIcon()}<svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6 4h7M6 8h7M6 12h7M2 3l1-.5V6M2 6h1.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>{/snippet}
-{#snippet quoteIcon()}<svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 5a2 2 0 1 0 0 4M3 5c1 0 1.5 1 1.5 2.5S3.5 11 3 11M9 5a2 2 0 1 0 0 4M9 5c1 0 1.5 1 1.5 2.5S9.5 11 9 11" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>{/snippet}
-{#snippet alignLeftIcon()}<svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M2 4h12M2 7h8M2 10h12M2 13h8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>{/snippet}
-{#snippet alignCenterIcon()}<svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M2 4h12M4 7h8M2 10h12M4 13h8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>{/snippet}
-{#snippet alignRightIcon()}<svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M2 4h12M6 7h8M2 10h12M6 13h8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>{/snippet}
-{#snippet boldIcon()}<svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M4 3h5a2.5 2.5 0 0 1 0 5H4V3ZM4 8h5.5a2.5 2.5 0 0 1 0 5H4V8Z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/></svg>{/snippet}
-{#snippet italicIcon()}<svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6.5 3h5M4.5 13h5M9 3l-2 10" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>{/snippet}
-{#snippet strikeIcon()}<svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 8h10M5 5.5a2.5 2 0 0 1 2.5-2c1.5 0 2.5.8 2.5 2M6 8.5c.5 1.2 1.5 1.8 2.5 1.8 1.5 0 2.5-.8 2.5-2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>{/snippet}
-{#snippet codeIcon()}<svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6 4L2.5 8 6 12M10 4l3.5 4-3.5 4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>{/snippet}
-{#snippet imageIcon()}<svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true"><rect x="2" y="3" width="12" height="10" rx="1.5" stroke="currentColor" stroke-width="1.3"/><circle cx="6" cy="6.5" r="1.2" stroke="currentColor" stroke-width="1.1"/><path d="M3 11l3-2.5 2.5 2 2-1.5L13 11" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>{/snippet}
+
+<!-- 图标全部走本库具名图标（对齐 Semi：其 MenuBar 用的就是这些具名图标）。
+     此前这里是 16 段手写 <svg>，与图标包各画各的。 -->
+{#snippet undoIcon()}<IconUndo />{/snippet}
+{#snippet redoIcon()}<IconRedo />{/snippet}
+{#snippet hnIcon()}<IconHn />{/snippet}
+{#snippet textIcon()}<IconText />{/snippet}
+{#snippet bulletIcon()}<IconList />{/snippet}
+{#snippet orderedIcon()}<IconOrderedList />{/snippet}
+{#snippet quoteIcon()}<IconQuote />{/snippet}
+{#snippet minusIcon()}<IconMinus />{/snippet}
+{#snippet alignLeftIcon()}<IconAlignLeft />{/snippet}
+{#snippet alignCenterIcon()}<IconAlignCenter />{/snippet}
+{#snippet alignRightIcon()}<IconAlignRight />{/snippet}
+{#snippet alignJustifyIcon()}<IconAlignJustify />{/snippet}
+{#snippet boldIcon()}<IconBold />{/snippet}
+{#snippet italicIcon()}<IconItalic />{/snippet}
+{#snippet strikeIcon()}<IconStrikeThrough />{/snippet}
+{#snippet codeIcon()}<IconCode />{/snippet}
+{#snippet linkIcon()}<IconLink />{/snippet}
+{#snippet imageIcon()}<IconImage />{/snippet}
 
 <style>
   .cd-sidebar-file-item {
@@ -243,15 +458,49 @@
     flex-direction: column;
     gap: var(--cd-sidebar-file-gap);
   }
-  .cd-sidebar-file-item__menu {
+  /* 逐条对齐 Semi &-file &-menu-bar：上下都有边框、居中、gap 2px、padding 2px/12px。
+     本库原来只有下边框、gap/padding 走自造 token。 */
+  .cd-sidebar-file-menu-bar {
     display: flex;
-    flex-wrap: wrap;
+    flex-direction: row;
     align-items: center;
-    gap: var(--cd-sidebar-file-menu-gap);
-    padding: var(--cd-sidebar-file-menu-padding);
-    border-bottom: 1px solid var(--cd-sidebar-file-menu-border);
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: var(--cd-sidebar-file-menu-bar-gap);
+    border-top: var(--cd-width-sidebar-menu-bar-border-top) solid
+      var(--cd-color-sidebar-menu-bar-border-top);
+    border-bottom: var(--cd-width-sidebar-menu-bar-border-bottom) solid
+      var(--cd-color-sidebar-menu-bar-border-bottom);
+    padding: var(--cd-sidebar-file-menu-bar-padding-y)
+      var(--cd-sidebar-file-menu-bar-padding-x);
   }
-  .cd-sidebar-file-item__btn {
+
+  /* Semi &-menu-bar-dropdown-item-active：Hn 下拉里当前级别高亮。 */
+  :global(.cd-sidebar-file-menu-bar-dropdown-item-active) {
+    color: var(--cd-sidebar-menu-bar-dropdown-item-active-text);
+    background: var(--cd-sidebar-menu-bar-dropdown-item-active-bg);
+  }
+
+  /* Semi：菜单栏里的竖分隔线不要外边距。 */
+  .cd-sidebar-file-menu-bar :global(.cd-divider-vertical) {
+    margin: var(--cd-sidebar-menu-bar-divider-margin);
+  }
+
+  /* Semi &-menu-bar-btn-codeblock：无图标的 "CB" 文字按钮。 */
+  .cd-sidebar-file-menu-bar-btn-codeblock {
+    font-size: var(--cd-sidebar-file-menu-bar-codeblock-font-size);
+    line-height: var(--cd-sidebar-file-menu-bar-codeblock-line-height);
+    padding: var(--cd-sidebar-file-menu-bar-codeblock-padding);
+  }
+
+  /* Semi &-menu-bar-link-dropdown：输入框 + 两个按钮一行居中。浮层 portal 到 body 故 :global。 */
+  :global(.cd-sidebar-file-menu-bar-link-dropdown-body) {
+    padding: var(--cd-sidebar-file-menu-bar-link-dropdown-padding);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .cd-sidebar-file-menu-bar-btn {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -267,45 +516,105 @@
       background-color var(--cd-motion-duration-fast, 0.1s) var(--cd-motion-ease-standard, ease),
       color var(--cd-motion-duration-fast, 0.1s) var(--cd-motion-ease-standard, ease);
   }
-  .cd-sidebar-file-item__btn:hover:not(:disabled) {
+  .cd-sidebar-file-menu-bar-btn:hover:not(:disabled) {
     background: var(--cd-sidebar-file-btn-hover-bg);
     color: var(--cd-sidebar-file-btn-color-hover);
   }
-  .cd-sidebar-file-item__btn--active {
+  .cd-sidebar-file-item-btn-active {
     background: var(--cd-sidebar-file-btn-active-bg);
     color: var(--cd-sidebar-file-btn-color-active);
   }
-  .cd-sidebar-file-item__btn:disabled {
+  .cd-sidebar-file-menu-bar-btn:disabled {
     opacity: 0.4;
     cursor: not-allowed;
   }
-  .cd-sidebar-file-item__btn:focus-visible {
+  .cd-sidebar-file-menu-bar-btn:focus-visible {
     outline: none;
     box-shadow: var(--cd-focus-ring);
   }
-  .cd-sidebar-file-item__sep {
-    inline-size: 1px;
-    block-size: 16px;
-    background: var(--cd-sidebar-file-menu-border);
-  }
-  .cd-sidebar-file-item__editor {
+  .cd-sidebar-file-editor {
     color: var(--cd-sidebar-file-editor-color);
     font-size: var(--cd-sidebar-file-editor-size);
     line-height: var(--cd-sidebar-file-editor-line-height);
   }
   /* ProseMirror 编辑区（运行时注入 class）用 :global 命中。 */
-  :global(.cd-sidebar-file-item__editor .ProseMirror) {
+  :global(.cd-sidebar-file-editor .ProseMirror) {
     outline: none;
     min-block-size: var(--cd-sidebar-file-editor-min-height);
   }
-  :global(.cd-sidebar-file-item__editor .ProseMirror:focus) {
+  :global(.cd-sidebar-file-editor .ProseMirror:focus) {
     outline: none;
   }
-  :global(.cd-sidebar-file-item__editor .ProseMirror img) {
+  :global(.cd-sidebar-file-editor .ProseMirror img) {
     max-inline-size: 100%;
     border-radius: var(--cd-sidebar-file-image-radius);
   }
-  :global(.cd-sidebar-file-item__editor .ProseMirror .cd-sidebar-file-select) {
+  :global(.cd-sidebar-file-editor .ProseMirror .cd-sidebar-file-select) {
+    display: inline-block;
     background: var(--cd-sidebar-file-selection-bg);
+    line-height: var(--cd-font-sidebar-file-lineheight);
+  }
+
+  /* —— 正文内容样式（逐条对齐 Semi sidebar.scss:455-520 的 .tiptap 块）——
+     本库此前只给编辑器容器/focus/img/select 写了样式，正文字号行高、选区高亮、
+     placeholder、段落、引用块、行内代码、代码块、分割线**一条都没有** ——
+     全靠浏览器默认样式，而 Semi 这 21 条变量本库也一条没建。 */
+  :global(.cd-sidebar-file-editor .ProseMirror) {
+    font-size: var(--cd-font-sidebar-file-fontsize);
+    line-height: var(--cd-font-sidebar-file-lineheight);
+  }
+
+  :global(.cd-sidebar-file-editor .ProseMirror ::selection) {
+    background: var(--cd-sidebar-file-selection-bg);
+  }
+
+  /* placeholder：tiptap 给空首段打 is-editor-empty，内容取 data-placeholder。 */
+  :global(.cd-sidebar-file-editor .ProseMirror p.is-editor-empty:first-child::before) {
+    color: var(--cd-color-sidebar-file-placeholder-text);
+    content: attr(data-placeholder);
+    float: left;
+    height: 0;
+    pointer-events: none;
+  }
+
+  :global(.cd-sidebar-file-editor .ProseMirror p) {
+    margin: 0;
+    white-space: pre-wrap;
+    color: var(--cd-color-sidebar-file-text);
+  }
+
+  :global(.cd-sidebar-file-editor .ProseMirror blockquote) {
+    border-left: var(--cd-width-sidebar-file-blockquote-border-left) solid
+      var(--cd-color-sidebar-file-blockquote-border-left);
+    margin: var(--cd-sidebar-file-blockquote-margin-y)
+      var(--cd-sidebar-file-blockquote-margin-x);
+    padding-left: var(--cd-sidebar-file-blockquote-padding-left);
+  }
+
+  :global(.cd-sidebar-file-editor .ProseMirror pre) {
+    background-color: var(--cd-color-sidebar-file-pre-bg);
+    padding: var(--cd-sidebar-file-pre-padding-y) var(--cd-sidebar-file-pre-padding-x);
+    border-radius: var(--cd-radius-sidebar-file-pre);
+    border: var(--cd-width-sidebar-file-pre-border) solid
+      var(--cd-color-sidebar-file-pre-border);
+    overflow: auto;
+    font-size: var(--cd-font-sidebar-file-pre-fontsize);
+    line-height: var(--cd-font-sidebar-file-pre-lineheight);
+  }
+
+  /* 代码块里的 code 不再叠一层底色（Semi 显式置 transparent）。 */
+  :global(.cd-sidebar-file-editor .ProseMirror pre code) {
+    background-color: transparent;
+  }
+
+  :global(.cd-sidebar-file-editor .ProseMirror code) {
+    background-color: var(--cd-color-sidebar-file-code-bg);
+    padding: var(--cd-sidebar-file-code-padding-y) var(--cd-sidebar-file-code-padding-x);
+  }
+
+  :global(.cd-sidebar-file-editor .ProseMirror hr) {
+    border: none;
+    border-top: var(--cd-width-sidebar-file-hr-border) solid
+      var(--cd-color-sidebar-file-hr-border-top);
   }
 </style>

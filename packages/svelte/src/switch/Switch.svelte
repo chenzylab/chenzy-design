@@ -326,4 +326,40 @@
       transition: none;
     }
   }
+
+  /* —— RTL（对齐 Semi switch/rtl.scss）——
+     knob 的位移是**物理方向**的 translateX（逻辑属性管不到），RTL 下须整体取负。
+
+     ⚠️ 但只取负是不够的，会把 knob 甩出轨道外：本库正向用 `inset-inline-start: 0`，
+     它在 RTL 下**自己已经翻到右边**了，再叠一个负位移等于翻两次
+     （实测 knob 跑到 switch 左外侧 fromLeft=-17）。
+     故须像 Semi 那样把锚点**用物理属性钉死在右边**（Semi rtl.scss 同样写 `right:0; left:auto`），
+     锚点不再随书写方向浮动，负位移才是唯一的那次翻转。
+
+     真机实测（RTL，40px 轨道 / 18px knob）：
+       仅取负        → off fromLeft=-1、on fromLeft=-17（knob 跑到轨道外，错）
+       钉右 + 取负   → off fromRight=3、on fromLeft=3（正确镜像 LTR） */
+  :global(.cd-rtl) .cd-switch-knob {
+    inset-inline-start: auto;
+    right: 0;
+    left: auto;
+  }
+  :global(.cd-rtl) .cd-switch-knob {
+    transform: translateX(calc(-1 * var(--cd-switch-knob-tx-off)));
+  }
+  :global(.cd-rtl) .cd-switch-checked .cd-switch-knob {
+    transform: translateX(calc(-1 * var(--cd-switch-knob-tx-on)));
+  }
+  :global(.cd-rtl) .cd-switch-large .cd-switch-knob {
+    transform: translateX(calc(-1 * var(--cd-switch-knob-tx-off-large)));
+  }
+  :global(.cd-rtl) .cd-switch-large.cd-switch-checked .cd-switch-knob {
+    transform: translateX(calc(-1 * var(--cd-switch-knob-tx-on-large)));
+  }
+  :global(.cd-rtl) .cd-switch-small .cd-switch-knob {
+    transform: translateX(calc(-1 * var(--cd-switch-knob-tx-off-small)));
+  }
+  :global(.cd-rtl) .cd-switch-small.cd-switch-checked .cd-switch-knob {
+    transform: translateX(calc(-1 * var(--cd-switch-knob-tx-on-small)));
+  }
 </style>

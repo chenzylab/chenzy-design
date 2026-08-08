@@ -8,7 +8,7 @@
 <RadioGroup
   {value}
   onChange={(e) => (value = e.target.value ?? 1)}
-  ariaLabel="单选组合示例"
+  aria-label="单选组合示例"
   name="demo-radio-group"
 >
   <Radio value={1}>A</Radio>

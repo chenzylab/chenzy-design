@@ -503,4 +503,19 @@
     white-space: nowrap;
     border: 0;
   }
+
+  /* —— RTL（对齐 Semi rating/rtl.scss）——
+     星之间的间距换边；半星遮罩 star-first 是绝对定位的左半块，
+     RTL 下要贴到右侧（否则半星显示在错误的一半）。 */
+  :global(.cd-rtl) .cd-rating {
+    direction: rtl;
+  }
+  :global(.cd-rtl) .cd-rating-star:not(:last-child) {
+    margin-right: 0;
+    margin-left: var(--cd-spacing-rating-item-marginright);
+  }
+  :global(.cd-rtl) .cd-rating-star-first {
+    left: auto;
+    right: 0;
+  }
 </style>

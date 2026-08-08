@@ -7,7 +7,7 @@ import TagInput from './TagInput.svelte';
 describe('TagInput a11y', () => {
   it('默认渲染：role=group + ariaLabel，输入框有可访问名，无 axe violations', async () => {
     const { container } = renderWithLocale(TagInput, {
-      props: { ariaLabel: 'Tags', placeholder: 'Add tag' },
+      props: { 'aria-label': 'Tags', placeholder: 'Add tag' },
     });
     const group = container.querySelector('[role="group"]');
     expect(group).not.toBeNull();
@@ -20,12 +20,12 @@ describe('TagInput a11y', () => {
 
   it('已有标签：复用 Tag 渲染，标签有可关闭可访问名，无 axe violations', async () => {
     const { container } = renderWithLocale(TagInput, {
-      props: { ariaLabel: 'Skills', defaultValue: ['svelte', 'a11y'] },
+      props: { 'aria-label': 'Skills', defaultValue: ['svelte', 'a11y'] },
     });
-    // 标签复用 Tag 组件（.cd-tag），关闭按钮由 Tag 提供（.cd-tag__close）。
+    // 标签复用 Tag 组件（.cd-tag），关闭按钮由 Tag 提供（.cd-tag-close）。
     const tags = container.querySelectorAll('.cd-tag-input-wrapper-tag');
     expect(tags.length).toBe(2);
-    const closeBtns = container.querySelectorAll('.cd-tag__close');
+    const closeBtns = container.querySelectorAll('.cd-tag-close');
     expect(closeBtns.length).toBe(2);
     expect(tags[0]?.getAttribute('aria-label')).toContain('svelte');
     await expectNoAxeViolations(container);
@@ -33,7 +33,7 @@ describe('TagInput a11y', () => {
 
   it('disabled：aria-disabled=true，无 axe violations', async () => {
     const { container } = renderWithLocale(TagInput, {
-      props: { ariaLabel: 'Tags', defaultValue: ['a'], disabled: true },
+      props: { 'aria-label': 'Tags', defaultValue: ['a'], disabled: true },
     });
     const group = container.querySelector('[role="group"]');
     expect(group?.getAttribute('aria-disabled')).toBe('true');

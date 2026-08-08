@@ -3,7 +3,6 @@ title: InputNumber 数字输入框
 name: inputnumber
 category: input
 brief: 通过鼠标或键盘，输入范围内的数值，与 Input 不同的是它带有针对数字场景的步进器操作区，配合 Parser 使用可以展示更复杂的内容格式。
-docMode: inline
 ---
 
 <script>
@@ -24,6 +23,8 @@ docMode: inline
   import formatSrc from '../../demos/input-number/06-format.svelte?raw';
   import PureNumber from '../../demos/input-number/07-pure-number.svelte';
   import pureNumberSrc from '../../demos/input-number/07-pure-number.svelte?raw';
+  import CurrencyI18n from '../../demos/input-number/12-currency-i18n.svelte';
+  import currencyI18nSrc from '../../demos/input-number/12-currency-i18n.svelte?raw';
   import CurrencyLocale from '../../demos/input-number/08-currency-locale.svelte';
   import currencyLocaleSrc from '../../demos/input-number/08-currency-locale.svelte?raw';
   import CurrencyDisplay from '../../demos/input-number/09-currency-display.svelte';
@@ -83,7 +84,11 @@ import { InputNumber } from '@chenzy-design/svelte';
 
 ### 货币展示
 
-通过 `currency` 开启货币展示，国际化模式下通过 `currency={true}` 开启，组件会自动根据 `localeCode` 展示对应货币种类。也可以通过手动传 `localeCode` 和 `currency` 指定展示的货币种类。
+通过 `currency` 开启货币展示。国际化模式下通过 `currency={true}` 开启，组件会自动根据 `<LocaleProvider>` 注入的 locale 展示对应货币种类（切换语言后组件会自动更新展示的货币种类）。
+
+<DemoBox code={currencyI18nSrc}><CurrencyI18n /></DemoBox>
+
+也可以不依赖 `LocaleProvider`，手动传 `localeCode` 和 `currency` 指定展示的货币种类。
 
 <DemoBox code={currencyLocaleSrc}><CurrencyLocale /></DemoBox>
 

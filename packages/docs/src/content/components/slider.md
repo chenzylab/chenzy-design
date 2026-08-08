@@ -3,7 +3,6 @@ title: Slider 滑动选择器
 name: slider
 category: input
 brief: 滑动选择器，使用拖动交互快速选择数值或数值范围，与 InputNumber 相比更直观。
-docMode: inline
 ---
 
 <script>
@@ -49,7 +48,7 @@ import { Slider } from '@chenzy-design/svelte';
 
 ### 自定义提示
 
-使用 `tipFormatter` 可以设置 Tooltip 的显示的格式。设置 `tipFormatter={null}`，则隐藏 Tooltip。`getAriaValueText` 用于给滑块的当前值提供一个用户友好的名称，对屏幕阅读器用户很重要。
+使用 `tipFormatter` 可以设置 Tooltip 的显示的格式。设置 `tipFormatter={() => null}`，则隐藏 Tooltip。`getAriaValueText` 用于给滑块的当前值提供一个用户友好的名称，对屏幕阅读器用户很重要。
 
 <DemoBox code={tipFormatterSrc}><TipFormatter /></DemoBox>
 
@@ -83,7 +82,7 @@ import { Slider } from '@chenzy-design/svelte';
 
 | 属性 | 说明 | 类型 | 默认值 | 版本 |
 | --- | --- | --- | --- | --- |
-| ariaLabel | `aria-label` 属性，用来给当前元素加上的标签描述，提升可访问性 | string | - | - |
+| aria-label | `aria-label` 属性，用来给当前元素加上的标签描述，提升可访问性 | string | - | - |
 | ariaLabelledby | `aria-labelledby` 属性，表明某些元素的 id 是某一对象的标签 | string | - | - |
 | ariaValuetext | `aria-valuetext` 属性，为滑块的当前值提供用户友好的名称 | string | - | - |
 | defaultValue | 设置初始取值 | `number \| number[]` | 0 | - |

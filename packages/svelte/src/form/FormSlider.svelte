@@ -55,7 +55,7 @@
       {...(control.vertical !== undefined ? { vertical: control.vertical as NonNullable<SliderProps['vertical']> } : {})}
       {...(control.tooltipVisible !== undefined ? { tooltipVisible: control.tooltipVisible as NonNullable<SliderProps['tooltipVisible']> } : {})}
       {...(control.tipFormatter !== undefined ? { tipFormatter: control.tipFormatter as NonNullable<SliderProps['tipFormatter']> } : {})}
-      {...(labelledById !== undefined ? { ariaLabelledby: labelledById } : labelForAria !== undefined ? { ariaLabel: labelForAria } : {})}
+      {...(labelledById !== undefined ? { ariaLabelledby: labelledById } : labelForAria !== undefined ? { 'aria-label': labelForAria } : {})}
       {...(describedBy !== undefined ? { ariaDescribedby: describedBy } : {})}
       onChange={(v) => onChange(v)}
     />

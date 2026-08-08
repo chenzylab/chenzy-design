@@ -24,8 +24,11 @@
     useDismiss,
     useScrollLock,
     useFocusTrap,
+    registerOverlayRoot,
+    isInsideAnyOverlay,
     type Placement,
     type Side,
+    resolveDefault,
   } from '@chenzy-design/core';
   import { getGlobalPopupContainer } from '../config-provider/index.js';
   import { floating } from '../_floating/use-floating.js';
@@ -125,6 +128,15 @@
      */
     triggerStyle?: string;
     /**
+     * 点击浮层内容时向 trigger 转发一个合成 click（默认 false），见
+     * use-floating.ts UseFloatingOptions.forwardClickToTrigger 的详细说明：
+     * 浮层被 portal 到 body 后脱离 trigger 的真实 DOM 子树，点击浮层内容不会
+     * 真实冒泡到 trigger（React 靠虚拟树冒泡不受影响，Svelte 无此机制）。
+     * 仅在业务确实需要"点击浮层内容 = 点击 trigger"语义时开启（如 Cascader
+     * 的 +N 剩余标签 Popover 需要点击其中的 tag 也能重新展开选择面板）。
+     */
+    forwardClickToTrigger?: boolean;
+    /**
      * 浮层 wrapper 节点的 id（对齐 Semi wrapperId）；trigger 的 aria 属性指向此 id，
      * 不设则组件随机生成。
      */
@@ -146,27 +158,27 @@
     content,
     visible,
     defaultVisible = false,
-    trigger = 'hover',
-    position = 'top',
-    autoAdjustOverflow = true,
-    spacing = 8,
-    margin = 0,
-    mouseEnterDelay = 50,
-    mouseLeaveDelay = 50,
-    showArrow = true,
-    arrowPointAtCenter = true,
+    trigger: triggerProp,
+    position: positionProp,
+    autoAdjustOverflow: autoAdjustOverflowProp,
+    spacing: spacingProp,
+    margin: marginProp,
+    mouseEnterDelay: mouseEnterDelayProp,
+    mouseLeaveDelay: mouseLeaveDelayProp,
+    showArrow: showArrowProp,
+    arrowPointAtCenter: arrowPointAtCenterProp,
     disabled = false,
-    condition = true,
+    condition: conditionProp,
     clickToHide = false,
-    keepDOM = false,
-    disableFocusListener = false,
-    motion = true,
-    transformFromCenter = true,
+    keepDOM: keepDOMProp,
+    disableFocusListener: disableFocusListenerProp,
+    motion: motionProp,
+    transformFromCenter: transformFromCenterProp,
     zIndex,
     class: className = '',
     style: styleExtra = '',
     stopPropagation = false,
-    closeOnEsc = true,
+    closeOnEsc: closeOnEscProp,
     preventScroll = false,
     rePosKey,
     getPopupContainer,
@@ -174,17 +186,38 @@
     onClickOutSide,
     onEscKeyDown,
     afterClose,
-    prefixCls = 'cd-tooltip',
+    prefixCls: prefixClsProp,
     wrapperClassName = '',
     triggerStyle = '',
+    forwardClickToTrigger = false,
     wrapperId,
-    role = 'tooltip',
+    role: roleProp,
     guardFocus,
-    returnFocusOnClose = true,
+    returnFocusOnClose: returnFocusOnCloseProp,
     dialogLabel,
     ariaLabelledby,
     children,
   }: Props = $props();
+  // cdGlobal 全局默认 props（对齐 Semi semiGlobal.config.overrideDefaultProps）：
+  // 优先级 = 显式传值 > cdGlobal['Tooltip'] > 组件内置默认值。
+  const autoAdjustOverflow = $derived(resolveDefault(autoAdjustOverflowProp, 'Tooltip', 'autoAdjustOverflow', true));
+  const arrowPointAtCenter = $derived(resolveDefault(arrowPointAtCenterProp, 'Tooltip', 'arrowPointAtCenter', true));
+  const trigger = $derived(resolveDefault(triggerProp, 'Tooltip', 'trigger', 'hover'));
+  const transformFromCenter = $derived(resolveDefault(transformFromCenterProp, 'Tooltip', 'transformFromCenter', true));
+  const position = $derived(resolveDefault(positionProp, 'Tooltip', 'position', 'top'));
+  const prefixCls = $derived(resolveDefault(prefixClsProp, 'Tooltip', 'prefixCls', 'cd-tooltip'));
+  const role = $derived(resolveDefault(roleProp, 'Tooltip', 'role', 'tooltip'));
+  const mouseEnterDelay = $derived(resolveDefault(mouseEnterDelayProp, 'Tooltip', 'mouseEnterDelay', 50));
+  const mouseLeaveDelay = $derived(resolveDefault(mouseLeaveDelayProp, 'Tooltip', 'mouseLeaveDelay', 50));
+  const motion = $derived(resolveDefault(motionProp, 'Tooltip', 'motion', true));
+  const spacing = $derived(resolveDefault(spacingProp, 'Tooltip', 'spacing', 8));
+  const margin = $derived(resolveDefault(marginProp, 'Tooltip', 'margin', 0));
+  const showArrow = $derived(resolveDefault(showArrowProp, 'Tooltip', 'showArrow', true));
+  const closeOnEsc = $derived(resolveDefault(closeOnEscProp, 'Tooltip', 'closeOnEsc', true));
+  const returnFocusOnClose = $derived(resolveDefault(returnFocusOnCloseProp, 'Tooltip', 'returnFocusOnClose', true));
+  const disableFocusListener = $derived(resolveDefault(disableFocusListenerProp, 'Tooltip', 'disableFocusListener', false));
+  const keepDOM = $derived(resolveDefault(keepDOMProp, 'Tooltip', 'keepDOM', false));
+  const condition = $derived(resolveDefault(conditionProp, 'Tooltip', 'condition', true));
 
   const autoId = useId('cd-tooltip');
   // 浮层 wrapper id：优先用户 wrapperId，否则自动生成（对齐 Semi wrapperId 语义）。
@@ -280,8 +313,13 @@
     enterTimer = setTimeout(() => setOpen(true), mouseEnterDelay);
   }
 
-  function onPointerLeave() {
+  function onPointerLeave(e: PointerEvent) {
     if (!allowShow || isCustom || !triggers.includes('hover')) return;
+    // 鼠标去向若落在任一已注册浮层内（如本浮层内 Select 的 dropdown，portal 到
+    // body 后与本浮层是 DOM 兄弟节点而非子孙），不是真的离开——忽略这次 leave。
+    // 对齐 Semi：React 合成 mouseleave 对 portal 子浮层有天然容忍，原生
+    // pointerleave 靠此处显式判断补齐（见 registerOverlayRoot 注释）。
+    if (isInsideAnyOverlay(e.relatedTarget as Node | null)) return;
     clearTimers();
     leaveTimer = setTimeout(() => setOpen(false), mouseLeaveDelay);
   }
@@ -337,7 +375,7 @@
 
   // --- DOM 引用 ---
   let rootEl = $state<HTMLSpanElement | null>(null);
-  // 内层触发包裹 span（.cd-tooltip__trigger，inline-block）；其 firstElementChild 是
+  // 内层触发包裹 span（.cd-tooltip-trigger，inline-block）；其 firstElementChild 是
   // children 的真实 DOM 元素，用作浮层定位基准（对齐 Semi getTriggerBounding 用真实
   // children DOM，不含 children 的 margin——若用包裹 span 定位，其盒子被 children margin
   // 撑开致箭头到触发器间距偏大；改用 children 首元素则间距对齐 Semi 8px）。
@@ -368,6 +406,14 @@
     if (isOpen) hasBeenOpened = true;
   });
   const shouldRender = $derived(isOpen || (hasBeenOpened && keepDOM));
+
+  // --- 全局浮层注册（见 registerOverlayRoot 注释）：本浮层挂载时登记，供祖先/兄弟
+  //     浮层的 pointerleave 判断"鼠标去向是否落在合法子浮层内"，避免嵌套浮层
+  //     （如本组件内的 Select 下拉）portal 到 body 后被误判为已离开。 ---
+  $effect(() => {
+    if (!popEl) return;
+    return registerOverlayRoot(popEl);
+  });
 
   // --- useDismiss (红线 #3)：Esc 对所有触发模式生效（WCAG 1.4.13 Content on Hover/Focus：
   //     hover/focus 浮层也须可由 Esc 关闭；Semi closeOnEsc 默认关仅指 click 触发的专用行为，
@@ -552,7 +598,8 @@
   <!-- svelte-ignore a11y_no_static_element_interactions -->
   <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
   <span
-    class="cd-tooltip__trigger"
+    class="cd-tooltip-trigger"
+    class:cd-tooltip-trigger-custom={isCustom}
     bind:this={triggerEl}
     role={isDialog && !isCustom ? 'button' : undefined}
     tabindex={isDialog && !isCustom ? 0 : undefined}
@@ -582,12 +629,11 @@
       aria-hidden={!isOpen || undefined}
       tabindex={isDialog ? -1 : undefined}
       bind:this={popEl}
-      use:floating={{ trigger: anchorEl, placement, autoAdjust: autoAdjustOverflow, offset: mainAxisSpacing, padding: marginPadding, arrowPointAtCenter, over: isOver, onPlacement, getContainer: resolvePopupContainer, open: isOpen, rePosKey }}
-      class="{prefixCls}-wrapper {className}"
-      class:cd-tooltip-with-arrow={showArrowBool}
+      use:floating={{ trigger: anchorEl, placement, autoAdjust: autoAdjustOverflow, offset: mainAxisSpacing, padding: marginPadding, arrowPointAtCenter, over: isOver, onPlacement, getContainer: resolvePopupContainer, open: isOpen, rePosKey, forwardClickToTrigger }}
+      class="{prefixCls}-wrapper {showArrowBool ? `${prefixCls}-with-arrow` : ''} {className}"
       class:cd-tooltip-wrapper-show={isOpen}
-      class:cd-tooltip-wrapper--hidden={!isOpen}
-      class:cd-tooltip-wrapper--motion={motionEnabled}
+      class:cd-tooltip-wrapper-hidden={!isOpen}
+      class:cd-tooltip-wrapper-motion={motionEnabled}
       onclick={onPopClick}
       onpointerenter={onPopPointerEnter}
       onpointerleave={onPopPointerLeave}
@@ -646,10 +692,28 @@
   /* 内层触发包裹保持 inline-block 盒子（承载 dialog 模式 tabindex 焦点、role）。
      浮层定位不再用此包裹，而用其内 children 真实首元素（anchorEl，不含 children margin，
      对齐 Semi getTriggerBounding）——故此包裹被 children margin 撑开也不影响定位间距。 */
-  .cd-tooltip__trigger {
+  .cd-tooltip-trigger {
     display: inline-block;
     inline-size: auto;
     block-size: auto;
+  }
+  /* trigger=custom 时此包裹不承载任何 role/tabindex/aria 语义（上面模板全部置 undefined，
+     对齐 Semi trigger.tsx：`if (trigger !== 'custom') children = wrapSpan(children)`——
+     custom 模式本就不需要包裹）。Svelte 没有 React cloneElement，无法像 Semi 一样把事件
+     直接注入 children 本身、完全省略这层 DOM，只能退而求其次：物理上仍渲染这层 span
+     （保留 anchorEl = firstElementChild 的定位基准职责），但用 display:contents 让它
+     不参与盒模型/flex 布局——避免这层 inline-block 在外层 flex 容器（如 chat 操作区）里
+     产生额外的对齐基线，导致被包裹的按钮比同级直接渲染的按钮视觉上更高。 */
+  .cd-tooltip-trigger-custom {
+    display: contents;
+  }
+  /* 最外层 .cd-tooltip 是事件承载根（pointerenter/leave/focus/click，不能 display:contents
+     否则丢事件语义），custom 模式下仍是 inline-block——inline-block 按 line-height
+     保留基线空间，即使内部子元素都是 flex/block，这层自身仍会比子内容高出一截
+     （典型 inline-block 基线坑）。归零 line-height 消除这份多余高度，使 custom 触发器
+     在外层 flex 容器里与其他直接子项高度完全一致。 */
+  .cd-tooltip:has(> .cd-tooltip-trigger-custom) {
+    line-height: 0;
   }
 
   /* 浮层 portal 到 body，由 JS 写 position:fixed + transform 定位。
@@ -800,7 +864,7 @@
   /* motion：进出场 zoomIn（对齐 Semi tooltip zoomIn 关键帧 + 100ms cubic-bezier）。
      用独立 scale 属性（非 transform）做缩放：use:floating 用 transform: translate() 定位，
      动画走 transform 会覆盖定位把浮层拉到 (0,0)；scale 属性与 transform 正交，二者叠加互不覆盖。 */
-  :global(.cd-tooltip-wrapper--motion) {
+  :global(.cd-tooltip-wrapper-motion) {
     animation: cd-tooltip-zoom-in var(--cd-animation-duration-tooltip-in)
       var(--cd-animation-function-tooltip-in) both;
   }
@@ -819,13 +883,13 @@
   }
 
   /* keepDOM=true 关闭后保留 DOM 但不可见、不可交互、不占位 */
-  :global(.cd-tooltip-wrapper--hidden) {
+  :global(.cd-tooltip-wrapper-hidden) {
     display: none;
   }
 
   /* reduced-motion：禁用进场动画 */
   @media (prefers-reduced-motion: reduce) {
-    :global(.cd-tooltip-wrapper--motion) {
+    :global(.cd-tooltip-wrapper-motion) {
       animation: none;
     }
   }

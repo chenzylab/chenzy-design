@@ -65,7 +65,7 @@
     class?: string;
     /** 根节点自定义内联样式（对齐 Semi style）。 */
     style?: string;
-    ariaLabel?: string;
+    'aria-label'?: string;
     ariaLabelledby?: string;
     ariaDescribedby?: string;
     ariaErrormessage?: string;
@@ -104,7 +104,7 @@
     id,
     class: className,
     style: styleProp,
-    ariaLabel,
+    'aria-label': ariaLabel,
     ariaLabelledby,
     ariaDescribedby,
     ariaErrormessage,

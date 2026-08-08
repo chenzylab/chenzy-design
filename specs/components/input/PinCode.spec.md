@@ -35,30 +35,42 @@ PinCode 用于**分格输入定长验证码 / 一次性密码（OTP）/ 短信�
 
 ### Props
 
-| 名称 | 类型 | 默认值 | 说明 |
+> 本表由 `packages/svelte/src/pincode/meta.ts` 真源生成（2026-07-30 重校）。此前本表列的 prop 多为 Semi 对齐前的旧名或已删除项（如 `value`→`activeKey`、`change`→`onChange`），改 prop 时请同步 meta.ts，勿手写「规划中」的 prop。
+
+| Prop | 类型 | 默认值 | 说明 |
 | --- | --- | --- | --- |
-| `value` | `string` | — | 受控值。整串验证码字符串（如 `"123456"`），内部 `split("")` 拆到各格；配合 `onChange`。 |
-| `defaultValue` | `string` | `''` | 非受控初始值，仅初始化时拆分。 |
-| `count` | `number` | `6` | 验证码位数（格数）。 |
-| `format` | `'number' \| 'mixed' \| RegExp \| ((char: string) => boolean)` | `'number'` | 单字符可输入范围。`number`=纯数字（`inputMode="numeric"`）；`mixed`=数字+大小写字母；`RegExp`=逐字符 `test`；函数=逐字符返回 `true` 才允许。 |
-| `size` | `'small' \| 'default' \| 'large'` | `'default'` | 每格尺寸（透传内部 Input）。 |
-| `disabled` | `boolean` | `false` | 禁用全部格。 |
-| `autoFocus` | `boolean` | `true` | 挂载时聚焦第一格（对齐 Semi）。验证码场景用户几乎总是立即输入，自动聚焦第一格符合预期；如需关闭传 `autoFocus={false}`。 |
-| `name` | `string` | — | 表单字段名，透传隐藏聚合 input，提交整串值。 |
-| `id` | `string` | 自动生成 | 根容器 id，关联 aria-labelledby。 |
-| `ariaLabel` | `string` | i18n 默认 | 无可视标签时，分组的辅助名（如「验证码」）。 |
-| `status` | `'default' \| 'warning' \| 'error'` | `'default'` | 校验态，透传各格 Input 边框语义。 |
-| `className` | `string` | — | 根容器类名。 |
-| `style` | `string` | — | 根容器内联样式。 |
+| value | `string` | `undefined` | 受控值；整串验证码，配合 onChange |
+| defaultValue | `string` | `''` | 非受控初始值，仅初始化拆分 |
+| count | `number` | `6` | 验证码位数（格数） |
+| format | `'number' \| 'mixed' \| RegExp \| ((char: string) => boolean)` | `'number'` | 单字符可输入范围；number→inputMode=numeric |
+| size | `'small' \| 'default' \| 'large'` | `default` | 每格尺寸 |
+| disabled | `boolean` | `false` | 禁用全部格 |
+| autoFocus | `boolean` | `true` | 挂载聚焦第一格（对齐 Semi）；验证码场景通常立即输入，如需关闭传 autoFocus={false} |
+| name | `string` | `undefined` | 表单字段名，透传隐藏聚合 input（超越 Semi：Semi 无表单聚合能力） |
+| id | `string` | `自动生成` | 根容器 id（超越 Semi：本库 a11y 分组约定） |
+| aria-label | `string` | `i18n 默认` | 无可视标签时分组辅助名（超越 Semi：Semi root 无 aria） |
+| ariaLabelledby | `string` | `undefined` | 外部 label id，优先于 aria-label（超越 Semi：Semi root 无 aria） |
+| status | `'default' \| 'warning' \| 'error'` | `default` | 校验态（超越 Semi：Semi 单格外观固定，无校验态） |
+| className | `string` | `undefined` | 根容器类名 |
+| style | `string` | `undefined` | 根容器内联样式 |
+| onChange | `(value: string) => void` | `undefined` | 任一格变化触发，回传整串 |
+| onComplete | `(value: string) => void` | `undefined` | 填满末格触发一次，同时 blur 末格 |
+
+**事件**（回调 prop 形式，对齐 Semi）：
+
+| 事件 | 说明 |
+| --- | --- |
+| `onChange` | 任一格值变化即触发（含清空） |
+| `onComplete` | 最后一格填入完成时触发一次 |
 
 > 命名说明：受控值遵循全局约定 `value` + `onChange`；无浮层，不涉及 open/openChange。`onXxx` callback props 为全库统一记法。
 
 ### Events
 
-| 名称 | 载荷 | 说明 |
-| --- | --- | --- |
-| `onChange` | `(value: string)` | 任一格值变化即触发，回传各格拼接整串（含清空场景）。 |
-| `onComplete` | `(value: string)` | 最后一格填入完成时触发一次，回传完整验证码；同时 blur 末格。 |
+| 事件 | 说明 |
+| --- | --- |
+| `onChange` | 任一格值变化即触发（含清空） |
+| `onComplete` | 最后一格填入完成时触发一次 |
 
 ### Slots
 

@@ -55,7 +55,7 @@
       {...(control.maxCount !== undefined ? { maxCount: control.maxCount as NonNullable<TextAreaProps['maxCount']> } : {})}
       {...(control.showCount !== undefined ? { showCount: control.showCount as NonNullable<TextAreaProps['showCount']> } : {})}
       {...(control.autosize !== undefined ? { autosize: control.autosize as NonNullable<TextAreaProps['autosize']> } : {})}
-      {...(labelledById !== undefined ? { ariaLabelledby: labelledById } : labelForAria !== undefined ? { ariaLabel: labelForAria } : {})}
+      {...(labelledById !== undefined ? { ariaLabelledby: labelledById } : labelForAria !== undefined ? { 'aria-label': labelForAria } : {})}
       {...(describedBy !== undefined ? { ariaDescribedby: describedBy } : {})}
       {...(errorMessageId !== undefined ? { ariaErrormessage: errorMessageId } : {})}
       {...(required ? { ariaRequired: true } : {})}

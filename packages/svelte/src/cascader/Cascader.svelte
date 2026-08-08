@@ -2,13 +2,16 @@
   Cascader — see specs/components/input/Cascader.spec.md
   基础子集: 单选、点击逐级展开级联列、叶子选中。Token-driven, a11y-correct, 受控/非受控。
   面板 portal 到 body + position:fixed（脱离 overflow:hidden 裁剪），flip 避让。
-  异步 loadData：点击非叶子且无 children 的节点时调 loadData 动态加载，
-  加载中显示 spinner，结果缓存到本地 extraChildren（不改 treeData prop）。
+  异步 loadData（对齐 Semi）：点击非叶子且无 children 的节点时以完整选中路径
+  调用 loadData，加载中显示 spinner；回调不返回数据，由调用方在 Promise 内
+  自行更新传入的 treeData，新 children 随 treeData 变化到达。
   multiple：每列 checkbox 多选 + 父子联动（复用 core conduct/toggleCheck，以 value 为 key），
   trigger 按选中叶子路径多 tag 回显可单独移除；value 为 Key[][]（多条路径）。
   filterTreeNode：搜索时切换为扁平路径列表，按 label 链过滤 + 高亮命中，点击直接选中整条路径。
   showNext='hover'：悬停非叶子节点即展开子级列（pointerenter 设 activePath，选中仍用点击）。
-  displayRender：自定义触发器选中路径回显（单选 + 多选每个 tag 共用）。
+  displayRenderSingle/displayRenderTag：自定义触发器选中路径回显，Snippet 型 prop
+  （单选/多选入参形态不同拆成两个，Svelte 5 不支持"函数返回 Snippet"这类 React
+  render-prop 直译，见 svelte#10678）。
   changeOnSelect（单选）：点击任一层级节点（含中间非叶子）立即提交从根到该
   节点的路径并触发 onChange；非叶子同时展开子列、不关闭面板（可停在任意层级
   或继续深入），叶子提交并关闭。关闭时仅叶子提交并关闭，非叶子仅展开（默认）。
@@ -25,36 +28,31 @@
   import {
     useId,
     useDismiss,
+    registerOverlayRoot,
     conduct,
     toggleCheck,
     rovingKeyFromEvent,
     nextRovingIndex,
     type TreeNodeData,
-    type CascaderFlatPath,
+    resolveDefault,
   } from '@chenzy-design/core';
-  import { SvelteMap, SvelteSet } from 'svelte/reactivity';
+  import { SvelteSet } from 'svelte/reactivity';
   import type { Snippet } from 'svelte';
-  import {
-    IconClear,
-    IconChevronDown,
-    IconChevronRight,
-    IconSpin,
-  } from '@chenzy-design/icons';
+  import { IconClear, IconChevronDown } from '@chenzy-design/icons';
   import { useLocale } from '../locale-provider/index.js';
   import { getGlobalPopupContainer } from '../config-provider/index.js';
   import { floating } from '../_floating/use-floating.js';
   import Tag from '../tag/Tag.svelte';
-  import Checkbox from '../checkbox/Checkbox.svelte';
   import Input from '../input/Input.svelte';
   import TagInput from '../tag-input/TagInput.svelte';
-  import { VirtualList } from '../virtual-list/index.js';
-  import type { CascaderNode } from './types.js';
+  import Item from './Item.svelte';
+  import type { CascaderNode, CascaderEntity } from './types.js';
   import { getInputGroupContext } from '../input/context.js';
 
   type Key = string | number;
   type Size = 'small' | 'default' | 'large';
-  /** 校验状态（对齐 Semi validateStatus）：默认 / 警告 / 错误 */
-  type ValidateStatus = 'default' | 'warning' | 'error';
+  /** 校验状态（对齐 Semi validateStatus）：默认 / 成功 / 警告 / 错误 */
+  type ValidateStatus = 'default' | 'success' | 'warning' | 'error';
 
   interface Props {
     /** 单选为单条路径 Key[]；多选为多条路径 Key[][] */
@@ -73,8 +71,12 @@
     changeOnSelect?: boolean;
     /** 多选时只回传/计数叶子节点（父节点不进 value、tag、计数） */
     leafOnly?: boolean;
-    /** 是否可搜索及自定义匹配：false 关闭；true 默认按 label 链子串匹配；函数自定义谓词 */
-    filterTreeNode?: boolean | ((query: string, path: CascaderFlatPath<CascaderNode>) => boolean);
+    /**
+     * 是否可搜索及自定义匹配（对齐 Semi filterTreeNode）：false 关闭；true 默认按 label 链子串匹配；
+     * 函数自定义谓词 (inputValue, treeNodeString, data?) => boolean —— treeNodeString 是预先按
+     * treeNodeFilterProp 拼好的纯文本（label 为 Snippet 时无法直接拼接，取空串），data 为路径末节点。
+     */
+    filterTreeNode?: boolean | ((inputValue: string, treeNodeString: string, data?: CascaderNode) => boolean);
     /** 搜索结果是否仅展示到叶子路径（默认 true；false 时含中间层级路径） */
     filterLeafOnly?: boolean;
     /** 触发器回显使用的字段：'label'（默认）或 'value' */
@@ -83,20 +85,38 @@
     separator?: string;
     /** 多选 Tag 溢出折叠阈值：超出显示前 N 个 + +M */
     maxTagCount?: number;
-    /** 列为空（无可选项）时内容；缺省走 i18n */
-    emptyContent?: string | Snippet;
+    /** 列为空（无可选项）时内容；缺省走 i18n；显式传 null 时完全不渲染空态 UI（对齐 Semi） */
+    emptyContent?: string | Snippet | null;
     /** 浮层层级 */
     zIndex?: number;
     /** 浮层挂载容器，缺省 document.body。非 body 容器时改 absolute 定位相对该容器。 */
     getPopupContainer?: () => HTMLElement | null | undefined;
-    /** 动态加载子节点；点击非叶子且无 children 的节点时调用 */
-    loadData?: (node: CascaderNode) => Promise<CascaderNode[]>;
-    /** 自定义触发器选中路径的回显文本（单选 + 多选每个 tag 均走此函数） */
-    displayRender?: (labels: string[], selectedNodes: CascaderNode[]) => string;
+    /**
+     * 动态加载子节点（对齐 Semi loadData：`(selectOptions: CascaderData[]) => Promise<void>`）。
+     * 点击非叶子且无 children 的节点时调用，入参是从根到该节点的完整选中路径
+     * （非单个节点）。回调不返回数据——组件不自动合并结果进树，由调用方在
+     * Promise 内自行更新传入的 treeData（Svelte 5 `$state` 对应 Semi `setState`），
+     * treeData 变化后组件重渲染即可看到新增子级。
+     */
+    loadData?: (selectOptions: CascaderNode[]) => Promise<void>;
+    /**
+     * 单选自定义触发器回显内容（对齐 Semi displayRender 单选形态：
+     * `(labelPath: string[]) => ReactNode`）。Snippet 型 prop（非函数）：Svelte 5 不支持
+     * "函数返回 Snippet" 这种 React render-prop 直译（Snippet 调用表达式只能出现在 {@render}
+     * 位置，见 svelte#10678），故拆成 Snippet 型 prop，用法同 bits-ui child snippet 模式：
+     * `{#snippet displayRenderSingle(labelPath)}...{/snippet}` 传入。
+     */
+    displayRenderSingle?: Snippet<[string[]]>;
+    /**
+     * 多选每条 tag 的自定义回显内容（对齐 Semi displayRender 多选形态：
+     * `(item: Entity, index: number) => ReactNode`）。每条 tag 各 {@render} 一次，
+     * 传完整 CascaderEntity（对齐 Semi Entity）+ idx（该 tag 在树遍历中的下标）。
+     */
+    displayRenderTag?: Snippet<[CascaderEntity, number]>;
     /** 单选回调单条路径；多选回调多条叶子路径。onChangeWithObject=true 时改为回传节点对象（单选节点链 CascaderNode[]，多选每条路径节点链 CascaderNode[][]） */
     onChange?: (value: Key[] | Key[][] | CascaderNode[] | CascaderNode[][]) => void;
     /** 可访问名（对齐 Semi aria-label，默认 'Cascader'）。本库沿用 Input/Checkbox 的 ariaLabel 命名惯例。 */
-    ariaLabel?: string;
+    'aria-label'?: string;
     /** aria-labelledby：关联外部 label 元素（Form.Field 透传 labelId，对齐 Semi）。 */
     ariaLabelledby?: string;
     /** aria-describedby：关联 helpText / extraText（Form.Field 透传）。 */
@@ -165,8 +185,28 @@
     searchPlaceholder?: string;
     /** 搜索时过滤的属性（默认 'label'） */
     treeNodeFilterProp?: string;
-    /** 自定义搜索结果项渲染 */
-    filterRender?: Snippet<[{ path: FlatPath }]>;
+    /**
+     * 自定义搜索结果项渲染（对齐 Semi filterRender / FilterRenderProps，字段逐一对应）。
+     * data 为该路径各级节点对象；multiple 时用 onCheck/checkStatus 自绘 Checkbox 接管勾选交互，
+     * 单选时用 onClick/selected 判断/触发选中（传了 filterRender 后，外层选项容器不再吞点击，
+     * 交由调用方自行决定何时勾选/选中）；className 为默认选项容器类名，透传给自绘根节点以复用
+     * 高亮/禁用等基础样式；inputValue 为当前搜索框输入值。
+     */
+    filterRender?: Snippet<
+      [
+        {
+          path: FlatPath;
+          data: CascaderNode[];
+          inputValue: string;
+          disabled: boolean;
+          className: string;
+          selected: boolean;
+          onClick: () => void;
+          onCheck: () => void;
+          checkStatus: { checked: boolean; halfChecked: boolean };
+        },
+      ]
+    >;
     /** 搜索结果自定义排序 */
     filterSorter?: (a: FlatPath, b: FlatPath, input: string) => number;
     /** 搜索输入回调 */
@@ -207,10 +247,10 @@
     showNext?: 'click' | 'hover';
 
     // --- 事件 ---
-    /** 清空回调 */
+    /** 清空回调（对齐 Semi `onClear: () => void`，零参数——DOM 事件在组件内部已消费不透传） */
     onClear?: () => void;
-    /** 异步加载完成回调 */
-    onLoad?: (loadedKeys: Key[], data: CascaderNode) => void;
+    /** 异步加载完成回调（对齐 Semi onLoad：`(newLoadedKeys: Set<string>, data: CascaderData) => void`） */
+    onLoad?: (loadedKeys: Set<Key>, data: CascaderNode) => void;
     /** 节点选中回调（单选叶子选中时） */
     onSelect?: (value: Key) => void;
     /** 下拉面板显隐回调 */
@@ -219,41 +259,69 @@
     onListScroll?: (e: Event, info: { panelIndex: number; activeNode: CascaderNode | null }) => void;
 
     // --- 自定义渲染 ---
-    /** 完全自定义触发器渲染 */
-    triggerRender?: Snippet<[{ value: Key[] | Key[][] | undefined; placeholder: string; isOpen: boolean; disabled: boolean }]>;
+    /**
+     * 完全自定义触发器渲染（对齐 Semi TriggerRenderProps）。
+     * onSearch：更新搜索框输入值（需配合 filterTreeNode 非 false 生效）；
+     * onClear：清空已选值；onRemove：多选场景按 pos 删除单个已选项（对齐 Semi
+     * handleTagRemoveInTrigger(pos: string)，非 value 值）。
+     */
+    triggerRender?: Snippet<
+      [
+        {
+          value: string | Set<string> | undefined;
+          placeholder: string;
+          isOpen: boolean;
+          disabled: boolean;
+          inputValue: string;
+          onSearch: (inputValue: string) => void;
+          /**
+           * 清空已选值（对齐 Semi `onClear: (e: React.MouseEvent) => void`，事件透传给
+           * 组件内置清除按钮同款的 clearAll，靠其上的 stopPropagation 挡住冒泡）。
+           * 调用方（自定义 trigger 里的清除图标）须把原生点击事件转发进来——若像
+           * `onClear()` 这样零参数调用，本库这端只能自己 new 一个跟当次点击无关的
+           * MouseEvent 去 stopPropagation，对真实那次点击的冒泡毫无作用，会让点击
+           * 继续冒泡到 Cascader 根节点触发展开/关闭面板（对齐 Semi handleClear 实测
+           * 行为：清空后面板保持原状，不会意外弹出）。
+           */
+          onClear: (e?: MouseEvent) => void;
+          onRemove: (pos: string) => void;
+        },
+      ]
+    >;
   }
 
   let {
     value,
     defaultValue,
-    treeData = [],
+    treeData: treeDataProp,
     open: openProp,
-    defaultOpen = false,
-    multiple = false,
+    defaultOpen: defaultOpenProp,
+    multiple: multipleProp,
     size: sizeProp,
     validateStatus = 'default',
     placeholder,
     disabled: disabledProp,
-    changeOnSelect = false,
-    leafOnly = false,
+    changeOnSelect: changeOnSelectProp,
+    leafOnly: leafOnlyProp,
     filterTreeNode,
-    filterLeafOnly = true,
-    displayProp = 'label',
-    separator = ' / ',
+    filterLeafOnly: filterLeafOnlyProp,
+    displayProp: displayPropProp,
+    separator: separatorProp,
     maxTagCount,
     emptyContent,
-    zIndex = 1030,
+    zIndex: zIndexProp,
     getPopupContainer,
     loadData,
-    displayRender,
+    displayRenderSingle,
+    displayRenderTag,
     onChange,
-    ariaLabel = 'Cascader',
+    'aria-label': ariaLabelProp,
     ariaLabelledby,
     ariaDescribedby,
     ariaErrormessage,
     ariaRequired,
     class: className = '',
-    borderless = false,
+    borderless: borderlessProp,
     prefix,
     insetLabel,
     insetLabelId,
@@ -261,7 +329,7 @@
     clearIcon,
     expandIcon,
     arrowIcon,
-    motion = true,
+    motion: motionProp,
     mouseEnterDelay = 50,
     mouseLeaveDelay = 50,
     autoAdjustOverflow = true,
@@ -273,30 +341,30 @@
     onBlur,
     onFocus,
     preventScroll = false,
-    stopPropagation = true,
+    stopPropagation: stopPropagationProp,
     topSlot,
     bottomSlot,
-    searchPosition = 'trigger',
+    searchPosition: searchPositionProp,
     searchPlaceholder,
-    treeNodeFilterProp = 'label',
+    treeNodeFilterProp: treeNodeFilterPropProp,
     filterRender,
     filterSorter,
     onSearch,
-    remote = false,
+    remote: remoteProp,
     virtualizeInSearch,
-    autoMergeValue = true,
-    checkRelation = 'related',
+    autoMergeValue: autoMergeValueProp,
+    checkRelation: checkRelationProp,
     onChangeWithObject = false,
     max,
     onExceed,
-    showRestTagsPopover = false,
+    showRestTagsPopover: showRestTagsPopoverProp,
     restTagsPopoverProps,
-    showClear: showClearProp = false,
+    showClear: showClearProp,
     keyMaps,
-    clickToSelect = false,
-    enableLeafClick = false,
-    disableStrictly = false,
-    showNext = 'click',
+    clickToSelect: clickToSelectProp,
+    enableLeafClick: enableLeafClickProp,
+    disableStrictly: disableStrictlyProp,
+    showNext: showNextProp,
     onClear,
     onLoad,
     onSelect,
@@ -304,6 +372,33 @@
     onListScroll,
     triggerRender,
   }: Props = $props();
+  // cdGlobal 全局默认 props（对齐 Semi semiGlobal.config.overrideDefaultProps）：
+  // 优先级 = 显式传值 > cdGlobal['Cascader'] > 组件内置默认值。
+  const borderless = $derived(resolveDefault(borderlessProp, 'Cascader', 'borderless', false));
+  const leafOnly = $derived(resolveDefault(leafOnlyProp, 'Cascader', 'leafOnly', false));
+  const stopPropagation = $derived(resolveDefault(stopPropagationProp, 'Cascader', 'stopPropagation', true));
+  const motion = $derived(resolveDefault(motionProp, 'Cascader', 'motion', true));
+  const defaultOpen = $derived(resolveDefault(defaultOpenProp, 'Cascader', 'defaultOpen', false));
+  const zIndex = $derived(resolveDefault(zIndexProp, 'Cascader', 'zIndex', 1030));
+  // showClear 的全局默认在下方与「禁用/有选中」条件合并计算（见 hasSelection 处）。
+  const showClearResolved = $derived(resolveDefault(showClearProp, 'Cascader', 'showClear', false));
+  const changeOnSelect = $derived(resolveDefault(changeOnSelectProp, 'Cascader', 'changeOnSelect', false));
+  const disableStrictly = $derived(resolveDefault(disableStrictlyProp, 'Cascader', 'disableStrictly', false));
+  const autoMergeValue = $derived(resolveDefault(autoMergeValueProp, 'Cascader', 'autoMergeValue', true));
+  const multiple = $derived(resolveDefault(multipleProp, 'Cascader', 'multiple', false));
+  const filterLeafOnly = $derived(resolveDefault(filterLeafOnlyProp, 'Cascader', 'filterLeafOnly', true));
+  const showRestTagsPopover = $derived(resolveDefault(showRestTagsPopoverProp, 'Cascader', 'showRestTagsPopover', false));
+  const separator = $derived(resolveDefault(separatorProp, 'Cascader', 'separator', ' / '));
+  const treeNodeFilterProp = $derived(resolveDefault(treeNodeFilterPropProp, 'Cascader', 'treeNodeFilterProp', 'label'));
+  const displayProp = $derived(resolveDefault(displayPropProp, 'Cascader', 'displayProp', 'label'));
+  const treeData = $derived(resolveDefault(treeDataProp, 'Cascader', 'treeData', []));
+  const showNext = $derived(resolveDefault(showNextProp, 'Cascader', 'showNext', 'click'));
+  const enableLeafClick = $derived(resolveDefault(enableLeafClickProp, 'Cascader', 'enableLeafClick', false));
+  const clickToSelect = $derived(resolveDefault(clickToSelectProp, 'Cascader', 'clickToSelect', false));
+  const ariaLabel = $derived(resolveDefault(ariaLabelProp, 'Cascader', 'aria-label', 'Cascader'));
+  const searchPosition = $derived(resolveDefault(searchPositionProp, 'Cascader', 'searchPosition', 'trigger'));
+  const checkRelation = $derived(resolveDefault(checkRelationProp, 'Cascader', 'checkRelation', 'related'));
+  const remote = $derived(resolveDefault(remoteProp, 'Cascader', 'remote', false));
 
   // InputGroup 组级默认（size/disabled）：显式 prop 始终优先，否则回退组级，再回退组件默认。
   const group = getInputGroupContext();
@@ -371,24 +466,24 @@
   const effectiveExpandTrigger = $derived(showNext === 'hover' ? 'hover' : 'click');
 
   // filterTreeNode 归一：是否可搜索 + 实际谓词（true=默认子串匹配，函数=自定义）。
-  const filterSpec = $derived<boolean | ((q: string, p: CascaderFlatPath<CascaderNode>) => boolean)>(
-    remote ? true : (filterTreeNode ?? false),
-  );
+  const filterSpec = $derived<
+    boolean | ((inputValue: string, treeNodeString: string, data?: CascaderNode) => boolean)
+  >(remote ? true : (filterTreeNode ?? false));
   const isFilterable = $derived(filterSpec !== false || remote);
   const showBuiltinSearch = $derived(isFilterable && searchPosition !== 'custom');
 
   // unRelated 勾选模式
   const isUnRelated = $derived(checkRelation === 'unRelated');
 
-  // 异步加载：已加载子节点缓存（node.value → children）+ 加载中节点集合。
-  // 不写回 treeData prop（红线 #1：不改受控数据源）。
-  const extraChildren = new SvelteMap<Key, CascaderNode[]>();
+  // 异步加载：仅跟踪加载中节点集合（对齐 Semi loadedKeys/loading 语义）。
+  // loadData 回调不返回数据——调用方在 Promise 内自行更新 treeData，新的
+  // node.children 随 treeData 变化到达，组件不再自己缓存/合并子节点结果。
   const loadingKeys = new SvelteSet<Key>();
 
-  // 取节点的有效子节点：优先 node.children，否则查 extraChildren 缓存。
+  // 取节点的有效子节点：treeData 是唯一数据源（对齐 Semi，loadData 完成后
+  // 子节点已经在调用方更新的 treeData 里，不需要额外缓存层）。
   function childrenOf(node: CascaderNode): CascaderNode[] | undefined {
-    if (node.children && node.children.length > 0) return node.children;
-    return extraChildren.get(node.value);
+    return node.children && node.children.length > 0 ? node.children : undefined;
   }
 
   const listId = useId('cd-cascader-panel');
@@ -413,6 +508,55 @@
       level = node.children ?? [];
     }
     return chain;
+  }
+
+  // findPath 的变体：额外记录每层节点在其父 children 数组里的下标（供 toEntity 生成 Entity.ind）。
+  function findPathWithInd(
+    data: CascaderNode[],
+    valuePath: Key[],
+  ): { node: CascaderNode; ind: number }[] {
+    const chain: { node: CascaderNode; ind: number }[] = [];
+    let level = data;
+    for (const key of valuePath) {
+      const ind = level.findIndex((n) => n.value === key);
+      if (ind === -1) break;
+      const node = level[ind] as CascaderNode;
+      chain.push({ node, ind });
+      level = node.children ?? [];
+    }
+    return chain;
+  }
+
+  // 对齐 Semi getPosition(level, index) => `${level}-${index}`：traverseDataNodes 里逐层用父节点
+  // 已算好的 pos 累积拼接（`pos = parent ? getPosition(parent.pos, ind) : \`${ind}\``），
+  // 根层没有父级时 pos 直接是自身下标。triggerRender 的 value 入参即 keyEntities[key].pos。
+  function posOf(valuePath: Key[]): string | undefined {
+    const chain = findPathWithInd(normalizedTreeData, valuePath);
+    if (chain.length === 0) return undefined;
+    let pos: string | undefined;
+    for (const { ind } of chain) {
+      pos = pos !== undefined ? getPosition(pos, ind) : `${ind}`;
+    }
+    return pos;
+  }
+  function getPosition(level: string, index: number): string {
+    return `${level}-${index}`;
+  }
+
+  // pos 字符串 → value 路径（对齐 Semi getKeyByPos 的逐层查找部分：按下标逐层取
+  // resultData[item] / resultData.children[item]，累积每层的 value 值）。
+  function valuePathOfPos(pos: string): Key[] {
+    const posArr = pos.split('-').map((item) => Number(item));
+    let resultData: CascaderNode[] | CascaderNode = normalizedTreeData;
+    const valuePath: Key[] = [];
+    posArr.forEach((item, index) => {
+      resultData =
+        index === 0
+          ? (resultData as CascaderNode[])[item]!
+          : ((resultData as CascaderNode).children?.[item] as CascaderNode);
+      valuePath.push((resultData as CascaderNode)?.value);
+    });
+    return valuePath;
   }
 
   // --- 由 activePath 生成各列数据（含异步加载的子节点缓存）---
@@ -496,10 +640,14 @@
   }
 
   // --- 多选：合并树（含异步缓存）转 core TreeNodeData（以 value 为 key），跑 conduct ---
+  // 对齐 Semi convertDataToEntities：`{ ...data }` 原样展开整个节点、不关心 label 具体类型
+  // （conduct 只读 key/children/disabled，从不读 label——Semi 是动态类型天然不需处理，
+  // 本库 TreeNodeData.label 类型是 Tree/TreeSelect/Transfer 共用的公共契约仍为 string，
+  // 这里用类型断言原样透传而非按类型分支加工，语义上更贴近 Semi「不关心、直接传」）。
   function toTreeData(nodes: CascaderNode[]): TreeNodeData[] {
     return nodes.map((n) => {
       const kids = childrenOf(n);
-      const td: TreeNodeData = { key: n.value, label: n.label };
+      const td: TreeNodeData = { key: n.value, label: n.label as unknown as string };
       if (n.disabled) td.disabled = true;
       if (kids && kids.length > 0) td.children = toTreeData(kids);
       return td;
@@ -529,9 +677,41 @@
   interface FlatPath {
     values: Key[];
     labels: string[];
+    /** 原始 label 链（字符串或 Snippet），供面包屑渲染逐项高亮/原样渲染（对齐 Semi searchText: ReactNode[]） */
+    labelNodes: (string | Snippet)[];
     nodes: CascaderNode[];
     isLeaf: boolean;
     disabled: boolean;
+  }
+
+  // CascaderEntity 定义见 types.ts（已在文件顶部 import，对外导出供 displayRender 消费方使用）。
+  // 精确语义对齐 Semi util.ts traverseDataNodes：
+  // - key：祖先累积 key，`parent ? \`${parent.key}${SPLIT}${value}\` : \`${value}\``（分隔符
+  //   任意选取不冲突的字符串即可，Semi 用 VALUE_SPLIT 常量同理）
+  // - ind：本节点在其父节点 children 数组中的下标（非"已选列表序号"）
+  // - path：祖先累积 key 数组（每项是完整 key，非单纯 value）
+  // - valuePath：祖先原始 value 数组（每项是节点自身 value，不做累积拼接）
+  const ENTITY_KEY_SPLIT = '_CD_CASCADER_SPLIT_';
+  // nodes 链（根→叶，各自附带在其父 children 数组里的下标）→ 层层嵌套 parent 引用的 Entity 链，取叶子。
+  function toEntity(nodesWithInd: { node: CascaderNode; ind: number }[]): CascaderEntity {
+    let parent: CascaderEntity | undefined;
+    let entity: CascaderEntity | undefined;
+    for (let i = 0; i < nodesWithInd.length; i++) {
+      const { node: n, ind } = nodesWithInd[i] as { node: CascaderNode; ind: number };
+      const key = parent ? `${parent.key}${ENTITY_KEY_SPLIT}${n.value}` : `${n.value}`;
+      entity = {
+        data: n,
+        ind,
+        key,
+        level: i,
+        path: parent ? [...parent.path, key] : [key],
+        valuePath: parent ? [...parent.valuePath, String(n.value)] : [String(n.value)],
+        ...(parent ? { parent, parentKey: parent.key } : {}),
+      };
+      if (parent) parent.children = [entity];
+      parent = entity;
+    }
+    return entity as CascaderEntity;
   }
   // 收集所有可选路径：叶子路径；filterLeafOnly=false 或 changeOnSelect 时含非叶子路径。
   // （含非叶子时由 filteredPaths 按 filterLeafOnly 再裁剪。）
@@ -541,6 +721,7 @@
       nodes: CascaderNode[],
       vals: Key[],
       labels: string[],
+      labelNodes: (string | Snippet)[],
       chain: CascaderNode[],
       parentDisabled: boolean,
     ) => {
@@ -548,17 +729,32 @@
         const kids = childrenOf(n);
         const isLeaf = !kids || kids.length === 0;
         const nv = [...vals, n.value];
-        const nl = [...labels, n.label];
+        // labels：纯字符串链，供 treeNodeStringOf 搜索匹配用，label 为 Snippet 时降级为空串
+        // （搜索匹配本就只能对字符串生效，Semi highlight() 同样对非字符串 item 跳过匹配）。
+        // labelNodes：保留原始 label（字符串或 Snippet），供面包屑渲染逐项还原
+        // （对齐 Semi searchText: ReactNode[] 原样存 ReactNode，不因非字符串而丢失内容）。
+        const nl = [...labels, typeof n.label === 'string' ? n.label : ''];
+        const nln = [...labelNodes, n.label];
         const nc = [...chain, n];
         const dis = disableStrictly ? !!n.disabled : (parentDisabled || !!n.disabled);
         if (isLeaf || changeOnSelect || !filterLeafOnly)
-          out.push({ values: nv, labels: nl, nodes: nc, isLeaf, disabled: dis });
-        if (!isLeaf) walk(kids, nv, nl, nc, dis);
+          out.push({ values: nv, labels: nl, labelNodes: nln, nodes: nc, isLeaf, disabled: dis });
+        if (!isLeaf) walk(kids, nv, nl, nln, nc, dis);
       }
     };
-    walk(normalizedTreeData, [], [], [], false);
+    walk(normalizedTreeData, [], [], [], [], false);
     return out;
   });
+
+  // 按 treeNodeFilterProp 拼出该路径用于匹配/传给自定义谓词的纯文本（对齐 Semi treeNodeString）。
+  // treeNodeFilterProp==='label'（默认）：整条 label 链；label 为 Snippet 时 p.labels 已降级为空串。
+  // 其它字段：取路径末节点（目标节点）该字段值转字符串。
+  function treeNodeStringOf(p: FlatPath): string {
+    if (treeNodeFilterProp === 'label') return p.labels.join(separator);
+    const lastNode = p.nodes[p.nodes.length - 1] as unknown as Record<string, unknown>;
+    const field = lastNode?.[treeNodeFilterProp];
+    return field != null ? String(field) : '';
+  }
 
   const filteredPaths = $derived.by<FlatPath[]>(() => {
     if (!searchActive) return [];
@@ -567,19 +763,14 @@
     if (spec === false) return [];
     let results: FlatPath[];
     if (typeof spec === 'function') {
-      results = flatPaths.filter((p) => spec(trimmedSearch, p));
+      results = flatPaths.filter((p) =>
+        spec(trimmedSearch, treeNodeStringOf(p), p.nodes[p.nodes.length - 1]),
+      );
     } else {
       const lower = trimmedSearch.toLowerCase();
       results = flatPaths.filter((p) => {
         if (filterLeafOnly && !p.isLeaf) return false;
-        // treeNodeFilterProp==='label'（默认）：按整条 label 链匹配（既有行为）。
-        // 其它字段：取路径末节点（目标节点）该字段值转字符串做子串匹配。
-        if (treeNodeFilterProp === 'label') {
-          return p.labels.join(separator).toLowerCase().includes(lower);
-        }
-        const lastNode = p.nodes[p.nodes.length - 1] as unknown as Record<string, unknown>;
-        const field = lastNode?.[treeNodeFilterProp];
-        return field != null && String(field).toLowerCase().includes(lower);
+        return treeNodeStringOf(p).toLowerCase().includes(lower);
       });
     }
     if (filterSorter) {
@@ -588,8 +779,12 @@
     return results;
   });
 
-  // 命中文本高亮（作用于整条 label 链字符串）
+  // 命中文本高亮：逐条 label 节点处理（对齐 Semi highlight() 逐项 searchText.forEach，
+  // 而非先 join 成一个字符串再整体处理——label 为 Snippet 时 join 会丢失内容）。
+  // 字符串项按关键字切片高亮；非字符串（Snippet）项原样保留，不参与匹配（同 Semi
+  // `typeof item === 'string' && keyword` 判断，非字符串直接 push 原值）。项间插入 separator。
   type HlPart = { text: string; mark: boolean };
+  type PathPart = { kind: 'text'; text: string; mark: boolean } | { kind: 'snippet'; snippet: Snippet } | { kind: 'sep' };
   function highlightParts(text: string): HlPart[] {
     if (!searchActive) return [{ text, mark: false }];
     const lower = text.toLowerCase();
@@ -604,6 +799,18 @@
       idx = lower.indexOf(term, from);
     }
     if (from < text.length) parts.push({ text: text.slice(from), mark: false });
+    return parts;
+  }
+  function highlightPathParts(labelNodes: (string | Snippet)[]): PathPart[] {
+    const parts: PathPart[] = [];
+    labelNodes.forEach((item, i) => {
+      if (typeof item === 'string') {
+        for (const hl of highlightParts(item)) parts.push({ kind: 'text', text: hl.text, mark: hl.mark });
+      } else {
+        parts.push({ kind: 'snippet', snippet: item });
+      }
+      if (i !== labelNodes.length - 1) parts.push({ kind: 'sep' });
+    });
     return parts;
   }
 
@@ -633,15 +840,32 @@
     return set;
   }
   const checkedBase = $derived(pathsToLeafBase(currentPaths));
+
+  // 选中顺序（对齐 Semi checkedKeys 为 Set 的插入顺序语义：tag 按用户实际勾选的时间顺序
+  // 展示，非树遍历顺序——calcCheckedKeysForChecked 里新点击的 key 先并入已有集合末尾，
+  // 联动的子孙 key 随后追加）。仅非受控场景下由 setPaths 维护；受控场景下每次都按当前
+  // currentPaths（即 value prop）的数组顺序重新生成，无历史操作可追踪，这也与 Semi
+  // 受控时 getRealKeys 按 value 数组顺序取值一致。
+  let checkOrder = $state<Key[]>([...pathsToLeafBase(getInitialPaths())]);
+  function updateCheckOrder(nextPaths: Key[][]) {
+    const nextLeaves = pathsToLeafBase(nextPaths);
+    const kept = checkOrder.filter((k) => nextLeaves.has(k));
+    const added = [...nextLeaves].filter((k) => !checkOrder.includes(k));
+    checkOrder = [...kept, ...added];
+  }
+  const effectiveCheckOrder = $derived(isValueControlled ? [...checkedBase] : checkOrder);
   const checkState = $derived.by(() =>
     multiple
       ? conduct(mergedTreeData, checkedBase)
       : { checked: new Set<Key>(), half: new Set<Key>() },
   );
 
-  // 选中路径链（用于多 tag 回显）。遍历合并树收集 checked 路径：
-  //   leafOnly=false（默认）：仅叶子（现状不变）。
-  //   leafOnly=true：完全勾选的父级折叠为父路径并停止下钻（父 tag 代表整子树）。
+  // 选中路径链（用于多 tag 回显）。遍历合并树收集 checked 路径，策略对齐 leafBaseToPaths：
+  //   leafOnly=true：无视父节点是否被联动勾选，只收叶子路径（tag 只展示叶子节点）。
+  //   leafOnly=false 且父节点全选：折叠为父路径（父 tag 代表整子树，autoMergeValue 语义）。
+  // 排序对齐 Semi checkedKeys（Set 插入顺序，即用户勾选的时间顺序，非树遍历顺序）：
+  // 叶子路径按其在 effectiveCheckOrder 中的位置排；折叠出的父路径以其子树下所有叶子里
+  // 最晚被选中的那个的位置为准（父节点必然是在其最后一个子孙叶子选中的那一刻才「全选」）。
   const checkedLeafPaths = $derived.by<{ path: Key[]; labels: string[]; nodes: CascaderNode[] }[]>(() => {
     if (!multiple) return [];
     // unRelated（互不联动）：tag 源直接取用户实际勾选的每条路径（currentPaths），
@@ -653,30 +877,51 @@
         if (p.length === 0) continue;
         const chain = findPath(normalizedTreeData, p);
         if (chain.length === 0) continue;
-        out.push({ path: p, labels: chain.map((n) => n.label), nodes: chain });
+        out.push({
+          path: p,
+          labels: chain.map((n) => (typeof n.label === 'string' ? n.label : '')),
+          nodes: chain,
+        });
       }
       return out;
     }
-    const out: { path: Key[]; labels: string[]; nodes: CascaderNode[] }[] = [];
+    const orderIndex = new Map(effectiveCheckOrder.map((k, i) => [k, i]));
+    const out: { path: Key[]; labels: string[]; nodes: CascaderNode[]; sortKey: number }[] = [];
+    // 返回该节点子树内所有叶子 value，供折叠父路径计算 sortKey 用。
+    const leafValuesOf = (n: CascaderNode): Key[] => {
+      const kids = childrenOf(n);
+      if (!kids || kids.length === 0) return [n.value];
+      return kids.flatMap(leafValuesOf);
+    };
     const walk = (nodes: CascaderNode[], path: Key[], labels: string[], chain: CascaderNode[]) => {
       for (const n of nodes) {
         const kids = childrenOf(n);
         const np = [...path, n.value];
-        const nl = [...labels, n.label];
+        const nl = [...labels, typeof n.label === 'string' ? n.label : ''];
         const nc = [...chain, n];
         const isLeaf = !kids || kids.length === 0;
         if (isLeaf) {
-          if (checkState.checked.has(n.value)) out.push({ path: np, labels: nl, nodes: nc });
-        } else if (leafOnly && checkState.checked.has(n.value)) {
-          // 父级完全勾选 → 折叠为父路径
-          out.push({ path: np, labels: nl, nodes: nc });
+          if (checkState.checked.has(n.value)) {
+            out.push({ path: np, labels: nl, nodes: nc, sortKey: orderIndex.get(n.value) ?? -1 });
+          }
+        } else if (leafOnly) {
+          walk(kids, np, nl, nc);
+        } else if (autoMergeValue && checkState.checked.has(n.value)) {
+          // 父级完全勾选 → 折叠为父路径，sortKey 取子树叶子里最晚选中的位置
+          const sortKey = Math.max(...leafValuesOf(n).map((v) => orderIndex.get(v) ?? -1));
+          out.push({ path: np, labels: nl, nodes: nc, sortKey });
+        } else if (!autoMergeValue && checkState.checked.has(n.value)) {
+          const sortKey = Math.max(...leafValuesOf(n).map((v) => orderIndex.get(v) ?? -1));
+          out.push({ path: np, labels: nl, nodes: nc, sortKey });
+          walk(kids, np, nl, nc);
         } else {
           walk(kids, np, nl, nc);
         }
       }
     };
     walk(normalizedTreeData, [], [], []);
-    return out;
+    out.sort((a, b) => a.sortKey - b.sortKey);
+    return out.map(({ path, labels, nodes }) => ({ path, labels, nodes }));
   });
 
   // --- 多选触发器复用 TagInput（对齐 Semi renderTagInput）---
@@ -702,19 +947,35 @@
   });
 
   const selectedChain = $derived(findPath(normalizedTreeData, currentValue));
-  const displayLabel = $derived(renderPath(selectedChain.map((n) => n.label), selectedChain));
+  const selectedChainLabels = $derived(
+    selectedChain.map((n) => (typeof n.label === 'string' ? n.label : '')),
+  );
+  // 默认回显文本（无 displayRenderSingle 时）：按 displayProp 取 label 或 value 链，用 separator 连接。
+  const defaultDisplayText = $derived(renderPathText(selectedChainLabels, selectedChain));
   const hasSelection = $derived(
     multiple ? checkedLeafPaths.length > 0 : selectedChain.length > 0,
   );
-  const showClear = $derived(showClearProp && !disabled && hasSelection);
+  const showClear = $derived(showClearResolved && !disabled && hasSelection);
 
-  // 单条路径回显文本：有 displayRender 走自定义（仍传 label 链 + 节点链）；
-  // 否则按 displayProp 取 label 或 value 链，用 separator 连接。
-  // 多选每个 tag 与单选回显共用此逻辑。
-  function renderPath(labels: string[], nodes: CascaderNode[]): string {
-    if (displayRender) return displayRender(labels, nodes);
+  function renderPathText(labels: string[], nodes: CascaderNode[]): string {
     const fields = displayProp === 'value' ? nodes.map((n) => String(n.value)) : labels;
     return fields.join(separator);
+  }
+
+  // 多选 tag 默认文案（对齐 Semi renderTagItem：`{keyEntities[nodeKey].data[displayProp]}`，
+  // 只取该叶子节点自身的 displayProp 字段值，不拼接完整路径——跟单选触发器回显语义不同）。
+  function tagLabelOf(labels: string[], nodes: CascaderNode[]): string {
+    if (nodes.length === 0) return '';
+    const leaf = nodes[nodes.length - 1] as CascaderNode;
+    if (displayProp === 'value') return String(leaf.value);
+    return labels[labels.length - 1] ?? '';
+  }
+
+  // 多选每条 tag 的 Entity（供 displayRenderTag {@render} 使用；无 displayRenderTag 时不构造）。
+  function entityOfLeaf(leaf: { path: Key[] }): CascaderEntity | undefined {
+    const chainWithInd = findPathWithInd(normalizedTreeData, leaf.path);
+    if (chainWithInd.length === 0) return undefined;
+    return toEntity(chainWithInd);
   }
 
   function setValue(next: Key[]) {
@@ -727,10 +988,10 @@
     }
   }
 
-  // 多选：由 conduct 解析后的 checked 全集生成多条路径回调。
-  //   autoMergeValue=true（默认）：选中父节点时 value 不包含后代。
-  //   autoMergeValue=false：包含父节点 AND 所有后代路径。
-  //   leafOnly=true：完全勾选的父级折叠为父路径并停止下钻。
+  // 多选：由 conduct 解析后的 checked 全集生成多条路径回调（对齐 Semi calcMergeType 三选一）：
+  //   leafOnly=true：优先级最高，无视父节点是否被联动勾选，永远只收叶子路径（不折叠）。
+  //   leafOnly=false 且 autoMergeValue=true（默认）：父节点全选时折叠为父路径，不下钻。
+  //   leafOnly=false 且 autoMergeValue=false：包含父节点路径 AND 继续下钻所有后代路径。
   function leafBaseToPaths(checkedSet: Set<Key>): Key[][] {
     const out: Key[][] = [];
     const walk = (nodes: CascaderNode[], path: Key[]) => {
@@ -740,6 +1001,9 @@
         const isLeaf = !kids || kids.length === 0;
         if (isLeaf) {
           if (checkedSet.has(n.value)) out.push(np);
+        } else if (leafOnly) {
+          // 非叶子即使被联动勾选也不折叠、不输出，继续下钻直到叶子
+          walk(kids ?? [], np);
         } else if (autoMergeValue && checkedSet.has(n.value)) {
           // 父级完全勾选，不展开后代（合并）
           out.push(np);
@@ -747,8 +1011,6 @@
           // 包含父节点 + 继续下钻后代
           out.push(np);
           walk(kids ?? [], np);
-        } else if (leafOnly && checkedSet.has(n.value)) {
-          out.push(np);
         } else {
           walk(kids ?? [], np);
         }
@@ -759,6 +1021,7 @@
   }
 
   function setPaths(nextPaths: Key[][]) {
+    updateCheckOrder(nextPaths);
     if (!isValueControlled) innerPaths = nextPaths;
     // onChangeWithObject=true：每条选中路径回传其完整节点链（CascaderNode[]），而非 value 链。
     if (onChangeWithObject) {
@@ -930,19 +1193,28 @@
     return loadingKeys.has(node.value);
   }
 
-  // 异步加载子节点：标记 loading → await loadData → 缓存结果 → 清 loading。
-  async function loadChildren(node: CascaderNode): Promise<boolean> {
-    if (!loadData || loadingKeys.has(node.value)) return false;
-    loadingKeys.add(node.value);
+  // 已完成过一次 loadData 的节点 key 集合（对齐 Semi loadedKeys：加载完成后即使
+  // 结果为空也标记，避免同一节点重复触发；不代表"仍有子节点"，只代表"问过了"）。
+  const loadedKeys = new SvelteSet<Key>();
+
+  // 异步加载子节点（对齐 Semi notifyLoadData）：标记 loading → 传完整选中路径给
+  // loadData → 等待调用方在 Promise 内更新 treeData 完成 → 清 loading + 标记
+  // 已加载。不处理返回值、不自己合并子节点——新的 node.children 随调用方更新
+  // 的 treeData 到达，下一次渲染 childrenOf(node) 自然读到。
+  async function loadChildren(nextPath: Key[]): Promise<void> {
+    const key = nextPath.length > 0 ? nextPath[nextPath.length - 1] : undefined;
+    if (!loadData || key === undefined || loadingKeys.has(key)) return;
+    loadingKeys.add(key);
     try {
-      const kids = await loadData(node);
-      extraChildren.set(node.value, kids);
-      onLoad?.(Array.from(extraChildren.keys()), node);
-      return kids.length > 0;
+      const nodePath = findPath(normalizedTreeData, nextPath);
+      await loadData(nodePath);
+      const lastNode = nodePath[nodePath.length - 1];
+      if (lastNode) onLoad?.(new Set([...loadedKeys, key]), lastNode);
     } catch {
-      return false;
+      // 对齐 Semi：loadData 抛错时不特殊处理展开态，仅照常清 loading。
     } finally {
-      loadingKeys.delete(node.value);
+      loadedKeys.add(key);
+      loadingKeys.delete(key);
     }
   }
 
@@ -954,11 +1226,18 @@
 
     // 多选：非叶子展开列 / 异步加载；叶子切换勾选且不关面板
     if (multiple) {
+      // clickToSelect：点击任意节点（含非叶子）即勾选，优先于 enableLeafClick
+      // （对齐 Semi handleSingleSelect：`clickToSelect || (isLeaf && enableLeafClick)`）。
+      // 展开列仍照常进行（activePath 已在上面更新），勾选与展开互不影响。
+      if (clickToSelect) {
+        toggleCheckNode(node, colIndex);
+        return;
+      }
       if (hasChildren(node)) {
         return;
       }
       if (!node.isLeaf && loadData) {
-        void loadChildren(node);
+        void loadChildren(nextPath);
         return;
       }
       // enableLeafClick: 只有 true 时叶子点击触发勾选
@@ -984,9 +1263,9 @@
       if (changeOnSelect) setValue(nextPath.slice());
     } else if (!node.isLeaf && loadData) {
       // 可异步加载的非叶子：changeOnSelect 时先提交本路径，再加载子节点
-      // （加载完成后子节点经 extraChildren 进列，activePath 已指向本节点）。
+      // （加载完成后新 children 随调用方更新的 treeData 到达，activePath 已指向本节点）。
       if (changeOnSelect) setValue(nextPath.slice());
-      void loadChildren(node);
+      void loadChildren(nextPath);
     } else {
       // 叶子: 提交完整路径并关闭
       setValue(nextPath.slice());
@@ -1004,7 +1283,7 @@
     nextPath.push(node.value);
     activePath = nextPath;
     if (!hasChildren(node) && !node.isLeaf && loadData) {
-      void loadChildren(node);
+      void loadChildren(nextPath);
     }
   }
 
@@ -1124,6 +1403,12 @@
       return;
     }
     const node = kbCurrentNode();
+    // RTL 下左右键义对调（对齐 WAI-ARIA APG 水平复合部件惯例：视觉上的「进下一列」
+    // 恒由视觉右侧方向键触发——LTR 是 →，RTL 是 ←，Semi 自身无此按键逻辑可对齐，
+    // 本库依这套通用惯例自建，同构 Slider.svelte isRtl() 读根节点 computed direction）。
+    const rtl = isRtl();
+    const enterKey = rtl ? 'ArrowLeft' : 'ArrowRight';
+    const backKey = rtl ? 'ArrowRight' : 'ArrowLeft';
     switch (e.key) {
       case 'ArrowUp':
         e.preventDefault();
@@ -1141,7 +1426,7 @@
         e.preventDefault();
         moveInCol(kbCol, 'last');
         break;
-      case 'ArrowRight':
+      case enterKey:
         e.preventDefault();
         // 展开高亮节点的下一列并进入它。
         if (node && canExpand(node)) {
@@ -1149,7 +1434,7 @@
           enterCol(kbCol + 1);
         }
         break;
-      case 'ArrowLeft':
+      case backKey:
         e.preventDefault();
         if (kbCol > 0) enterCol(kbCol - 1);
         break;
@@ -1173,6 +1458,21 @@
   let rootEl = $state<HTMLDivElement | null>(null);
   let panelEl = $state<HTMLDivElement | null>(null);
 
+  // 全局浮层注册（见 core registerOverlayRoot 注释）：panel portal 到 body 后与祖先
+  // hover 浮层脱节，登记后祖先的 pointerleave 判断能识别"鼠标去了合法子浮层"。
+  $effect(() => {
+    if (!panelEl) return;
+    return registerOverlayRoot(panelEl);
+  });
+
+  // 同构 Slider.svelte isRtl()：读根节点 computed direction（非 document.documentElement，
+  // 本库 RTL 靠 `:global(.cd-rtl) .cd-cascader { direction: rtl }` 作用域覆盖，只在组件
+  // 根节点上生效，读根节点自身最准确）。
+  function isRtl(): boolean {
+    if (!rootEl) return false;
+    return getComputedStyle(rootEl).direction === 'rtl';
+  }
+
   // 浮层 DOM 保活：首开后保留（仅 -hidden 切显隐），对齐 Semi Popover motion（无 destroyOnClose）。
   let hasBeenOpened = $state(false);
   $effect(() => {
@@ -1194,6 +1494,8 @@
     typeof emptyContent === 'string' ? emptyContent : loc().t('Cascader.emptyText'),
   );
   const isEmptySnippet = $derived(typeof emptyContent === 'function');
+  // 对齐 Semi item.tsx renderEmpty：`emptyContent === null` 时完全不渲染空态 UI（非兜底文案）。
+  const hideEmpty = $derived(emptyContent === null);
 
   // --- useDismiss (红线 #3): panel portal 出 root 子树后列入 extraTargets ---
   $effect(() => {
@@ -1207,25 +1509,31 @@
   });
 
   // 对齐 Semi 修饰类：single/multiple/filterable/focus(=open)/error/warning/borderless/with-prefix/with-suffix。
+  // triggerRender 时对齐 Semi renderSelection：useCustomTrigger 分支只用 cls(className)，
+  // 不带 cascader 默认视觉样式类（否则 300px 容器背景/边框会在自定义内容外露出多余色块）。
   const cls = $derived(
-    [
-      'cd-cascader',
-      size === 'small' && 'cd-cascader-small',
-      size === 'large' && 'cd-cascader-large',
-      validateStatus === 'error' && 'cd-cascader-error',
-      validateStatus === 'warning' && 'cd-cascader-warning',
-      disabled && 'cd-cascader-disabled',
-      isOpen && 'cd-cascader-focus',
-      multiple ? 'cd-cascader-multiple' : 'cd-cascader-single',
-      isFilterable && 'cd-cascader-filterable',
-      borderless && 'cd-cascader-borderless',
-      (prefix || insetLabel) && 'cd-cascader-with-prefix',
-      suffix && 'cd-cascader-with-suffix',
-      motion === false && 'cd-cascader-no-motion',
-      className,
-    ]
-      .filter(Boolean)
-      .join(' '),
+    triggerRender
+      ? [className].filter(Boolean).join(' ')
+      : [
+          'cd-cascader',
+          size === 'small' && 'cd-cascader-small',
+          size === 'large' && 'cd-cascader-large',
+          validateStatus === 'error' && 'cd-cascader-error',
+          validateStatus === 'warning' && 'cd-cascader-warning',
+          disabled && 'cd-cascader-disabled',
+          isOpen && 'cd-cascader-focus',
+          // 对齐 Semi renderSelection：根节点恒定加 `-single`（无论 multiple 与否，
+          // Semi 从未见 `-multiple` 类），非视觉修饰类，纯粹是历史命名遗留。
+          'cd-cascader-single',
+          isFilterable && 'cd-cascader-filterable',
+          borderless && 'cd-cascader-borderless',
+          (prefix || insetLabel) && 'cd-cascader-with-prefix',
+          suffix && 'cd-cascader-with-suffix',
+          motion === false && 'cd-cascader-no-motion',
+          className,
+        ]
+          .filter(Boolean)
+          .join(' '),
   );
 </script>
 
@@ -1250,10 +1558,9 @@
     {disabled}
     {validateStatus}
     value={searchValue}
-    placeholder={hasSelection ? '' : (searchPlaceholder ?? loc().t('Cascader.searchPlaceholder'))}
-    ariaLabel={ariaLabel}
+    aria-label={ariaLabel}
     role="combobox"
-    aria-haspopup="listbox"
+    aria-haspopup="menu"
     aria-expanded={isOpen}
     aria-controls={searchActive ? flatListId : listId}
     aria-activedescendant={activeDescId}
@@ -1268,20 +1575,30 @@
 {/snippet}
 
 <!-- searchTrigger：Semi renderInput 的 search-wrapper（span[displayText|placeholder] + searchInput）。 -->
-{#snippet searchTrigger(displayText: string)}
-  <div class="cd-cascader-search-wrapper">
+{#snippet searchTrigger(hasDisplay: boolean, content: Snippet)}
+  <div
+    class={[
+      'cd-cascader-search-wrapper',
+      size !== 'default' && `cd-cascader-search-wrapper-${size}`,
+    ].filter(Boolean).join(' ')}
+  >
     <span
       class={[
-        !displayText && 'cd-cascader-selection-placeholder',
-        displayText && 'cd-cascader-selection-text',
+        !hasDisplay && 'cd-cascader-selection-placeholder',
+        hasDisplay && 'cd-cascader-selection-text',
         showInput && searchValue && 'cd-cascader-selection-text-hide',
         showInput && !searchValue && 'cd-cascader-selection-text-inactive',
       ].filter(Boolean).join(' ')}
-    >{displayText ? displayText : (placeholder ?? '')}</span>
+    >{@render content()}</span>
     {#if showInput}
       {@render searchInput()}
     {/if}
   </div>
+{/snippet}
+
+{#snippet defaultDisplayContent()}{hasSelection ? defaultDisplayText : (searchPlaceholder ?? placeholder ?? '')}{/snippet}
+{#snippet customDisplayContent()}
+  {#if displayRenderSingle}{@render displayRenderSingle(selectedChainLabels)}{/if}
 {/snippet}
 
 <!-- svelte-ignore a11y_interactive_supports_focus -->
@@ -1290,23 +1607,23 @@
   class={cls}
   bind:this={rootEl}
   {style}
-  role={triggerRender || showBuiltinSearch ? undefined : 'combobox'}
-  aria-haspopup={triggerRender || showBuiltinSearch ? undefined : 'listbox'}
-  aria-expanded={triggerRender || showBuiltinSearch ? undefined : isOpen}
-  aria-controls={triggerRender || showBuiltinSearch ? undefined : listId}
+  role={showBuiltinSearch ? undefined : 'combobox'}
+  aria-haspopup={showBuiltinSearch ? undefined : 'menu'}
+  aria-expanded={showBuiltinSearch ? undefined : isOpen}
+  aria-controls={showBuiltinSearch ? undefined : listId}
   aria-activedescendant={!triggerRender && !showBuiltinSearch && isOpen && !searchActive ? activeDescId : undefined}
-  aria-label={triggerRender || showBuiltinSearch ? undefined : ariaLabel}
+  aria-label={showBuiltinSearch ? undefined : ariaLabel}
   aria-labelledby={ariaLabelledby}
   aria-describedby={ariaDescribedby}
   aria-errormessage={ariaErrormessage}
   aria-required={ariaRequired || undefined}
-  aria-invalid={!triggerRender && !showBuiltinSearch && validateStatus === 'error' ? true : undefined}
-  aria-disabled={!triggerRender && !showBuiltinSearch && disabled ? true : undefined}
-  tabindex={triggerRender || showBuiltinSearch ? undefined : (disabled ? -1 : 0)}
-  onclick={triggerRender ? undefined : toggleOpen}
-  onfocus={triggerRender ? undefined : (e) => onFocus?.(e as unknown as MouseEvent)}
-  onblur={triggerRender ? undefined : (e) => onBlur?.(e as unknown as MouseEvent)}
-  onkeydown={triggerRender || showBuiltinSearch ? undefined : (e) => {
+  aria-invalid={!showBuiltinSearch && validateStatus === 'error' ? true : undefined}
+  aria-disabled={!showBuiltinSearch && disabled ? true : undefined}
+  tabindex={showBuiltinSearch ? undefined : (disabled ? -1 : 0)}
+  onclick={toggleOpen}
+  onfocus={(e) => onFocus?.(e as unknown as MouseEvent)}
+  onblur={(e) => onBlur?.(e as unknown as MouseEvent)}
+  onkeydown={showBuiltinSearch ? undefined : (e) => {
     if (disabled) return;
     if (!isOpen) {
       if (e.key === 'Enter' || e.key === ' ' || e.key === 'ArrowDown') {
@@ -1320,10 +1637,27 @@
   }}
 >
   {#if triggerRender}
-    {@render triggerRender({ value, placeholder: placeholder ?? '', isOpen, disabled })}
+    {@render triggerRender({
+      value: multiple
+        ? new Set(checkedLeafPaths.map((leaf) => posOf(leaf.path)).filter((p) => p !== undefined))
+        : posOf(currentValue),
+      placeholder: placeholder ?? '',
+      isOpen,
+      disabled,
+      inputValue: searchValue,
+      onSearch: (v: string) => (searchValue = v),
+      onClear: (e?: MouseEvent) => clearAll(e ?? new MouseEvent('click')),
+      onRemove: (pos: string) => {
+        const valuePath = valuePathOfPos(pos);
+        if (valuePath.length > 0) removeLeaf(valuePath[valuePath.length - 1] as Key);
+      },
+    })}
   {:else}
     {#if prefix || insetLabel}
-      <div class="cd-cascader-prefix" aria-hidden="true">
+      <div
+        class={['cd-cascader-prefix', prefix && typeof prefix !== 'string' && 'cd-cascader-prefix-icon'].filter(Boolean).join(' ')}
+        aria-hidden="true"
+      >
         {#if prefix}
           {#if typeof prefix === 'string'}
             <span class="cd-cascader-prefix-text">{prefix}</span>
@@ -1347,9 +1681,10 @@
           搜索输入内建在 TagInput（Semi 同构，无独立搜索 Input）；不可搜索时 TagInput 输入框仅占位不生效。
         -->
         <TagInput
+          class="cd-cascader-tagInput-wrapper"
           {disabled}
           size={size === 'large' ? 'large' : size === 'small' ? 'small' : 'default'}
-          {validateStatus}
+          validateStatus={validateStatus === 'success' ? 'default' : validateStatus}
           value={tagInputValue}
           {showRestTagsPopover}
           expandRestTagsOnClick={false}
@@ -1360,23 +1695,32 @@
             if (leaf) removeLeaf(leaf.path[leaf.path.length - 1] as Key);
           }}
           placeholder={hasSelection ? '' : (placeholder ?? '')}
-          ariaLabel={ariaLabel}
+          aria-label={ariaLabel}
         >
-          {#snippet renderTagItem({ value: nodeKey, onClose })}
+          {#snippet renderTagItem({ value: nodeKey, index: idx, onClose })}
             {@const leaf = tagKeyToLeaf.get(nodeKey)}
+            {@const leafNodeDisabled = !!leaf?.nodes[leaf.nodes.length - 1]?.disabled}
+            {@const isTagDisabled = disabled || leafNodeDisabled}
             {#if leaf}
               <Tag
-                class="cd-cascader-selection-tag"
+                class={['cd-cascader-selection-tag', isTagDisabled && 'cd-cascader-selection-tag-disabled'].filter(Boolean).join(' ')}
                 size={size === 'large' ? 'large' : 'small'}
                 color="white"
                 type="light"
-                closable={!disabled}
+                closable={!isTagDisabled}
                 onClose={(_children, e) => {
                   e.preventDefault();
                   onClose();
                 }}
               >
-                {renderPath(leaf.labels, leaf.nodes)}
+                {#if displayRenderTag}
+                  {@const entity = entityOfLeaf(leaf)}
+                  {#if entity}
+                    {@render displayRenderTag(entity, idx)}
+                  {/if}
+                {:else}
+                  {tagLabelOf(leaf.labels, leaf.nodes)}
+                {/if}
               </Tag>
             {/if}
           {/snippet}
@@ -1384,16 +1728,27 @@
       {:else if showBuiltinSearch}
         <!-- 单选 + 内置可搜索：displayText/placeholder span + showInput 时的搜索 Input
              （对齐 Semi renderInput：search-wrapper > span + <Input>，非浮层顶部裸 input）。 -->
-        {@render searchTrigger(hasSelection ? displayLabel : '')}
+        {#if hasSelection && displayRenderSingle}
+          {@render searchTrigger(true, customDisplayContent)}
+        {:else}
+          {@render searchTrigger(hasSelection, defaultDisplayContent)}
+        {/if}
       {:else if hasSelection}
-        <span class="cd-cascader-selection-text">{displayLabel}</span>
+        {#if displayRenderSingle}
+          <span class="cd-cascader-selection-text">{@render displayRenderSingle(selectedChainLabels)}</span>
+        {:else}
+          <span class="cd-cascader-selection-text">{defaultDisplayText}</span>
+        {/if}
       {:else}
         <span class="cd-cascader-selection-placeholder">{placeholder ?? ''}</span>
       {/if}
     </div>
 
     {#if suffix}
-      <div class="cd-cascader-suffix" aria-hidden="true">
+      <div
+        class={['cd-cascader-suffix', typeof suffix !== 'string' && 'cd-cascader-suffix-icon'].filter(Boolean).join(' ')}
+        aria-hidden="true"
+      >
         {#if typeof suffix === 'string'}
           <span class="cd-cascader-suffix-text">{suffix}</span>
         {:else}{@render (suffix as Snippet)()}{/if}
@@ -1449,146 +1804,57 @@
     >
       {#if topSlot}{@render topSlot()}{/if}
 
-      {#if searchActive}
-        <!-- 单条搜索结果项：virtualize 与非 virtualize 两路共用同一渲染，行为一致 -->
-        {#snippet flatOption(p: FlatPath, fi: number)}
-          <!-- 键盘经搜索框 aria-activedescendant 漫游管理，选项 tabindex=-1 click-only -->
-          <!-- svelte-ignore a11y_click_events_have_key_events -->
-          <li
-            id={flatItemId(p.values)}
-            class="cd-cascader-option cd-cascader-option-flatten"
-            class:cd-cascader-option-active={kbFlatIndex === fi}
-            role="option"
-            aria-selected={kbFlatIndex === fi}
-            aria-disabled={p.disabled || undefined}
-            onclick={() => selectFlatPath(p)}
-            tabindex={-1}
-          >
-            {#if filterRender}
-              {@render filterRender({ path: p })}
-            {:else}
-              <span class="cd-cascader-option-label">
-                {#each highlightParts(p.labels.join(separator)) as part, i (i)}
-                  {#if part.mark}<span class="cd-cascader-option-label-highlight">{part.text}</span>{:else}{part.text}{/if}
-                {/each}
-              </span>
-            {/if}
-          </li>
-        {/snippet}
-        {#if virtualizeInSearch && filteredPaths.length > 0}
-          <!-- 搜索结果虚拟滚动：仅在传入 virtualizeInSearch 且有命中时启用 -->
-          <div
-            class="cd-cascader-option-lists cd-cascader-flatten"
-            role="listbox"
-            id={flatListId}
-            aria-label={loc().t('Cascader.searchResults')}
-            style:inline-size="{virtualizeInSearch.width}px"
-          >
-            <VirtualList
-              data={filteredPaths}
-              getKey={(p: FlatPath) => p.values.join('/')}
-              itemSize={virtualizeInSearch.itemSize}
-              height={virtualizeInSearch.height}
-            >
-              {#snippet renderItem(p: FlatPath, fi: number)}
-                {@render flatOption(p, fi)}
-              {/snippet}
-            </VirtualList>
-          </div>
-        {:else}
-          <ul
-            class="cd-cascader-option-lists cd-cascader-flatten"
-            role="listbox"
-            id={flatListId}
-            aria-label={loc().t('Cascader.searchResults')}
-          >
-            {#if filteredPaths.length === 0}
-              {#if isEmptySnippet}
-                <li class="cd-cascader-option-empty">{@render (emptyContent as Snippet)()}</li>
-              {:else}
-                <li class="cd-cascader-option-empty">{emptyText}</li>
-              {/if}
-            {:else}
-              {#each filteredPaths as p, fi (p.values.join('/'))}
-                {@render flatOption(p, fi)}
-              {/each}
-            {/if}
-          </ul>
-        {/if}
-      {:else}
-      <div class="cd-cascader-option-lists">
-      {#each columns as column, colIndex (colIndex)}
-        <ul
-          class="cd-cascader-option-list"
-          role="listbox"
-          aria-label={loc().t('Cascader.columnLabel', { level: colIndex + 1 })}
-          onscroll={(e) => onListScroll?.(e, {
+      <Item
+        {searchActive}
+        {disabled}
+        {columns}
+        {filteredPaths}
+        {multiple}
+        {searchValue}
+        {currentValue}
+        {separator}
+        {emptyText}
+        emptySnippet={isEmptySnippet ? (emptyContent as Snippet) : undefined}
+        {hideEmpty}
+        {virtualizeInSearch}
+        {filterRender}
+        {expandIcon}
+        {listId}
+        {flatListId}
+        columnLabel={(level) => loc().t('Cascader.columnLabel', { level })}
+        searchResultsLabel={loc().t('Cascader.searchResults')}
+        loadingLabel={loc().t('Cascader.loading')}
+        {colItemId}
+        {flatItemId}
+        columnParentId={(colIndex) =>
+          colIndex > 0 && activePath[colIndex - 1] !== undefined
+            ? colItemId(colIndex - 1, activePath[colIndex - 1] as Key)
+            : undefined}
+        {highlightPathParts}
+        {isActiveAt}
+        {isKbActive}
+        {isSelectedLeaf}
+        isFlatActive={(fi) => kbFlatIndex === fi}
+        {canExpand}
+        {isLoading}
+        {nodeCheck}
+        checkStatusOfLeaf={(leaf) => ({
+          checked: checkState.checked.has(leaf),
+          halfChecked: checkState.half.has(leaf),
+        })}
+        isFlatSelected={(p) =>
+          !multiple && currentValue.length === p.values.length && currentValue.every((v, i) => v === p.values[i])}
+        onSelectNode={selectNode}
+        onToggleCheckNode={toggleCheckNode}
+        onHoverExpand={scheduleHoverExpand}
+        onHoverLeave={scheduleHoverLeave}
+        onSelectFlatPath={selectFlatPath}
+        onListScroll={(e, colIndex) =>
+          onListScroll?.(e, {
             panelIndex: colIndex,
             activeNode: columns[colIndex]?.find((n) => isActiveAt(colIndex, n)) ?? null,
           })}
-        >
-          {#if column.length === 0}
-            {#if isEmptySnippet}
-              <li class="cd-cascader-option-empty">{@render (emptyContent as Snippet)()}</li>
-            {:else}
-              <li class="cd-cascader-option-empty">{emptyText}</li>
-            {/if}
-          {/if}
-          {#each column as node (node.value)}
-            {@const cs = multiple ? nodeCheck(node) : { checked: false, half: false }}
-            <!-- 键盘经触发器 aria-activedescendant 漫游管理，选项 tabindex=-1 click-only -->
-            <!-- svelte-ignore a11y_click_events_have_key_events -->
-            <li
-              id={colItemId(colIndex, node.value)}
-              class="cd-cascader-option"
-              class:cd-cascader-option-active={isActiveAt(colIndex, node)}
-              class:cd-cascader-option-kbactive={isKbActive(colIndex, node)}
-              class:cd-cascader-option-select={isSelectedLeaf(colIndex, node)}
-              class:cd-cascader-option-disabled={node.disabled}
-              role="option"
-              aria-selected={isActiveAt(colIndex, node)}
-              aria-disabled={node.disabled || undefined}
-              onclick={() => selectNode(colIndex, node)}
-              onpointerenter={() => scheduleHoverExpand(colIndex, node)}
-              onpointerleave={scheduleHoverLeave}
-              tabindex={-1}
-            >
-              <span class="cd-cascader-option-label">
-                {#if multiple}
-                  <!-- 复用已对齐的 Checkbox：勾选由其 onChange 驱动 toggleCheckNode；
-                       stopPropagation 阻止冒泡到 li（否则 selectNode 会二次触发）。 -->
-                  <!-- svelte-ignore a11y_no_static_element_interactions -->
-                  <!-- svelte-ignore a11y_click_events_have_key_events -->
-                  <span
-                    class="cd-cascader-option-label-checkbox"
-                    onclick={(e) => e.stopPropagation()}
-                  >
-                    <Checkbox
-                      checked={cs.checked}
-                      indeterminate={cs.half}
-                      disabled={node.disabled || disabled}
-                      ariaLabel={node.label}
-                      onChange={() => toggleCheckNode(node, colIndex)}
-                    />
-                  </span>
-                {/if}
-                {node.label}
-              </span>
-              {#if isLoading(node)}
-                <span class="cd-cascader-option-icon cd-cascader-option-spin-icon" aria-label={loc().t('Cascader.loading')}>
-                  <IconSpin aria-hidden="true" />
-                </span>
-              {:else if canExpand(node)}
-                <span class="cd-cascader-option-icon" aria-hidden="true">
-                  {#if expandIcon}{@render expandIcon()}{:else}<IconChevronRight aria-hidden="true" />{/if}
-                </span>
-              {/if}
-            </li>
-          {/each}
-        </ul>
-      {/each}
-      </div>
-      {/if}
+      />
 
       {#if bottomSlot}{@render bottomSlot()}{/if}
     </div>
@@ -1601,8 +1867,9 @@
     position: relative;
     display: inline-flex;
     align-items: center;
-    inline-size: 100%;
-    min-block-size: var(--cd-select-height-default);
+    width: 100%;
+    min-width: var(--cd-width-cascader-trigger-min);
+    min-height: var(--cd-select-height-default);
     box-sizing: border-box;
     font-size: var(--cd-select-font-size);
     background: var(--cd-select-bg);
@@ -1614,10 +1881,10 @@
       background-color var(--cd-motion-duration-fast) var(--cd-motion-ease-standard);
   }
   .cd-cascader-small {
-    min-block-size: var(--cd-select-height-small);
+    min-height: var(--cd-select-height-small);
   }
   .cd-cascader-large {
-    min-block-size: var(--cd-select-height-large);
+    min-height: var(--cd-select-height-large);
   }
   /* 对齐 Semi 填充式：悬浮加深底色（非展开/禁用态） */
   .cd-cascader:not(.cd-cascader-focus):not(.cd-cascader-disabled):hover {
@@ -1633,8 +1900,29 @@
     background: var(--cd-select-bg);
     border-color: var(--cd-select-border-active);
   }
+  .cd-cascader-warning {
+    background: var(--cd-color-cascader-warning-bg-default);
+    border-color: var(--cd-color-cascader-warning-border-default);
+  }
+  .cd-cascader-warning:not(.cd-cascader-focus):not(.cd-cascader-disabled):hover {
+    background: var(--cd-color-cascader-warning-bg-hover);
+    border-color: var(--cd-color-cascader-warning-border-hover);
+  }
+  .cd-cascader-warning.cd-cascader-focus {
+    background: var(--cd-color-cascader-warning-bg-focus);
+    border-color: var(--cd-color-cascader-warning-border-focus);
+  }
   .cd-cascader-error {
-    border-color: var(--cd-select-border-error);
+    background: var(--cd-color-cascader-danger-bg-default);
+    border-color: var(--cd-color-cascader-danger-border-default);
+  }
+  .cd-cascader-error:not(.cd-cascader-focus):not(.cd-cascader-disabled):hover {
+    background: var(--cd-color-cascader-danger-bg-hover);
+    border-color: var(--cd-color-cascader-danger-border-hover);
+  }
+  .cd-cascader-error.cd-cascader-focus {
+    background: var(--cd-color-cascader-danger-bg-focus);
+    border-color: var(--cd-color-cascader-danger-border-focus);
   }
   .cd-cascader-disabled {
     background: var(--cd-color-disabled-fill, var(--cd-color-fill-0));
@@ -1642,16 +1930,42 @@
     cursor: not-allowed;
     user-select: none;
   }
+  /* 对齐 Semi `.cascader-input-disabled .cascader-arrow { color: $color-cascader_input_disabled-icon-default }`
+     （与文字同一 disabled token，非默认态 icon 色）：箭头/清除按钮有自己的
+     .cd-cascader-arrow/-clearbtn 规则（下方，源码顺序更晚）会覆盖掉这里的
+     color，禁用态箭头因此停在默认态的 62% 不透明度，比 35% 的禁用文字更深，
+     需要单独声明覆盖。 */
+  .cd-cascader-disabled .cd-cascader-arrow,
+  .cd-cascader-disabled .cd-cascader-clearbtn {
+    color: var(--cd-color-text-3);
+  }
+  /* 对齐 Semi `.cascader-disabled .cascader-selection, .cascader-selection-placeholder,
+     .cascader-prefix, .cascader-suffix { color: $color-cascader_input_disabled-text-default }`：
+     .cd-cascader-selection-placeholder 有自己的占位符态 color 声明（见下方），特异性/
+     源码顺序都会覆盖掉从 .cd-cascader-disabled 继承来的禁用色，必须显式覆盖。 */
+  .cd-cascader-disabled .cd-cascader-selection-placeholder,
+  .cd-cascader-disabled .cd-cascader-selection-text,
+  .cd-cascader-disabled .cd-cascader-prefix,
+  .cd-cascader-disabled .cd-cascader-suffix {
+    color: var(--cd-color-text-3);
+  }
   /* 选中值 / 占位 / tags 容器 */
   .cd-cascader-selection {
+    /* height:100%（对齐 Semi .cascader-selection）：.cd-cascader 是 flex 容器且有确定的
+       渲染高度（min-height + line-height + align-items:center），flex item 的 height:100%
+       在此链路上相对"flex 容器计算后的实际盒高"解析，不是相对 height 属性字面值——
+       这一层补上后，子级 .cascader-search-wrapper 才能继续用 height:100% 往下传递
+       （不需要另建固定像素 token 绕过，那样会跟 Semi 的机制本身不一致）。 */
+    height: 100%;
     display: inline-flex;
     flex: 1 1 auto;
     align-items: center;
     flex-wrap: wrap;
     gap: var(--cd-spacing-extra-tight);
-    min-inline-size: 0;
+    min-width: 0;
     overflow: hidden;
-    padding-inline: var(--cd-select-padding-x);
+    padding-left: var(--cd-select-padding-x);
+    padding-right: var(--cd-select-padding-x);
     color: var(--cd-color-cascader-selection-text-default);
   }
   .cd-cascader-selection-text {
@@ -1667,14 +1981,41 @@
   }
   /* 多选：TagInput 撑满选择区且去除外层内边距（TagInput 自带内边距 + tag 折叠/+N/搜索）。 */
   .cd-cascader-selection-multiple {
-    padding-inline: 0;
+    padding-left: 0;
+    padding-right: 0;
     overflow: visible;
   }
   .cd-cascader-selection-multiple :global(.cd-tag-input) {
-    inline-size: 100%;
-    min-block-size: auto;
+    width: 100%;
     border: none;
     background: transparent;
+  }
+  /* TagInput wrapper 精细化覆盖（对齐 Semi .cascader-tagInput-wrapper + .semi-tagInput 三档
+     min-height：22/30/38px，与触发器搜索框高度同一套数值，非任意值）。 */
+  :global(.cd-cascader-tagInput-wrapper) {
+    min-height: var(--cd-height-cascader-selection-search-wrapper);
+    margin-left: calc(-1 * var(--cd-spacing-extra-tight));
+  }
+  :global(.cd-cascader-tagInput-wrapper.cd-tag-input-small) {
+    min-height: var(--cd-height-cascader-selection-search-wrapper-small);
+  }
+  :global(.cd-cascader-tagInput-wrapper.cd-tag-input-large) {
+    min-height: var(--cd-height-cascader-selection-search-wrapper-large);
+  }
+  /* 节点自身 disabled 的 tag：置灰 + 不可关闭（对齐 Semi &-tag-disabled.#{$prefix}-tag 复合选择器，
+     节点级禁用，独立于组件级 disabled；组件级 disabled 走既有 .cd-cascader-disabled 分支）。
+     复合选择器（.cd-cascader-selection-tag-disabled.cd-tag）而非单类——Tag 自身 color=white
+     变体也是单类选择器 .cd-tag-white-light，同特异性下source order 不可靠，需复合类拿高特异性
+     确定性覆盖，同构 Semi 的 &-tag-disabled.#{$prefix}-tag 写法。 */
+  :global(.cd-cascader-selection-tag-disabled.cd-tag) {
+    color: var(--cd-color-text-3);
+    background-color: var(--cd-color-cascader-tag-disabled-bg-default);
+    cursor: not-allowed;
+  }
+  :global(.cd-cascader-selection-tag-disabled.cd-tag) :global(.cd-tag-close) {
+    color: var(--cd-color-text-3);
+    cursor: not-allowed;
+    pointer-events: none;
   }
   .cd-cascader-clearbtn,
   .cd-cascader-arrow {
@@ -1682,7 +2023,7 @@
     align-items: center;
     justify-content: center;
     flex: 0 0 auto;
-    inline-size: var(--cd-width-cascader-icon, 32px);
+    width: var(--cd-width-cascader-icon);
     color: var(--cd-color-cascader-icon-default);
   }
   .cd-cascader-clearbtn {
@@ -1714,22 +2055,27 @@
   .cd-cascader-popover-hidden {
     display: none;
   }
-  /* 触发器内搜索段（对齐 Semi renderInput 的 search-wrapper）：占满选择区，
-     span 与 <Input> 层叠占位。Input 无边框透明底，融入触发器（借用 Input borderless）。 */
+  /* 触发器内搜索段（对齐 Semi .cascader-single.cascader-filterable .cascader-search-wrapper）：
+     占满选择区，<Input> 绝对定位铺满容器（top:0 left:0 width:100% height:100%），
+     span 走正常流——Input 背景透明，span 文字透过其下方显示；点击后光标落在 Input
+     内、与 span 视觉对齐一致（不是反过来让 span 盖住 Input）。
+     高度用固定像素（对齐 Semi $height-cascader_selection_wrapper/-small/-large：30/22/38px，
+     独立字面量非引用其他 scale）——这一层本身不是 height:100%，是 Semi 显式指定的固定值；
+     .cd-cascader-search-input（Input 组件 wrapper）才用 height:100% 继承这里的固定像素。 */
   .cd-cascader-search-wrapper {
     position: relative;
-    display: inline-flex;
+    display: flex;
     align-items: center;
     flex: 1 1 auto;
-    min-inline-size: 0;
+    min-width: 0;
+    width: 100%;
+    height: var(--cd-height-cascader-selection-search-wrapper);
   }
-  /* showInput 时 span 与 <Input> 层叠（span 绝对定位于输入框上层作占位）；
-     未 showInput（关闭态）时 span 留在正常流中撑起 wrapper 高度，避免塌陷不可见。 */
-  .cd-cascader-search-wrapper:has(.cd-cascader-search-input) .cd-cascader-selection-placeholder,
-  .cd-cascader-search-wrapper:has(.cd-cascader-search-input) .cd-cascader-selection-text {
-    position: absolute;
-    inset-inline: 0;
-    pointer-events: none;
+  .cd-cascader-search-wrapper-small {
+    height: var(--cd-height-cascader-selection-search-wrapper-small);
+  }
+  .cd-cascader-search-wrapper-large {
+    height: var(--cd-height-cascader-selection-search-wrapper-large);
   }
   /* showInput 且有输入：隐藏底层 displayText（改由 Input 显示输入值）。 */
   .cd-cascader-selection-text-hide {
@@ -1739,126 +2085,33 @@
   .cd-cascader-selection-text-inactive {
     color: var(--cd-color-cascader-placeholder-text-default);
   }
-  /* 触发器内搜索 Input：撑满、透明融入触发器（borderless 已去边框底色）。 */
+  /* 触发器内搜索 Input：绝对定位铺满 search-wrapper（对齐 Semi .semi-input-wrapper），
+     透明融入触发器（borderless 已去边框底色，聚焦态透明由 Input 组件自身
+     .cd-input-borderless:focus-within 规则保证，见 Input.svelte）。 */
   .cd-cascader-search-wrapper :global(.cd-cascader-search-input) {
-    inline-size: 100%;
-    background: transparent;
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    background-color: var(--cd-color-cascader-input-bg-default);
+    border: var(--cd-color-cascader-input-border-default);
   }
-  /* 各级菜单列容器：横向排列 */
-  .cd-cascader-option-lists {
-    display: flex;
-    margin: 0;
-    padding: 0;
-    max-block-size: 16rem;
+  /* 对齐 Semi .cascader-search-wrapper .semi-input { padding-left: 0; padding-right: 0; }：
+     原生 input 自身内边距归零——外层 .cascader-selection 已有左右 padding，Input 组件
+     默认再叠一层 padding 会让光标/文字比 span 占位符整体偏右一个 padding 的距离。 */
+  .cd-cascader-search-wrapper :global(.cd-cascader-search-input .cd-input) {
+    padding-left: 0;
+    padding-right: 0;
   }
-  /* 搜索结果扁平列表：单列纵向滚动 */
-  .cd-cascader-option-lists.cd-cascader-flatten {
-    display: block;
-    padding-block: var(--cd-spacing-extra-tight);
-    list-style: none;
-    min-inline-size: var(--cd-cascader-column-width);
-    overflow-y: auto;
-  }
-  .cd-cascader-option-list {
-    box-sizing: border-box;
-    margin: 0;
-    padding-block: var(--cd-spacing-extra-tight);
-    padding-inline: 0;
-    list-style: none;
-    overflow-y: auto;
-    inline-size: var(--cd-cascader-column-width);
-    border-inline-start: 1px solid var(--cd-cascader-column-border);
-  }
-  .cd-cascader-option-list:first-child {
-    border-inline-start: none;
-  }
-  .cd-cascader-option-empty {
-    padding: var(--cd-tree-node-padding-x);
-    color: var(--cd-color-cascader-option-empty-text-default);
-    text-align: center;
-    cursor: not-allowed;
-  }
-  .cd-cascader-option {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: var(--cd-spacing-tight);
-    block-size: var(--cd-tree-node-height);
-    padding-inline: var(--cd-tree-node-padding-x);
-    color: var(--cd-color-cascader-option-main-text-default);
-    cursor: pointer;
-    transition: background-color var(--cd-motion-duration-fast) var(--cd-motion-ease-standard);
-  }
-  .cd-cascader-option:hover {
-    background: var(--cd-color-cascader-option-bg-hover);
-  }
-  .cd-cascader-option:active {
-    background: var(--cd-color-cascader-option-bg-active);
-  }
-  /* 命中项（当前路径 active）：primary-light 底色，对齐 Semi option-bg-selected */
-  .cd-cascader-option-active,
-  .cd-cascader-option-active:hover {
-    background: var(--cd-color-cascader-option-bg-selected);
-  }
-  /* 键盘 roving 高亮（aria-activedescendant 当前项），焦点环不依赖真实 DOM 焦点 */
-  .cd-cascader-option-kbactive {
-    box-shadow: var(--cd-focus-ring);
-  }
-  /* 选中叶子 / 搜索命中高亮文字：字重加粗 + primary 色 */
-  .cd-cascader-option-select .cd-cascader-option-label,
-  .cd-cascader-option-label-highlight {
-    font-weight: var(--cd-font-cascader-select-fontweight);
-    color: var(--cd-color-cascader-select-highlight);
-  }
-  .cd-cascader-option:focus-visible {
-    outline: none;
-    box-shadow: var(--cd-focus-ring);
-  }
-  .cd-cascader-option-disabled {
-    color: var(--cd-color-cascader-option-disabled-text-default);
-    cursor: not-allowed;
-  }
-  .cd-cascader-option-disabled:hover,
-  .cd-cascader-option-disabled:active {
-    background: transparent;
-  }
-  .cd-cascader-option-disabled .cd-cascader-option-label {
-    color: var(--cd-color-cascader-option-disabled-text-default);
-  }
-  .cd-cascader-option-label {
-    display: flex;
-    align-items: center;
-    min-inline-size: 0;
-    overflow: hidden;
-    white-space: nowrap;
-    text-overflow: ellipsis;
-    flex: 1 1 auto;
-  }
-  .cd-cascader-option-label-checkbox {
-    display: inline-flex;
-    align-items: center;
-    flex: 0 0 auto;
-    margin-inline-end: var(--cd-spacing-tight);
-  }
-  .cd-cascader-option-icon {
-    display: inline-flex;
-    align-items: center;
-    flex: 0 0 auto;
-    inline-size: var(--cd-width-cascader-option-icon, 16px);
-    color: var(--cd-color-cascader-option-icon-default);
-  }
-  .cd-cascader-option-spin-icon :global(svg) {
-    animation: cd-cascader-spin 0.7s linear infinite;
-  }
-  @keyframes cd-cascader-spin {
-    to {
-      transform: rotate(360deg);
-    }
+  /* 对齐 Semi .semi-input-wrapper-focus { border: $color-cascader_input-border-default }
+     （值为 none）：聚焦态也不显示 Input 自身边框——触发器的聚焦视觉完全由外层
+     .cd-cascader-focus 承担，避免 Input 通用聚焦描边（:focus-within）在此处叠加出
+     多余的内层描边框。!important 是因为 Input 组件自身
+     `.cd-input-wrapper:not(...):not(...):focus-within` 选择器特异性更高，普通覆盖不掉。 */
+  .cd-cascader-search-wrapper :global(.cd-cascader-search-input:focus-within) {
+    border: none !important;
   }
   @media (prefers-reduced-motion: reduce) {
-    .cd-cascader-option-spin-icon :global(svg) {
-      animation: none;
-    }
     .cd-cascader,
     .cd-cascader-arrow {
       transition: none;
@@ -1875,6 +2128,15 @@
   .cd-cascader-borderless:focus-within:not(:active) {
     background: transparent;
   }
+  /* borderless + warning/error：边框始终显色（对齐 Semi，不随 borderless 透明规则隐藏）。 */
+  .cd-cascader-borderless.cd-cascader-error:not(:focus-within),
+  .cd-cascader-borderless.cd-cascader-error:focus-within {
+    border-color: var(--cd-color-cascader-danger-border-focus);
+  }
+  .cd-cascader-borderless.cd-cascader-warning:not(:focus-within),
+  .cd-cascader-borderless.cd-cascader-warning:focus-within {
+    border-color: var(--cd-color-cascader-warning-border-focus);
+  }
   .cd-cascader-no-motion,
   .cd-cascader-no-motion .cd-cascader-arrow {
     transition: none;
@@ -1889,15 +2151,23 @@
   }
   .cd-cascader-prefix-text,
   .cd-cascader-suffix-text {
-    margin-inline: var(--cd-spacing-base-tight);
+    margin-left: var(--cd-spacing-base-tight);
+    margin-right: var(--cd-spacing-base-tight);
     font-weight: var(--cd-font-cascader-label-fontweight);
     color: var(--cd-color-cascader-prefix-suffix-text-default);
   }
+  /* 图标型 prefix/suffix：margin 比文字型窄（对齐 Semi $spacing-cascader_icon-marginX 4px vs
+     文字型 $spacing-cascader_text-marginX 8px，isSemiIcon 判断落到 Svelte 侧简化为「非字符串」）。 */
+  .cd-cascader-prefix-icon,
+  .cd-cascader-suffix-icon {
+    margin-left: var(--cd-spacing-tight);
+    margin-right: var(--cd-spacing-tight);
+  }
   .cd-cascader-with-prefix .cd-cascader-selection {
-    padding-inline-start: 0;
+    padding-left: 0;
   }
   .cd-cascader-with-suffix .cd-cascader-selection {
-    padding-inline-end: 0;
+    padding-right: 0;
   }
   /* insetLabel：值前内嵌标签，消费 cascader label token */
   .cd-cascader-inset-label {
@@ -1905,8 +2175,33 @@
     align-items: center;
     flex: 0 0 auto;
     white-space: nowrap;
-    margin-inline: var(--cd-spacing-base-tight);
+    margin-left: var(--cd-spacing-base-tight);
+    margin-right: var(--cd-spacing-base-tight);
     color: var(--cd-color-cascader-label-text-default);
     font-weight: var(--cd-font-cascader-label-fontweight);
   }
+
+  /* —— RTL（对齐 Semi cascader/rtl.scss，`.semi-rtl .semi-cascader { direction: rtl }` 作用域下
+     手写镜像覆盖物理属性）。本库 RTL 触发机制是 `:global(.cd-rtl) .cd-<comp>`（非 [dir=rtl]/:dir()，
+     ConfigProvider 只挂 class 不设 dir 属性，见 scripts/check-rtl-scope.mjs）。 */
+  :global(.cd-rtl) .cd-cascader {
+    direction: rtl;
+  }
+  /* with-prefix / with-suffix：LTR 零右侧改零左侧（Semi rtl.scss L9-21，
+     `padding-left: auto` 在 Semi 源里本是无效值，此处只镜像其唯一生效效果 padding-*:0）。 */
+  :global(.cd-rtl) .cd-cascader-with-prefix .cd-cascader-selection {
+    padding-left: var(--cd-select-padding-x);
+    padding-right: 0;
+  }
+  :global(.cd-rtl) .cd-cascader-with-suffix .cd-cascader-selection {
+    padding-right: var(--cd-select-padding-x);
+    padding-left: 0;
+  }
+  /* 多选 padding 左右对调（Semi rtl.scss L23-27，两侧本对称故效果等同 LTR，仍逐条镜像保持结构一致）。 */
+  :global(.cd-rtl) .cd-cascader-selection-multiple {
+    padding-right: 0;
+    padding-left: 0;
+  }
+  /* .cd-cascader-option* 的 RTL 镜像（checkbox 边距 / 列分割线 / flatten padding / 展开图标翻转）
+     随面板内容一起挪到 Item.svelte（Semi rtl.scss L58-104 对应段落），职责归属跟随渲染归属。 */
 </style>

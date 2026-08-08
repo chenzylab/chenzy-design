@@ -3,6 +3,7 @@
   1:1 对齐 Semi avatar/index.tsx（结构、类名、行为、slot/border/contentMotion 均对齐）。
 -->
 <script lang="ts">
+  import { resolveDefault } from '@chenzy-design/core';
   import type { Snippet } from 'svelte';
   import { untrack } from 'svelte';
   import TopSlotSvg from './TopSlotSvg.svelte';
@@ -69,10 +70,10 @@
     alt,
     shape: shapeProp,
     size: sizeProp,
-    color = 'grey',
+    color: colorProp,
     border = false,
     contentMotion = false,
-    gap = 3,
+    gap: gapProp,
     hoverMask,
     topSlot,
     bottomSlot,
@@ -85,11 +86,29 @@
     style: styleProp,
     children,
   }: Props = $props();
+  // cdGlobal 全局默认 props（对齐 Semi semiGlobal.config.overrideDefaultProps）：
+  // 优先级 = 显式传值 > cdGlobal['Avatar'] > 组件内置默认值。
+  const color = $derived(resolveDefault(colorProp, 'Avatar', 'color', 'grey'));
+  const gap = $derived(resolveDefault(gapProp, 'Avatar', 'gap', 3));
 
   // 组级 size/shape 强制覆盖子（对齐 Semi cloneElement({size, shape})）。
   const group = getAvatarGroupContext();
   const shape = $derived(group?.getShape() ?? shapeProp ?? 'circle');
   const size = $derived(group?.getSize() ?? sizeProp ?? 'medium');
+
+  // ---------- 组合式折叠：向 AvatarGroup 注册自身序号（对齐 Semi React.Children 切片）----------
+  // 组开启 maxCount 时，序号 >= maxCount 的成员自身不渲染，由组统一渲染「+N」溢出头像。
+  // 声明时读取一次即可（成员顺序在挂载期固定），故静态读取 alt。
+  // children 是 Snippet 无法取文本，溢出头像的无障碍文案以 alt 为准（对齐 Semi finalAlt 取 alt）。
+  // 组自身渲染的「+N」溢出头像（class 含 cd-avatar-item-more）不参与注册，否则污染成员计数。
+  // svelte-ignore state_referenced_locally
+  const isMoreAvatar = (className ?? '').includes('cd-avatar-item-more');
+  // svelte-ignore state_referenced_locally
+  const groupIndex =
+    group?.register && !isMoreAvatar ? group.register(alt !== undefined ? { alt } : {}) : -1;
+  const collapsedByGroup = $derived(
+    groupIndex >= 0 && !!group?.isCollapsing?.() && !!group?.isHidden?.(groupIndex),
+  );
 
   // 图片加载失败 → 降级文字/children。
   let imgExist = $state(true);
@@ -345,7 +364,9 @@
   {/if}
 {/snippet}
 
-{#if isWrap}
+{#if collapsedByGroup}
+  <!-- 被 AvatarGroup 的 maxCount 折叠：不渲染（由组渲染「+N」），对齐 Semi children.slice。 -->
+{:else if isWrap}
   <!-- Slot/border 包裹层：事件挂 wrapper（对齐 Semi shouldWrap 分支） -->
   <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
   <span
@@ -877,16 +898,16 @@
   }
 
   /* ============ RTL（1:1 对齐 Semi avatar/rtl.scss）============ */
-  :global([dir='rtl']) .cd-avatar {
+  :global(.cd-rtl) .cd-avatar {
     direction: rtl;
   }
   /* 小档 content 在 RTL 下仍保持 scale(0.8)（对齐 Semi，避免 direction 影响缩放表现） */
-  :global([dir='rtl']) .cd-avatar-extra-extra-small .cd-avatar-content,
-  :global([dir='rtl']) .cd-avatar-extra-small .cd-avatar-content {
+  :global(.cd-rtl) .cd-avatar-extra-extra-small .cd-avatar-content,
+  :global(.cd-rtl) .cd-avatar-extra-small .cd-avatar-content {
     transform: scale(0.8);
   }
   /* hover 遮罩镜像 */
-  :global([dir='rtl']) .cd-avatar-hover {
+  :global(.cd-rtl) .cd-avatar-hover {
     left: auto;
     right: 0;
   }

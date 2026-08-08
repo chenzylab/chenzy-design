@@ -17,24 +17,24 @@
 {#snippet caret()}<IconTreeTriangleDown />{/snippet}
 
 <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
-  <SplitButtonGroup ariaLabel="项目操作按钮组">
+  <SplitButtonGroup aria-label="项目操作按钮组">
     <Button theme="solid" type="primary">分裂按钮</Button>
     <Dropdown trigger="click" position="bottomEnd" {menu}>
-      <Button theme="solid" type="primary" icon={caret} ariaLabel="更多操作"></Button>
+      <Button theme="solid" type="primary" icon={caret} aria-label="更多操作"></Button>
     </Dropdown>
   </SplitButtonGroup>
 
-  <SplitButtonGroup ariaLabel="项目操作按钮组">
+  <SplitButtonGroup aria-label="项目操作按钮组">
     <Button theme="light" type="primary">分裂按钮</Button>
     <Dropdown trigger="click" position="bottomEnd" {menu}>
-      <Button theme="light" type="primary" icon={caret} ariaLabel="更多操作"></Button>
+      <Button theme="light" type="primary" icon={caret} aria-label="更多操作"></Button>
     </Dropdown>
   </SplitButtonGroup>
 
-  <SplitButtonGroup ariaLabel="项目操作按钮组">
+  <SplitButtonGroup aria-label="项目操作按钮组">
     <Button theme="borderless" type="primary">分裂按钮</Button>
     <Dropdown trigger="click" position="bottomEnd" {menu}>
-      <Button theme="borderless" type="primary" icon={caret} ariaLabel="更多操作"></Button>
+      <Button theme="borderless" type="primary" icon={caret} aria-label="更多操作"></Button>
     </Dropdown>
   </SplitButtonGroup>
 </div>

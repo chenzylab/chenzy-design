@@ -46,22 +46,30 @@ LocaleProvider 是一个**纯上下文注入组件**，用于在组件树的某�
 
 ### Props
 
-| 名称 | 类型 | 默认值 | 说明 |
-|---|---|---|---|
-| `locale` | `Locale \| string` | 继承上层，无上层则 `en-US` | 语言包对象或语言码（如 `'zh-CN'`）。传字符串时从内置/已注册语言包解析。 |
-| `fallbackLocale` | `Locale \| string` | `'en-US'` | 缺失 key 时的回退语言，构成回退链末端。 |
-| `timeZone` | `string` | 继承 / 浏览器本地 | IANA 时区（如 `'Asia/Shanghai'`），供 `Intl.DateTimeFormat` 使用。 |
-| `currency` | `string` | 继承 / 由 locale 推断 | ISO 4217 货币码（如 `'CNY'`），作为 `formatNumber({style:'currency'})` 默认。 |
-| `direction` | `'ltr' \| 'rtl' \| 'auto'` | `'auto'` | 文档方向；`auto` 时按语言码推断，写入 context 供子组件应用。 |
-| `inherit` | `boolean` | `true` | 是否合并上层 locale 的缺失 key（深合并）；`false` 则完全以本组件 `locale` 为准。 |
+> 本表由 `packages/svelte/src/locale-provider/meta.ts` 真源生成（2026-07-30 重校）。此前本表列的 prop 多为 Semi 对齐前的旧名或已删除项（如 `value`→`activeKey`、`change`→`onChange`），改 prop 时请同步 meta.ts，勿手写「规划中」的 prop。
+
+| Prop | 类型 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| locale | `Locale \| string` | `undefined` | 语言包对象或字符串码（如 'zh_CN'/'en-US'）；字符串经 registerLocale 注册表 + 内置查表解析，未知码回退 en_US |
+| fallback | `Locale` | `undefined` | 缺失 key 回退包，默认内部用 en_US |
+| direction | `'ltr'\|'rtl'\|'auto'` | `'auto'` | 文本方向，'auto' 按 locale.rtl 推断 |
+| inherit | `boolean` | `true` | 嵌套时深合并父级 LocaleProvider 语言包（子覆盖父，未覆盖继承父）；false 则整体替换 |
+| timeZone | `string` | `undefined` | 默认 IANA 时区（如 'Asia/Shanghai'）注入 formatDate；未设时继承父级 |
+| currency | `string` | `undefined` | 默认 ISO 4217 货币（如 'CNY'）用于 currency 风格 formatNumber；未设时继承父级 |
+
+**事件**（回调 prop 形式，对齐 Semi）：
+
+| 事件 | 说明 |
+| --- | --- |
+| `onLocaleChange` | locale/direction 变化时通知（受控，不回写） |
 
 > 无 `value`/`open` 类受控 API：本组件非输入、非浮层，故不套用 `value+on:change` / `open+on:openChange` 约定（横切约定按组件实际不适用）。
 
 ### Events
 
-| 名称 | payload | 说明 |
-|---|---|---|
-| `on:localeChange` | `{ locale: string; direction: 'ltr' \| 'rtl' }` | 解析后的生效 locale 发生变化时触发（含因 `locale` prop 变更或上层继承变化）。便于宿主同步 `document.documentElement.lang/dir`。 |
+| 事件 | 说明 |
+| --- | --- |
+| `onLocaleChange` | locale/direction 变化时通知（受控，不回写） |
 
 ### Slots
 

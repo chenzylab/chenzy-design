@@ -3,7 +3,6 @@ title: AutoComplete 自动完成
 name: autocomplete
 category: input
 brief: 输入框自动填充。
-docMode: inline
 ---
 
 <script>
@@ -112,10 +111,10 @@ import { AutoComplete } from '@chenzy-design/svelte';
 | maxHeight | 下拉列表的最大高度 | `number \| string` | 300 |
 | onSelectWithObject | 点击候选项时，是否将选中项 option 的其他属性也作为回调入参，设为 true 时 onSelect 的入参类型会从 string 变为 object | boolean | false |
 | placeholder | 输入框默认提示文案 | string | - |
-| position | 下拉菜单的显示位置，可选值同 Tooltip 组件，可选 `bottomLeft` / `bottomRight` / `topLeft` / `topRight` | string | bottomLeft |
+| position | 下拉菜单的显示位置，可选值同 Tooltip 组件 | string | bottomLeft |
 | prefix | 选择框的前缀标签 | `string \| Snippet` | - |
 | renderItem | 控制下拉列表候选项的渲染 | `Snippet<[{ item, isSelected }]>` | - |
-| renderSelectedItem | 自定义候选项选中后在选择框中的渲染内容（仅支持返回 string） | `Snippet<[{ item }]>` | - |
+| renderSelectedItem | 决定候选项选中后输入框实际显示的文本，返回值同时也是 value/onChange 的实际值（仅支持返回 string） | `(item: Item) => string` | - |
 | showClear | 是否展示清除按钮 | boolean | false |
 | size | 尺寸，可选 `small`、`default`、`large` | string | default |
 | style | 样式 | string | - |

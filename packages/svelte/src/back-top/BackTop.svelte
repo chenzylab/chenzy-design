@@ -15,7 +15,7 @@
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
-  import { isAboveThreshold, scrollPositionAt } from '@chenzy-design/core';
+  import { isAboveThreshold, scrollPositionAt, resolveDefault } from '@chenzy-design/core';
   import { IconChevronUp } from '@chenzy-design/icons';
   import IconButton from '../iconbutton/IconButton.svelte';
   import { useLocale } from '../locale-provider/index.js';
@@ -39,13 +39,17 @@
 
   let {
     target,
-    visibilityHeight = 400,
-    duration = 450,
+    visibilityHeight: visibilityHeightProp,
+    duration: durationProp,
     onClick,
     children,
     style = '',
     class: className = '',
   }: Props = $props();
+  // cdGlobal 全局默认 props（对齐 Semi semiGlobal.config.overrideDefaultProps）：
+  // 优先级 = 显式传值 > cdGlobal['BackTop'] > 组件内置默认值。
+  const visibilityHeight = $derived(resolveDefault(visibilityHeightProp, 'BackTop', 'visibilityHeight', 400));
+  const duration = $derived(resolveDefault(durationProp, 'BackTop', 'duration', 450));
 
   const loc = useLocale();
 
@@ -139,7 +143,7 @@
     {#if children}
       {@render children()}
     {:else}
-      <IconButton theme="light" ariaLabel={loc().t('BackTop.ariaLabel')} icon={defaultIcon} />
+      <IconButton theme="light" aria-label={loc().t('BackTop.ariaLabel')} icon={defaultIcon} />
     {/if}
   </div>
 {/if}

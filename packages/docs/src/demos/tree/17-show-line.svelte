@@ -1,8 +1,8 @@
 <script lang="ts">
   import { Tree } from '@chenzy-design/svelte';
-  import type { TreeNode } from '@chenzy-design/svelte';
+  import type { TreeNodeData } from '@chenzy-design/core';
 
-  const treeData: TreeNode[] = [
+  const treeData: TreeNodeData[] = [
     {
       label: '亚洲',
       key: 'asia',
@@ -24,5 +24,5 @@
 
 <div style="width:260px">
   <!-- showLine：节点之间的层级连接线（├ / └ / 竖线） -->
-  <Tree style="width: 260px; height: 420px; border: 1px solid var(--cd-color-border); border-radius: 6px; box-sizing: border-box" {treeData} showLine defaultExpandAll ariaLabel="连接线树" />
+  <Tree style="width: 260px; height: 420px; border: 1px solid var(--cd-color-border); border-radius: 6px; box-sizing: border-box" {treeData} showLine defaultExpandAll aria-label="连接线树" />
 </div>

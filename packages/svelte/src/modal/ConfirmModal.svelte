@@ -238,7 +238,8 @@
   }
   :global(.cd-modal-confirm-content) {
     color: var(--cd-color-modal-main-text);
-    line-height: 1.6;
+    /* Semi modal.scss:8 @include font-size-regular → 20px */
+    line-height: var(--cd-line-height-regular);
   }
   :global(.cd-modal-confirm-content-withIcon) {
     margin-left: var(--cd-spacing-modal-content-withicon-marginleft);

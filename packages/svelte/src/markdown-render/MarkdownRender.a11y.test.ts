@@ -53,11 +53,13 @@ describe('MarkdownRender render', () => {
     const topUl = root.querySelector(':scope > ul');
     expect(topUl?.querySelectorAll('li').length).toBe(2);
 
-    // 表格：table→MdTable→本库 Table 组件（对齐 Semi table→Table），渲染为 .cd-table（非原生 <table>）。
+    // 表格：table→table.svelte→本库 Table 组件（对齐 Semi table→Table），渲染为 .cd-table（非原生 <table>）。
     expect(root.querySelector('.cd-table')).toBeTruthy();
 
-    // 代码块：围栏块→MdPre→CodeHighlight（对齐 Semi 代码块走 CodeHighlight），渲染为 .cd-code-highlight。
+    // 代码块：不覆盖 pre 键（对齐 Semi 无 pre 键，MDX 保留原生 pre 标签），
+    // 围栏 code 键→code.svelte 按 language-* 分流到 CodeHighlight，最终 DOM 是 <pre><CodeHighlight/></pre>。
     await waitFor(() => !!root.querySelector('.cd-code-highlight'));
+    expect(root.querySelector('pre > .cd-code-highlight')).toBeTruthy();
     expect(root.querySelector('.cd-code-highlight')?.textContent).toContain('const x = 1;');
 
     await expectNoAxeViolations(container);
@@ -107,5 +109,20 @@ describe('MarkdownRender render', () => {
     });
     await waitFor(() => !!container.querySelector('.cd-markdown-render p'));
     expect(container.querySelector('#danger')).toBeNull();
+  });
+
+  it('inline code and fenced code without a language share the simple-code span (aligned with Semi code.tsx)', async () => {
+    const raw = ['Inline `foo` here.', '', '```', 'plain text', '```'].join('\n');
+    const { container } = render(MarkdownRender, { props: { raw } });
+    await waitFor(() => !!container.querySelector('.cd-markdown-render p'));
+
+    const root = container.querySelector('.cd-markdown-render')!;
+    const spans = root.querySelectorAll('.cd-markdown-render-simple-code');
+    // 行内 code 与无语言围栏代码块共用同一 code 组件，两者都落到 simple-code span。
+    expect(spans.length).toBe(2);
+    expect(Array.from(spans).some((s) => s.textContent === 'foo')).toBe(true);
+    expect(Array.from(spans).some((s) => s.textContent?.includes('plain text'))).toBe(true);
+    // 无语言围栏代码块的 simple-code span 仍嵌套在原生 pre 里（不覆盖 pre 键，对齐 Semi 无 pre 键）。
+    expect(root.querySelector('pre > .cd-markdown-render-simple-code')).toBeTruthy();
   });
 });

@@ -3,7 +3,6 @@ title: Image 图片
 name: image
 category: show
 brief: 用于展示和预览图片。
-docMode: inline
 ---
 
 <script>

@@ -5,6 +5,7 @@
   受控 activeKey（红线 #1）：不回写，仅经 onActiveOptionChange 通知。
 -->
 <script lang="ts">
+  import type { Snippet } from 'svelte';
   import { useId } from '@chenzy-design/core';
   import type { SideBarOption } from './types.js';
 
@@ -12,9 +13,16 @@
     options: SideBarOption[];
     activeKey?: string | undefined;
     onActiveOptionChange?: ((e: Event, key: string) => void) | undefined;
+    /**
+     * 自定义单个 Option 的渲染（对齐 Semi renderOptionItem(option, onChange)）：
+     * 命中时**整项替换**默认按钮，连 role=tab / roving tabindex 一起交给使用方。
+     */
+    renderOptionItem?:
+      | Snippet<[{ option: SideBarOption; onChange: (e: Event, key: string) => void }]>
+      | undefined;
   }
 
-  let { options, activeKey, onActiveOptionChange }: Props = $props();
+  let { options, activeKey, onActiveOptionChange, renderOptionItem }: Props = $props();
 
   const baseId = useId('cd-sidebar-opt');
 
@@ -66,13 +74,18 @@
   }
 </script>
 
-<div class="cd-sidebar__options" role="tablist" aria-orientation="horizontal">
+<div class="cd-sidebar-options" role="tablist" aria-orientation="horizontal">
   {#each options as item (item.key)}
     {@const selected = item.key === activeKey}
+    {#if renderOptionItem}
+      <!-- 对齐 Semi options.tsx:15-17：renderOptionItem 命中即整项接管，不再渲染默认按钮。 -->
+      {@render renderOptionItem({ option: item, onChange: setActive })}
+    {:else}
     <button
       type="button"
-      class="cd-sidebar__option"
-      class:cd-sidebar__option--active={selected}
+      class="cd-sidebar-options-button"
+      class:cd-sidebar-option-active={selected}
+      class:cd-sidebar-options-normal={!selected}
       role="tab"
       id={optionId(item.key)}
       aria-selected={selected}
@@ -83,24 +96,25 @@
       onkeydown={(e) => onKeydown(e, item)}
     >
       {#if item.icon}
-        <span class="cd-sidebar__option-icon" aria-hidden="true">{@render item.icon()}</span>
+        <span class="cd-sidebar-options-button-icon" aria-hidden="true">{@render item.icon()}</span>
       {:else}
-        <span class="cd-sidebar__option-icon" aria-hidden="true">{item.name.slice(0, 1)}</span>
+        <span class="cd-sidebar-options-button-icon" aria-hidden="true">{item.name.slice(0, 1)}</span>
       {/if}
     </button>
+    {/if}
   {/each}
 </div>
 
 <style>
-  .cd-sidebar__options {
+  .cd-sidebar-options {
     display: flex;
     flex-shrink: 0;
     align-items: center;
     gap: var(--cd-sidebar-options-gap);
-    padding: var(--cd-sidebar-options-padding);
+    padding: var(--cd-sidebar-options-padding-y) var(--cd-sidebar-options-padding-x);
     border-block-end: 1px solid var(--cd-sidebar-border);
   }
-  .cd-sidebar__option {
+  .cd-sidebar-options-button {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -110,25 +124,34 @@
     border: none;
     border-radius: var(--cd-sidebar-option-radius);
     background: transparent;
-    color: var(--cd-sidebar-option-color);
+    color: var(--cd-sidebar-options-button-text);
     cursor: pointer;
     transition:
       background-color var(--cd-motion-duration-fast, 0.1s) var(--cd-motion-ease-standard, ease),
       color var(--cd-motion-duration-fast, 0.1s) var(--cd-motion-ease-standard, ease);
   }
-  .cd-sidebar__option:hover:not(.cd-sidebar__option--active) {
+  .cd-sidebar-options-button:hover:not(.cd-sidebar-option-active) {
     background: var(--cd-sidebar-option-bg-hover);
     color: var(--cd-sidebar-option-color-hover);
   }
-  .cd-sidebar__option--active {
+  /* 未选中态（对齐 Semi &-options-normal）：Semi 标记的是「未选中」而非「选中」，
+     用它把默认 Button 的 primary 色/粗体压回常规文本色。
+     本库 Options 是自建图标 tab（非 Button），仍保留 -option-active 表达选中态，
+     但同时补上 Semi 的 -options-normal 标记与其文本色/字重，保持类名契约一致。 */
+  .cd-sidebar-options-normal {
+    color: var(--cd-sidebar-options-button-text);
+    font-weight: var(--cd-font-weight-regular);
+  }
+
+  .cd-sidebar-option-active {
     background: var(--cd-sidebar-option-bg-active);
     color: var(--cd-sidebar-option-color-active);
   }
-  .cd-sidebar__option:focus-visible {
+  .cd-sidebar-options-button:focus-visible {
     outline: none;
     box-shadow: var(--cd-focus-ring);
   }
-  .cd-sidebar__option-icon {
+  .cd-sidebar-options-button-icon {
     display: inline-flex;
     align-items: center;
     justify-content: center;

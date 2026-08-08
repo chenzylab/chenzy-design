@@ -140,16 +140,36 @@
     return Math.max(l, r);
   });
 
-  // Navigation monthText（对齐 Semi：locale.months 模板；此处用 yyyy-MM 简化到 locale monthText）。
+  // 语言相关日期格式（对齐 Semi locale.localeFormatToken.FORMAT_SWITCH_DATE）：英文 MM/dd/yyyy、中文 yyyy-MM-dd。
+  const switchDateFormat = $derived(
+    loc().component('DatePicker').localeFormatToken?.FORMAT_SWITCH_DATE ??
+      formatToken.FORMAT_FULL_DATE,
+  );
+
+  // Navigation monthText —— 照搬 Semi monthsGrid.renderMonth：取 locale.monthText 模板
+  // （中文 '${year}年 ${month}'、英文 '${month} ${year}'）做 replace，由语言自身决定年月顺序。
+  // 勿改回按 locale.code 分支硬编码——那样每加一种语言都要改组件，且英文会得到错误的「2026 Jul」。
   function monthTextOf(panelType: PanelType): string {
     const d = (panelType === 'right' ? st.monthRight : st.monthLeft).pickerDate;
-    // 对齐 Semi monthText：语言相关「YYYY年 MM月」；这里走 locale.months + 年。
-    const y = localeFormat(d, 'yyyy');
-    const monthNo = d.getMonth() + 1;
-    const mText = loc().t(`DatePicker.months.${monthNo}`);
-    // Semi 用 locale.monthText 模板 ${year}/${month}；本库简化为 "y年 mText" / "y mText"。
-    const code = loc().code;
-    return code === 'zh-CN' || code === 'zh-TW' ? `${y}年 ${mText}` : `${y} ${mText}`;
+    const yearNumber = localeFormat(d, 'yyyy');
+    const mText = loc().t(`DatePicker.months.${d.getMonth() + 1}`);
+    return loc()
+      .t('DatePicker.monthText')
+      .replace('${year}', yearNumber)
+      .replace('${month}', mText);
+  }
+
+  /**
+   * dateTimeRange 两侧 Switch 的日期文案（照搬 Semi renderSwitch：左panel 取 rangeStart、
+   * 右panel 取 rangeEnd，按语言相关 FORMAT_SWITCH_DATE 重新格式化）。非 range 时为空串，
+   * 由 Switch 回落 showDate 的 monthText。
+   */
+  function switchDateTextOf(panelType: PanelType): string {
+    const raw = panelType === 'right' ? rangeEndProp : rangeStartProp;
+    if (!raw) return '';
+    const d = new Date(raw);
+    if (Number.isNaN(d.getTime())) return '';
+    return localeFormat(d, switchDateFormat);
   }
 
   /**
@@ -270,6 +290,7 @@
       <Switch
         showDate={detail.showDate}
         isTimePickerOpen={detail.isTimePickerOpen}
+        dateText={switchDateTextOf(panelType)}
         {density}
         {disabledTimePicker}
         timeFormat={formatToken.FORMAT_TIME_PICKER}

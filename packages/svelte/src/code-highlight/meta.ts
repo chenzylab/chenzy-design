@@ -6,7 +6,7 @@ export const meta = {
   name: 'CodeHighlight',
   category: 'plus',
   description:
-    '代码语法高亮：底层用 prismjs（严格对齐 Semi Design），DOM = div.cd-code-highlight(cd-light-scrollbar)[.cd-code-highlight-defaultTheme] > pre > code；给 <code> 元素加 language-<lang> class 后 Prism.highlightElement 就地高亮，仅写纯文本节点规避 XSS（不用 {@html} 拼未处理内容）。支持 lineNumber 行号、defaultTheme 内置配色开关（Semi 固定 dabblet 配色，写死色值 + 色板阶梯，非 token 驱动、不随明暗自适应，与 Semi 一致）。语言包按需由使用方 import "prismjs/components/prism-<lang>.js"。长代码块可滚动、可键盘聚焦，role=region + i18n aria-label。无组件级 token（对齐 Semi 空 variables.scss）。',
+    '代码语法高亮：底层用 prismjs（严格对齐 Semi Design），DOM = div.cd-code-highlight(cd-light-scrollbar)[.cd-code-highlight-defaultTheme] > pre > code（根 class 顺序对齐 Semi：外部 class 在前）；给 <code> 元素加 language-<lang> class 后 Prism.highlightElement 就地高亮，仅写纯文本节点规避 XSS（不用 {@html} 拼未处理内容）。支持 lineNumber 行号、defaultTheme 内置配色开关（Semi 固定 dabblet 配色，写死色值 + 色板阶梯，非 token 驱动、不随明暗自适应，与 Semi 一致）。语言包按需由使用方 import "prismjs/components/prism-<lang>.js"。根节点无 role/aria-label/tabindex（Semi 源码无此增强，严格对齐不加）。无组件级 token（对齐 Semi 空 variables.scss）。',
   exports: ['CodeHighlight', 'resolveCodeClassName'],
   props: [
     { name: 'code', type: 'string', default: "''", desc: '源码文本；作为 textContent 写入，不解析 HTML' },
@@ -29,9 +29,9 @@ export const meta = {
   events: [],
   slots: [],
   a11y: {
-    hasRole: true,
-    focusable: true,
-    note: '根 <pre> 为 role=region 命名的滚动区（aria-label 走 i18n CodeHighlight.codeBlock），tabindex=0 让长代码块可键盘滚动聚焦（WCAG 2.1.1）；无交互控件、不夺焦、不锁滚。',
+    hasRole: false,
+    focusable: false,
+    note: '严格对齐 Semi：根节点无 role/aria-label/tabindex，无交互控件、不夺焦、不锁滚。',
   },
   tokens: [],
   responsive: false,

@@ -1,26 +1,75 @@
 <script lang="ts">
-  // 对齐 Semi「完全自定义整个会话框」：renderFullChatBox 提供拆分节点（avatar/title/content/action），
-  // 自由组合整条消息布局。
-  import { Chat } from '@chenzy-design/svelte';
-  import type { ChatMessage, ChatRoleConfig } from '@chenzy-design/svelte';
+  // 严格对齐 Semi「完全自定义会话框」：renderFullChatBox 拿到 defaultNodes（avatar/title/content/action），
+  // user 消息右对齐、assistant 消息头像与标题同行显示。
+  import { Chat, Avatar } from '@chenzy-design/svelte';
+  import type { ChatMessage, ChatRoleConfig, ChatRenderFullChatBoxProps } from '@chenzy-design/svelte';
 
   const roleConfig: ChatRoleConfig = {
-    user: { name: '我', color: 'blue' },
-    assistant: { name: '助手', color: 'green' },
+    user: {
+      name: 'User',
+      avatar: 'https://lf3-static.bytednsdoc.com/obj/eden-cn/ptlz_zlp/ljhwZthlaukjlkulzlp/docs-icon.png',
+    },
+    assistant: {
+      name: 'Assistant',
+      avatar: 'https://lf3-static.bytednsdoc.com/obj/eden-cn/ptlz_zlp/ljhwZthlaukjlkulzlp/other/logo.png',
+    },
+    system: {
+      name: 'System',
+      avatar: 'https://lf3-static.bytednsdoc.com/obj/eden-cn/ptlz_zlp/ljhwZthlaukjlkulzlp/other/logo.png',
+    },
   };
 
-  const chats: ChatMessage[] = [
-    { id: '1', role: 'assistant', content: '这是一条完全自定义布局的消息。', status: 'complete' },
-  ];
+  let chats = $state<ChatMessage[]>([
+    { role: 'system', id: '1', createAt: 1715676751919, content: "Hello, I'm your AI assistant." },
+    { role: 'user', id: '2', createAt: 1715676751919, content: '介绍一下 Semi Design' },
+    {
+      role: 'assistant',
+      id: '3',
+      createAt: 1715676751919,
+      content: 'Semi Design 是由抖音前端团队和 MED 产品设计团队设计、开发并维护的设计系统',
+    },
+  ]);
+
+  const uploadProps = { action: 'https://api.semi.design/upload' };
+
+  let seq = 0;
+  function onMessageSend(): void {
+    setTimeout(() => {
+      chats = [...chats, { role: 'assistant', id: `id-${++seq}`, content: 'This is a mock response' }];
+    }, 200);
+  }
+
+  function onChatsChange(next: ChatMessage[]): void {
+    chats = next;
+  }
 </script>
 
-<div style="height: 420px; border: 1px solid var(--cd-color-border); border-radius: 8px;">
-  <Chat {chats} {roleConfig}>
-    {#snippet renderFullChatBox({ message, role })}
-      <div style="border:1px dashed var(--cd-color-primary);border-radius:8px;padding:12px;margin:8px 0;">
-        <div style="font-size:12px;color:var(--cd-color-text-2);margin-bottom:4px;">{role?.name}</div>
-        <div>{typeof message?.content === 'string' ? message.content : ''}</div>
+<Chat
+  {chats}
+  {roleConfig}
+  {uploadProps}
+  {onChatsChange}
+  {onMessageSend}
+  renderFullChatBox={fullChatBoxSnippet}
+  style="height: 400px; border: 1px solid var(--cd-color-border); border-radius: 16px;"
+/>
+
+{#snippet fullChatBoxSnippet({ message, role, defaultNodes, className }: ChatRenderFullChatBoxProps)}
+  {@const isUser = message?.role === 'user'}
+  <div class={className}>
+    <div
+      style="display:flex;flex-direction:column;row-gap:4px;align-items:{isUser ? 'flex-end' : 'flex-start'};"
+    >
+      {#if !isUser}
+        <span style="display:flex;align-items:center;justify-content:center;column-gap:10px;padding:5px 0;width:fit-content;">
+          <Avatar size="extra-small" shape="square" src={typeof role?.avatar === 'string' ? role.avatar : ''} />
+          {@render defaultNodes?.title?.()}
+        </span>
+      {/if}
+      <div style="width:fit-content;">
+        {@render defaultNodes?.content?.()}
       </div>
-    {/snippet}
-  </Chat>
-</div>
+      {@render defaultNodes?.action?.()}
+    </div>
+  </div>
+{/snippet}

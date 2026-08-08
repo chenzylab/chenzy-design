@@ -20,7 +20,7 @@
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
-  import { collapsibleShouldRender, collapsibleCollapsedHeight } from '@chenzy-design/core';
+  import { collapsibleShouldRender, collapsibleCollapsedHeight, resolveDefault } from '@chenzy-design/core';
 
   interface Props {
     /** 是否展开内容区域。 */
@@ -54,14 +54,14 @@
   }
 
   let {
-    isOpen = false,
-    duration = 250,
-    motion = true,
-    keepDOM = false,
-    lazyRender = false,
-    collapseHeight = 0,
-    collapseHeightAdaptive = false,
-    fade = false,
+    isOpen: isOpenProp,
+    duration: durationProp,
+    motion: motionProp,
+    keepDOM: keepDOMProp,
+    lazyRender: lazyRenderProp,
+    collapseHeight: collapseHeightProp,
+    collapseHeightAdaptive: collapseHeightAdaptiveProp,
+    fade: fadeProp,
     reCalcKey,
     id,
     onMotionEnd,
@@ -69,6 +69,16 @@
     style,
     children,
   }: Props = $props();
+  // cdGlobal 全局默认 props（对齐 Semi semiGlobal.config.overrideDefaultProps）：
+  // 优先级 = 显式传值 > cdGlobal['Collapsible'] > 组件内置默认值。
+  const isOpen = $derived(resolveDefault(isOpenProp, 'Collapsible', 'isOpen', false));
+  const duration = $derived(resolveDefault(durationProp, 'Collapsible', 'duration', 250));
+  const motion = $derived(resolveDefault(motionProp, 'Collapsible', 'motion', true));
+  const keepDOM = $derived(resolveDefault(keepDOMProp, 'Collapsible', 'keepDOM', false));
+  const lazyRender = $derived(resolveDefault(lazyRenderProp, 'Collapsible', 'lazyRender', false));
+  const collapseHeight = $derived(resolveDefault(collapseHeightProp, 'Collapsible', 'collapseHeight', 0));
+  const collapseHeightAdaptive = $derived(resolveDefault(collapseHeightAdaptiveProp, 'Collapsible', 'collapseHeightAdaptive', false));
+  const fade = $derived(resolveDefault(fadeProp, 'Collapsible', 'fade', false));
 
   // domHeight：实测内容高度。写只在 ResizeObserver 回调 / reCalcKey 重测（与 render 读分离，规避 §9.3）。
   let domHeight = $state(0);

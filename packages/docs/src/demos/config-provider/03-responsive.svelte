@@ -1,9 +1,11 @@
 <script lang="ts">
-  import { ConfigProvider, Text } from '@chenzy-design/svelte';
+  // 严格复刻 Semi「开启监听与自定义断点」：responsiveObserve 开启断点监听，
+  // responsiveMap 自定义断点（值与 Semi demo 逐字一致）。
+  // 定义在组件外（模块级）保证引用稳定 —— responsiveMap 是引用比较，
+  // inline 写对象会被识别为变化并重新注册全部监听（对齐 Semi 注意事项）。
+  import { ConfigProvider } from '@chenzy-design/svelte';
   import BreakpointView from './BreakpointView.svelte';
 
-  // 对齐 Semi 响应式断点监听：responsiveObserve 开启后，子组件经 onBreakpoint 订阅断点变化。
-  // responsiveMap 定义在组件外以保证引用稳定（inline 新对象会触发重注册）。
   const responsiveMap = {
     xs: '(max-width: 575px)',
     sm: '(min-width: 576px)',
@@ -14,13 +16,6 @@
   };
 </script>
 
-<Text type="tertiary"
-  >开启 <code>responsiveObserve</code> 后，子组件经 <code>onBreakpoint</code>
-  订阅断点变化；缩放窗口宽度观察命中断点更新（默认 false 时不注册任何 matchMedia）。</Text
->
-
-<div style="margin-top:12px">
-  <ConfigProvider responsiveObserve {responsiveMap}>
-    <BreakpointView />
-  </ConfigProvider>
-</div>
+<ConfigProvider responsiveObserve {responsiveMap}>
+  <BreakpointView />
+</ConfigProvider>

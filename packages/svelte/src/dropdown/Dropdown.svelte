@@ -24,7 +24,13 @@
 -->
 <script lang="ts">
   import { setContext, getContext, untrack, type Snippet } from 'svelte';
-  import { useId, useDismiss, type Placement } from '@chenzy-design/core';
+  import {
+    useId,
+    useDismiss,
+    registerOverlayRoot,
+    type Placement,
+    resolveDefault,
+  } from '@chenzy-design/core';
   import { getGlobalPopupContainer } from '../config-provider/index.js';
   import { floating } from '../_floating/use-floating.js';
   import DropdownMenu from './DropdownMenu.svelte';
@@ -113,23 +119,23 @@
     render,
     menu,
     children,
-    trigger = 'hover',
+    trigger: triggerProp,
     visible,
     defaultVisible = false,
-    position = 'bottom',
+    position: positionProp,
     autoAdjustOverflow = true,
     mouseEnterDelay = DEFAULT_ENTER_DELAY,
-    mouseLeaveDelay = DEFAULT_LEAVE_DELAY,
+    mouseLeaveDelay: mouseLeaveDelayProp,
     spacing,
     margin,
-    zIndex = 1050,
-    motion = true,
+    zIndex: zIndexProp,
+    motion: motionProp,
     className,
     contentClassName,
     style: contentStyle,
-    showTick = false,
+    showTick: showTickProp,
     stopPropagation = false,
-    closeOnEsc = true,
+    closeOnEsc: closeOnEscProp,
     rePosKey,
     disableFocusListener = false,
     clickToHide,
@@ -139,6 +145,15 @@
     onEscKeyDown,
     onClickOutSide,
   }: Props = $props();
+  // cdGlobal 全局默认 props（对齐 Semi semiGlobal.config.overrideDefaultProps）：
+  // 优先级 = 显式传值 > cdGlobal['Dropdown'] > 组件内置默认值。
+  const zIndex = $derived(resolveDefault(zIndexProp, 'Dropdown', 'zIndex', 1050));
+  const motion = $derived(resolveDefault(motionProp, 'Dropdown', 'motion', true));
+  const trigger = $derived(resolveDefault(triggerProp, 'Dropdown', 'trigger', 'hover'));
+  const position = $derived(resolveDefault(positionProp, 'Dropdown', 'position', 'bottom'));
+  const mouseLeaveDelay = $derived(resolveDefault(mouseLeaveDelayProp, 'Dropdown', 'mouseLeaveDelay', DEFAULT_LEAVE_DELAY));
+  const showTick = $derived(resolveDefault(showTickProp, 'Dropdown', 'showTick', false));
+  const closeOnEsc = $derived(resolveDefault(closeOnEscProp, 'Dropdown', 'closeOnEsc', true));
 
   // 父级 Dropdown 上下文（嵌套判定）：顶层无父 ctx（level 视为 0），render 内的 Item 处于 level 1，
   // 其内的子 Dropdown 读到 parent.level=1，自身内容 level=2。
@@ -278,6 +293,13 @@
   // --- DOM 引用 ---
   let rootEl = $state<HTMLSpanElement | null>(null);
   let menuWrapperEl = $state<HTMLDivElement | null>(null);
+
+  // 全局浮层注册（见 core registerOverlayRoot 注释）：menu portal 到 body 后与祖先
+  // hover 浮层脱节，登记后祖先的 pointerleave 判断能识别"鼠标去了合法子浮层"。
+  $effect(() => {
+    if (!menuWrapperEl) return;
+    return registerOverlayRoot(menuWrapperEl);
+  });
 
   // floating 定位锚点：非嵌套时 = rootEl（inline-block span，有正常 rect）；
   // 嵌套时 rootEl 为 display:contents 的 span（rect 全 0，不可锚定），改锚定其内部真实元素
@@ -557,7 +579,7 @@
 -->
 <span
   class="cd-dropdown-trigger"
-  class:cd-dropdown-trigger--nested={isNested}
+  class:cd-dropdown-trigger-nested={isNested}
   id={triggerId}
   bind:this={rootEl}
   use:triggerAria={{ open: isOpen, controls: menuId, nested: isNested }}
@@ -578,7 +600,7 @@
     id={menuId}
     bind:this={menuWrapperEl}
     style={wrapperInlineStyle}
-    class:cd-dropdown--motion={motion}
+    class:cd-dropdown-motion={motion}
     use:cursorFloating={{ x: cursorX, y: cursorY }}
     onkeydown={onMenuKeydown}
     onclick={onMenuClick}
@@ -593,8 +615,8 @@
     id={menuId}
     bind:this={menuWrapperEl}
     style={wrapperInlineStyle}
-    class:cd-dropdown--hidden={!isOpen}
-    class:cd-dropdown--motion={motion && isOpen}
+    class:cd-dropdown-hidden={!isOpen}
+    class:cd-dropdown-motion={motion && isOpen}
     use:floating={{ trigger: anchorEl, placement: position, autoAdjust: autoAdjustOverflow, offset, padding: floatPadding, getContainer: resolvePopupContainer, open: isOpen, rePosKey }}
     onkeydown={onMenuKeydown}
     onpointerenter={() => trigger === 'hover' && clearTimers()}
@@ -616,7 +638,7 @@
   }
   /* 嵌套：子 Dropdown 触发器为 Dropdown.Item（<li>），需直接参与父 ul 布局，
      故包裹 span 用 display:contents 不产生盒子（li 视觉归位 ul，事件仍经 span 冒泡处理）。 */
-  .cd-dropdown-trigger--nested {
+  .cd-dropdown-trigger-nested {
     display: contents;
   }
   /* 浮层 wrapper：portal 到 body，由 use:floating 写 position:fixed + transform 定位。
@@ -632,12 +654,12 @@
     line-height: var(--cd-line-height-regular);
   }
   /* keepDOM 关闭后保留 DOM 但不可见 */
-  .cd-dropdown--hidden {
+  .cd-dropdown-hidden {
     display: none;
   }
   /* motion：进场淡入；定位 transform 由 use:floating 写入 inline style，
      keyframe 绝不能设 transform（会覆盖 translate 使浮层飘走），故只动 opacity。 */
-  .cd-dropdown--motion {
+  .cd-dropdown-motion {
     animation: cd-dropdown-in var(--cd-motion-duration-fast) var(--cd-motion-ease-standard) both;
   }
   @keyframes cd-dropdown-in {
@@ -649,7 +671,7 @@
     }
   }
   @media (prefers-reduced-motion: reduce) {
-    .cd-dropdown--motion {
+    .cd-dropdown-motion {
       animation: none;
     }
   }

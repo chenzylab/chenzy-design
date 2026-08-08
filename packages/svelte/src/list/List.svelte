@@ -250,4 +250,17 @@
   .cd-list-flex.cd-list-split :global(.cd-list-item:last-child) {
     border-right: none;
   }
+
+  /* —— RTL（对齐 Semi list/rtl.scss）——
+     横向 flex 布局下的分割线由右边框换成左边框（末项同样不画）。 */
+  :global(.cd-rtl) .cd-list {
+    direction: rtl;
+  }
+  :global(.cd-rtl) .cd-list-flex.cd-list-split :global(.cd-list-item) {
+    border-right: none;
+    border-left: 1px solid var(--cd-color-list-default-border-default);
+  }
+  :global(.cd-rtl) .cd-list-flex.cd-list-split :global(.cd-list-item:last-child) {
+    border-left: none;
+  }
 </style>

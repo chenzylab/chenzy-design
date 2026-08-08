@@ -7,7 +7,7 @@
   autoComplete="one-time-code"、inputMode 随 format、maxlength=1。
 -->
 <script lang="ts">
-  import { useId } from '@chenzy-design/core';
+  import { useId, resolveDefault } from '@chenzy-design/core';
   import {
     validateChar,
     inputModeForFormat,
@@ -47,7 +47,7 @@
     /** 根容器 id，关联 aria-labelledby；不传自动生成。 */
     id?: string;
     /** 无可视标签时分组的辅助名（i18n 默认）。 */
-    ariaLabel?: string;
+    'aria-label'?: string;
     /** 外部可视 label 的 id，关联为分组名（优先于 ariaLabel）。 */
     ariaLabelledby?: string;
     /** 校验态，透传各格边框语义。 */
@@ -65,14 +65,14 @@
   let {
     value = $bindable(),
     defaultValue = '',
-    count = 6,
-    format = 'number',
+    count: countProp,
+    format: formatProp,
     size = 'default',
     disabled = false,
-    autoFocus = true,
+    autoFocus: autoFocusProp,
     name,
     id,
-    ariaLabel,
+    'aria-label': ariaLabel,
     ariaLabelledby,
     status = 'default',
     className,
@@ -80,6 +80,11 @@
     onChange,
     onComplete,
   }: Props = $props();
+  // cdGlobal 全局默认 props（对齐 Semi semiGlobal.config.overrideDefaultProps）：
+  // 优先级 = 显式传值 > cdGlobal['PinCode'] > 组件内置默认值。
+  const count = $derived(resolveDefault(countProp, 'PinCode', 'count', 6));
+  const format = $derived(resolveDefault(formatProp, 'PinCode', 'format', 'number'));
+  const autoFocus = $derived(resolveDefault(autoFocusProp, 'PinCode', 'autoFocus', true));
 
   const loc = useLocale();
   const autoId = useId('cd-pincode');
@@ -101,7 +106,7 @@
   const resolvedAriaLabel = $derived(ariaLabel ?? loc().t('PinCode.ariaLabel'));
 
   const cls = $derived(
-    ['cd-pincode', `cd-pincode--${size}`, `cd-pincode--${status}`, disabled && 'cd-pincode--disabled', className]
+    ['cd-pincode', `cd-pincode-${size}`, `cd-pincode-${status}`, disabled && 'cd-pincode-disabled', className]
       .filter(Boolean)
       .join(' '),
   );
@@ -247,9 +252,9 @@
   {#each cells as cell, i (i)}
     <input
       bind:this={inputEls[i]}
-      class="cd-pincode__cell"
-      class:cd-pincode__cell--warning={status === 'warning'}
-      class:cd-pincode__cell--error={status === 'error'}
+      class="cd-pincode-cell"
+      class:cd-pincode-cell-warning={status === 'warning'}
+      class:cd-pincode-cell-error={status === 'error'}
       type="text"
       inputmode={inputMode}
       autocomplete="one-time-code"
@@ -274,14 +279,14 @@
     align-items: center;
     gap: var(--cd-pincode-gap-default);
   }
-  .cd-pincode--small {
+  .cd-pincode-small {
     gap: var(--cd-pincode-gap-small);
   }
-  .cd-pincode--large {
+  .cd-pincode-large {
     gap: var(--cd-pincode-gap-large);
   }
   /* 单格：复用 Input 家族填充式外观 token（边框 / 背景 / 聚焦 / 校验态），正方形居中。 */
-  .cd-pincode__cell {
+  .cd-pincode-cell {
     box-sizing: border-box;
     inline-size: var(--cd-pincode-cell-width-default);
     block-size: var(--cd-height-input-wrapper-default);
@@ -300,48 +305,48 @@
       border var(--cd-transition-duration-input-border)
         var(--cd-transition-function-input-border) var(--cd-transition-delay-input-border);
   }
-  .cd-pincode--small .cd-pincode__cell {
+  .cd-pincode-small .cd-pincode-cell {
     inline-size: var(--cd-pincode-cell-width-small);
     block-size: var(--cd-height-input-wrapper-small);
   }
-  .cd-pincode--large .cd-pincode__cell {
+  .cd-pincode-large .cd-pincode-cell {
     inline-size: var(--cd-pincode-cell-width-large);
     block-size: var(--cd-height-input-wrapper-large);
   }
-  .cd-pincode__cell:hover:not(:disabled):not(:focus) {
+  .cd-pincode-cell:hover:not(:disabled):not(:focus) {
     background: var(--cd-color-input-default-bg-hover);
     border-color: var(--cd-color-input-default-border-hover);
   }
-  .cd-pincode__cell:focus {
+  .cd-pincode-cell:focus {
     background: var(--cd-color-input-default-bg-focus);
     border-color: var(--cd-color-input-default-border-focus);
   }
   /* warning / error —— 对齐 Input：浅色状态底 + 同色描边 */
-  .cd-pincode__cell--warning {
+  .cd-pincode-cell-warning {
     background: var(--cd-color-input-warning-bg-default);
     border-color: var(--cd-color-input-warning-border-default);
   }
-  .cd-pincode__cell--warning:focus {
+  .cd-pincode-cell-warning:focus {
     background: var(--cd-color-input-warning-bg-focus);
     border-color: var(--cd-color-input-warning-border-focus);
   }
-  .cd-pincode__cell--error {
+  .cd-pincode-cell-error {
     background: var(--cd-color-input-danger-bg-default);
     border-color: var(--cd-color-input-danger-border-default);
   }
-  .cd-pincode__cell--error:focus {
+  .cd-pincode-cell-error:focus {
     background: var(--cd-color-input-danger-bg-focus);
     border-color: var(--cd-color-input-danger-border-focus);
   }
-  .cd-pincode--disabled .cd-pincode__cell,
-  .cd-pincode__cell:disabled {
+  .cd-pincode-disabled .cd-pincode-cell,
+  .cd-pincode-cell:disabled {
     background: var(--cd-color-input-disabled-bg-default);
     color: var(--cd-color-input-disabled-text-default);
     -webkit-text-fill-color: var(--cd-color-input-disabled-text-default);
     cursor: not-allowed;
   }
   @media (prefers-reduced-motion: reduce) {
-    .cd-pincode__cell {
+    .cd-pincode-cell {
       transition: none;
     }
   }

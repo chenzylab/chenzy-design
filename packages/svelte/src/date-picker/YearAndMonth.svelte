@@ -124,7 +124,7 @@
         transform={yearTransform}
         selectedIndex={st.years.findIndex((it) => it.value === st.currentYear[panelType])}
         type="year"
-        ariaLabel={loc().t('DatePicker.yearColumnLabel')}
+        aria-label={loc().t('DatePicker.yearColumnLabel')}
         {...(scrollItemProps ?? {})}
         onSelect={(payload) => onYearSelect(payload, panelType)}
       />
@@ -135,7 +135,7 @@
         transform={monthTransform}
         selectedIndex={st.months.findIndex((it) => it.value === st.currentMonth[panelType])}
         type="month"
-        ariaLabel={loc().t('DatePicker.monthColumnLabel')}
+        aria-label={loc().t('DatePicker.monthColumnLabel')}
         {...(scrollItemProps ?? {})}
         onSelect={(payload) => onMonthSelect(payload, panelType)}
       />

@@ -33,17 +33,17 @@
   >
     {#snippet renderFileOperation(file)}
       <div style="display:flex;column-gap:8px;padding:0 8px;">
-        <Button type="tertiary" theme="borderless" size="small" ariaLabel="预览">
+        <Button type="tertiary" theme="borderless" size="small" aria-label="预览">
           {#snippet icon()}<IconEyeOpened />{/snippet}
         </Button>
-        <Button type="tertiary" theme="borderless" size="small" ariaLabel="下载">
+        <Button type="tertiary" theme="borderless" size="small" aria-label="下载">
           {#snippet icon()}<IconDownload />{/snippet}
         </Button>
         <Button
           type="tertiary"
           theme="borderless"
           size="small"
-          ariaLabel="删除"
+          aria-label="删除"
           onclick={() => file.onRemove()}
         >
           {#snippet icon()}<IconDelete />{/snippet}

@@ -102,6 +102,7 @@ export {
   colorValueFromHex,
   colorValueFromRgba,
   colorValueFromHsva,
+  colorStringToValue,
   DEFAULT_COLOR_VALUE,
   type ColorValue,
   type ColorValueFormat,
@@ -110,7 +111,7 @@ export {
 } from '@chenzy-design/core';
 export { DatePicker, datePickerMeta } from './date-picker/index.js';
 export { TimePicker, timePickerMeta } from './time-picker/index.js';
-export { Cascader, cascaderMeta, type CascaderNode } from './cascader/index.js';
+export { Cascader, cascaderMeta, type CascaderNode, type CascaderEntity } from './cascader/index.js';
 export {
   TreeSelect,
   treeSelectMeta,
@@ -301,6 +302,15 @@ export {
   type ChatMode,
   type SendHotKey,
   type EnableUploadProps as ChatEnableUploadProps,
+  type RenderInputAreaProps as ChatRenderInputAreaProps,
+  type RenderTitleProps as ChatRenderTitleProps,
+  type RenderAvatarProps as ChatRenderAvatarProps,
+  type RenderContentProps as ChatRenderContentProps,
+  type RenderActionProps as ChatRenderActionProps,
+  type RenderFullChatBoxProps as ChatRenderFullChatBoxProps,
+  type RenderHintBoxProps as ChatRenderHintBoxProps,
+  type DefaultActionNodeObj as ChatDefaultActionNodeObj,
+  type FullChatBoxNodes as ChatFullChatBoxNodes,
 } from './chat/index.js';
 export {
   AIChatDialogue,
@@ -492,6 +502,16 @@ export {
   type OnBreakpointScreensCallback,
   type OnBreakpointChangeCallback,
 } from './config-provider/index.js';
+// cdGlobal 全局默认 props（对齐 Semi 从 semi-ui 导出 semiGlobal）。
+export {
+  cdGlobal,
+  getGlobalDefaults,
+  getGlobalDefaultProp,
+  resolveDefault,
+  resetGlobalConfig,
+  type GlobalConfig,
+  type ComponentDefaultProps,
+} from '@chenzy-design/core';
 export {
   ResizeObserver,
   resize,
@@ -499,6 +519,7 @@ export {
   type ResizeActionParams,
   type CDResizeEntry,
   type ResizeBox,
+  type ResizeObserverProperty,
   createResizeObserver,
 } from './resize-observer/index.js';
 export { Lottie, getLottie, lottieMeta, type LottieParams } from './lottie/index.js';
@@ -534,15 +555,16 @@ export {
   SideBarContainer,
   SideBarAnnotation,
   SideBarCodeContent,
-  SideBarMcpConfigure,
+  SideBarMCPConfigure,
   SideBarFileContent,
+  SideBarCodeItem,
   SideBarFileItem,
   sideBarMeta,
   type SideBarOption,
   type SideBarMode,
   type SideBarAnnotationItem,
   type SideBarAnnotationGroup,
-  type SideBarMcpOption,
+  type SideBarMCPOption,
   type CodeItemProps,
   type FileItemProps,
   type SideBarImageUploadOptions,

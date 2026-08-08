@@ -1,6 +1,6 @@
 <script lang="ts">
-  // 表单布局：labelPosition（top / left）与 labelAlign（left / right）控制 label 位置与文本对齐。
-  // 对齐 Semi「表单布局」。
+  // 表单布局 - labelPosition、labelAlign：切换 labelPosition（top / left）与 labelAlign（left / right）控制 label 位置与文本对齐。
+  // 对齐 Semi「表单布局」第③个 demo（labelPosition 切换器）。
   import { Form, Select, Radio } from '@chenzy-design/svelte';
 
   let labelPosition = $state<'top' | 'left'>('left');

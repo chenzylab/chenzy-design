@@ -54,10 +54,12 @@
     insetLabelId?: string;
     /** 输入框后置内容（如单位 %、kg）；传 Snippet 可自定义渲染。 */
     suffix?: string | Snippet;
+    /** prefix/suffix 传 Snippet 时是否按图标计外边距，透传 Input（见 Input.affixIsIcon）。 */
+    affixIsIcon?: boolean;
     name?: string;
     /** input 元素 id，关联外部 label；不传自动生成。 */
     id?: string;
-    ariaLabel?: string;
+    'aria-label'?: string;
     /** aria-labelledby：关联外部 label 元素（Form.Field 透传 labelId，对齐 Semi）。 */
     ariaLabelledby?: string;
     /** aria-describedby：关联 helpText / extraText（Form.Field 透传）。 */
@@ -110,11 +112,15 @@
      * 传对象可自定义有效位阈值 threshold（默认 15）。
      */
     scientificNotation?: boolean | { threshold?: number };
-    /** 货币展示（对齐 Semi currency）：true 按 localeCode 自动推断币种；字符串（'CNY'/'USD'）显式指定 ISO 4217 币种码。 */
+    /**
+     * 货币展示（对齐 Semi currency）：true 按 localeCode 自动推断币种（未传 localeCode 时读取
+     * 外层 `<LocaleProvider>` 注入的 code/currency，对齐 Semi LocaleConsumer 透传行为）；
+     * 字符串（'CNY'/'USD'）显式指定 ISO 4217 币种码。
+     */
     currency?: boolean | string;
     /** 货币显示形式：symbol（￥）/ code（CNY）/ name（人民币），默认 symbol（对齐 Semi currencyDisplay）。 */
     currencyDisplay?: 'symbol' | 'code' | 'name';
-    /** 货币格式化 BCP-47 locale（'zh-CN'/'de-DE'）；未传回退 locale，再回退 'zh-CN'（对齐 Semi localeCode）。 */
+    /** 货币格式化 BCP-47 locale（'zh-CN'/'de-DE'）；未传回退 `locale` prop，再回退外层 LocaleProvider 的 code，最后回退 'zh-CN'（对齐 Semi localeCode）。 */
     localeCode?: string;
     /** 是否显示货币符号/代码/名称；false 时仅千分位（style:'decimal'），供 prefix/suffix 自定义（对齐 Semi showCurrencySymbol，默认 true）。 */
     showCurrencySymbol?: boolean;
@@ -143,9 +149,10 @@
     insetLabel,
     insetLabelId,
     suffix,
+    affixIsIcon = true,
     name,
     id,
-    ariaLabel,
+    'aria-label': ariaLabel,
     ariaLabelledby,
     ariaDescribedby,
     ariaErrormessage,
@@ -237,11 +244,15 @@
   }
 
   // --- 货币展示（对齐 Semi currency）---
+  // Semi 的 LocaleConsumer 会把 Context 里的 localeCode/currency 透传给 InputNumber 做默认值
+  // （见 semi-ui/inputNumber/index.tsx 的 `<LocaleConsumer>{(locale, localeCode, dateFnsLocale, currency) => ...}`）。
+  // 本库对应用 useLocale() 读 LocaleProvider 注入的 LocaleApi：显式 localeCode/locale prop 优先，
+  // 否则回退 Provider 的 code/currency，最后回退 'zh-CN'（无 Provider 时 useLocale() 也回退 en_US）。
   const currencyEnabled = $derived(currency !== false && currency !== undefined);
-  const resolvedLocaleCode = $derived(localeCode ?? locale ?? 'zh-CN');
+  const resolvedLocaleCode = $derived(localeCode ?? locale ?? loc().code ?? 'zh-CN');
   const resolvedCurrencyCode = $derived.by(() => {
     if (typeof currency === 'string') return currency;
-    return localeToCurrency(resolvedLocaleCode);
+    return loc().currency ?? localeToCurrency(resolvedLocaleCode);
   });
 
   function getInitialValue(): number | null {
@@ -502,7 +513,7 @@
   const optionalAttrs = $derived({
     ...(placeholder !== undefined && { placeholder }),
     ...(name !== undefined && { name }),
-    ...(ariaLabel !== undefined && { ariaLabel }),
+    ...(ariaLabel !== undefined && { 'aria-label': ariaLabel }),
     ...(ariaLabelledby !== undefined && { ariaLabelledby }),
     ...(ariaDescribedby !== undefined && { ariaDescribedby }),
     ...(ariaErrormessage !== undefined && { ariaErrormessage }),
@@ -559,6 +570,7 @@
     onKeyDown={handleKeydown}
     onFocus={handleFocus}
     onBlur={handleBlur}
+    {affixIsIcon}
     {...passPrefix ? { prefix: prefixNode } : {}}
     {...passSuffix ? { suffix: suffixNode } : {}}
     {...insetLabel !== undefined ? { insetLabel } : {}}

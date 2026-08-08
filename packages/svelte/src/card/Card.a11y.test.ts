@@ -19,7 +19,7 @@ describe('Card a11y', () => {
 
   it('显式 ariaLabel 时优先于 aria-labelledby，无 axe violations', async () => {
     const { container } = renderWithLocale(Card, {
-      props: { title: 'User profile', ariaLabel: '用户卡片' },
+      props: { title: 'User profile', 'aria-label': '用户卡片' },
     });
     const root = container.querySelector('.cd-card');
     expect(root?.getAttribute('role')).toBe('region');
@@ -52,8 +52,8 @@ describe('Card a11y', () => {
       props: { title: 'Shadow card', shadows: 'always' },
     });
     const root = container.querySelector('.cd-card');
-    expect(root?.classList.contains('cd-card--shadows')).toBe(true);
-    expect(root?.classList.contains('cd-card--shadows-always')).toBe(true);
+    expect(root?.classList.contains('cd-card-shadows')).toBe(true);
+    expect(root?.classList.contains('cd-card-shadows-always')).toBe(true);
     await expectNoAxeViolations(container);
   });
 });

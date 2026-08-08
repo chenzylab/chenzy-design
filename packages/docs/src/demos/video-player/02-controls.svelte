@@ -11,6 +11,6 @@
 <VideoPlayer
   {src}
   {poster}
-  height={360}
+  height={630}
   controlsList={['play', 'time', 'volume', 'playbackRate', 'fullscreen']}
 />

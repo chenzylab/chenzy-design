@@ -37,7 +37,7 @@ Checkbox 是用于在一组选项中进行多选，或对单一选项进行开/�
 - 不需要：useFocusTrap / useScrollLock / useDismiss（无浮层）。
 
 **@chenzy-design/svelte · Checkbox.svelte / CheckboxGroup.svelte**
-- 用原生 `<input type="checkbox">` 承载语义与可达性（visually-hidden），自定义视觉层为 `<span class="cd-checkbox__inner">`。`indeterminate` 通过 `bind:this` + `el.indeterminate = ...` 设置（HTML 属性无法声明）。
+- 用原生 `<input type="checkbox">` 承载语义与可达性（visually-hidden），自定义视觉层为 `<span class="cd-checkbox-inner">`。`indeterminate` 通过 `bind:this` + `el.indeterminate = ...` 设置（HTML 属性无法声明）。
 - CheckboxGroup 通过 Svelte `setContext` 注入聚合状态，Checkbox `getContext` 消费；无 Group 时退回独立模式。
 - SSR 安全：初始 checked 直出，indeterminate 在 onMount 后同步 DOM 属性。
 
@@ -45,20 +45,29 @@ Checkbox 是用于在一组选项中进行多选，或对单一选项进行开/�
 
 ### Props · Checkbox
 
+> 本表由 `packages/svelte/src/checkbox/meta.ts` 真源生成（2026-07-30 重校）。此前本表列的 prop 多为 Semi 对齐前的旧名或已删除项（如 `value`→`activeKey`、`change`→`onChange`），改 prop 时请同步 meta.ts，勿手写「规划中」的 prop。
+
 | Prop | 类型 | 默认值 | 说明 |
-|---|---|---|---|
-| `checked` | `boolean` | `false` | 受控选中态，配合 `on:change`。 |
-| `defaultChecked` | `boolean` | `false` | 非受控初始选中态。 |
-| `indeterminate` | `boolean` | `false` | 半选视觉态，独立于 `checked`，不参与真值。 |
-| `value` | `string \| number` | `—` | 在 CheckboxGroup 中作为该项标识，聚合到 group value。 |
-| `disabled` | `boolean` | `false` | 禁用；Group 的 disabled 优先级更高。 |
-| `size` | `'small' \| 'default' \| 'large'` | `'default'` | 尺寸；在 Group 中由 Group 透传覆盖。 |
-| `status` | `'default' \| 'warning' \| 'error'` | `'default'` | 校验态，影响边框色。 |
-| `type` | `'default' \| 'card' \| 'pureCard'` | `'default'` | 展示形态；card 带边框+背景，pureCard 无边框。 |
-| `name` | `string` | `—` | 原生 name，表单提交用；Group 透传。 |
-| `extra` | `string` | `—` | 主文案下方的辅助描述（关联 aria-describedby）。 |
-| `id` | `string` | 自动生成 | input id，未传则 useId 生成。 |
-| `preventScroll` | `boolean` | `—` | 命令式 `focus()` 时是否阻止浏览器滚动文档以显示聚焦元素（对齐 Semi）。 |
+| --- | --- | --- | --- |
+| checked | `boolean` | `undefined` | 受控选中；提供则为受控 |
+| defaultChecked | `boolean` | `false` | 非受控初始选中 |
+| indeterminate | `boolean` | `false` | 半选态（视觉横线） |
+| value | `string \| number` | `undefined` | Group 内的标识值 |
+| disabled | `boolean` | `false` |  |
+| type | `'default'\|'card'\|'pureCard'` | `default` | 展示形态；card 带边框背景且整卡为命中区，pureCard 隐藏勾选框只留卡片。Group 透传，单项可覆盖 |
+| name | `string` | `undefined` |  |
+| extra | `Snippet \| string` | `undefined` | 辅助说明，支持富内容（对齐 Semi ReactNode），aria-describedby 关联 |
+| id | `string` | `useId()` |  |
+| addonId | `string` | `undefined` | 标签内容容器 id，经 aria-labelledby 关联为可访问名 |
+| extraId | `string` | `undefined` | 辅助说明 id，未提供则由内部生成 |
+| preventScroll | `boolean` | `undefined` | autoFocus 聚焦时是否阻止滚动（对齐 Semi） |
+| aria-label | `string` | `undefined` | 无可见文本 label 时的可访问名 |
+| ariaInvalid | `boolean` | `undefined` | 标记为无效（校验失败），对齐 Semi aria-invalid |
+| role | `string` | `undefined` | wrapper role（Group 内为 listitem） |
+| style | `string` | `undefined` | 根容器内联样式，可设 width 等（对齐 Semi style） |
+| class | `string` | `undefined` | 根容器自定义类名（与内置 cd-checkbox 并存，对齐 Semi className） |
+| onChange | `(e: CheckboxEvent) => void` | `undefined` | 对齐 Semi：回调收到事件对象，e.target.checked 为选中态 |
+| children | `Snippet` | `undefined` | 标签内容 |
 
 ### Props · CheckboxGroup
 
@@ -69,17 +78,13 @@ Checkbox 是用于在一组选项中进行多选，或对单一选项进行开/�
 | `options` | `Array<string \| number \| {label, value, disabled, extra}>` | `—` | 声明式渲染子项；省略则用默认插槽手写 Checkbox。 |
 | `direction` | `'horizontal' \| 'vertical'` | `'vertical'` | 子项排布方向。 |
 | `disabled` | `boolean` | `false` | 批量禁用全部子项。 |
-| `size` | `'small' \| 'default' \| 'large'` | `'default'` | 统一尺寸，透传子项。 |
-| `status` | `'default' \| 'warning' \| 'error'` | `'default'` | 统一校验态，透传子项。 |
+> 注：`size` / `status` **未实现**（2026-07-30 重校）——Checkbox 对齐 Semi 后无尺寸档与校验态 prop。
 | `name` | `string` | `—` | 统一 name 透传，便于表单分组。 |
 | `type` | `'default' \| 'card' \| 'pureCard'` | `'default'` | 统一展示形态透传。 |
 
 ### Events
 
-| Event | 载荷 (`event.detail`) | 触发组件 | 说明 |
-|---|---|---|---|
-| `change` | `{ checked: boolean; value?: string \| number; nativeEvent: Event }` | Checkbox | 单项切换时触发（用户交互）。 |
-| `change` | `{ value: (string \| number)[]; changed: string \| number; checked: boolean }` | CheckboxGroup | 组内任意项切换后，派发新的选中集合。 |
+> 本组件无事件回调 prop（meta.events 为空）。此前本表列的回调均未实现，已删。
 
 > 命名遵循一致性约定：受控输入用 `value`/`checked` + `on:change`。半选态不单独派发事件（视觉态，由外部计算）。
 

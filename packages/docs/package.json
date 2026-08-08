@@ -10,16 +10,19 @@
     "prebuild": "pnpm run meta",
     "build": "vite build",
     "preview": "vite preview",
+    "check:anchors": "node scripts/check-anchors.mjs",
     "pretypecheck": "pnpm run meta",
     "typecheck": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json"
   },
   "dependencies": {
+    "@chenzy-design/core": "workspace:*",
     "@chenzy-design/icons": "workspace:*",
     "@chenzy-design/icons-lab": "workspace:*",
     "@chenzy-design/svelte": "workspace:*",
     "@chenzy-design/tokens": "workspace:*",
     "@chenzy-design/unocss-preset": "workspace:*",
     "@fontsource/inter": "^5.3.0",
+    "date-fns": "^2.30.0",
     "prismjs": "^1.29.0"
   },
   "devDependencies": {

@@ -89,7 +89,7 @@
      */
     tabIndex?: number;
     /** 根元素可访问名（对齐 Semi aria-label） */
-    ariaLabel?: string;
+    'aria-label'?: string;
     /** 透传根类名（对齐 Semi className） */
     class?: string;
     /** 透传根内联样式（对齐 Semi style） */
@@ -117,7 +117,7 @@
     onMouseEnter,
     onKeyDown,
     tabIndex,
-    ariaLabel,
+    'aria-label': ariaLabel,
     class: className,
     style,
   }: Props = $props();
@@ -144,15 +144,15 @@
   const cls = $derived(
     [
       'cd-tag',
-      `cd-tag--${size}`,
-      `cd-tag--${shape}`,
-      `cd-tag--${type}`,
-      `cd-tag--${color}-${type}`,
-      closable && 'cd-tag--closable',
-      !isVisible && 'cd-tag--invisible',
-      avatarSrc && `cd-tag--avatar-${avatarShape}`,
-      colorful && 'cd-tag--colorful',
-      colorful && gradient && 'cd-tag--gradient',
+      `cd-tag-${size}`,
+      `cd-tag-${shape}`,
+      `cd-tag-${type}`,
+      `cd-tag-${color}-${type}`,
+      closable && 'cd-tag-closable',
+      !isVisible && 'cd-tag-invisible',
+      avatarSrc && `cd-tag-avatar-${avatarShape}`,
+      colorful && 'cd-tag-colorful',
+      colorful && gradient && 'cd-tag-gradient',
       className,
     ]
       .filter(Boolean)
@@ -224,22 +224,22 @@
   onmouseenter={onMouseEnter}
 >
   {#if prefixIcon}
-    <div class="cd-tag__prefix-icon">{@render prefixIcon()}</div>
+    <div class="cd-tag-prefix-icon">{@render prefixIcon()}</div>
   {/if}
   {#if avatarSrc}
     <Avatar src={avatarSrc} shape={avatarShape} size={avatarSize} />
   {/if}
-  <div class="cd-tag__content cd-tag__content--{contentAlign}">
+  <div class="cd-tag-content cd-tag-content-{contentAlign}">
     {#if children}{@render children()}{/if}
   </div>
   {#if suffixIcon}
-    <div class="cd-tag__suffix-icon">{@render suffixIcon()}</div>
+    <div class="cd-tag-suffix-icon">{@render suffixIcon()}</div>
   {/if}
   {#if closable}
     <!-- close：对齐 Semi <div class="semi-tag-close" onClick>；键盘走根 div 的 Delete/Backspace -->
     <!-- svelte-ignore a11y_click_events_have_key_events -->
     <!-- svelte-ignore a11y_no_static_element_interactions -->
-    <div class="cd-tag__close" onclick={close}>
+    <div class="cd-tag-close" onclick={close}>
       <IconClose size="small" />
     </div>
   {/if}
@@ -263,22 +263,22 @@
   }
 
   /* default / small 同高（对齐 Semi &-default,&-small）；large 单列 */
-  .cd-tag--default,
-  .cd-tag--small {
+  .cd-tag-default,
+  .cd-tag-small {
     font-size: var(--cd-tag-font-size);
     height: var(--cd-tag-height-small);
     padding: var(--cd-tag-small-padding-y) var(--cd-tag-small-padding-x);
   }
-  .cd-tag--large {
+  .cd-tag-large {
     font-size: var(--cd-tag-font-size);
     height: var(--cd-tag-height-large);
     padding: var(--cd-tag-large-padding-y) var(--cd-tag-large-padding-x);
   }
 
-  .cd-tag--square {
+  .cd-tag-square {
     border-radius: var(--cd-tag-radius);
   }
-  .cd-tag--circle {
+  .cd-tag-circle {
     border-radius: var(--cd-tag-radius-circle);
   }
 
@@ -286,25 +286,25 @@
     outline: var(--cd-tag-outline-width) solid var(--cd-tag-outline-color);
   }
 
-  .cd-tag--invisible {
+  .cd-tag-invisible {
     display: none;
   }
 
   /* —— prefix / suffix icon（对齐 Semi &-prefix-icon / &-suffix-icon）—— */
-  .cd-tag__prefix-icon {
+  .cd-tag-prefix-icon {
     display: flex;
     padding-right: var(--cd-tag-prefix-icon-padding-right);
   }
-  .cd-tag__suffix-icon {
+  .cd-tag-suffix-icon {
     display: flex;
     padding-left: var(--cd-tag-suffix-icon-padding-left);
   }
 
   /* —— content（对齐 Semi &-content / -ellipsis / -center）—— */
-  .cd-tag__content {
+  .cd-tag-content {
     flex: 1;
   }
-  .cd-tag__content--ellipsis {
+  .cd-tag-content-ellipsis {
     overflow: hidden;
     white-space: nowrap;
     text-overflow: ellipsis;
@@ -313,7 +313,7 @@
     对齐 Semi content-center：含富内容（图标等）时 content 走 flex 垂直居中。
     Snippet 无法内省 children 类型，改用显式 contentAlign 语义控制（默认 ellipsis）。
   */
-  .cd-tag__content--center {
+  .cd-tag-content-center {
     display: flex;
     justify-content: center;
     align-items: center;
@@ -322,7 +322,7 @@
   }
 
   /* —— close（对齐 Semi &-close）—— */
-  .cd-tag__close {
+  .cd-tag-close {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -330,64 +330,64 @@
     padding-left: var(--cd-tag-close-padding-left);
     cursor: pointer;
   }
-  .cd-tag__close:hover {
+  .cd-tag-close:hover {
     color: var(--cd-tag-close-icon-hover);
   }
-  .cd-tag__close:active {
+  .cd-tag-close:active {
     color: var(--cd-tag-close-icon-active);
   }
 
   /* closable 内边距（对齐 Semi &-closable）—— */
-  .cd-tag--closable {
+  .cd-tag-closable {
     padding: var(--cd-tag-closable-padding-top) var(--cd-tag-closable-padding-right)
       var(--cd-tag-closable-padding-bottom) var(--cd-tag-closable-padding-left);
   }
 
   /* —— 头像标签（对齐 Semi &-avatar-square / -circle）—— */
-  .cd-tag--avatar-square,
-  .cd-tag--avatar-circle {
+  .cd-tag-avatar-square,
+  .cd-tag-avatar-circle {
     background-color: var(--cd-tag-avatar-bg);
     border: var(--cd-tag-border-width) solid var(--cd-tag-avatar-border);
     color: var(--cd-tag-avatar-text);
   }
-  .cd-tag--avatar-square :global(.cd-avatar),
-  .cd-tag--avatar-circle :global(.cd-avatar) {
+  .cd-tag-avatar-square :global(.cd-avatar),
+  .cd-tag-avatar-circle :global(.cd-avatar) {
     margin-right: var(--cd-tag-avatar-margin-right);
   }
-  .cd-tag--avatar-square {
+  .cd-tag-avatar-square {
     padding: 0 var(--cd-tag-avatar-square-padding-x) 0 0;
   }
-  .cd-tag--avatar-square :global(.cd-avatar > img) {
+  .cd-tag-avatar-square :global(.cd-avatar > img) {
     background-color: var(--cd-tag-avatar-square-img-bg);
   }
-  .cd-tag--avatar-circle {
+  .cd-tag-avatar-circle {
     padding: var(--cd-tag-avatar-circle-padding-y) var(--cd-tag-avatar-circle-padding-x)
       var(--cd-tag-avatar-circle-padding-y) var(--cd-tag-avatar-circle-padding-left);
   }
   /* 方形头像宽高跟随 tag 高（对齐 Semi avatar-square.default/small/large）—— */
-  .cd-tag--avatar-square.cd-tag--default :global(.cd-avatar),
-  .cd-tag--avatar-square.cd-tag--small :global(.cd-avatar) {
+  .cd-tag-avatar-square.cd-tag-default :global(.cd-avatar),
+  .cd-tag-avatar-square.cd-tag-small :global(.cd-avatar) {
     width: var(--cd-tag-height-small);
     height: var(--cd-tag-height-small);
   }
-  .cd-tag--avatar-square.cd-tag--large :global(.cd-avatar) {
+  .cd-tag-avatar-square.cd-tag-large :global(.cd-avatar) {
     width: var(--cd-tag-height-large);
     height: var(--cd-tag-height-large);
   }
   /* 圆头像改 tag 圆角为 height*0.5+1（对齐 Semi avatar-circle 圆角计算）—— */
-  .cd-tag--avatar-circle.cd-tag--small,
-  .cd-tag--avatar-circle.cd-tag--default {
+  .cd-tag-avatar-circle.cd-tag-small,
+  .cd-tag-avatar-circle.cd-tag-default {
     border-radius: calc(var(--cd-tag-height-small) * 0.5 + 1px);
   }
-  .cd-tag--avatar-circle.cd-tag--small :global(.cd-avatar),
-  .cd-tag--avatar-circle.cd-tag--default :global(.cd-avatar) {
+  .cd-tag-avatar-circle.cd-tag-small :global(.cd-avatar),
+  .cd-tag-avatar-circle.cd-tag-default :global(.cd-avatar) {
     width: var(--cd-tag-avatar-circle-small);
     height: var(--cd-tag-avatar-circle-small);
   }
-  .cd-tag--avatar-circle.cd-tag--large {
+  .cd-tag-avatar-circle.cd-tag-large {
     border-radius: calc(var(--cd-tag-height-large) * 0.5 + 1px);
   }
-  .cd-tag--avatar-circle.cd-tag--large :global(.cd-avatar) {
+  .cd-tag-avatar-circle.cd-tag-large :global(.cd-avatar) {
     width: var(--cd-tag-avatar-circle-large);
     height: var(--cd-tag-avatar-circle-large);
   }
@@ -400,70 +400,70 @@
     用 --cd-color-<c>-N 全局色阶 + color-mix 派生。
   */
   /* solid */
-  .cd-tag--amber-solid { background-color: var(--cd-color-amber-5); color: var(--cd-color-white); }
-  .cd-tag--blue-solid { background-color: var(--cd-color-blue-5); color: var(--cd-color-white); }
-  .cd-tag--cyan-solid { background-color: var(--cd-color-cyan-5); color: var(--cd-color-white); }
-  .cd-tag--green-solid { background-color: var(--cd-color-green-5); color: var(--cd-color-white); }
-  .cd-tag--grey-solid { background-color: var(--cd-color-grey-5); color: var(--cd-color-white); }
-  .cd-tag--indigo-solid { background-color: var(--cd-color-indigo-5); color: var(--cd-color-white); }
-  .cd-tag--light-blue-solid { background-color: var(--cd-color-light-blue-5); color: var(--cd-color-white); }
-  .cd-tag--light-green-solid { background-color: var(--cd-color-light-green-5); color: var(--cd-color-white); }
-  .cd-tag--lime-solid { background-color: var(--cd-color-lime-5); color: var(--cd-color-white); }
-  .cd-tag--orange-solid { background-color: var(--cd-color-orange-5); color: var(--cd-color-white); }
-  .cd-tag--pink-solid { background-color: var(--cd-color-pink-5); color: var(--cd-color-white); }
-  .cd-tag--purple-solid { background-color: var(--cd-color-purple-5); color: var(--cd-color-white); }
-  .cd-tag--red-solid { background-color: var(--cd-color-red-5); color: var(--cd-color-white); }
-  .cd-tag--teal-solid { background-color: var(--cd-color-teal-5); color: var(--cd-color-white); }
-  .cd-tag--violet-solid { background-color: var(--cd-color-violet-5); color: var(--cd-color-white); }
-  .cd-tag--yellow-solid { background-color: var(--cd-color-yellow-5); color: var(--cd-color-white); }
+  .cd-tag-amber-solid { background-color: var(--cd-color-amber-5); color: var(--cd-color-white); }
+  .cd-tag-blue-solid { background-color: var(--cd-color-blue-5); color: var(--cd-color-white); }
+  .cd-tag-cyan-solid { background-color: var(--cd-color-cyan-5); color: var(--cd-color-white); }
+  .cd-tag-green-solid { background-color: var(--cd-color-green-5); color: var(--cd-color-white); }
+  .cd-tag-grey-solid { background-color: var(--cd-color-grey-5); color: var(--cd-color-white); }
+  .cd-tag-indigo-solid { background-color: var(--cd-color-indigo-5); color: var(--cd-color-white); }
+  .cd-tag-light-blue-solid { background-color: var(--cd-color-light-blue-5); color: var(--cd-color-white); }
+  .cd-tag-light-green-solid { background-color: var(--cd-color-light-green-5); color: var(--cd-color-white); }
+  .cd-tag-lime-solid { background-color: var(--cd-color-lime-5); color: var(--cd-color-white); }
+  .cd-tag-orange-solid { background-color: var(--cd-color-orange-5); color: var(--cd-color-white); }
+  .cd-tag-pink-solid { background-color: var(--cd-color-pink-5); color: var(--cd-color-white); }
+  .cd-tag-purple-solid { background-color: var(--cd-color-purple-5); color: var(--cd-color-white); }
+  .cd-tag-red-solid { background-color: var(--cd-color-red-5); color: var(--cd-color-white); }
+  .cd-tag-teal-solid { background-color: var(--cd-color-teal-5); color: var(--cd-color-white); }
+  .cd-tag-violet-solid { background-color: var(--cd-color-violet-5); color: var(--cd-color-white); }
+  .cd-tag-yellow-solid { background-color: var(--cd-color-yellow-5); color: var(--cd-color-white); }
 
   /* ghost */
-  .cd-tag--amber-ghost { background-color: transparent; border-color: var(--cd-color-amber-4); color: var(--cd-color-amber-5); }
-  .cd-tag--blue-ghost { background-color: transparent; border-color: var(--cd-color-blue-4); color: var(--cd-color-blue-5); }
-  .cd-tag--cyan-ghost { background-color: transparent; border-color: var(--cd-color-cyan-4); color: var(--cd-color-cyan-5); }
-  .cd-tag--green-ghost { background-color: transparent; border-color: var(--cd-color-green-4); color: var(--cd-color-green-5); }
-  .cd-tag--grey-ghost { background-color: transparent; border-color: var(--cd-color-grey-4); color: var(--cd-color-grey-5); }
-  .cd-tag--indigo-ghost { background-color: transparent; border-color: var(--cd-color-indigo-4); color: var(--cd-color-indigo-5); }
-  .cd-tag--light-blue-ghost { background-color: transparent; border-color: var(--cd-color-light-blue-4); color: var(--cd-color-light-blue-5); }
-  .cd-tag--light-green-ghost { background-color: transparent; border-color: var(--cd-color-light-green-4); color: var(--cd-color-light-green-5); }
-  .cd-tag--lime-ghost { background-color: transparent; border-color: var(--cd-color-lime-4); color: var(--cd-color-lime-5); }
-  .cd-tag--orange-ghost { background-color: transparent; border-color: var(--cd-color-orange-4); color: var(--cd-color-orange-5); }
-  .cd-tag--pink-ghost { background-color: transparent; border-color: var(--cd-color-pink-4); color: var(--cd-color-pink-5); }
-  .cd-tag--purple-ghost { background-color: transparent; border-color: var(--cd-color-purple-4); color: var(--cd-color-purple-5); }
-  .cd-tag--red-ghost { background-color: transparent; border-color: var(--cd-color-red-4); color: var(--cd-color-red-5); }
-  .cd-tag--teal-ghost { background-color: transparent; border-color: var(--cd-color-teal-4); color: var(--cd-color-teal-5); }
-  .cd-tag--violet-ghost { background-color: transparent; border-color: var(--cd-color-violet-4); color: var(--cd-color-violet-5); }
-  .cd-tag--yellow-ghost { background-color: transparent; border-color: var(--cd-color-yellow-4); color: var(--cd-color-yellow-5); }
+  .cd-tag-amber-ghost { background-color: transparent; border-color: var(--cd-color-amber-4); color: var(--cd-color-amber-5); }
+  .cd-tag-blue-ghost { background-color: transparent; border-color: var(--cd-color-blue-4); color: var(--cd-color-blue-5); }
+  .cd-tag-cyan-ghost { background-color: transparent; border-color: var(--cd-color-cyan-4); color: var(--cd-color-cyan-5); }
+  .cd-tag-green-ghost { background-color: transparent; border-color: var(--cd-color-green-4); color: var(--cd-color-green-5); }
+  .cd-tag-grey-ghost { background-color: transparent; border-color: var(--cd-color-grey-4); color: var(--cd-color-grey-5); }
+  .cd-tag-indigo-ghost { background-color: transparent; border-color: var(--cd-color-indigo-4); color: var(--cd-color-indigo-5); }
+  .cd-tag-light-blue-ghost { background-color: transparent; border-color: var(--cd-color-light-blue-4); color: var(--cd-color-light-blue-5); }
+  .cd-tag-light-green-ghost { background-color: transparent; border-color: var(--cd-color-light-green-4); color: var(--cd-color-light-green-5); }
+  .cd-tag-lime-ghost { background-color: transparent; border-color: var(--cd-color-lime-4); color: var(--cd-color-lime-5); }
+  .cd-tag-orange-ghost { background-color: transparent; border-color: var(--cd-color-orange-4); color: var(--cd-color-orange-5); }
+  .cd-tag-pink-ghost { background-color: transparent; border-color: var(--cd-color-pink-4); color: var(--cd-color-pink-5); }
+  .cd-tag-purple-ghost { background-color: transparent; border-color: var(--cd-color-purple-4); color: var(--cd-color-purple-5); }
+  .cd-tag-red-ghost { background-color: transparent; border-color: var(--cd-color-red-4); color: var(--cd-color-red-5); }
+  .cd-tag-teal-ghost { background-color: transparent; border-color: var(--cd-color-teal-4); color: var(--cd-color-teal-5); }
+  .cd-tag-violet-ghost { background-color: transparent; border-color: var(--cd-color-violet-4); color: var(--cd-color-violet-5); }
+  .cd-tag-yellow-ghost { background-color: transparent; border-color: var(--cd-color-yellow-4); color: var(--cd-color-yellow-5); }
 
   /* light */
-  .cd-tag--amber-light { background-color: color-mix(in srgb, var(--cd-color-amber-5) 15%, transparent); color: var(--cd-color-amber-8); }
-  .cd-tag--blue-light { background-color: color-mix(in srgb, var(--cd-color-blue-5) 15%, transparent); color: var(--cd-color-blue-8); }
-  .cd-tag--cyan-light { background-color: color-mix(in srgb, var(--cd-color-cyan-5) 15%, transparent); color: var(--cd-color-cyan-8); }
-  .cd-tag--green-light { background-color: color-mix(in srgb, var(--cd-color-green-5) 15%, transparent); color: var(--cd-color-green-8); }
-  .cd-tag--grey-light { background-color: color-mix(in srgb, var(--cd-color-grey-5) 15%, transparent); color: var(--cd-color-grey-8); }
-  .cd-tag--indigo-light { background-color: color-mix(in srgb, var(--cd-color-indigo-5) 15%, transparent); color: var(--cd-color-indigo-8); }
-  .cd-tag--light-blue-light { background-color: color-mix(in srgb, var(--cd-color-light-blue-5) 15%, transparent); color: var(--cd-color-light-blue-8); }
-  .cd-tag--light-green-light { background-color: color-mix(in srgb, var(--cd-color-light-green-5) 15%, transparent); color: var(--cd-color-light-green-8); }
-  .cd-tag--lime-light { background-color: color-mix(in srgb, var(--cd-color-lime-5) 15%, transparent); color: var(--cd-color-lime-8); }
-  .cd-tag--orange-light { background-color: color-mix(in srgb, var(--cd-color-orange-5) 15%, transparent); color: var(--cd-color-orange-8); }
-  .cd-tag--pink-light { background-color: color-mix(in srgb, var(--cd-color-pink-5) 15%, transparent); color: var(--cd-color-pink-8); }
-  .cd-tag--purple-light { background-color: color-mix(in srgb, var(--cd-color-purple-5) 15%, transparent); color: var(--cd-color-purple-8); }
-  .cd-tag--red-light { background-color: color-mix(in srgb, var(--cd-color-red-5) 15%, transparent); color: var(--cd-color-red-8); }
-  .cd-tag--teal-light { background-color: color-mix(in srgb, var(--cd-color-teal-5) 15%, transparent); color: var(--cd-color-teal-8); }
-  .cd-tag--violet-light { background-color: color-mix(in srgb, var(--cd-color-violet-5) 15%, transparent); color: var(--cd-color-violet-8); }
-  .cd-tag--yellow-light { background-color: color-mix(in srgb, var(--cd-color-yellow-5) 15%, transparent); color: var(--cd-color-yellow-8); }
+  .cd-tag-amber-light { background-color: color-mix(in srgb, var(--cd-color-amber-5) 15%, transparent); color: var(--cd-color-amber-8); }
+  .cd-tag-blue-light { background-color: color-mix(in srgb, var(--cd-color-blue-5) 15%, transparent); color: var(--cd-color-blue-8); }
+  .cd-tag-cyan-light { background-color: color-mix(in srgb, var(--cd-color-cyan-5) 15%, transparent); color: var(--cd-color-cyan-8); }
+  .cd-tag-green-light { background-color: color-mix(in srgb, var(--cd-color-green-5) 15%, transparent); color: var(--cd-color-green-8); }
+  .cd-tag-grey-light { background-color: color-mix(in srgb, var(--cd-color-grey-5) 15%, transparent); color: var(--cd-color-grey-8); }
+  .cd-tag-indigo-light { background-color: color-mix(in srgb, var(--cd-color-indigo-5) 15%, transparent); color: var(--cd-color-indigo-8); }
+  .cd-tag-light-blue-light { background-color: color-mix(in srgb, var(--cd-color-light-blue-5) 15%, transparent); color: var(--cd-color-light-blue-8); }
+  .cd-tag-light-green-light { background-color: color-mix(in srgb, var(--cd-color-light-green-5) 15%, transparent); color: var(--cd-color-light-green-8); }
+  .cd-tag-lime-light { background-color: color-mix(in srgb, var(--cd-color-lime-5) 15%, transparent); color: var(--cd-color-lime-8); }
+  .cd-tag-orange-light { background-color: color-mix(in srgb, var(--cd-color-orange-5) 15%, transparent); color: var(--cd-color-orange-8); }
+  .cd-tag-pink-light { background-color: color-mix(in srgb, var(--cd-color-pink-5) 15%, transparent); color: var(--cd-color-pink-8); }
+  .cd-tag-purple-light { background-color: color-mix(in srgb, var(--cd-color-purple-5) 15%, transparent); color: var(--cd-color-purple-8); }
+  .cd-tag-red-light { background-color: color-mix(in srgb, var(--cd-color-red-5) 15%, transparent); color: var(--cd-color-red-8); }
+  .cd-tag-teal-light { background-color: color-mix(in srgb, var(--cd-color-teal-5) 15%, transparent); color: var(--cd-color-teal-8); }
+  .cd-tag-violet-light { background-color: color-mix(in srgb, var(--cd-color-violet-5) 15%, transparent); color: var(--cd-color-violet-8); }
+  .cd-tag-yellow-light { background-color: color-mix(in srgb, var(--cd-color-yellow-5) 15%, transparent); color: var(--cd-color-yellow-8); }
 
   /* —— white 色（对齐 Semi @each white-<type> + 边框 + close icon）—— */
-  .cd-tag--white-light,
-  .cd-tag--white-solid,
-  .cd-tag--white-ghost {
+  .cd-tag-white-light,
+  .cd-tag-white-solid,
+  .cd-tag-white-ghost {
     background-color: var(--cd-tag-white-bg);
     border: var(--cd-tag-border-width) solid var(--cd-tag-white-border);
     color: var(--cd-tag-white-text);
   }
-  .cd-tag--white-light .cd-tag__close,
-  .cd-tag--white-solid .cd-tag__close,
-  .cd-tag--white-ghost .cd-tag__close {
+  .cd-tag-white-light .cd-tag-close,
+  .cd-tag-white-solid .cd-tag-close,
+  .cd-tag-white-ghost .cd-tag-close {
     color: var(--cd-tag-white-icon);
   }
 
@@ -472,49 +472,78 @@
     type 仍生效，配色改用 AI 渐变覆盖 color 语义色；gradient=true 三段渐变，false 单色紫(via)。
     多彩标签字重更重。
   */
-  .cd-tag--colorful {
-    --ct: linear-gradient(
-      120deg,
-      var(--cd-tag-colorful-from) 0%,
-      var(--cd-tag-colorful-via) 52%,
-      var(--cd-tag-colorful-to) 100%
-    );
-    --ct-solid: var(--cd-tag-colorful-via);
-    --ct-fill: var(--ct-solid);
-    --ct-text: var(--cd-tag-colorful-via);
+  .cd-tag-colorful {
     font-weight: var(--cd-tag-colorful-font-weight);
   }
-  .cd-tag--colorful.cd-tag--gradient {
-    --ct-fill: var(--ct);
-  }
-  /* solid：多彩实心 + 白字 */
-  .cd-tag--colorful.cd-tag--solid {
-    background: var(--ct-fill);
-    color: var(--cd-color-white);
+  /* solid：AI 紫实心 + 白字；gradient 时换成 AI 通用渐变（Semi $..._solid_gradient-bg） */
+  .cd-tag-colorful.cd-tag-solid {
+    background: var(--cd-tag-colorful-solid-bg);
+    color: var(--cd-tag-colorful-solid-text);
     border-color: transparent;
   }
-  /* light：浅多彩底 + 紫字 */
-  .cd-tag--colorful.cd-tag--light {
-    background: color-mix(in srgb, var(--ct-text) 12%, var(--cd-color-bg-0));
-    color: var(--ct-text);
+  .cd-tag-colorful.cd-tag-gradient.cd-tag-solid {
+    background: var(--cd-tag-colorful-solid-gradient-bg);
+  }
+  /* light：AI 紫最浅底 + AI 紫字；gradient 时底改 ai-general-0（0 档渐变） */
+  .cd-tag-colorful.cd-tag-light {
+    background: var(--cd-tag-colorful-light-bg);
+    color: var(--cd-tag-colorful-light-text);
     border-color: transparent;
   }
-  .cd-tag--colorful.cd-tag--gradient.cd-tag--light {
-    background: linear-gradient(
-      120deg,
-      color-mix(in srgb, var(--cd-tag-colorful-from) 14%, transparent) 0%,
-      color-mix(in srgb, var(--cd-tag-colorful-via) 14%, transparent) 52%,
-      color-mix(in srgb, var(--cd-tag-colorful-to) 14%, transparent) 100%
-    );
+  .cd-tag-colorful.cd-tag-gradient.cd-tag-light {
+    background: var(--cd-tag-colorful-light-gradient-bg);
   }
-  /* ghost：透明 + 紫边框（gradient 用渐变边框）+ 紫字 */
-  .cd-tag--colorful.cd-tag--ghost {
-    background: transparent;
-    border-color: var(--ct-text);
-    color: var(--ct-text);
+  /* ghost：白底 + AI 紫字 + AI 渐变描边（Semi ghost-bg 是 white，非 transparent） */
+  .cd-tag-colorful.cd-tag-ghost {
+    background: var(--cd-tag-colorful-ghost-bg);
+    border-color: var(--cd-tag-colorful-ghost-border);
+    color: var(--cd-tag-colorful-ghost-text);
   }
-  .cd-tag--colorful.cd-tag--gradient.cd-tag--ghost {
+  /* gradient 下文字用渐变裁切（对齐 Semi content { background-clip: text }） */
+  .cd-tag-colorful.cd-tag-gradient.cd-tag-light :global(.cd-tag-content),
+  .cd-tag-colorful.cd-tag-gradient.cd-tag-ghost :global(.cd-tag-content) {
+    background: var(--cd-tag-colorful-light-gradient-text);
+    background-clip: text;
+    -webkit-background-clip: text;
+    color: transparent;
+  }
+  .cd-tag-colorful.cd-tag-gradient.cd-tag-ghost {
     border-color: transparent;
-    border-image: var(--ct) 1;
+    border-image: var(--cd-tag-colorful-ghost-border) 1;
+  }
+
+  /* —— RTL（逐条对齐 Semi tag/rtl.scss）——
+     前后缀图标、关闭叉、头像的物理内外边距整体换边；
+     closable / avatar 的四值 padding 左右互换。 */
+  :global(.cd-rtl) .cd-tag {
+    direction: rtl;
+  }
+  :global(.cd-rtl) .cd-tag-prefix-icon {
+    padding-right: 0;
+    padding-left: var(--cd-tag-prefix-icon-padding-right);
+  }
+  :global(.cd-rtl) .cd-tag-suffix-icon {
+    padding-left: 0;
+    padding-right: var(--cd-tag-suffix-icon-padding-left);
+  }
+  :global(.cd-rtl) .cd-tag-close {
+    padding-left: 0;
+    padding-right: var(--cd-tag-close-padding-left);
+  }
+  :global(.cd-rtl) .cd-tag-closable {
+    padding: var(--cd-tag-closable-padding-top) var(--cd-tag-closable-padding-left)
+      var(--cd-tag-closable-padding-bottom) var(--cd-tag-closable-padding-right);
+  }
+  :global(.cd-rtl) .cd-tag-avatar-square :global(.cd-avatar),
+  :global(.cd-rtl) .cd-tag-avatar-circle :global(.cd-avatar) {
+    margin-right: 0;
+    margin-left: var(--cd-tag-avatar-margin-right);
+  }
+  :global(.cd-rtl) .cd-tag-avatar-square {
+    padding: 0 0 0 var(--cd-tag-avatar-square-padding-x);
+  }
+  :global(.cd-rtl) .cd-tag-avatar-circle {
+    padding: var(--cd-tag-avatar-circle-padding-y) var(--cd-tag-avatar-circle-padding-left)
+      var(--cd-tag-avatar-circle-padding-y) var(--cd-tag-avatar-circle-padding-x);
   }
 </style>

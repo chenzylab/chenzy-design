@@ -515,10 +515,10 @@
     <div role="search" aria-label="Transfer filter" class="cd-transfer-filter">
       <Input
         value={inputValue}
-        placeholder={loc().t('Transfer.searchPlaceholder')}
+        placeholder={loc().t('Transfer.placeholder')}
         showClear
         {disabled}
-        ariaLabel={loc().t('Transfer.searchPlaceholder')}
+        aria-label={loc().t('Transfer.placeholder')}
         onInput={onInputChange}
       >
         {#snippet prefix()}
@@ -774,7 +774,7 @@
       theme="borderless"
       type="tertiary"
       size="small"
-      ariaLabel={loc().t('Transfer.moveToRight')}
+      aria-label={loc().t('Transfer.moveToRight')}
       disabled={moveRightDisabled}
       onclick={moveToRight}
     >
@@ -1033,5 +1033,19 @@
     .cd-transfer-spinner {
       animation: none;
     }
+  }
+
+  /* —— RTL（对齐 Semi transfer/rtl.scss）——
+     左右两栏之间的分割边框换边、全选文案的单侧外边距换边。 */
+  :global(.cd-rtl) .cd-transfer {
+    direction: rtl;
+  }
+  :global(.cd-rtl) .cd-transfer-left {
+    border-right: 0;
+    border-left: var(--cd-width-transfer-left-border) solid var(--cd-color-transfer-border);
+  }
+  :global(.cd-rtl) .cd-transfer-header :global(.cd-transfer-header-all) {
+    margin-left: 0;
+    margin-right: var(--cd-spacing-transfer-header-all-margin-left);
   }
 </style>

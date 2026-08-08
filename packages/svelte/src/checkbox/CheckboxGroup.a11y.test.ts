@@ -13,7 +13,7 @@ const OPTIONS = [
 describe('CheckboxGroup a11y', () => {
   it('默认：role=list + ariaLabel + 多选项渲染，无 axe violations', async () => {
     const { container } = renderWithLocale(CheckboxGroup, {
-      props: { ariaLabel: 'Permissions', options: OPTIONS },
+      props: { 'aria-label': 'Permissions', options: OPTIONS },
     });
     const group = container.querySelector('[role="list"]');
     expect(group?.getAttribute('aria-label')).toBe('Permissions');
@@ -25,7 +25,7 @@ describe('CheckboxGroup a11y', () => {
 
   it('选中态：value 命中的 checkbox 为 checked', async () => {
     const { container } = renderWithLocale(CheckboxGroup, {
-      props: { ariaLabel: 'Permissions', options: OPTIONS, value: ['read', 'write'] },
+      props: { 'aria-label': 'Permissions', options: OPTIONS, value: ['read', 'write'] },
     });
     const checked = container.querySelectorAll('input[type="checkbox"]:checked');
     expect(checked.length).toBe(2);
@@ -34,7 +34,7 @@ describe('CheckboxGroup a11y', () => {
 
   it('禁用项：对应 checkbox 为 disabled', async () => {
     const { container } = renderWithLocale(CheckboxGroup, {
-      props: { ariaLabel: 'Permissions', options: OPTIONS },
+      props: { 'aria-label': 'Permissions', options: OPTIONS },
     });
     const disabled = container.querySelectorAll('input[type="checkbox"]:disabled');
     expect(disabled.length).toBe(1);

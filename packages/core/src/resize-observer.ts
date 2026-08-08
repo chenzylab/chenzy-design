@@ -23,6 +23,13 @@ export type ResizeSchedule =
   | { strategy: 'throttle'; wait: number }
   | { strategy: 'debounce'; wait: number };
 
+/**
+ * 只关心某一维度的变化时的过滤开关（对齐 Semi ObserverProperty）。
+ * 'all'（默认）= 任何变化都上报；'width' / 'height' = 仅该维度相对上次上报值
+ * 发生变化才上报（逐 target 记忆上次值，对齐 Semi formerPropertyValue）。
+ */
+export type ResizeObserverProperty = 'width' | 'height' | 'all';
+
 /** normalized size payload — consumers never call getBoundingClientRect */
 export interface CDResizeEntry {
   target: Element;
@@ -62,6 +69,11 @@ export interface ResizeObserverOptions {
    * 默认 false：不支持环境静默降级（不监听、不抛错）。
    */
   fallbackToWindow?: boolean;
+  /**
+   * 仅当指定维度变化时才上报（对齐 Semi observerProperty）。默认 'all'。
+   * 设为 'width' / 'height' 时逐 target 记忆上次上报值，另一维度单独变化不触发回调。
+   */
+  observerProperty?: ResizeObserverProperty;
 }
 
 /** onResizeEnd 默认静默窗口(ms)，约一次拖拽停顿。 */
@@ -309,7 +321,22 @@ export function createResizeObserver(options: ResizeObserverOptions): ResizeObse
     endTimer = setTimeout(fireEnd, endDelay);
   };
 
+  /* ---- observerProperty 过滤：仅关心某一维度时，另一维度单独变化不上报 ----
+     逐 target 记忆上次上报值（对齐 Semi formerPropertyValue Map）；首次见到的
+     target 一律放行（Semi 同款：未记录过则记录并上报）。 */
+  const observerProperty = options.observerProperty ?? 'all';
+  const formerPropertyValue = new Map<Element, number>();
+
+  const passesPropertyFilter = (entry: CDResizeEntry): boolean => {
+    if (observerProperty === 'all') return true;
+    const current = entry[observerProperty];
+    if (formerPropertyValue.get(entry.target) === current) return false;
+    formerPropertyValue.set(entry.target, current);
+    return true;
+  };
+
   const dispatch = (entry: CDResizeEntry) => {
+    if (!passesPropertyFilter(entry)) return;
     // 调度器只决定"何时"，commit 闭包持有这一帧最新值。
     scheduler.run(() => commit(entry));
   };
@@ -363,6 +390,7 @@ export function createResizeObserver(options: ResizeObserverOptions): ResizeObse
       },
       unobserve(el) {
         targets.delete(el);
+        formerPropertyValue.delete(el);
         if (targets.size === 0) {
           win.removeEventListener('resize', onWindowResize);
         }
@@ -373,6 +401,7 @@ export function createResizeObserver(options: ResizeObserverOptions): ResizeObse
         for (const t of initialTimers) clearTimeout(t);
         initialTimers.clear();
         targets.clear();
+        formerPropertyValue.clear();
         win.removeEventListener('resize', onWindowResize);
       },
     };
@@ -391,10 +420,12 @@ export function createResizeObserver(options: ResizeObserverOptions): ResizeObse
     },
     unobserve(el) {
       ro.unobserve(el);
+      formerPropertyValue.delete(el);
     },
     disconnect() {
       scheduler.cancel();
       clearEndTimer();
+      formerPropertyValue.clear();
       ro.disconnect();
     },
   };

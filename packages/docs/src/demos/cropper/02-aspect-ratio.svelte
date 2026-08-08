@@ -1,7 +1,7 @@
 <script lang="ts">
   import { Cropper, Button } from '@chenzy-design/svelte';
 
-  const src = 'https://picsum.photos/id/1025/800/500';
+  const src = 'https://lf3-static.bytednsdoc.com/obj/eden-cn/ptlz_zlp/ljhwZthlaukjlkulzlp/other/image.png';
   let cropper = $state<{ getCropperCanvas: () => HTMLCanvasElement } | undefined>();
   let result = $state('');
 
@@ -16,11 +16,11 @@
   defaultAspectRatio 仅影响初始比例，拖动时比例可变（见 aspectRatio 未设时）。
 -->
 <div style="display: flex; flex-direction: column; gap: 12px;">
-  <Cropper bind:this={cropper} {src} aspectRatio={3 / 4} style="width: 100%; height: 300px;" />
+  <Cropper bind:this={cropper} {src} aspectRatio={3 / 4} style="width: 550px; height: 300px; margin: 20px;" />
   <div>
     <Button onclick={crop}>裁切</Button>
   </div>
   {#if result}
-    <img src={result} alt="裁切结果" style="max-height: 240px; border: 1px solid var(--cd-color-border);" />
+    <img src={result} alt="裁切结果" style="height: 400px;" />
   {/if}
 </div>

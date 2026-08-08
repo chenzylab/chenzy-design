@@ -33,7 +33,7 @@ describe('SideSheet a11y', () => {
 
   it('无 title + ariaLabel：role=dialog 用 aria-label 提供可访问名', async () => {
     renderWithLocale(SideSheet, {
-      props: { visible: true, ariaLabel: 'Notification center', closable: false },
+      props: { visible: true, 'aria-label': 'Notification center', closable: false },
     });
     const dialog = document.querySelector('[role="dialog"]') as HTMLElement | null;
     expect(dialog?.getAttribute('aria-label')).toBe('Notification center');

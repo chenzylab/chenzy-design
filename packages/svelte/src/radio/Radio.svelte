@@ -55,7 +55,7 @@
     style?: string;
     onMouseEnter?: (e: MouseEvent) => void;
     onMouseLeave?: (e: MouseEvent) => void;
-    ariaLabel?: string;
+    'aria-label'?: string;
     preventScroll?: boolean;
     /** 内部 input 的 tabindex（用于 grid roving tabindex 等场景，缺省不设）。 */
     tabindex?: number | undefined;
@@ -81,7 +81,7 @@
     style,
     onMouseEnter,
     onMouseLeave,
-    ariaLabel,
+    'aria-label': ariaLabel,
     preventScroll = false,
     tabindex,
   }: Props = $props();
@@ -589,5 +589,17 @@
     .cd-radio-addon-buttonRadio {
       transition: none;
     }
+  }
+
+  /* —— RTL（对齐 Semi radio/rtl.scss）——
+     内容区文字方向、以及 buttonRadioGroup 各项之间的单侧内边距换边。 */
+  /* text-align 挂在 .cd-radio 根节点本身（不是 -inner），故与 direction 同处一条规则。 */
+  :global(.cd-rtl) .cd-radio {
+    direction: rtl;
+    text-align: right;
+  }
+  :global(.cd-rtl) .cd-radio-buttonRadioGroup:not(:last-child) {
+    padding-right: 0;
+    padding-left: var(--cd-spacing-radio-buttonradiogroup-paddingright);
   }
 </style>

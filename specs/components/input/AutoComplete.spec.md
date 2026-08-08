@@ -47,51 +47,55 @@ AutoComplete（输入联想补全）是一个文本输入框，用户键入时�
 
 ### Props
 
-| 名称 | 类型 | 默认值 | 说明 |
-|---|---|---|---|
-| `value` | `string` | `''` | 受控输入文本（配合 `on:change`） |
-| `defaultValue` | `string` | `''` | 非受控初始文本 |
-| `data` | `Array<string \| number \| { value: string\|number; label?: string; disabled?: boolean; group?: string }>` | `[]` | 候选数据源 |
-| `open` | `boolean` | — | 受控面板显隐（配合 `on:openChange`） |
-| `defaultOpen` | `boolean` | `false` | 非受控初始显隐 |
-| `placeholder` | `string` | `''` | 输入占位符（建议走 i18n） |
-| `size` | `'small' \| 'default' \| 'large'` | `'default'` | 尺寸 |
-| `status` | `'default' \| 'warning' \| 'error'` | `'default'` | 校验态 |
-| `disabled` | `boolean` | `false` | 禁用 |
-| `loading` | `boolean` | `false` | 外部受控 loading 态（远程拉取中） |
-| `filter` | `boolean \| ((input: string, option) => boolean)` | `true` | 过滤策略；`true`=默认包含匹配（不区分大小写），`false`=不过滤（远程已过滤），或自定义 |
-| `defaultActiveFirstOption` | `boolean` | `true` | 展开时是否默认高亮首项 |
-| `maxCount` | `number` | — | 候选最大渲染条数 |
-| `debounce` | `number` | `300` | 触发 `on:search` 的防抖毫秒数 |
-| `triggerRender` | `'change' \| 'focus'` | `'change'` | 弹出时机：输入即弹 / 聚焦即弹 |
-| `clearable` | `boolean` | `false` | 显示清除按钮 |
-| `prefix` / `suffix` | `Snippet` | — | 输入框前/后缀 |
-| `insetLabel` | `string` | — | 内嵌前置标签 |
-| `emptyContent` | `string \| Snippet` | i18n 默认 | 无匹配时内容 |
-| `dropdownMatchWidth` | `boolean` | `true` | 面板宽度对齐输入框 |
-| `dropdownMaxHeight` | `number` | `300` | 面板最大高度(px)，超出滚动 |
-| `virtualize` | `boolean \| { itemHeight: number; overscan?: number }` | `false` | 长列表虚拟化 |
-| `destroyOnClose` | `boolean` | `true` | 关闭时销毁面板 DOM |
-| `getPopupContainer` | `() => HTMLElement` | `() => document.body` | 浮层挂载容器 |
-| `renderItem` | `Snippet<[option]>` | — | 自定义选项渲染 |
-| `onSelectWithObject` | `boolean` | `false` | 为 true 时 `select` 回调载荷从原始 value 变为完整候选对象 `{ value, label, disabled }`（对齐 Semi） |
-| `maxHeight` | `number \| string` | — | 下拉面板最大高度，`number`→px；覆盖默认 `max-block-size`（对齐 Semi `maxHeight`） |
-| `zIndex` | `number` | — | 下拉面板 `z-index`，覆盖默认 token（对齐 Semi） |
-| `class` | `string` | — | 根元素类名 |
-| `style` | `string` | `''` | 根元素内联样式 |
+> 本表由 `packages/svelte/src/autocomplete/meta.ts` 真源生成（2026-07-30 重校）。此前本表列的 prop 多为 Semi 对齐前的旧名或已删除项（如 `value`→`activeKey`、`change`→`onChange`），改 prop 时请同步 meta.ts，勿手写「规划中」的 prop。
+
+| Prop | 类型 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| value | `string\|number` | `undefined` | 受控输入值 |
+| defaultValue | `string\|number` | `''` | 非受控初始值 |
+| data | `Item[]` | `[]` | 候选数据（由用户按 query 准备，组件不做本地过滤） |
+| defaultOpen | `boolean` | `false` | 非受控初始展开 |
+| placeholder | `string` | `''` |  |
+| aria-label | `string` | `undefined` | combobox 可访问名；缺省回退 placeholder 或 locale 默认 |
+| ariaLabelledby | `string` | `undefined` | 关联外部 label 的 id（优先于 aria-label） |
+| insetLabel | `string\|Snippet` | `undefined` | 输入框内嵌前缀标签 |
+| insetLabelId | `string` | `undefined` | 内嵌标签 id（关联 combobox 可访问名，对齐 Semi） |
+| size | `'small'\|'large'\|'default'` | `default` |  |
+| validateStatus | `'default'\|'warning'\|'error'` | `default` | 校验状态（对齐 Semi validateStatus） |
+| disabled | `boolean` | `false` |  |
+| defaultActiveFirstOption | `boolean` | `false` | 打开时默认高亮首项（对齐 Semi 默认 false） |
+| onSearch | `(query: string) => void` | `undefined` | 远程搜索回调（提供即远程模式，由外部更新 data） |
+| loading | `boolean` | `false` | 远程加载中（显示 Spin） |
+| onChange | `(value: string\|number) => void` | `undefined` |  |
+| onSelect | `(value: string\|number\|NormalizedItem) => void` | `undefined` | onSelectWithObject=true 时回传完整候选对象 |
+| onSelectWithObject | `boolean` | `false` | true 时 onSelect 入参从 value 变为 { value, label, disabled } 对象（对齐 Semi） |
+| onDropdownVisibleChange | `(visible: boolean) => void` | `undefined` | 浮层显隐切换回调（对齐 Semi） |
+| onKeyDown | `(e: KeyboardEvent) => void` | `undefined` | 透传输入框原始 keydown 事件（对齐 Semi） |
+| dropdownMatchSelectWidth | `boolean` | `true` | 浮层宽度与触发器同宽 |
+| getPopupContainer | `() => HTMLElement` | `undefined` | 浮层挂载容器 |
+| dropdownClassName | `string` | `undefined` | 浮层 className |
+| dropdownStyle | `string \| Record<string, string>` | `undefined` | 浮层样式 |
+| triggerRender | `Snippet<[{ value: string; placeholder: string; disabled: boolean }]>` | `undefined` | 完全自定义触发器 |
+| renderItem | `Snippet<[{ item: NormalizedItem; isSelected: boolean }]>` | `undefined` | 自定义候选项渲染 |
+| renderSelectedItem | `Snippet<[{ item: NormalizedItem }]>` | `undefined` | 自定义已选项显示（仅 string） |
+| emptyContent | `Snippet \| string` | `undefined` | 无候选时展示内容 |
+| prefix | `Snippet \| string` | `undefined` | 输入框前缀 |
+| suffix | `Snippet \| string` | `undefined` | 输入框后缀 |
+| showClear | `boolean` | `false` | 显示清除按钮（对齐 Semi showClear） |
+| clearIcon | `Snippet` | `undefined` | 自定义清除图标 |
+| onBlur | `(e: FocusEvent) => void` | `undefined` |  |
+| onFocus | `(e: FocusEvent) => void` | `undefined` |  |
+| onClear | `() => void` | `undefined` |  |
+| autoFocus | `boolean` | `false` | 挂载自动聚焦 |
+| position | `'top'\|'topLeft'\|'topRight'\|'left'\|'leftTop'\|'leftBottom'\|'right'\|'rightTop'\|'rightBottom'\|'bottom'\|'bottomLeft'\|'bottomRight'` | `'bottomLeft'` | 浮层位置（对齐 Semi Tooltip 12 方位） |
+| maxHeight | `number\|string` | `300` | 下拉浮层最大高度，number→px（对齐 Semi 默认 300） |
+| zIndex | `number` | `undefined` | 下拉浮层 z-index（对齐 Semi） |
+| class | `string` | `''` | 根节点 className |
+| style | `string` | `''` | 根节点内联样式 |
 
 ### Events
 
-| 名称 | 载荷 (`event.detail`) | 触发时机 |
-|---|---|---|
-| `change` | `{ value: string }` | 输入文本变化（键入或选中回填后） |
-| `search` | `{ value: string }` | 防抖后的搜索词变化，用于触发远程拉取 |
-| `select` | `{ value: string \| number; option: OptionData }` | 用户从候选中确认选定（点击/Enter） |
-| `openChange` | `{ open: boolean }` | 面板显隐变化 |
-| `focus` | `FocusEvent` | 输入框聚焦 |
-| `blur` | `FocusEvent` | 输入框失焦 |
-| `clear` | `void` | 点击清除按钮 |
-| `keydown` | `KeyboardEvent` | 透传原生键盘事件（在内部处理后） |
+> 本组件无事件回调 prop（meta.events 为空）。此前本表列的回调均未实现，已删。
 
 ### Slots / Snippets
 
@@ -142,7 +146,7 @@ AutoComplete（输入联想补全）是一个文本输入框，用户键入时�
   - 面板列表：`role="listbox"`、`aria-label`（来自 i18n）。
   - 每项：`role="option"`、`aria-selected`（active 项 true）、`aria-disabled`（禁用项）、`id` 由 `useId` 生成。
   - 分组：`role="group"` + `aria-label`（分组标题为 `presentation`，不可选）。
-  - 清除按钮：`<button>` + `aria-label`（i18n `AutoComplete.clear`）。
+  - 清除按钮：`<button>` + `aria-label`（由调用方传入；AutoComplete slice 只有 `ariaLabel`/`emptyText` 两键）。
 - **键盘交互**：
   - `↓/↑`：移动 active 项（不移动真实焦点）；闭合时 `↓` 打开面板并高亮首项。
   - `Enter`：选中当前 active 项；无 active 时不拦截（保留表单提交语义可由 `defaultActiveFirstOption=false` 控制）。
@@ -160,16 +164,12 @@ AutoComplete（输入联想补全）是一个文本输入框，用户键入时�
 
 用户可见文案零硬编码，全部走 i18n；日期/数字格式（若选项含数值/时间）用 `Intl`。
 
-| i18n key | 默认（zh-CN） | 用途 |
-|---|---|---|
-| `AutoComplete.placeholder` | `请输入` | 输入占位符默认值 |
-| `AutoComplete.empty` | `无匹配结果` | 空态文案 |
-| `AutoComplete.loading` | `加载中…` | 加载态文案 |
-| `AutoComplete.clear` | `清除` | 清除按钮 aria-label |
-| `AutoComplete.listboxLabel` | `候选项` | listbox aria-label |
-| `AutoComplete.resultsAnnounce` | `{count} 条结果可用` | live 播报（`Intl.NumberFormat` 格式化 count） |
-| `AutoComplete.noResultsAnnounce` | `无匹配结果` | live 播报无结果 |
-| `AutoComplete.loadingAnnounce` | `正在加载` | live 播报加载 |
+> 本表由 `packages/locale/src/zh_CN.ts` 真源生成（2026-07-30 重校）。键名与键值都是 Semi 契约，勿手写「规划中」的键——历史上本表列过大量从未实现的键名，见 [[locale-dangling-keys-render-raw-key]]。
+
+| i18n key | 默认（zh-CN） |
+| --- | --- |
+| `AutoComplete.ariaLabel` | 自动完成输入框 |
+| `AutoComplete.emptyText` | 无匹配项 |
 
 - 复数与占位符插值由 i18n 运行时处理；`count` 经 `Intl.NumberFormat(locale)` 本地化。
 - RTL 语言（ar/he）自动继承 `dir`。

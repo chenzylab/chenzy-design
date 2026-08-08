@@ -20,6 +20,10 @@
     if (data.type === 'hour') selectIndex2 = data.index;
     if (data.type === 'minute') selectIndex3 = data.index;
   }
+
+  function handleClose(): void {
+    console.log('close');
+  }
 </script>
 
 <ScrollList style="border:unset; box-shadow:unset;" header="无限滚动列表">
@@ -30,7 +34,7 @@
     type="ap"
     selectedIndex={selectIndex1}
     {onSelect}
-    ariaLabel="时段"
+    aria-label="时段"
   />
   <ScrollItem
     mode="wheel"
@@ -39,7 +43,7 @@
     type="hour"
     selectedIndex={selectIndex2}
     {onSelect}
-    ariaLabel="小时"
+    aria-label="小时"
   />
   <ScrollItem
     mode="wheel"
@@ -48,9 +52,9 @@
     type="minute"
     selectedIndex={selectIndex3}
     {onSelect}
-    ariaLabel="分钟"
+    aria-label="分钟"
   />
   {#snippet footer()}
-    <Button size="small" type="primary" theme="solid">Ok</Button>
+    <Button size="small" type="primary" theme="solid" onclick={handleClose}>Ok</Button>
   {/snippet}
 </ScrollList>

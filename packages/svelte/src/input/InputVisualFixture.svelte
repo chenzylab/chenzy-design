@@ -12,7 +12,7 @@
     data-visual-root
     style="display:inline-flex; gap:16px; padding:16px; background:#fff; align-items:center;"
   >
-    <Input placeholder="Default" ariaLabel="default" />
-    <Input placeholder="Disabled" disabled ariaLabel="disabled" />
+    <Input placeholder="Default" aria-label="default" />
+    <Input placeholder="Disabled" disabled aria-label="disabled" />
   </div>
 </LocaleProvider>

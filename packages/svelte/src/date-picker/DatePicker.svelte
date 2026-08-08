@@ -6,6 +6,7 @@
   range/dateTime/yam/tpk/footer/inset/preset 留后续里程碑（此处只装 date 单面板）。
 -->
 <script lang="ts">
+  import { resolveDefault } from '@chenzy-design/core';
   import { getContext, setContext } from 'svelte';
   import { format as dateFnsFormat } from 'date-fns';
   import { useLocale, LOCALE_CONTEXT_KEY, type LocaleApi, type LocaleContextValue } from '../locale-provider/index.js';
@@ -186,12 +187,12 @@
   }
 
   let {
-    type: typeProp = 'date',
+    type: typeProp,
     value,
     defaultValue,
     defaultPickerValue,
     open: openProp,
-    defaultOpen = false,
+    defaultOpen: defaultOpenProp,
     disabled = false,
     placeholder,
     format,
@@ -199,29 +200,29 @@
     // DateInput，由后者 defaultProps 的 showClear:true 兜底；Semi 文档也标默认 true）。
     // 本库 meta/md 早已写 default: true，此前实现却是 false——属「声明未接线」。
     showClear = true,
-    inputReadOnly = false,
+    inputReadOnly: inputReadOnlyProp,
     validateStatus,
-    size = 'default',
-    weekStartsOn = numbers.WEEK_START_ON as WeekStartNumber,
+    size: sizeProp,
+    weekStartsOn: weekStartsOnProp,
     disabledDate,
     disabledTime,
     disabledTimePicker = false,
-    hideDisabledOptions = false,
-    density = 'default',
-    syncSwitchMonth = false,
+    hideDisabledOptions: hideDisabledOptionsProp,
+    density: densityProp,
+    syncSwitchMonth: syncSwitchMonthProp,
     renderDate,
     renderFullDate,
     startDateOffset,
     endDateOffset,
     onPanelChange,
     timeZone,
-    multiple = false,
+    multiple: multipleProp,
     max,
     onMaxLimit,
     presets = [],
-    presetPosition = 'bottom',
+    presetPosition: presetPositionProp,
     onPresetClick,
-    insetInput = false,
+    insetInput: insetInputProp,
     needConfirm = false,
     onConfirm,
     onCancel,
@@ -230,25 +231,25 @@
     // onChange 首参给 Date 对象、次参给格式化串。本库原默认 false（首参给串），
     // 与本文件 Props 里 `onChange?: (value: Date | ..., dateString: string)` 的声明自相矛盾，
     // 受控用法（value + onChange 回写）会把串当 Date 存回去 → 选中不生效。
-    onChangeWithDateFirst = true,
+    onChangeWithDateFirst: onChangeWithDateFirstProp,
     onOpenChange,
     position,
     zIndex,
-    autoAdjustOverflow = true,
+    autoAdjustOverflow: autoAdjustOverflowProp,
     getPopupContainer,
-    motion = true,
-    stopPropagation = true,
+    motion: motionProp,
+    stopPropagation: stopPropagationProp,
     onClickOutSide,
     onFocus,
     onBlur,
-    borderless = false,
+    borderless: borderlessProp,
     insetLabel,
     prefix,
     clearIcon,
     inputStyle,
     // 默认 ' ~ '（对齐 Semi rangeSeparator 默认值）。原先无默认，靠各子组件自己的
     // 默认值兜底，顶层直接使用时会拿到 undefined。
-    rangeSeparator = ' ~ ',
+    rangeSeparator: rangeSeparatorProp,
     topSlot,
     bottomSlot,
     leftSlot,
@@ -262,7 +263,7 @@
     onClear: onClearProp,
     style,
     class: className,
-    autoSwitchDate = true,
+    autoSwitchDate: autoSwitchDateProp,
     dropdownMargin,
     insetLabelId,
     rangeSeparatorNode,
@@ -274,15 +275,36 @@
     locale: localeProp,
     localeCode,
   }: Props = $props();
+  // cdGlobal 全局默认 props（对齐 Semi semiGlobal.config.overrideDefaultProps）：
+  // 优先级 = 显式传值 > cdGlobal['DatePicker'] > 组件内置默认值。
+  const onChangeWithDateFirst = $derived(resolveDefault(onChangeWithDateFirstProp, 'DatePicker', 'onChangeWithDateFirst', true));
+  const borderless = $derived(resolveDefault(borderlessProp, 'DatePicker', 'borderless', false));
+  const autoAdjustOverflow = $derived(resolveDefault(autoAdjustOverflowProp, 'DatePicker', 'autoAdjustOverflow', true));
+  const stopPropagation = $derived(resolveDefault(stopPropagationProp, 'DatePicker', 'stopPropagation', true));
+  const motion = $derived(resolveDefault(motionProp, 'DatePicker', 'motion', true));
+  const presetPosition = $derived(resolveDefault(presetPositionProp, 'DatePicker', 'presetPosition', 'bottom'));
+  const resolvedType = $derived(resolveDefault(typeProp, 'DatePicker', 'type', 'date'));
+  const size = $derived(resolveDefault(sizeProp, 'DatePicker', 'size', 'default'));
+  const density = $derived(resolveDefault(densityProp, 'DatePicker', 'density', 'default'));
+  const multiple = $derived(resolveDefault(multipleProp, 'DatePicker', 'multiple', false));
+  const defaultOpen = $derived(resolveDefault(defaultOpenProp, 'DatePicker', 'defaultOpen', false));
+  const hideDisabledOptions = $derived(resolveDefault(hideDisabledOptionsProp, 'DatePicker', 'hideDisabledOptions', false));
+  const weekStartsOn = $derived(resolveDefault(weekStartsOnProp, 'DatePicker', 'weekStartsOn', numbers.WEEK_START_ON as WeekStartNumber));
+  const inputReadOnly = $derived(resolveDefault(inputReadOnlyProp, 'DatePicker', 'inputReadOnly', false));
+  const autoSwitchDate = $derived(resolveDefault(autoSwitchDateProp, 'DatePicker', 'autoSwitchDate', true));
+  const syncSwitchMonth = $derived(resolveDefault(syncSwitchMonthProp, 'DatePicker', 'syncSwitchMonth', false));
+  const rangeSeparator = $derived(resolveDefault(rangeSeparatorProp, 'DatePicker', 'rangeSeparator', ' ~ '));
+  const insetInput = $derived(resolveDefault(insetInputProp, 'DatePicker', 'insetInput', false));
 
   // format 归一化（对齐 Semi index.tsx propsObj 逻辑）：format 不含时间片段（无 [Hhms]）时，
   // dateTime/dateTimeRange 静默降级为 date/dateRange —— 用户传了纯日期 format 却仍要时间面板无意义。
+  // 建立在 resolveDefault 结果之上，使 cdGlobal 覆盖的 type 默认值也吃得到这条归一化。
   const type = $derived.by((): PickerType => {
     if (typeof format === 'string' && format && !/[Hhms]+/.test(format)) {
-      if (typeProp === 'dateTime') return 'date';
-      if (typeProp === 'dateTimeRange') return 'dateRange';
+      if (resolvedType === 'dateTime') return 'date';
+      if (resolvedType === 'dateTimeRange') return 'dateRange';
     }
-    return typeProp;
+    return resolvedType;
   });
 
   const baseLoc = useLocale();

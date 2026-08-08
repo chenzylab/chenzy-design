@@ -29,7 +29,7 @@ export const meta = {
       props: [
         { name: 'spacing', type: 'number|number[]', default: '16', desc: '卡片间距（网格型下忽略）' },
         { name: 'type', type: "'grid'", default: 'undefined', desc: '网格型，覆盖 spacing' },
-        { name: 'ariaLabel', type: 'string', default: 'undefined', desc: '组语义标签' },
+        { name: 'aria-label', type: 'string', default: 'undefined', desc: '组语义标签' },
         { name: 'class', type: 'string', default: 'undefined', desc: '根节点自定义类名' },
         { name: 'style', type: 'string', default: 'undefined', desc: '根节点自定义内联样式' },
       ],
@@ -57,7 +57,7 @@ export const meta = {
     { name: 'loading', type: 'boolean', default: 'false', desc: 'body 显示 Skeleton 占位（Title + Paragraph rows=3）' },
     { name: 'class', type: 'string', default: 'undefined', desc: '根节点自定义类名' },
     { name: 'style', type: 'string', default: 'undefined', desc: '根节点自定义内联样式' },
-    { name: 'ariaLabel', type: 'string', default: 'undefined', desc: '根节点 aria-label，表述该 Card 的作用' },
+    { name: 'aria-label', type: 'string', default: 'undefined', desc: '根节点 aria-label，表述该 Card 的作用' },
     { name: 'children', type: 'Snippet', default: 'undefined', desc: '卡片正文' },
   ],
   slots: [
@@ -72,7 +72,7 @@ export const meta = {
   a11y: {
     hasRole: true,
     focusable: false,
-    note: '有 title 时根 role=region；string title 经 useId 关联 aria-labelledby（无 ariaLabel 时）；loading 时根 aria-busy；Skeleton 占位自带 role=status/aria-busy。',
+    note: '有 title 时根 role=region；string title 经 useId 关联 aria-labelledby（无 aria-label 时）；loading 时根 aria-busy；Skeleton 占位自带 role=status/aria-busy。',
   },
   tokens: [
     '--cd-card-bg',

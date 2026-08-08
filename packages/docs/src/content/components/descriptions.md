@@ -3,7 +3,6 @@ title: Descriptions 描述列表
 name: descriptions
 category: show
 brief: 描述列表用于键值对的呈现。
-docMode: inline
 ---
 
 <script>

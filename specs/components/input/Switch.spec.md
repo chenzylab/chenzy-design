@@ -50,44 +50,43 @@ Switch（开关）是一个二态切换控件，用于在「开 / 关」两个�
 
 DOM 结构（BEM-like）：
 ```
-button.cd-switch.cd-switch--<size>.cd-switch--checked?.cd-switch--disabled?.cd-switch--loading?.cd-switch--<status>
-  span.cd-switch__handle
-    span.cd-switch__loading (loading 时)
-  span.cd-switch__text.cd-switch__text--checked
-  span.cd-switch__text.cd-switch__text--unchecked
-  input.cd-switch__native (visually-hidden, type=checkbox, 表单提交用)
+button.cd-switch.cd-switch-<size>.cd-switch-checked?.cd-switch-disabled?.cd-switch-loading?.cd-switch-<status>
+  span.cd-switch-handle
+    span.cd-switch-loading (loading 时)
+  span.cd-switch-text.cd-switch-text-checked
+  span.cd-switch-text.cd-switch-text-unchecked
 ```
 
 ## 4. API
 
 ### Props
 
-| 名称 | 类型 | 默认值 | 说明 |
-|---|---|---|---|
-| value | `boolean` | `false` | 受控开关态（约定 value + on:change）。绑定 `bind:value` 实现双向。 |
-| defaultValue | `boolean` | `false` | 非受控初始态。 |
-| checkedValue | `string \| number \| boolean` | `true` | 开态对应的实际值（用于表单提交与 onChange 回传）。 |
-| uncheckedValue | `string \| number \| boolean` | `false` | 关态对应的实际值。 |
-| size | `'small' \| 'default' \| 'large'` | `'default'` | 尺寸。 |
-| status | `'default' \| 'warning' \| 'error'` | `'default'` | 校验态（注：约定为 default/warning/error）。 |
-| disabled | `boolean` | `false` | 禁用，阻止交互与聚焦内交互。 |
-| loading | `boolean` | `false` | 异步加载态，锁定交互并展示 spinner。 |
-| checkedChildren | `string \| Snippet` | `undefined` | 开态内嵌文字/图标。**`size='small'` 时无效**（对齐 Semi：最小开关放不下文本，渲染层不渲染）。 |
-| uncheckedChildren | `string \| Snippet` | `undefined` | 关态内嵌文字/图标。**`size='small'` 时无效**。 |
-| name | `string` | `undefined` | 原生表单字段名（提交时使用）。 |
-| required | `boolean` | `false` | 表单必填校验（须为开态）。 |
-| ariaLabel | `string` | `undefined` | 无可见文本时的可访问名称。 |
-| announceOnChange | `boolean` | `false` | 切换后是否用 live region 播报新状态。 |
-| autofocus | `boolean` | `false` | 挂载后自动聚焦。 |
+> 本表由 `packages/svelte/src/switch/meta.ts` 真源生成（2026-07-30 重校）。此前本表列的 prop 多为 Semi 对齐前的旧名或已删除项（如 `value`→`activeKey`、`change`→`onChange`），改 prop 时请同步 meta.ts，勿手写「规划中」的 prop。
+
+| Prop | 类型 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| checked | `boolean` | `undefined` | 受控选中态；提供则为受控（对齐 Semi checked） |
+| defaultChecked | `boolean` | `false` | 非受控初始选中态（对齐 Semi defaultChecked） |
+| size | `'small'\|'default'\|'large'` | `default` |  |
+| disabled | `boolean` | `false` |  |
+| loading | `boolean` | `false` | 加载态，锁定交互并展示 spinner |
+| checkedText | `string \| Snippet` | `undefined` | 开态内嵌文字/图标（size=small 时不渲染） |
+| uncheckedText | `string \| Snippet` | `undefined` | 关态内嵌文字/图标（size=small 时不渲染） |
+| onChange | `(checked: boolean, event: Event) => void` | `undefined` | 变更回调（对齐 Semi (checked, e)） |
+| onMouseEnter | `(e: MouseEvent) => void` | `undefined` | 鼠标进入 |
+| onMouseLeave | `(e: MouseEvent) => void` | `undefined` | 鼠标离开 |
+| style | `string` | `undefined` | 透传根元素内联样式 |
+| class | `string` | `undefined` | 透传根元素 class（对齐 Semi className） |
+| id | `string` | `undefined` |  |
+| aria-label | `string` | `undefined` |  |
+| aria-labelledby | `string` | `undefined` | 关联外部可见文本 id（优先于 aria-label） |
+| aria-describedby | `string` | `undefined` |  |
+| aria-errormessage | `string` | `undefined` |  |
+| aria-invalid | `boolean` | `undefined` | 校验失败态（外层 Form 表达） |
 
 ### Events
 
-| 名称 | payload | 说明 |
-|---|---|---|
-| change | `{ value: boolean; nativeValue: string \| number \| boolean; event: Event }` | 状态变更（约定的受控事件）。nativeValue 为 checkedValue/uncheckedValue 映射结果。 |
-| focus | `FocusEvent` | 获得焦点。 |
-| blur | `FocusEvent` | 失去焦点。 |
-| keydown | `KeyboardEvent` | 键盘按下（可用于自定义快捷键扩展）。 |
+> 本组件无事件回调 prop（meta.events 为空）。此前本表列的回调均未实现，已删。
 
 > 说明：本组件无浮层，故不提供 open/openChange。loading 由外部 props 控制，调用方在 change 回调内置 loading=true，请求结束后复位并按结果更新 value（典型异步开关模式）。
 
@@ -137,7 +136,7 @@ button.cd-switch.cd-switch--<size>.cd-switch--checked?.cd-switch--disabled?.cd-s
 - **对比度**：开态 primary 轨道与白滑块、内嵌文字均需 ≥ 3:1（图形）/4.5:1（文字）；状态不仅靠颜色，还有滑块位移与文字/图标双重表达。
 - **reduced-motion**：`prefers-reduced-motion: reduce` 时移除滑块位移与色渐变过渡。
 - **RTL**：`[dir="rtl"]` 下开/关方向与文字侧镜像（滑块开态靠左、文字侧对调）。
-- **隐藏原生 input**：`.cd-switch__native` 用 visually-hidden 而非 `display:none`，保证表单提交与辅助技术回退。
+- **无隐藏原生 input**：本库根节点是 `<button role="switch">`（APG Switch Pattern，role 载体即按钮本身），不设隐藏 checkbox——与 Semi 的 `<div>` + 隐藏 `<input type=checkbox role=switch>` 结构有意不同（组件头注释已说明）。表单场景由使用方读 `checked` 自行提交。
 
 ## 7. 国际化
 

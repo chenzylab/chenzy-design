@@ -17,11 +17,18 @@
     options?: unknown[];
     /** 附加变更回调（在写回 context 之外，额外通知）。 */
     onChange?: ((value: unknown) => void) | undefined;
+    /** 附加类名（与组件固有类名合并，对齐 Semi getConfigureItem 的 cls 合并）。 */
+    class?: string;
     /** 其余透传给 Select 的 props。 */
     [key: string]: unknown;
   }
 
-  let { field, initValue, options, onChange, ...rest }: Props = $props();
+  let { field, initValue, options, onChange, class: className, ...rest }: Props = $props();
+
+  // Semi getConfigureItem 把 opts.className 与调用方 className 合并后传给内层组件。
+  const cls = $derived(
+    ['cd-ai-chat-input-footer-configure-select', className].filter(Boolean).join(' '),
+  );
 
   const ctx = getConfigureContext();
 
@@ -44,7 +51,30 @@
 
 <Select
   {...rest}
+  class={cls}
   optionList={options as never}
   value={value as never}
   onChange={handleChange as never}
 />
+
+<style>
+  /* 逐条对齐 Semi aiChatInput.scss:277-294：1px 边框 + 透明底，
+     文字 600 字重 + text-1；hover/focus 保持同样的边框、不换底。
+     本库此前只挂了类名（上一轮补的），一条样式都没接。 */
+  :global(.cd-ai-chat-input-footer-configure-select) {
+    border: var(--cd-width-ai-chat-input-footer-configure-select-border) solid
+      var(--cd-color-ai-chat-input-footer-configure-select-border);
+    background: transparent;
+  }
+
+  :global(.cd-ai-chat-input-footer-configure-select .cd-select-value) {
+    font-weight: var(--cd-font-ai-chat-input-footer-configure-select-fontweight);
+    color: var(--cd-color-ai-chat-input-footer-configure-select-text);
+  }
+
+  :global(.cd-ai-chat-input-footer-configure-select:hover),
+  :global(.cd-ai-chat-input-footer-configure-select:focus) {
+    border-color: var(--cd-color-ai-chat-input-footer-configure-select-border);
+    background: transparent;
+  }
+</style>

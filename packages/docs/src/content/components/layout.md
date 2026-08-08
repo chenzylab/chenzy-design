@@ -5,41 +5,127 @@ category: basic
 brief: 用于快捷划分页面整体布局。
 ---
 
-## 使用场景
+<script>
+  import DemoBox from '$lib/components/DemoBox.svelte';
+  import Notice from '$lib/components/Notice.svelte';
 
-Layout 是页面级骨架容器，用于快捷划分页面整体布局。它由 5 个协作组件构成：`Layout`（布局容器，其下可嵌套 Header / Sider / Content / Footer 或 Layout 本身）、`Layout.Header`（顶部布局）、`Layout.Sider`（侧边栏）、`Layout.Content`（内容区，自动撑满剩余空间）、`Layout.Footer`（页脚）。
+  import ThreeRows from '../../demos/layout/01-three-rows.svelte';
+  import threeRowsSrc from '../../demos/layout/01-three-rows.svelte?raw';
+  import LeftSider from '../../demos/layout/02-left-sider.svelte';
+  import leftSiderSrc from '../../demos/layout/02-left-sider.svelte?raw';
+  import RightSider from '../../demos/layout/03-right-sider.svelte';
+  import rightSiderSrc from '../../demos/layout/03-right-sider.svelte?raw';
+  import SiderLayout from '../../demos/layout/04-sider-layout.svelte';
+  import siderLayoutSrc from '../../demos/layout/04-sider-layout.svelte?raw';
+  import Responsive from '../../demos/layout/05-responsive.svelte';
+  import responsiveSrc from '../../demos/layout/05-responsive.svelte?raw';
+  import TopNav from '../../demos/layout/06-top-nav.svelte';
+  import topNavSrc from '../../demos/layout/06-top-nav.svelte?raw';
+  import TopSideNav from '../../demos/layout/07-top-side-nav.svelte';
+  import topSideNavSrc from '../../demos/layout/07-top-side-nav.svelte?raw';
+  import SideNav from '../../demos/layout/08-side-nav.svelte';
+  import sideNavSrc from '../../demos/layout/08-side-nav.svelte?raw';
+</script>
 
-方向自动推断：Layout 默认 column 方向，当直接子节点中存在 Sider 时自动切换为 row，无需手动指定 hasSider（SSR 首屏可显式传 hasSider 避免闪动）。
+## 概述
 
-典型场景：管理后台 Dashboard、文档站、设置页。
+- `Layout`：布局容器，其下可嵌套 `Header` `Sider` `Content` `Footer` 或 `Layout` 本身，可以放在任何父容器中。
+- `Header`：顶部布局，其下可嵌套任何元素，只能放在 `Layout` 中。
+- `Sider`：侧边栏，其下可嵌套任何元素，只能放在 `Layout` 中。
+- `Content`：内容部分，其下可嵌套任何元素，只能放在 `Layout` 中。
+- `Footer`：底部布局，其下可嵌套任何元素，只能放在 `Layout` 中。
 
-## 注意事项
+<Notice type="primary" title="注意事项">
+1、布局组件采用 Flex 布局实现，无法在非现代浏览器中工作 <br/>
+2、Layout 组件仅会帮你实现布局，但不会附带背景色、文本色、宽高度等样式。你可以根据自己实际需求传入 style 或给定特定 class 另行编写 css 实现
+</Notice>
 
-- 布局组件采用 Flex 布局实现，无法在非现代浏览器中工作。
-- Layout 组件仅负责布局，**不会附带背景色、文本色、宽高等样式**。请根据实际需求传入 `style` 或给定 `class` 另行编写 CSS。
+## 代码演示
 
-## 何时使用
+### 如何引入
 
-适用于需要标准页头/侧边栏/内容/页脚结构的页面骨架搭建，尤其是管理后台类应用。
+```jsx
+import { Layout } from '@chenzy-design/svelte';
+```
 
-不负责导航逻辑（交给 Nav）、不负责栅格（交给 Grid/Row/Col）。
+### 三行布局
 
-## 响应式
+<DemoBox code={threeRowsSrc}><ThreeRows /></DemoBox>
 
-Sider 预设六个响应尺寸：`xs`、`sm`、`md`、`lg`、`xl`、`xxl`。通过 `breakpoint` 属性设置断点，命中 / 解除时经 `onBreakpoint(screen, matched)` 回调。
+### 左侧边栏布局
+
+<DemoBox code={leftSiderSrc}><LeftSider /></DemoBox>
+
+### 右侧边栏布局
+
+<DemoBox code={rightSiderSrc}><RightSider /></DemoBox>
+
+### 侧边栏布局
+
+<DemoBox code={siderLayoutSrc}><SiderLayout /></DemoBox>
+
+### 响应式布局
+
+侧边栏预设了六个响应尺寸：`xs`、`sm`、`md`、`lg`、`xl`、`xxl`。可以通过设置 `breakpoint` 属性设置断点，通过 `onBreakpoint` 调用回调函数。
+
+<DemoBox code={responsiveSrc}><Responsive /></DemoBox>
+
+## 布局示例
+
+### 顶部导航布局
+
+<DemoBox code={topNavSrc}><TopNav /></DemoBox>
+
+### 顶部导航-侧边布局
+
+<DemoBox code={topSideNavSrc}><TopSideNav /></DemoBox>
+
+### 侧边导航
+
+<DemoBox code={sideNavSrc}><SideNav /></DemoBox>
+
+## API 参考
+
+### Layout
+
+> `Layout.Header` `Layout.Footer` `Layout.Content` API 与 `Layout` 相同
+
+| 属性 | 说明 | 类型 | 默认值 |
+| --- | --- | --- | --- |
+| aria-label | [aria-label](https://developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA/ARIA_Techniques/Using_the_aria-label_attribute) 属性，用来给当前元素加上的标签描述，提升可访问性 | string | - |
+| class | 类名 | string | - |
+| hasSider | 表示子元素里有 Sider，一般不用指定。可用于服务端渲染时避免样式闪动 | boolean | - |
+| role | [role](https://developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA/Roles) 属性，提升可访问性 | string | - |
+| style | 样式 | string | - |
+
+### Layout.Sider
+
+| 属性 | 说明 | 类型 | 默认值 |
+| --- | --- | --- | --- |
+| aria-label | [aria-label](https://developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA/ARIA_Techniques/Using_the_aria-label_attribute) 属性，用来给当前元素加上的标签描述，提升可访问性 | string | - |
+| breakpoint | 触发响应式布局的断点，可选值 'xs', 'sm', 'md', 'lg', 'xl', 'xxl' | string[] | - |
+| class | 类名 | string | - |
+| onBreakpoint | 触发响应式布局断点时的回调 | (screen: string, matched: boolean) => void | - |
+| role | [role](https://developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA/Roles) 属性，提升可访问性 | string | - |
+| style | 样式 | string | - |
+
+### responsive map
 
 ```text
 {
-  xs: '(max-width: 575px)',
-  sm: '(min-width: 576px)',
-  md: '(min-width: 768px)',
-  lg: '(min-width: 992px)',
-  xl: '(min-width: 1200px)',
-  xxl: '(min-width: 1600px)',
-}
+    xs: '(max-width: 575px)',
+    sm: '(min-width: 576px)',
+    md: '(min-width: 768px)',
+    lg: '(min-width: 992px)',
+    xl: '(min-width: 1200px)',
+    xxl: '(min-width: 1600px)',
+};
 ```
 
-## 无障碍
+## Accessibility
 
-- 默认使用 landmark 语义标签：Header→`<header>`，Content→`<main>`，Footer→`<footer>`，Sider→`<aside>`。
-- Sider 可传 `aria-label` 描述该侧栏作用；Header / Content / Footer 可传 `role` / `aria-label` 描述对应区域。
+### ARIA
+
+- Sider 可传入 `aria-label` props，描述该 Sider 作用。
+- Header Content Main Footer 可传入 `role`、`aria-label` 描述对应元素作用。
+- 默认使用 landmark 语义标签（与 Semi 一致）：Layout→`<section>`，Header→`<header>`，Content→`<main>`，Footer→`<footer>`，Sider→`<aside>`；传入 `role` 可覆盖默认语义。

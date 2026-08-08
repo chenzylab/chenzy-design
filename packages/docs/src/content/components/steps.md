@@ -3,7 +3,6 @@ title: Steps 步骤条
 name: steps
 category: navigation
 brief: 将复杂任务或存在先后关系的任务分解，使用步骤组件引导用户按规定流程操作，并让其知道其当前的进度。
-docMode: inline
 ---
 
 <script>
@@ -121,7 +120,7 @@ import { Steps } from '@chenzy-design/svelte';
 
 | 参数 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
-| ariaLabel | 容器 aria-label | string | - |
+| aria-label | 容器 aria-label | string | - |
 | class | 类名 | string | - |
 | description | 步骤的详情描述，可选 | string \| Snippet | - |
 | icon | 步骤图标的类型，可选 | string \| Snippet | - |

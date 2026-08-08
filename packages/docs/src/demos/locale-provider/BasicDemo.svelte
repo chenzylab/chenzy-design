@@ -18,7 +18,7 @@
   registerLocale('fr_FR', {
     ...en_US,
     code: 'fr-FR',
-    Modal: { okText: 'Confirmer', cancelText: 'Annuler', close: 'Fermer' },
+    Modal: { confirm: 'Confirmer', cancel: 'Annuler', close: 'Fermer' },
   });
   let localeCode = $state<'zh_CN' | 'en_US' | 'fr_FR'>('zh_CN');
 </script>
@@ -29,7 +29,7 @@
     {#snippet children({ locale, t, formatNumber, direction })}
       <div style="line-height:2">
         <div>生效 locale：<strong>{locale}</strong>（方向 {direction}）</div>
-        <div>Modal.okText：<strong>{t('Modal.okText')}</strong> / Modal.cancelText：<strong>{t('Modal.cancelText')}</strong></div>
+        <div>Modal.confirm：<strong>{t('Modal.confirm')}</strong> / Modal.cancel：<strong>{t('Modal.cancel')}</strong></div>
         <div>Pagination.total：<strong>{t('Pagination.total', { total: 1234 })}</strong></div>
         <div>格式化数字 1234567.89：<strong>{formatNumber(1234567.89)}</strong></div>
       </div>
@@ -63,21 +63,21 @@
     {#snippet children({ locale, t })}
       <div style="margin-top:8px; line-height:2">
         <div>locale 码 <strong>"{localeCode}"</strong> → 生效 <strong>{locale}</strong></div>
-        <div>Modal.okText：<strong>{t('Modal.okText')}</strong></div>
+        <div>Modal.confirm：<strong>{t('Modal.confirm')}</strong></div>
       </div>
     {/snippet}
   </LocaleProvider>
 </div>
 
 <div style="margin-top:16px">
-  <Text type="tertiary">嵌套 inherit 深合并：外层 zh_CN，内层仅覆盖 Modal.okText，其余继承外层。</Text>
+  <Text type="tertiary">嵌套 inherit 深合并：外层 zh_CN，内层仅覆盖 Modal.confirm，其余继承外层。</Text>
   <LocaleProvider locale="zh_CN">
-    <LocaleProvider locale={{ Modal: { okText: '好的（覆盖）' } } as unknown as Locale}>
+    <LocaleProvider locale={{ Modal: { confirm: '好的（覆盖）' } } as unknown as Locale}>
       {#snippet children({ locale, t })}
         <div style="margin-top:8px; line-height:2">
           <div>生效 locale：<strong>{locale}</strong>（继承外层）</div>
-          <div>Modal.okText（覆盖）：<strong>{t('Modal.okText')}</strong></div>
-          <div>Modal.cancelText（继承）：<strong>{t('Modal.cancelText')}</strong></div>
+          <div>Modal.confirm（覆盖）：<strong>{t('Modal.confirm')}</strong></div>
+          <div>Modal.cancel（继承）：<strong>{t('Modal.cancel')}</strong></div>
         </div>
       {/snippet}
     </LocaleProvider>

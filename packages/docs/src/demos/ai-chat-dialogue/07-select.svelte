@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { AIChatDialogue } from '@chenzy-design/svelte';
+  import { AIChatDialogue, RadioGroup, Radio } from '@chenzy-design/svelte';
   import type { AIDialogueMessage, AIDialogueRoleConfig } from '@chenzy-design/svelte';
 
   const roleConfig: AIDialogueRoleConfig = {
@@ -29,11 +29,19 @@
   ];
 
   // selecting 开启选择模式，前置 checkbox；onSelect 返回选中的 id 列表。
-  // 组件暴露 selectAll / deselectAll ref 方法。
+  // 组件暴露 selectAll / deselectAll ref 方法；align 切换验证选择模式在两种布局下都可用（对齐 Semi「选择」demo）。
   let dialogue = $state<{ selectAll: () => void; deselectAll: () => void }>();
   let selected = $state<string[]>([]);
+  let align = $state<'leftRight' | 'leftAlign'>('leftRight');
 </script>
 
+<span style="display:flex; align-items:center; column-gap:10px; margin-bottom: 8px;">
+  会话布局方式
+  <RadioGroup value={align} onChange={(e) => (align = e.target.value as 'leftRight' | 'leftAlign')} type="button">
+    <Radio value="leftRight">左右分布</Radio>
+    <Radio value="leftAlign">左对齐</Radio>
+  </RadioGroup>
+</span>
 <div style="margin-bottom: 8px; display: flex; gap: 8px;">
   <button type="button" onclick={() => dialogue?.selectAll()}>全选</button>
   <button type="button" onclick={() => dialogue?.deselectAll()}>取消全选</button>
@@ -44,6 +52,8 @@
     bind:this={dialogue}
     {chats}
     {roleConfig}
+    {align}
+    mode="bubble"
     selecting
     onSelect={(ids) => (selected = ids)}
   />

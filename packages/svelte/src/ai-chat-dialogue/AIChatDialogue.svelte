@@ -16,14 +16,30 @@
     type AIDialogueReference,
     type ContentItem,
     type AIChatInputMessageContent,
+    resolveDefault,
   } from '@chenzy-design/core';
+  import { untrack } from 'svelte';
   import { SvelteSet } from 'svelte/reactivity';
+  import { IconChevronDown } from '@chenzy-design/icons';
+  import { Button } from '../button/index.js';
   import { useLocale } from '../locale-provider/index.js';
   import DialogueBox from './DialogueBox.svelte';
-  import Hint from '../chat/Hint.svelte';
+  import DialogueHint from './DialogueHint.svelte';
   import type { DialogueRenderConfig } from './render-config.js';
 
   interface Props {
+    /** 是否对用户消息中的 HTML 标签进行转义，防止被 Markdown 解析器当作 HTML 处理导致内容丢失（对齐 Semi escapeHtml）。 */
+    escapeHtml?: boolean;
+    /** 是否禁用文件点击（对齐 Semi disabledFileItemClick）。 */
+    disabledFileItemClick?: boolean;
+    /** 提示区最外层样式类名（对齐 Semi hintCls）。 */
+    hintCls?: string;
+    /** 提示区最外层样式（对齐 Semi hintStyle）。 */
+    hintStyle?: string;
+    /** 分享消息回调（对齐 Semi onMessageShare）。 */
+    onMessageShare?: ((message: unknown) => void) | undefined;
+    /** annotation 点击回调（对齐 Semi onAnnotationClick）。 */
+    onAnnotationClick?: ((annotation: unknown) => void) | undefined;
     /** 受控对话列表。 */
     chats?: AIDialogueMessage[];
     /** 角色配置（必填，对齐 Semi）。 */
@@ -59,7 +75,11 @@
     messageEditRender?: Snippet<[AIChatInputMessageContent]> | undefined;
     /** 点击编辑操作回调（对齐 Semi onMessageEdit）。 */
     onMessageEdit?: ((message: AIDialogueMessage) => void) | undefined;
-    /** 是否展示编辑操作（默认 true；仅 user 消息）。 */
+    /**
+     * 是否展示编辑操作（默认 true；仅 user 消息）。
+     * **本库自有**：Semi 的 showEdit 恒为 `role === USER`（dialogueAction.tsx:261），
+     * 没有开关，user 消息必出编辑按钮。本库多这个 prop 供使用方关掉。
+     */
     editable?: boolean;
     /** 是否在 user 消息展示引用区（对齐 Semi showReference）。 */
     showReference?: boolean;
@@ -72,11 +92,11 @@
   let {
     chats = [],
     roleConfig,
-    align = 'leftRight',
-    mode = 'bubble',
+    align: alignProp,
+    mode: modeProp,
     hints,
-    selecting = false,
-    showReset = true,
+    selecting: selectingProp,
+    showReset: showResetProp,
     markdownRenderProps,
     renderDialogueContentItem,
     renderHintBox,
@@ -95,10 +115,23 @@
     messageEditRender,
     onMessageEdit,
     editable = true,
-    showReference = false,
+    showReference: showReferenceProp,
     onReferenceClick,
     dialogueRenderConfig,
+    escapeHtml = true,
+    disabledFileItemClick = false,
+    hintCls = '',
+    hintStyle = '',
+    onMessageShare,
+    onAnnotationClick,
   }: Props = $props();
+  // cdGlobal 全局默认 props（对齐 Semi semiGlobal.config.overrideDefaultProps）：
+  // 优先级 = 显式传值 > cdGlobal['AIChatDialogue'] > 组件内置默认值。
+  const align = $derived(resolveDefault(alignProp, 'AIChatDialogue', 'align', 'leftRight'));
+  const mode = $derived(resolveDefault(modeProp, 'AIChatDialogue', 'mode', 'bubble'));
+  const selecting = $derived(resolveDefault(selectingProp, 'AIChatDialogue', 'selecting', false));
+  const showReset = $derived(resolveDefault(showResetProp, 'AIChatDialogue', 'showReset', true));
+  const showReference = $derived(resolveDefault(showReferenceProp, 'AIChatDialogue', 'showReference', false));
 
   const loc = useLocale();
 
@@ -124,6 +157,27 @@
     // 距底超过阈值时显示回到底部（复用 back-top 的阈值判定语义）。
     showBackBottom = isAboveThreshold(distanceToBottom, 100);
   }
+
+  // 滚动条按需显隐（对齐 Semi 的 wheelScroll 状态）：
+  // 新消息到来时先隐藏（-list-scroll-hidden），用户真的滚轮滚动后再显示。
+  // Semi 在 componentDidUpdate 里 chats 变长时置 false，wheel 事件里置 true。
+  let wheelScroll = $state(false);
+
+  function handleWheel(): void {
+    wheelScroll = true;
+  }
+
+  // chats 变长 → 回到「隐藏滚动条」态（下次用户滚轮再显示）。
+  // 初值用 -1 而非 chats.length：后者在 setup 期只会捕获初始值（编译器 state_referenced_locally
+  // 告警），首次 effect 会拿它跟当前长度比，语义不对。-1 让首帧必定同步一次。
+  let prevChatCount = -1;
+  $effect(() => {
+    const n = chats.length;
+    untrack(() => {
+      if (prevChatCount >= 0 && n > prevChatCount) wheelScroll = false;
+      prevChatCount = n;
+    });
+  });
 
   function handleHintClick(hint: string): void {
     onHintClick?.(hint);
@@ -160,22 +214,25 @@
   // 使用方处理，本组件不主动改 chats，故 onChatsChange 预留给需要时透传（当前不内部触发）。
 </script>
 
-<div class="cd-ai-dialogue {className}" {style}>
+<div class="cd-ai-chat-dialogue {className}" {style}>
   <div
     bind:this={containerEl}
-    class="cd-ai-dialogue-container"
+    class="cd-ai-chat-dialogue-list"
+    class:cd-ai-chat-dialogue-list-scroll-hidden={!wheelScroll}
     role="log"
     aria-live="polite"
     aria-label={loc().t('AIChatDialogue.messageList')}
     onscroll={handleScroll}
+    onwheel={handleWheel}
   >
-    {#each chats as message (message.id)}
+    {#each chats as message, index (message.id)}
       <DialogueBox
         {message}
         role={resolveRole(message)}
         {align}
         {mode}
         {selecting}
+        continueSend={index > 0 && message.role === chats[index - 1]?.role}
         selected={selectedIds.has(message.id)}
         {markdownRenderProps}
         renderMap={renderDialogueContentItem}
@@ -194,26 +251,43 @@
         {showReference}
         {onReferenceClick}
         {dialogueRenderConfig}
+        {escapeHtml}
+        {disabledFileItemClick}
+        {onMessageShare}
+        {onAnnotationClick}
       />
     {/each}
   </div>
 
   {#if showBackBottom}
-    <button
-      type="button"
-      class="cd-ai-dialogue-backbottom"
-      aria-label={loc().t('AIChatDialogue.backToBottom')}
-      onclick={() => scrollToBottom(true)}>↓</button
-    >
+    <!-- Semi 是 span.-backBottom 包一个 Button.-backBottom-button（index.tsx:367-373），
+         本库原来只有一层 button 且内容是裸「↓」字符。 -->
+    <span class="cd-ai-chat-dialogue-backBottom">
+      <Button
+        class="cd-ai-chat-dialogue-backBottom-button"
+        type="tertiary"
+        aria-label={loc().t('AIChatDialogue.backToBottom')}
+        onclick={() => scrollToBottom(true)}
+      >
+        {#snippet icon()}<IconChevronDown />{/snippet}
+      </Button>
+    </span>
   {/if}
 
   {#if hints && hints.length > 0}
-    <Hint {hints} onHintClick={handleHintClick} {renderHintBox} />
+    <DialogueHint
+      {hints}
+      {selecting}
+      onHintClick={handleHintClick}
+      {renderHintBox}
+      class={hintCls}
+      style={hintStyle}
+    />
   {/if}
 </div>
 
 <style>
-  .cd-ai-dialogue {
+  .cd-ai-chat-dialogue {
     position: relative;
     display: flex;
     flex-direction: column;
@@ -221,14 +295,17 @@
     min-height: 0;
   }
 
-  .cd-ai-dialogue-container {
+  .cd-ai-chat-dialogue-list {
     flex: 1 1 auto;
     overflow-y: auto;
     min-height: 0;
   }
 
-  .cd-ai-dialogue-backbottom {
+  .cd-ai-chat-dialogue-backBottom {
     position: absolute;
+    /* Semi aiChatDialogue.scss:87 给它设了 z-index，本库此前漏了这条 ——
+       所以 $z-aiChatDialogue_backBottom 对应的 token 一直没有消费方。 */
+    z-index: var(--cd-z-ai-chat-dialogue-back-bottom);
     right: var(--cd-spacing-loose);
     bottom: var(--cd-spacing-loose);
     width: 32px;

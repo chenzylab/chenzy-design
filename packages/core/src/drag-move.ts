@@ -240,12 +240,16 @@ export function createDragMove(
       startOffsetY,
       range,
     );
-    if (options.customMove) {
-      options.customMove(element, top, left);
-    } else {
-      element.style.top = `${top}px`;
-      element.style.left = `${left}px`;
-    }
+    // 对齐 Semi foundation._changePos：clamp 同步算好，写入（customMove 或 style）包 rAF。
+    requestAnimationFrame(() => {
+      if (!element) return;
+      if (options.customMove) {
+        options.customMove(element, top, left);
+      } else {
+        element.style.top = `${top}px`;
+        element.style.left = `${left}px`;
+      }
+    });
     options.onMove?.(top, left, e, element);
   };
 

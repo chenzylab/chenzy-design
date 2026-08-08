@@ -1,30 +1,22 @@
 <script lang="ts">
+  // 严格复刻 Semi「基本用法」demo：80×80 主色方块、白字、圆角 10、文案 Drag me。
+  //
+  // 与 Semi 的一处必要差异：Semi 把 position:absolute 加在方块自身（它 cloneElement 到
+  // children，无包裹层）；本库渲染一层包裹元素并由 core 强制其 absolute（包裹层即 Semi 的
+  // "element"），故 absolute 归包裹层，方块本身保持 static —— 否则方块脱离包裹层，
+  // 包裹层塌成 0×0、撑不起 DemoBox，方块会溢出容器。
   import { DragMove } from '@chenzy-design/svelte';
 </script>
 
-<div class="demo-stage">
-  <DragMove style="top:20px;left:20px">
-    <div class="demo-card">拖我到任意位置</div>
+<div style="position: relative; height: 160px;">
+  <DragMove>
+    <div
+      style="background-color: var(--cd-color-primary); width: 80px; height: 80px;
+        display: flex; align-items: center; justify-content: center;
+        border-radius: 10px; font-weight: 500;
+        color: var(--cd-color-white);"
+    >
+      Drag me
+    </div>
   </DragMove>
 </div>
-
-<style>
-  .demo-stage {
-    position: relative;
-    height: 240px;
-    border: 1px dashed var(--cd-color-border);
-    border-radius: var(--cd-border-radius-medium);
-    overflow: hidden;
-  }
-  :global(.demo-card) {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 140px;
-    height: 72px;
-    background: var(--cd-color-fill-0);
-    border: 1px solid var(--cd-color-border);
-    border-radius: var(--cd-border-radius-medium);
-    color: var(--cd-color-text-1);
-  }
-</style>

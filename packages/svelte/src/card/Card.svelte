@@ -51,7 +51,7 @@
     /** 根节点自定义内联样式。 */
     style?: string;
     /** 根节点 aria-label，表述该 Card 的作用。 */
-    ariaLabel?: string;
+    'aria-label'?: string;
     /** 卡片正文。 */
     children?: Snippet;
   }
@@ -73,7 +73,7 @@
     loading = false,
     class: className,
     style,
-    ariaLabel,
+    'aria-label': ariaLabel,
     children,
   }: Props = $props();
 
@@ -87,9 +87,9 @@
   const cls = $derived(
     [
       'cd-card',
-      bordered && 'cd-card--bordered',
-      shadows && 'cd-card--shadows',
-      shadows && `cd-card--shadows-${shadows}`,
+      bordered && 'cd-card-bordered',
+      shadows && 'cd-card-shadows',
+      shadows && `cd-card-shadows-${shadows}`,
       className,
     ]
       .filter(Boolean)
@@ -107,7 +107,7 @@
 >
   {#if hasHeader}
     <div
-      class={['cd-card__header', headerLine && 'cd-card__header--bordered']
+      class={['cd-card-header', headerLine && 'cd-card-header-bordered']
         .filter(Boolean)
         .join(' ')}
       style={headerStyle}
@@ -115,15 +115,15 @@
       {#if header}
         {@render header()}
       {:else}
-        <div class="cd-card__header-wrapper">
+        <div class="cd-card-header-wrapper">
           {#if headerExtraContent}
-            <div class="cd-card__header-wrapper-extra">{@render headerExtraContent()}</div>
+            <div class="cd-card-header-wrapper-extra">{@render headerExtraContent()}</div>
           {/if}
           {#if hasTitle}
             <div
               class={[
-                'cd-card__header-wrapper-title',
-                headerExtraContent && 'cd-card__header-wrapper-spacing',
+                'cd-card-header-wrapper-title',
+                headerExtraContent && 'cd-card-header-wrapper-spacing',
               ]
                 .filter(Boolean)
                 .join(' ')}
@@ -148,10 +148,10 @@
   {/if}
 
   {#if cover}
-    <div class="cd-card__cover">{@render cover()}</div>
+    <div class="cd-card-cover">{@render cover()}</div>
   {/if}
 
-  <div class="cd-card__body" style={bodyStyle}>
+  <div class="cd-card-body" style={bodyStyle}>
     {#if children}
       {#if loading}
         <Skeleton loading active>
@@ -167,7 +167,7 @@
       {/if}
     {/if}
     {#if actions}
-      <div class="cd-card__body-actions">
+      <div class="cd-card-body-actions">
         <Space spacing={12}>
           {@render actions()}
         </Space>
@@ -177,7 +177,7 @@
 
   {#if footer}
     <div
-      class={['cd-card__footer', footerLine && 'cd-card__footer--bordered']
+      class={['cd-card-footer', footerLine && 'cd-card-footer-bordered']
         .filter(Boolean)
         .join(' ')}
       style={footerStyle}
@@ -202,40 +202,40 @@
     line-height: var(--cd-card-default-lineheight);
     letter-spacing: 0;
   }
-  .cd-card--bordered {
+  .cd-card-bordered {
     border-color: var(--cd-card-border-color);
   }
 
   /* shadows：hover 时悬停显示、always 常显；shadows 存在即 cursor:pointer（同 Semi）。 */
-  .cd-card--shadows {
+  .cd-card-shadows {
     cursor: pointer;
     transition: box-shadow var(--cd-card-transition-duration);
   }
-  .cd-card--shadows-hover:hover {
+  .cd-card-shadows-hover:hover {
     box-shadow: var(--cd-card-shadow);
     /* 避免网格型卡片组 shadow 被相邻卡覆盖 */
     z-index: var(--cd-card-z-hover);
   }
-  .cd-card--shadows-always {
+  .cd-card-shadows-always {
     box-shadow: var(--cd-card-shadow);
   }
 
-  .cd-card__header {
+  .cd-card-header {
     padding: var(--cd-card-padding);
   }
-  .cd-card__header--bordered {
+  .cd-card-header-bordered {
     border-bottom: var(--cd-card-border-width) solid var(--cd-card-border-color);
   }
-  .cd-card__header-wrapper {
+  .cd-card-header-wrapper {
     display: flex;
     align-items: flex-start;
     flex-direction: row-reverse;
     justify-content: space-between;
   }
-  .cd-card__header-wrapper-spacing {
+  .cd-card-header-wrapper-spacing {
     margin-inline-end: var(--cd-card-margin);
   }
-  .cd-card__header-wrapper-title {
+  .cd-card-header-wrapper-title {
     inline-size: 100%;
     overflow: hidden;
     color: var(--cd-card-title-color);
@@ -243,7 +243,7 @@
     font-size: var(--cd-card-title-size);
     line-height: var(--cd-card-title-lineheight);
   }
-  .cd-card__header-wrapper-extra {
+  .cd-card-header-wrapper-extra {
     flex-shrink: 0;
     font-size: var(--cd-card-extra-size);
     font-weight: var(--cd-card-extra-weight);
@@ -251,12 +251,12 @@
     letter-spacing: 0;
   }
 
-  .cd-card__cover :global(> *) {
+  .cd-card-cover :global(> *) {
     display: block;
     inline-size: 100%;
   }
 
-  .cd-card__body {
+  .cd-card-body {
     padding: var(--cd-card-padding);
     font-size: var(--cd-card-default-size);
     font-weight: var(--cd-card-default-weight);
@@ -264,16 +264,16 @@
     color: var(--cd-card-body-color);
     letter-spacing: 0;
   }
-  .cd-card__body-actions {
+  .cd-card-body-actions {
     margin-block-start: var(--cd-card-margin);
     padding-block-start: var(--cd-card-padding);
     border-top: var(--cd-card-border-width) solid var(--cd-card-border-color);
   }
 
-  .cd-card__footer {
+  .cd-card-footer {
     padding: var(--cd-card-padding);
   }
-  .cd-card__footer--bordered {
+  .cd-card-footer-bordered {
     border-top: var(--cd-card-border-width) solid var(--cd-card-border-color);
   }
 </style>

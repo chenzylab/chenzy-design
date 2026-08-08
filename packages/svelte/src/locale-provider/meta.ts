@@ -71,7 +71,7 @@ export const meta = {
     },
     {
       title: 'slot 作用域格式化',
-      code: '<LocaleProvider {locale}>{#snippet children({ t, formatNumber })}{t("Modal.okText")} {formatNumber(1234.5)}{/snippet}</LocaleProvider>',
+      code: '<LocaleProvider {locale}>{#snippet children({ t, formatNumber })}{t("Modal.confirm")} {formatNumber(1234.5)}{/snippet}</LocaleProvider>',
     },
     {
       title: '字符串码解析',
@@ -83,7 +83,7 @@ export const meta = {
     },
     {
       title: '嵌套 inherit 深合并',
-      code: '<LocaleProvider locale={zh_CN}>{@render outer()}<LocaleProvider locale={{ Modal: { okText: "好的" } }}>{@render inner()}</LocaleProvider></LocaleProvider>',
+      code: '<LocaleProvider locale={zh_CN}>{@render outer()}<LocaleProvider locale={{ Modal: { confirm: "好的" } }}>{@render inner()}</LocaleProvider></LocaleProvider>',
     },
     {
       title: '时区 / 货币',

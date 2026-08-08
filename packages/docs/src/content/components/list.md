@@ -3,7 +3,6 @@ title: List 列表
 name: list
 category: show
 brief: 列表控件，用于展示一组结构、样式类似的数据。
-docMode: inline
 ---
 
 <script>

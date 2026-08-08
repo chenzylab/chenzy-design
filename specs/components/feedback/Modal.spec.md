@@ -15,30 +15,69 @@
 
 ## 4. API
 ### Props
-| 名称 | 类型 | 默认 | 说明 |
-|---|---|---|---|
-| open | `boolean` | `false` | 受控显隐 |
-| title | `string\|Snippet` | — | 标题 |
-| width | `number\|string` | `448` | 宽度 |
+
+> 本表由 `packages/svelte/src/modal/meta.ts` 真源生成（2026-07-30 重校）。此前本表列的 prop 多为 Semi 对齐前的旧名或已删除项（如 `value`→`activeKey`、`change`→`onChange`），改 prop 时请同步 meta.ts，勿手写「规划中」的 prop。
+
+| Prop | 类型 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| visible | `boolean` | `undefined` | 对话框是否可见（受控；受控时不回写） |
+| title | `string \| Snippet` | `undefined` | 标题（string 或 Snippet，对齐 Semi ReactNode） |
+| header | `Snippet \| null` | `undefined` | 自定义头部，null 不展示头部 |
+| width | `number \| string` | `448` | 宽度 |
+| height | `number \| string` | `undefined` | 高度 |
+| size | `'small' \| 'medium' \| 'large' \| 'full-width'` | `undefined` | 预设宽度：small(448) / medium(684) / large(920) / full-width(100vw-64px) |
 | centered | `boolean` | `false` | 垂直居中 |
-| closable | `boolean` | `true` | 显示关闭按钮 |
+| closable | `boolean` | `true` | 右上角关闭按钮 |
+| closeIcon | `Snippet` | `undefined` | 自定义关闭图标 |
 | maskClosable | `boolean` | `true` | 点遮罩关闭 |
-| keyboard | `boolean` | `true` | Esc 关闭 |
+| closeOnEsc | `boolean` | `true` | Esc 关闭 |
 | confirmLoading | `boolean` | `false` | 确认按钮 loading |
-| okText / cancelText | `string` | i18n 默认 | 按钮文案 |
-| okType | Button type | `'primary'` | 确认按钮类型（危险用 danger）|
-| destroyOnClose | `boolean` | `false` | 关闭即卸载内容 |
-| getContainer | `() => HTMLElement` | `body` | Portal 容器（对标 Semi getPopupContainer，含 getContainerContext 语义）|
-| modalRender | `Snippet<[Snippet]>` | — | 自定义包裹整个面板容器（对标 Semi modalRender），接收默认面板 Snippet |
-| cancelLoading | `boolean` | `false` | 取消按钮 loading（对称 confirmLoading）|
-| maskFixed | `boolean` | `true` | 遮罩 position:fixed；false 时 absolute 局部铺满 |
+| okText | `string` | `undefined` | 确认按钮文字 |
+| cancelText | `string` | `undefined` | 取消按钮文字 |
+| okType | `'primary'\|'secondary'\|'tertiary'\|'warning'\|'danger'` | `'primary'` | 确认按钮类型 |
+| okButtonProps | `Record<string, unknown>` | `undefined` | 确认按钮额外 props |
+| cancelButtonProps | `Record<string, unknown>` | `undefined` | 取消按钮额外 props |
+| hasCancel | `boolean` | `true` | 是否显示取消按钮 |
+| footer | `Snippet<[{ ok; cancel }]> \| null` | `undefined` | null 隐藏默认按钮；snippet 自定义尾部（接收 { ok, cancel }） |
+| footerFill | `boolean` | `false` | 底部按钮撑满 |
+| mask | `boolean` | `true` | 是否显示遮罩 |
+| maskStyle | `string` | `undefined` | 遮罩内联样式 |
+| bodyStyle | `string` | `undefined` | 内容区内联样式 |
+| style | `string` | `undefined` | 根节点内联样式（如 top） |
+| class | `string` | `undefined` | 根节点类名 |
+| modalContentClass | `string` | `undefined` | 内容区类名 |
+| fullScreen | `boolean` | `false` | 全屏（覆盖 width/height） |
+| motion | `boolean` | `true` | 动画开关 |
+| getPopupContainer | `() => HTMLElement \| null` | `undefined` | 指定父级 DOM，缺省 document.body |
+| zIndex | `number` | `undefined` | 遮罩/面板的 z-index（缺省由堆叠计数分配） |
+| keepDOM | `boolean` | `false` | 关闭时保留内部组件不销毁 |
+| lazyRender | `boolean` | `true` | 配合 keepDOM，为 true 时挂载时不渲染 |
+| icon | `Snippet` | `undefined` | 命令式类型图标 |
+| modalRender | `Snippet<[Snippet]>` | `undefined` | 自定义渲染 Modal content；接收默认 content Snippet，返回包裹结构（可拖拽经此 + DragMove） |
+| children | `Snippet` | `undefined` | 内容主体 |
+| aria-label | `string` | `undefined` | 无 title 时的 aria-label |
+| preventScroll | `boolean` | `false` | 聚焦时是否阻止浏览器滚动文档以显示新聚焦元素（作用于组件内 focus） |
+| onOk | `() => void \| Promise<unknown>` | `undefined` | 点击确认；返回 Promise 时确认按钮自动 loading |
+| onCancel | `() => void \| Promise<unknown>` | `undefined` | 取消/关闭；返回 Promise 时取消按钮自动 loading |
+| afterClose | `() => void` | `undefined` | 对话框完全关闭后回调 |
+| onVisibleChange | `(visible: boolean) => void` | `undefined` | 显隐变化通知 |
+| maskFixed | `boolean` | `true` | 遮罩是否 position:fixed；false 时 absolute，配合 getPopupContainer 局部弹层 |
+
+**事件**（回调 prop 形式，对齐 Semi）：
+
+| 事件 | 说明 |
+| --- | --- |
+| `onOk` | 确认按钮点击（非受控自动关闭） |
+| `onCancel` | 取消/关闭按钮/遮罩/Esc 关闭 |
+| `onVisibleChange` | 显隐变化通知 |
+| `afterClose` | 完全关闭后 |
 ### Events
-| 事件 | 载荷 | 说明 |
-|---|---|---|
-| on:ok | — | 确认 |
-| on:cancel | — | 取消/关闭 |
-| on:openChange | `boolean` | 显隐变化（一致性约定）|
-| on:afterClose | — | 关闭动画结束 |
+| 事件 | 说明 |
+| --- | --- |
+| `onOk` | 确认按钮点击（非受控自动关闭） |
+| `onCancel` | 取消/关闭按钮/遮罩/Esc 关闭 |
+| `onVisibleChange` | 显隐变化通知 |
+| `afterClose` | 完全关闭后 |
 ### Slots
 | 名称 | 说明 |
 |---|---|
@@ -63,7 +102,7 @@
 - reduced-motion 下用即时显隐替代动画。
 
 ## 7. 国际化
-- key：`Modal.okText`(确定)、`Modal.cancelText`(取消)、`Modal.close`(关闭)。
+- key：`Modal.confirm`(确定)、`Modal.cancel`(取消)、`Modal.close`(关闭)。注意 `okText`/`cancelText` 是**组件 prop 名**（对齐 Semi），locale 键则是 `confirm`/`cancel`，勿混用。
 - `Modal.confirm/warning/error` 等便捷方法默认文案来自 locale。
 
 ## 8. 文案

@@ -1,14 +1,22 @@
 <script lang="ts">
-  import { HotKeys, Text, Space } from '@chenzy-design/svelte';
+  import { HotKeys, Modal } from '@chenzy-design/svelte';
 
-  let count = $state(0);
+  let visible = $state(false);
+  const showDialog = () => {
+    visible = true;
+  };
+  const handleOk = () => {
+    visible = false;
+  };
+  const handleCancel = () => {
+    visible = false;
+  };
+  const hotKeys = [HotKeys.Keys.Control, 'Shift', HotKeys.Keys.A];
 </script>
 
-<Space vertical>
-  <Space align="center">
-    <Text>按下</Text>
-    <HotKeys hotKeys={['Control', 'Shift', 'A']} onHotKey={() => (count += 1)} />
-    <Text type="tertiary">命中次数：{count}</Text>
-  </Space>
-  <Text type="tertiary" size="small">修饰键精确匹配，普通键用物理键位（event.code），规避输入法/大小写。</Text>
-</Space>
+<div>
+  <HotKeys {hotKeys} onHotKey={showDialog} />
+  <Modal title="Dialog" {visible} onOk={handleOk} onCancel={handleCancel}>
+    This is the Modal opened by hotkey: {hotKeys.join('+')}.
+  </Modal>
+</div>

@@ -102,7 +102,7 @@
   const restLabel = $derived(loc().t('TagGroup.restTagsAriaLabel', { count: n }));
 
   const rootCls = $derived(
-    ['cd-tag-group', maxTagCount !== undefined && 'cd-tag-group--max', `cd-tag-group--${size}`, className]
+    ['cd-tag-group', maxTagCount !== undefined && 'cd-tag-group-max', `cd-tag-group-${size}`, className]
       .filter(Boolean)
       .join(' '),
   );
@@ -161,11 +161,11 @@
 <!-- +N 标签：对齐 Semi renderNTag（closable=false、color=grey、透明底、size 跟随组） -->
 {#snippet nTag()}
   <span
-    class="cd-tag-group__n"
+    class="cd-tag-group-n"
     onmouseenter={onPlusNMouseEnter}
     role="presentation"
   >
-    <Tag {size} color="grey" ariaLabel={restLabel} style="background-color: transparent;">+{n}</Tag>
+    <Tag {size} color="grey" aria-label={restLabel} style="background-color: transparent;">+{n}</Tag>
   </span>
 {/snippet}
 
@@ -180,15 +180,15 @@
     margin-right: var(--cd-tag-group-margin-right);
   }
   /* 折叠模式高度（对齐 Semi &-max.&-group-small/large = tag 高 + 2px）—— */
-  .cd-tag-group--max.cd-tag-group--small,
-  .cd-tag-group--max.cd-tag-group--default {
+  .cd-tag-group-max.cd-tag-group-small,
+  .cd-tag-group-max.cd-tag-group-default {
     height: calc(var(--cd-tag-height-small) + 2px);
   }
-  .cd-tag-group--max.cd-tag-group--large {
+  .cd-tag-group-max.cd-tag-group-large {
     height: calc(var(--cd-tag-height-large) + 2px);
   }
 
-  .cd-tag-group__n {
+  .cd-tag-group-n {
     display: inline-flex;
   }
 
@@ -204,5 +204,24 @@
   }
   .cd-tag-rest-group-popover :global(.cd-tag:last-of-type) {
     margin-right: 0;
+  }
+
+  /* —— RTL（对齐 Semi tag/rtl.scss 的 &-group 段）：标签间距换到左侧 —— */
+  :global(.cd-rtl) .cd-tag-group {
+    direction: rtl;
+  }
+  :global(.cd-rtl) .cd-tag-group :global(.cd-tag) {
+    margin-right: 0;
+    margin-left: var(--cd-tag-group-margin-right);
+  }
+  /* ⚠️ 溢出标签的浮层 Portal 到 body，**取不到 `.cd-rtl` 祖先**，故这里的覆盖对它无效。
+     Semi 遇到同类情况（sideSheet）是给浮层自身挂一个 `-rtl` 修饰类来解；
+     本库浮层尚未透传方向，属已知遗留，留待浮层统一处理那轮（见进度 spec ②）。 */
+  :global(.cd-rtl) .cd-tag-rest-group-popover :global(.cd-tag) {
+    margin-right: 0;
+    margin-left: var(--cd-tag-group-margin-right);
+  }
+  :global(.cd-rtl) .cd-tag-rest-group-popover :global(.cd-tag:last-of-type) {
+    margin-left: 0;
   }
 </style>

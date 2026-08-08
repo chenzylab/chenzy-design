@@ -61,6 +61,24 @@ export interface AvatarGroupContext {
   // 因此组级值优先级高于子自身 prop（与「子优先」相反，严格对齐 Semi）。
   getShape: () => AvatarShape | undefined;
   getSize: () => AvatarSizeEnum | number | undefined;
+  /**
+   * 组合式用法的成员注册（对齐 Semi `React.Children.toArray(children)` 的可计数/可切片语义）。
+   * 子 <Avatar> 在 init 期注册自身序号，据此判断：
+   *  - 序号 < maxCount → 正常渲染；
+   *  - 序号 >= maxCount → 自身不渲染（被折叠进「+N」，由组统一渲染溢出头像）。
+   * Svelte 无法遍历 snippet，故改由子组件主动上报——等价能力，见 Nav.Item / Table Column 同款先例。
+   */
+  register?: (item: AvatarGroupMember) => number;
+  /** 组是否启用了折叠（maxCount 有效）。未启用时子组件一律渲染。 */
+  isCollapsing?: () => boolean;
+  /** 该序号是否应被折叠隐藏。 */
+  isHidden?: (index: number) => boolean;
+}
+
+/** 组合式成员注册描述符（供组渲染「+N」时读取 alt/内容做无障碍文案）。 */
+export interface AvatarGroupMember {
+  alt?: string;
+  content?: string;
 }
 
 const KEY = Symbol('cd-avatar-group');

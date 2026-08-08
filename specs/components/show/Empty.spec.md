@@ -38,25 +38,27 @@
 
 ### 4.1 Props
 
+> 本表由 `packages/svelte/src/empty/meta.ts` 真源生成（2026-07-30 重校）。此前本表列的 prop 多为 Semi 对齐前的旧名或已删除项（如 `value`→`activeKey`、`change`→`onChange`），改 prop 时请同步 meta.ts，勿手写「规划中」的 prop。
+
 | Prop | 类型 | 默认值 | 说明 |
 | --- | --- | --- | --- |
-| `image` | `'noData' \| 'noResult' \| 'noAccess' \| 'error' \| 'success' \| 'construction' \| string` | `'noData'` | 内置插画预设名；传 URL 字符串则作为图片 `src` 渲染（外部图）。需自定义节点时用 `image` slot。 |
-| `title` | `string` | 由 `image` 决定的 i18n 默认值 | 主标题文案；不传则使用对应预设的内置 i18n 默认。 |
-| `description` | `string` | `undefined` | 次级描述文案；省略则不渲染该行。 |
-| `size` | `'small' \| 'default' \| 'large'` | `'default'` | 整体尺寸；影响插画尺寸与各段间距。 |
-| `layout` | `'vertical' \| 'horizontal'` | `'vertical'` | 排布方向；horizontal 在窄容器自动降级为 vertical。 |
-| `imageWidth` | `number` | 随 `size` 派生 | 覆盖插画宽度（px），用于精细控制。 |
-| `responsive` | `boolean` | `true` | 是否启用容器宽度自适应收缩。 |
-| `class` | `string` | `''` | 根节点附加类名。 |
-| `style` | `string` | `''` | 根节点内联样式。 |
+| image | `{ id?; viewBox?; url? } \| string` | `undefined` | 占位图：SVG 精灵对象或图片 URL；自定义节点用 imageSlot |
+| darkModeImage | `{ id?; viewBox?; url? } \| string` | `undefined` | 暗色模式占位图，响应 data-theme 变化 |
+| title | `string` | `undefined` | 标题 |
+| description | `string \| Snippet` | `undefined` | 内容描述；string 直渲，Snippet 渲染富内容 |
+| imageStyle | `string` | `undefined` | 占位图容器（.cd-empty-image）内联样式 |
+| layout | `'vertical'\|'horizontal'` | `'vertical'` | 布局方式 |
+| class | `string` | `''` |  |
+| style | `string` | `undefined` |  |
+| children | `Snippet` | `undefined` | 动作区（footer） |
+| imageSlot | `Snippet` | `undefined` | 自定义插画节点（等价 Semi image 传 ReactNode） |
+| darkModeImageSlot | `Snippet` | `undefined` | 暗色自定义插画节点 |
 
 > 说明：本组件无受控数据输入与浮层，故不涉及 `value/on:change`、`open/on:openChange`、`status` 约定。
 
 ### 4.2 Events
 
-| Event | payload | 说明 |
-| --- | --- | --- |
-| `on:imageError` | `{ src: string }` | 当 `image` 为外部 URL 且加载失败时触发；业务可据此降级为内置 `noData` 插画。 |
+> 本组件无事件回调 prop（meta.events 为空）。此前本表列的回调均未实现，已删。
 
 > Empty 本身无交互事件；动作的点击事件由 `action` slot 内的业务组件（如 `Button`）自行派发。
 
@@ -90,7 +92,7 @@
 | `--cd-empty-title-font` | `--cd-font-size-2` | 标题字号 |
 | `--cd-empty-description-font` | `--cd-font-size-1` | 描述字号 |
 
-类名约定：`cd-empty`、`cd-empty__image`、`cd-empty__title`、`cd-empty__description`、`cd-empty__action`、`cd-empty__footer`；修饰符 `cd-empty--small/--large`、`cd-empty--horizontal`、`cd-empty--compact`（响应式收缩态）。
+类名约定：`cd-empty`、`cd-empty-image`、`cd-empty-title`、`cd-empty-description`、`cd-empty-footer`、`cd-empty-footer`；修饰符 `cd-empty-small/--large`、`cd-empty-horizontal`、`cd-empty-horizontal`（响应式收缩态）。
 
 ## 6. 无障碍
 
@@ -109,19 +111,7 @@
 
 用户可见文案零硬编码，全部走 i18n；内置插画预设各自带默认 key。
 
-| i18n key | 默认值（zh-CN） | 用途 |
-| --- | --- | --- |
-| `Empty.noData.title` | 暂无数据 | noData 预设默认标题 |
-| `Empty.noData.description` | 当前没有可显示的内容 | noData 预设默认描述 |
-| `Empty.noResult.title` | 没有找到相关结果 | noResult 预设默认标题 |
-| `Empty.noResult.description` | 试试更换关键词或调整筛选条件 | noResult 预设默认描述 |
-| `Empty.noAccess.title` | 暂无访问权限 | noAccess 预设默认标题 |
-| `Empty.noAccess.description` | 如需访问，请联系管理员开通 | noAccess 预设默认描述 |
-| `Empty.error.title` | 加载失败 | error 预设默认标题 |
-| `Empty.error.description` | 内容加载出现问题，请稍后重试 | error 预设默认描述 |
-| `Empty.success.title` | 全部完成 | success 预设默认标题 |
-| `Empty.construction.title` | 功能建设中 | construction 预设默认标题 |
-| `Empty.imageAlt` | 空状态插画 | 插画无障碍替代文本兜底 |
+> **本组件不消费 locale**（2026-07-30 重校）：`Empty` 的 .svelte 里 `useLocale` 出现 0 次，所有用户可见文案由调用方经 props 传入。此前本节列的整张 i18n 键表从未被实现，已随「悬空键清理」把 `Empty` slice 整片从 `packages/locale` 删除，见 [[locale-dangling-keys-render-raw-key]]。若需内置多语言预设文案，须先在 locale 加 slice 再接线，不可只写 spec。
 
 - 文案换行/排版不假设固定字符数；德/法等长文本语言下标题/描述自动换行，间距不受影响。
 - 若描述含动态数量（如「找到 0 条」），由业务用 `Intl.NumberFormat` 格式化后传入 `description`，组件不内置数字格式化。
@@ -200,7 +190,7 @@
   - 根 `role="status"`、`aria-live="polite"`；`aria-labelledby`/`aria-describedby` 正确指向且 id 唯一（useId）。
   - 装饰插画 `aria-hidden="true"`；外部图 alt 取 title。
   - axe 无 violations；标题/描述对比度 ≥4.5:1（视觉回归断言 token 值）。
-- **响应式**：模拟容器宽度 < `--cd-empty-compact-width`，断言 horizontal 降级为 vertical 并加 `cd-empty--compact`；`responsive=false` 时不降级、不创建 ResizeObserver。
+- **响应式**：模拟容器宽度 < `--cd-empty-compact-width`，断言 horizontal 降级为 vertical 并加 `cd-empty-horizontal`；`responsive=false` 时不降级、不创建 ResizeObserver。
 - **i18n**：切换 locale 后所有内置文案随 key 变化；无硬编码字符串残留（快照扫描）。
 - **reduced-motion**：模拟 `prefers-reduced-motion: reduce`，断言位移动效被禁用。
 - **slot 覆盖**：`image/title/description/action` slot 提供时覆盖对应 prop 渲染。

@@ -210,16 +210,16 @@
        - 子导航组件项高度 40px（layout.scss `.semi-navigation-sub .semi-navigation-item { height: 40px }`）
        - item line-height 24px（doc.scss）、item 间距 margin-bottom 8px（index.scss）
      图标 extra-large(24px) 已由 SidebarIcon 对齐（side-nav.js `<Icon size="extra-large">`）。 */
-  .docs-sidebar :global(.cd-nav__item-normal) {
+  .docs-sidebar :global(.cd-nav-item-normal) {
     block-size: 40px;
     line-height: 24px;
   }
-  .docs-sidebar :global(.cd-nav__item) {
+  .docs-sidebar :global(.cd-nav-item) {
     margin-block-end: 8px;
   }
   /* 文字完整显示（对齐 Semi docs index.scss `#side-nav .item-text{text-overflow:inherit}`）：
      Nav 已经 style=width:100% 撑满侧栏、item 文字区够宽，这里仅解除组件默认的 ellipsis 截断。 */
-  .docs-sidebar :global(.cd-nav__item-text) {
+  .docs-sidebar :global(.cd-nav-item-text) {
     overflow: visible;
     text-overflow: clip;
   }

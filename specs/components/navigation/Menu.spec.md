@@ -52,48 +52,43 @@ Menu 是导航场景的核心容器组件，用于在应用中组织一组可选
 
 ### Props（Menu）
 
+> **本库无独立 Menu 组件**（2026-07-30 重校）：菜单能力由 Dropdown 承担——`Dropdown.Menu` /
+> `Dropdown.Item` / `Dropdown.Title` / `Dropdown.Divider`，导航侧栏用 `Nav`。本节表格按
+> `dropdown/meta.ts` 真源列出 Dropdown.Item 的 props。
+
 | 名称 | 类型 | 默认值 | 说明 |
 |---|---|---|---|
-| mode | `'horizontal' \| 'vertical' \| 'inline'` | `'vertical'` | 布局模式 |
-| purpose | `'navigation' \| 'commands'` | `'navigation'` | 语义角色：导航(nav+links) 或 命令菜单(menubar+roving) |
-| selectedKeys | `string[]` | `[]` | 受控选中项 key（遵循 value 语义的导航态） |
-| defaultSelectedKeys | `string[]` | `[]` | 非受控初始选中 |
-| openKeys | `string[]` | `[]` | 受控展开的 SubMenu key（open 复数形态） |
-| defaultOpenKeys | `string[]` | `[]` | 非受控初始展开 |
-| multiple | `boolean` | `false` | 是否允许多选 |
-| size | `'small' \| 'default' \| 'large'` | `'default'` | 尺寸 |
-| inlineIndent | `number` | `24` | inline 每级缩进步进(px) |
-| inlineCollapsed | `boolean` | `false` | inline/vertical 折叠为图标轨（仅图标） |
-| triggerSubMenuAction | `'hover' \| 'click'` | mode 推导 | 浮层子菜单触发方式 |
-| subMenuOpenDelay | `number` | `100` | hover 展开延迟(ms) |
-| subMenuCloseDelay | `number` | `100` | hover 收起延迟(ms) |
-| status | `'default' \| 'warning' \| 'error'` | `'default'` | 校验态（用于表单内菜单选择，少见） |
-| destroyOnHide | `boolean` | `false` | 浮层子菜单隐藏时卸载内容 |
-| disabled | `boolean` | `false` | 整体禁用 |
-| getPopupContainer | `() => HTMLElement` | `body` | 浮层挂载容器 |
+| `menu` | `DropdownMenuItem[]` | `-` | 数据驱动菜单项（与 `children` 二选一） |
+| `trigger` | `'hover'\|'click'\|'focus'\|'custom'\|'contextMenu'` | `hover` | 触发方式 |
+| `visible` / `defaultVisible` | `boolean` | `-` | 受控 / 非受控显隐 |
+| `position` | 见 Tooltip 12 方位 | `bottomLeft` | 浮层方位 |
+| `showTick` | `boolean` | `false` | 选中项左侧显示对勾 |
+| `render` | `Snippet` | `-` | 完全自定义浮层内容 |
+| `onVisibleChange` | `(v: boolean) => void` | `-` | 显隐变化回调 |
 
-### Props（Menu.Item / Menu.SubMenu / Menu.ItemGroup）
+> 完整 prop 清单见 `specs/components/navigation/Dropdown.spec.md`（本表只列常用项，避免两份 spec 重复维护）。
+> 此前列的 `itemKey`（真名 `key`）/ `href` / `target` / `title` 均不存在。
 
-| 名称 | 适用 | 类型 | 默认值 | 说明 |
-|---|---|---|---|---|
-| itemKey | Item/SubMenu | `string` | — | 唯一标识（必填） |
-| disabled | Item/SubMenu | `boolean` | `false` | 禁用单项 |
-| icon | Item/SubMenu | `Snippet` | — | 前置图标 |
-| href | Item | `string` | — | 导航语义下渲染为 `<a>` |
-| target | Item | `string` | — | 链接 target |
-| title | SubMenu/ItemGroup | `string \| Snippet` | — | 触发器/分组标题 |
-| level | 内部 | `number` | 自动 | 嵌套深度（context 注入） |
+**子组件**：`Dropdown.Menu`、`Dropdown.Item`、`Dropdown.Title`、`Dropdown.Divider`
+
+### Props（Dropdown.Item）
+
+| 名称 | 类型 | 默认值 | 说明 |
+|---|---|---|---|
+| `key` | `string \| number` | `-` | 项键，`onClick` 携带（**真名 `key`，非 `itemKey`**） |
+| `disabled` | `boolean` | `false` | 禁用菜单项 |
+| `active` | `boolean` | `false` | 激活态（showTick 时显示对勾 + 字重加粗） |
+| `type` | `'primary'\|'secondary'\|'tertiary'\|'warning'\|'danger'` | `-` | 语义色 |
+| `icon` | `Snippet` | `-` | 前置图标 |
+| `onClick` / `onMouseEnter` / `onMouseLeave` / `onContextMenu` | `(e: MouseEvent) => void` | `-` | 鼠标回调 |
+| `children` | `Snippet` | `-` | 菜单项内容 |
+
+> 此前本表列的 `itemKey` / `href` / `target` / `title` / `level` **均不存在**；本库亦无
+> `Menu.SubMenu` / `Menu.ItemGroup`（分组标题用 `Dropdown.Title`，分隔线用 `Dropdown.Divider`）。
 
 ### Events
 
-| 事件 | payload | 说明 |
-|---|---|---|
-| on:change | `{ selectedKeys: string[], itemKey: string, domEvent: Event }` | 选中项变化（受控 selectedKeys 来源） |
-| on:openChange | `{ openKeys: string[], itemKey: string, open: boolean }` | SubMenu 展开/收起 |
-| on:click | `{ itemKey: string, keyPath: string[], domEvent: MouseEvent }` | 点击叶子 Item |
-| on:select | `{ selectedKeys, itemKey, keyPath }` | 选中（multiple 时与 deselect 配对） |
-| on:deselect | `{ selectedKeys, itemKey, keyPath }` | 取消选中（multiple） |
-| on:focus / on:blur | `FocusEvent` | 焦点进出 |
+> 本组件无事件回调 prop（meta.events 为空）。此前本表列的回调均未实现，已删。
 
 ### Slots
 

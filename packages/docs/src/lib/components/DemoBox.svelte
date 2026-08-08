@@ -106,6 +106,13 @@
   .demo-box__preview {
     position: relative;
     padding: 24px 16px;
+    /* not-prose 只挡得住 UnoCSS Typography 生成的选择器规则（如 `.prose p`），挡不住普通
+       CSS 继承——.prose 的 base 规则（font-size:16px/line-height:28px）直接写在 .prose
+       类自身（正文容器根节点），子孙元素照常继承。组件库标准正文字号是 14px/20px，
+       demo 内渲染的真实组件不该被文档正文的 16px 阅读字号污染（曾致 chat 提示条量出
+       16px/28px 继承值，比 Semi 实际高一圈）。显式重置切断继承。 */
+    font-size: var(--cd-font-size-regular, 14px);
+    line-height: var(--cd-line-height-regular, 20px);
   }
   .demo-box__footer {
     border-top: 1px solid var(--cd-color-border, #e5e7eb);

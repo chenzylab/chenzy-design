@@ -102,3 +102,39 @@ export function getNavCollector(): NavCollector | undefined {
     ? (getContext(NAV_COLLECTOR_KEY) as NavCollector)
     : undefined;
 }
+
+/**
+ * 声明式 Header/Footer 注册（对齐 Semi `<Nav.Header>`/`<Nav.Footer>` 作为 Nav 直接子元素）。
+ * 只登记 0~1 个（非数组）：Header/Footer 在 init 期同步注册自身 props + children，
+ * 自身不产 DOM；Nav 据此在 header-list-outer / footer 位置渲染，供 collapsedState 等
+ * 上下文属性下发。与 Item/Sub 的数组 collector 分离，因为 Header/Footer 语义上唯一。
+ */
+export interface NavHeaderSlotProps {
+  logo?: Snippet;
+  text?: string | Snippet;
+  link?: string;
+  linkOptions?: Record<string, string>;
+  class?: string;
+  style?: string;
+  children?: Snippet;
+}
+
+export interface NavFooterSlotProps {
+  collapseButton?: boolean | Snippet;
+  collapseText?: (collapsed: boolean) => string;
+  class?: string;
+  style?: string;
+  onClick?: (e: MouseEvent) => void;
+  children?: Snippet;
+}
+
+export interface NavSlotRegistry {
+  setHeader: (props: NavHeaderSlotProps) => void;
+  setFooter: (props: NavFooterSlotProps) => void;
+}
+
+export const NAV_SLOT_KEY = Symbol('cd-nav-slot');
+
+export function getNavSlotRegistry(): NavSlotRegistry | undefined {
+  return hasContext(NAV_SLOT_KEY) ? (getContext(NAV_SLOT_KEY) as NavSlotRegistry) : undefined;
+}

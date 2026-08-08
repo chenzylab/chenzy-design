@@ -41,6 +41,15 @@
     prefix?: Snippet | string;
     /** 后缀标签（输入框内右侧）；传字符串直接渲染、传 Snippet 自定义（对齐 Semi suffix 接受 ReactNode）。 */
     suffix?: Snippet | string;
+    /**
+     * prefix/suffix 传 Snippet 时是否按「图标」计外边距（默认 true）。
+     *
+     * 对齐 Semi 的三态：`isString` → text 变体(12px)、`isSemiIcon` → icon 变体(8px)、
+     * **其余任意 ReactNode → 两个变体都不加（外边距为 0）**。Svelte 无法内省 Snippet 的内容，
+     * 缺省按最常见的图标处理；传非图标节点（如 ColorPicker 的 `%` 文本 span）时置 false，
+     * 落到 Semi 的第三态，否则平白多吃 8+8px 把输入区挤窄。
+     */
+    affixIsIcon?: boolean;
     /** 内嵌标签（渲染在输入框内左侧，与 prefix 同槽，对齐 Semi insetLabel）。 */
     insetLabel?: Snippet | string;
     /** 内嵌标签容器 id（关联 aria，对齐 Semi insetLabelId）。 */
@@ -74,7 +83,7 @@
     composition?: boolean;
     name?: string;
     id?: string;
-    ariaLabel?: string;
+    'aria-label'?: string;
     ariaLabelledby?: string;
     ariaDescribedby?: string;
     ariaErrormessage?: string;
@@ -120,6 +129,7 @@
     type = 'text',
     prefix,
     suffix,
+    affixIsIcon = true,
     insetLabel,
     insetLabelId,
     clearIcon,
@@ -136,7 +146,7 @@
     composition = false,
     name,
     id,
-    ariaLabel,
+    'aria-label': ariaLabel,
     ariaLabelledby,
     ariaDescribedby,
     ariaErrormessage,
@@ -303,13 +313,13 @@
     [
       'cd-input-wrapper',
       `cd-input-wrapper-${size}`,
-      (prefix != null || insetLabel != null) && 'cd-input-wrapper__with-prefix',
-      suffix != null && 'cd-input-wrapper__with-suffix',
-      suffixHidden && 'cd-input-wrapper__with-suffix-hidden',
-      hasPrepend && 'cd-input-wrapper__with-prepend',
-      hasAppend && 'cd-input-wrapper__with-append',
-      hasPrepend && !hasAppend && 'cd-input-wrapper__with-prepend-only',
-      hasAppend && !hasPrepend && 'cd-input-wrapper__with-append-only',
+      (prefix != null || insetLabel != null) && 'cd-input-wrapper-with-prefix',
+      suffix != null && 'cd-input-wrapper-with-suffix',
+      suffixHidden && 'cd-input-wrapper-with-suffix-hidden',
+      hasPrepend && 'cd-input-wrapper-with-prepend',
+      hasAppend && 'cd-input-wrapper-with-append',
+      hasPrepend && !hasAppend && 'cd-input-wrapper-with-prepend-only',
+      hasAppend && !hasPrepend && 'cd-input-wrapper-with-append-only',
       readonly && 'cd-input-wrapper-readonly',
       disabled && 'cd-input-wrapper-disabled',
       validateStatus === 'warning' && 'cd-input-wrapper-warning',
@@ -369,7 +379,15 @@
   {/if}
 
   {#if prefixNode != null}
-    <div class="cd-input-prefix" class:cd-input-inset-label={insetLabel != null && prefix == null} id={insetLabelId}>
+    <!-- -prefix-text / -prefix-icon 变体同 suffix（对齐 Semi）：字符串=文案(12px)、Snippet=图标(8px)。
+         insetLabel 走自己的 -inset-label 规则（Semi 同样单列），故不叠变体类。 -->
+    <div
+      class="cd-input-prefix"
+      class:cd-input-prefix-text={!prefixSnippet && !(insetLabel != null && prefix == null)}
+      class:cd-input-prefix-icon={!!prefixSnippet && affixIsIcon}
+      class:cd-input-inset-label={insetLabel != null && prefix == null}
+      id={insetLabelId}
+    >
       {#if prefixSnippet}{@render prefixSnippet()}{:else}{prefixNode}{/if}
     </div>
   {/if}
@@ -421,7 +439,16 @@
   {/if}
 
   {#if suffix}
-    <div class="cd-input-suffix" class:cd-input-suffix-hidden={suffixHidden}>
+    <!-- -suffix-text / -suffix-icon 变体对齐 Semi（`isString(suffix)` → text、`isSemiIcon(suffix)` → icon）：
+         两者水平外边距不同（text 12px / icon 8px），Svelte 无法内省 Snippet，故按
+         「字符串=文案、Snippet=图标」映射。**别只留基类**——图标拿到 text 的 12px 会让
+         suffix 占位 12+16+12=40px，与 hover 时顶替它的 clearbtn(32px) 不等宽，触发器就会抖。 -->
+    <div
+      class="cd-input-suffix"
+      class:cd-input-suffix-text={!suffixSnippet}
+      class:cd-input-suffix-icon={!!suffixSnippet && affixIsIcon}
+      class:cd-input-suffix-hidden={suffixHidden}
+    >
       {#if suffixSnippet}{@render suffixSnippet()}{:else}{suffix}{/if}
     </div>
   {/if}
@@ -493,18 +520,18 @@
     cursor: default;
   }
   /* 对齐 Semi 填充式：悬浮加深底色（无前后置标签时）。 */
-  .cd-input-wrapper:not(.cd-input-wrapper__with-prepend):not(.cd-input-wrapper__with-append):hover:not(.cd-input-wrapper-disabled):not(:focus-within) {
+  .cd-input-wrapper:not(.cd-input-wrapper-with-prepend):not(.cd-input-wrapper-with-append):hover:not(.cd-input-wrapper-disabled):not(:focus-within) {
     background: var(--cd-color-input-default-bg-hover);
     border-color: var(--cd-color-input-default-border-hover);
   }
-  .cd-input-wrapper:not(.cd-input-wrapper__with-prepend):not(.cd-input-wrapper__with-append):focus-within {
+  .cd-input-wrapper:not(.cd-input-wrapper-with-prepend):not(.cd-input-wrapper-with-append):focus-within {
     background: var(--cd-color-input-default-bg-focus);
     border: var(--cd-width-input-wrapper-focus-border) solid var(--cd-color-input-default-border-focus);
   }
-  .cd-input-wrapper:not(.cd-input-wrapper__with-prepend):not(.cd-input-wrapper__with-append):focus-within:hover:not(.cd-input-wrapper-warning):not(.cd-input-wrapper-error) {
+  .cd-input-wrapper:not(.cd-input-wrapper-with-prepend):not(.cd-input-wrapper-with-append):focus-within:hover:not(.cd-input-wrapper-warning):not(.cd-input-wrapper-error) {
     background: var(--cd-color-input-default-bg-focus-hover);
   }
-  .cd-input-wrapper:not(.cd-input-wrapper__with-prepend):not(.cd-input-wrapper__with-append):focus-within:active {
+  .cd-input-wrapper:not(.cd-input-wrapper-with-prepend):not(.cd-input-wrapper-with-append):focus-within:active {
     background: var(--cd-color-input-default-bg-active);
     border-color: var(--cd-color-input-default-border-focus);
   }
@@ -559,27 +586,28 @@
     color: var(--cd-color-input-disabled-text-default);
   }
   /* 前后置标签模式：wrapper 转透明，内部 input 自持填充底（对齐 Semi with-prepend/append）。 */
-  .cd-input-wrapper__with-prepend,
-  .cd-input-wrapper__with-append {
+  .cd-input-wrapper-with-prepend,
+  .cd-input-wrapper-with-append {
     background: transparent;
   }
-  .cd-input-wrapper__with-prepend:hover,
-  .cd-input-wrapper__with-append:hover {
+  .cd-input-wrapper-with-prepend:hover,
+  .cd-input-wrapper-with-append:hover {
     background: transparent;
   }
-  .cd-input-wrapper__with-prepend:focus-within,
-  .cd-input-wrapper__with-append:focus-within {
+  .cd-input-wrapper-with-prepend:focus-within,
+  .cd-input-wrapper-with-append:focus-within {
     background: transparent;
     border-color: var(--cd-color-input-default-border-default);
   }
-  .cd-input-wrapper__with-prepend .cd-input,
-  .cd-input-wrapper__with-append .cd-input {
+  .cd-input-wrapper-with-prepend .cd-input,
+  .cd-input-wrapper-with-append .cd-input {
     background: var(--cd-color-input-default-bg-default);
   }
 
   /* input 元素 —— 对齐 Semi .semi-input：透明底 + 继承色 + 内边距。 */
   .cd-input {
-    flex: 1 1 auto;
+    /* 对齐 Semi .semi-input：不写 flex，用浏览器默认 `0 1 auto`（可收缩不伸长）。 */
+    flex: 0 1 auto;
     inline-size: 100%;
     min-inline-size: 0;
     block-size: 100%;
@@ -600,10 +628,10 @@
     outline: none;
   }
   /* 对齐 Semi with-prefix/suffix：相应侧内边距归零，交给 prefix/suffix 槽。 */
-  .cd-input-wrapper__with-prefix .cd-input {
+  .cd-input-wrapper-with-prefix .cd-input {
     padding-inline-start: 0;
   }
-  .cd-input-wrapper__with-suffix .cd-input {
+  .cd-input-wrapper-with-suffix .cd-input {
     padding-inline-end: 0;
   }
   .cd-input::placeholder {
@@ -626,19 +654,35 @@
     display: none;
   }
 
-  /* prefix/suffix —— 对齐 Semi：text-2 + bold 字重（图标不受 font-weight 影响）。 */
+  /* prefix/suffix —— 对齐 Semi `&-prefix, &-suffix { @include all-center }`：容器只做居中，
+     **外边距/颜色/字重由 -text / -icon 变体分别承担**（Semi 就是这么分的）。 */
   .cd-input-prefix,
   .cd-input-suffix {
     display: inline-flex;
     align-items: center;
     justify-content: center;
     flex: 0 0 auto;
+    white-space: nowrap;
+  }
+  /* 文案变体（对齐 Semi `&-text`）：水平外边距 12px + text-2 + bold。 */
+  .cd-input-prefix-text,
+  .cd-input-suffix-text {
     margin: 0 var(--cd-spacing-input-prefix-suffix-marginx);
     color: var(--cd-color-input-prefix-text-default);
     font-weight: var(--cd-font-input-prefix-suffix-fontweight);
-    white-space: nowrap;
   }
+  /* 图标变体（对齐 Semi `&-icon`）：外边距 8px（比文案窄），图标色，不吃 font-weight。
+     8+16+8=32px 恰等于 clearbtn 宽度，hover 互换时宽度守恒——改小这里会让触发器抖。 */
+  .cd-input-prefix-icon,
+  .cd-input-suffix-icon {
+    margin: var(--cd-spacing-input-prefix-icon-marginy) var(--cd-spacing-input-prefix-icon-marginx);
+    color: var(--cd-color-input-icon-default);
+  }
+  /* 内嵌标签（对齐 Semi `&-inset-label`）：自带 margin/色/字重，不依赖 -text 变体。 */
   .cd-input-inset-label {
+    margin: 0 var(--cd-spacing-input-prefix-suffix-marginx);
+    color: var(--cd-color-input-prefix-text-default);
+    font-weight: var(--cd-font-input-prefix-suffix-fontweight);
     flex-shrink: 0;
     white-space: nowrap;
   }
@@ -710,20 +754,28 @@
     border-end-end-radius: var(--cd-radius-input-wrapper);
   }
   /* 前后置标签模式下 input 侧的圆角调整（对齐 Semi with-prepend-only/append-only）。 */
-  .cd-input-wrapper__with-prepend:not(.cd-input-wrapper__with-append) .cd-input {
+  .cd-input-wrapper-with-prepend:not(.cd-input-wrapper-with-append) .cd-input {
     border-start-end-radius: var(--cd-radius-input-wrapper);
     border-end-end-radius: var(--cd-radius-input-wrapper);
   }
-  .cd-input-wrapper__with-append:not(.cd-input-wrapper__with-prepend) .cd-input {
+  .cd-input-wrapper-with-append:not(.cd-input-wrapper-with-prepend) .cd-input {
     border-start-start-radius: var(--cd-radius-input-wrapper);
     border-end-start-radius: var(--cd-radius-input-wrapper);
   }
-  /* borderless —— 对齐 Semi：非悬浮/聚焦时全透明；error/warning 保留实色描边。 */
+  /* borderless —— 对齐 Semi：非悬浮/聚焦时全透明；error/warning 保留实色描边。
+     选择器特异性须 ≥ 上面 527/531 行 default 聚焦态规则，否则聚焦（含聚焦时悬浮）
+     会被 default 态的 --cd-color-input-default-bg-focus(-hover) 盖回去，使 borderless
+     输入框冒出一圈非透明底色（如 Cascader 内嵌搜索框）。531 行「聚焦+悬浮」组合
+     比 527 行单聚焦多一个 :hover 伪类和 2 个 :not(.warning/.error)，特异性更高，
+     必须单独补一条同量级选择器覆盖，光靠单聚焦那条覆盖不掉悬浮时的反弹。 */
   .cd-input-borderless:not(:focus-within):not(:hover) {
     background: transparent;
     border-color: transparent;
   }
-  .cd-input-borderless:focus-within:not(:active) {
+  .cd-input-borderless:not(.cd-input-wrapper-with-prepend):not(.cd-input-wrapper-with-append):focus-within:not(:active) {
+    background: transparent;
+  }
+  .cd-input-borderless:not(.cd-input-wrapper-with-prepend):not(.cd-input-wrapper-with-append):focus-within:hover:not(.cd-input-wrapper-warning):not(.cd-input-wrapper-error) {
     background: transparent;
   }
   .cd-input-borderless.cd-input-wrapper-error:not(:focus-within) {
@@ -736,5 +788,13 @@
     .cd-input-wrapper {
       transition: none;
     }
+  }
+
+  /* —— RTL（对齐 Semi input/rtl.scss）——
+     只需声明方向：本库 Input 的内边距、append/prepend 边框**全部已用逻辑属性**
+     （padding-inline / border-inline-start|end），RTL 下自己就翻，
+     不像 Semi 那样需要逐条写 padding-left/right、border-left/right 掰回来。 */
+  :global(.cd-rtl) .cd-input-wrapper {
+    direction: rtl;
   }
 </style>

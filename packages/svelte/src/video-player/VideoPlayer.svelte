@@ -367,7 +367,7 @@
       buffered={bufferedValue}
       max={totalTime}
       {markers}
-      ariaLabel={loc().t('VideoPlayer.progress')}
+      aria-label={loc().t('VideoPlayer.progress')}
       onChange={onSeek}
     />
     <div class="cd-videoPlayer-controls-menu">
@@ -376,7 +376,7 @@
           <Button
             theme="borderless"
             class="cd-videoPlayer-controls-menu-item cd-videoPlayer-controls-menu-button"
-            ariaLabel={isPlaying ? loc().t('VideoPlayer.pause') : loc().t('VideoPlayer.play')}
+            aria-label={isPlaying ? loc().t('VideoPlayer.pause') : loc().t('VideoPlayer.play')}
             onclick={onTogglePlay}
           >
             {#snippet icon()}{#if isPlaying}<IconPause />{:else}<IconPlay />{/if}{/snippet}
@@ -388,7 +388,7 @@
           <Button
             theme="borderless"
             class="cd-videoPlayer-controls-menu-item cd-videoPlayer-controls-menu-button"
-            ariaLabel={isPlaying ? loc().t('VideoPlayer.pause') : loc().t('VideoPlayer.play')}
+            aria-label={isPlaying ? loc().t('VideoPlayer.pause') : loc().t('VideoPlayer.play')}
             onclick={onTogglePlay}
           >
             {#snippet icon()}<IconRestart rotate={180} />{/snippet}
@@ -412,7 +412,7 @@
                   vertical
                   height={120}
                   showTooltip={false}
-                  ariaLabel={loc().t('VideoPlayer.volume')}
+                  aria-label={loc().t('VideoPlayer.volume')}
                   onChange={onVolume}
                 />
               </div>
@@ -420,7 +420,7 @@
             <Button
               theme="borderless"
               class="cd-videoPlayer-controls-menu-item cd-videoPlayer-controls-menu-button"
-              ariaLabel={muted ? loc().t('VideoPlayer.unmute') : loc().t('VideoPlayer.mute')}
+              aria-label={muted ? loc().t('VideoPlayer.unmute') : loc().t('VideoPlayer.mute')}
               onclick={onToggleMute}
             >
               {#snippet icon()}
@@ -500,7 +500,7 @@
           <Button
             theme="borderless"
             class="cd-videoPlayer-controls-menu-item cd-videoPlayer-controls-menu-button"
-            ariaLabel={loc().t('VideoPlayer.mirror')}
+            aria-label={loc().t('VideoPlayer.mirror')}
             aria-pressed={isMirror}
             onclick={onMirror}
           >
@@ -512,7 +512,7 @@
           <Button
             theme="borderless"
             class="cd-videoPlayer-controls-menu-item cd-videoPlayer-controls-menu-button"
-            ariaLabel={isFullscreen
+            aria-label={isFullscreen
               ? loc().t('VideoPlayer.exitFullscreen')
               : loc().t('VideoPlayer.fullscreen')}
             aria-pressed={isFullscreen}
@@ -526,7 +526,7 @@
           <Button
             theme="borderless"
             class="cd-videoPlayer-controls-menu-item cd-videoPlayer-controls-menu-button"
-            ariaLabel={loc().t('VideoPlayer.pictureInPicture')}
+            aria-label={loc().t('VideoPlayer.pictureInPicture')}
             onclick={onPip}
           >
             {#snippet icon()}<IconMiniPlayer />{/snippet}
@@ -635,9 +635,13 @@
     opacity: 0;
   }
 
+  /* Semi 源码未定义该类样式，本库补齐居中定位（物理属性，非 Semi 缺陷复刻点）。 */
   .cd-videoPlayer-resource-not-found {
     position: absolute;
-    inset: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -760,6 +764,12 @@
   }
   :global(.cd-videoPlayer-controls-popup-menu-item:hover) {
     background-color: var(--cd-color-videoPlayer-controls-item-popup-bg-hover) !important;
+  }
+  /* 选中态（对齐 Semi .semi-dropdown-item-active 覆盖，写法对齐 NavPopupNode 同类先例）。 */
+  :global(.cd-videoPlayer-controls-popup-menu .cd-dropdown-item.cd-dropdown-item-active) {
+    color: var(--cd-color-videoPlayer-controls-popup-item-text-active);
+    font-weight: var(--cd-font-videoPlayer-controls-popup-item-fontWeight);
+    cursor: pointer;
   }
 
   /* Popover 容器透明（对齐 Semi -controls-popover）。 */

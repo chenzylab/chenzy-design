@@ -1,8 +1,8 @@
 <script lang="ts">
   import { Tree, Input } from '@chenzy-design/svelte';
-  import type { TreeNode } from '@chenzy-design/svelte';
+  import type { TreeNodeData } from '@chenzy-design/core';
 
-  const treeData: TreeNode[] = [
+  const treeData: TreeNodeData[] = [
     {
       label: '亚洲',
       key: 'asia',
@@ -36,6 +36,6 @@
     filterTreeNode
     searchRender={false}
     defaultExpandAll
-    ariaLabel="手动触发搜索树"
+    aria-label="手动触发搜索树"
   />
 </div>

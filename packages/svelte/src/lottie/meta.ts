@@ -50,7 +50,7 @@ export const meta = {
   staticMembers: [
     {
       name: 'getLottie',
-      desc: '具名导出（异步函数），返回全局 lottie 包（lottie-web 的 default 导出）。对齐 Semi Lottie.getLottie 静态方法；Svelte 组件无法挂静态方法，故以具名导出提供',
+      desc: '静态方法（异步），返回全局 lottie 包（lottie-web 的 default 导出）。1:1 对齐 Semi Lottie.getLottie——Svelte 组件本身是函数，可用 Object.assign 挂静态成员（同 HotKeys.Keys）；亦保留等价具名导出 getLottie',
     },
   ],
   a11y: {

@@ -3,7 +3,6 @@ title: Rating 评分
 name: rating
 category: input
 brief: 展示评分的组件。
-docMode: inline
 ---
 
 <script>

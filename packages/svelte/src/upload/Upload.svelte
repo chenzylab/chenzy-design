@@ -1155,7 +1155,7 @@
           <div class="cd-upload-drag-area-main-text">
             {#if dragMainText}
               {#if typeof dragMainText === 'string'}{dragMainText}{:else}{@render dragMainText()}{/if}
-            {:else}{loc().t('Upload.draggerText')}{/if}
+            {:else}{loc().t('Upload.mainText')}{/if}
           </div>
           {#if dragSubText}
             <div class="cd-upload-drag-area-sub-text">

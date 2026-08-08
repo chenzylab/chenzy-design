@@ -21,7 +21,7 @@
     class: className,
     style,
     role,
-    ariaLabel,
+    'aria-label': ariaLabel,
     onClick,
     onKeyDown,
   }: StepProps = $props();

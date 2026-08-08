@@ -7,6 +7,7 @@
   §9.3：files 遍历为纯派生，无自循环；每项 editor 生命周期封装在 SideBarFileItem 的 $effect 内。
 -->
 <script lang="ts">
+  import { IconFile, IconFullScreenStroked } from '@chenzy-design/icons';
   import { Collapse } from '../collapse/index.js';
   import { useLocale } from '../locale-provider/index.js';
   import SideBarFileItem from './SideBarFileItem.svelte';
@@ -73,8 +74,10 @@
     onChange?.(keys);
   }
 
+  // Semi widget/file.tsx:459 给 Collapse 根节点挂 `-collapse` + `-collapse-file` 两个类
+  // （公共折叠样式 + file 变体），本库原来叫 -file-content，与 Semi 无对应。
   const rootCls = $derived(
-    ['cd-sidebar-file-content', className].filter(Boolean).join(' '),
+    ['cd-sidebar-collapse', 'cd-sidebar-collapse-file', className].filter(Boolean).join(' '),
   );
 </script>
 
@@ -87,40 +90,24 @@
     {#each files as file (file.key)}
       <Collapse.Panel itemKey={file.key}>
         {#snippet head()}
-          <span class="cd-sidebar-file-content__head">
-            <span class="cd-sidebar-file-content__head-icon" aria-hidden="true">
-              <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
-                <path
-                  d="M4 1.5h5l3 3v10h-8v-13ZM9 1.5V4.5h3"
-                  stroke="currentColor"
-                  stroke-width="1.3"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                />
-              </svg>
-            </span>
-            <span class="cd-sidebar-file-content__head-text">{file.name ?? file.key}</span>
+          <span class="cd-sidebar-collapse-header-content">
+            <!-- 同 code：Semi 是裸 <IconFile />，无 -header-icon 包裹层。 -->
+            <IconFile />
+            <span class="cd-sidebar-collapse-header-text">{file.name ?? file.key}</span>
             <!-- 展开（全屏）按钮：在 head 内自渲染，stopPropagation 不触发折叠（对齐 Semi FAQ）。 -->
             <button
               type="button"
-              class="cd-sidebar-file-content__expand"
+              class="cd-sidebar-collapse-header-expand-btn"
               aria-label={expandLabel}
               title={expandLabel}
               onclick={(e) => handleExpand(e, file)}
             >
-              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                <path
-                  d="M9.5 2.5h4v4M6.5 13.5h-4v-4M13.5 2.5l-5 5M2.5 13.5l5-5"
-                  stroke="currentColor"
-                  stroke-width="1.4"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                />
-              </svg>
+              <!-- Semi 用具名 IconFullScreenStroked（widget/code.tsx:68），本库原为手写 svg。 -->
+              <IconFullScreenStroked />
             </button>
           </span>
         {/snippet}
-        <div class="cd-sidebar-file-content__body">
+        <div class="cd-sidebar-file-content-body">
           <SideBarFileItem
             content={file.content ?? ''}
             editable={file.editable ?? false}
@@ -137,32 +124,26 @@
 </div>
 
 <style>
-  .cd-sidebar-file-content__head {
+  .cd-sidebar-collapse-header-content {
     display: flex;
     flex: 1 1 auto;
     align-items: center;
-    gap: var(--cd-sidebar-code-head-gap);
+    gap: var(--cd-sidebar-collapse-header-content-gap);
     min-inline-size: 0;
   }
   /* 展开按钮推到 head 右端（原 extra 靠右语义），紧邻折叠箭头前。 */
-  .cd-sidebar-file-content__expand {
+  .cd-sidebar-collapse-header-expand-btn {
     margin-inline-start: auto;
   }
-  .cd-sidebar-file-content__head-icon {
-    display: inline-flex;
-    flex-shrink: 0;
-    align-items: center;
-    color: var(--cd-sidebar-code-head-icon-color);
-  }
-  .cd-sidebar-file-content__head-text {
+  .cd-sidebar-collapse-header-text {
     overflow: hidden;
     color: var(--cd-sidebar-code-head-color);
-    font-size: var(--cd-sidebar-code-head-size);
-    font-weight: var(--cd-sidebar-code-head-weight);
+    font-size: var(--cd-font-size-regular);
+    font-weight: var(--cd-font-weight-regular);
     white-space: nowrap;
     text-overflow: ellipsis;
   }
-  .cd-sidebar-file-content__expand {
+  .cd-sidebar-collapse-header-expand-btn {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -172,21 +153,21 @@
     border: none;
     border-radius: var(--cd-sidebar-close-radius);
     background: transparent;
-    color: var(--cd-sidebar-code-expand-color);
+    color: var(--cd-sidebar-options-button-text);
     cursor: pointer;
     transition:
       background-color var(--cd-motion-duration-fast, 0.1s) var(--cd-motion-ease-standard, ease),
       color var(--cd-motion-duration-fast, 0.1s) var(--cd-motion-ease-standard, ease);
   }
-  .cd-sidebar-file-content__expand:hover {
+  .cd-sidebar-collapse-header-expand-btn:hover {
     background: var(--cd-sidebar-code-expand-hover-bg);
     color: var(--cd-sidebar-code-head-color);
   }
-  .cd-sidebar-file-content__expand:focus-visible {
+  .cd-sidebar-collapse-header-expand-btn:focus-visible {
     outline: none;
     box-shadow: var(--cd-focus-ring);
   }
-  .cd-sidebar-file-content__body {
+  .cd-sidebar-file-content-body {
     padding: var(--cd-sidebar-code-body-padding);
   }
 </style>

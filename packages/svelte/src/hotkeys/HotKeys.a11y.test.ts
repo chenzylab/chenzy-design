@@ -2,7 +2,7 @@
 // DOM 严格对齐 Semi：div.cd-hotKeys > span > span.-content（用 span 非 kbd），分隔 span.-split "+"。
 // 行为：keydown 监听挂载/解绑、preventDefault、content/render/null 提示渲染、getListenerTarget 局部监听。
 import { describe, it, expect, vi } from 'vitest';
-import type { Component } from 'svelte';
+import { createRawSnippet, type Component } from 'svelte';
 import { renderWithLocale, expectNoAxeViolations } from '../test-utils/a11y.js';
 import HotKeysComponent from './HotKeys.svelte';
 
@@ -33,9 +33,9 @@ describe('HotKeys a11y', () => {
     await expectNoAxeViolations(container);
   });
 
-  it('普通字母键大写显示', () => {
+  it('键位原样渲染，不做大小写转换（对齐 Semi renderContent.map 直接渲染 hotKeys 数组）', () => {
     const { container } = renderWithLocale(HotKeys, { props: { hotKeys: ['a'] } });
-    expect(contents(container)[0]?.textContent).toBe('A');
+    expect(contents(container)[0]?.textContent).toBe('a');
   });
 
   it('content 自定义显示内容（字符串）', () => {
@@ -44,6 +44,14 @@ describe('HotKeys a11y', () => {
     });
     const texts = contents(container).map((k) => k.textContent);
     expect(texts).toEqual(['Ctrl', 'K']);
+  });
+
+  it('content 整体覆盖渲染（对齐 Semi content ?? hotKeys，长度可与 hotKeys 不同）', () => {
+    const { container } = renderWithLocale(HotKeys, {
+      props: { hotKeys: ['Control', 'Shift', 'K'], content: ['⌘', 'K'] },
+    });
+    const texts = contents(container).map((k) => k.textContent);
+    expect(texts).toEqual(['⌘', 'K']);
   });
 
   it('render=null：不渲染提示 UI，仅保留监听（无 .cd-hotKeys 节点，仍能触发）', () => {
@@ -101,17 +109,6 @@ describe('HotKeys 行为', () => {
     expect(spy).toHaveBeenCalledTimes(1);
   });
 
-  it('disabled：不绑定监听', () => {
-    const onHotKey = vi.fn();
-    renderWithLocale(HotKeys, {
-      props: { hotKeys: ['Control', 'K'], disabled: true, onHotKey },
-    });
-    document.body.dispatchEvent(
-      new KeyboardEvent('keydown', { code: 'KeyK', key: 'k', ctrlKey: true, bubbles: true }),
-    );
-    expect(onHotKey).not.toHaveBeenCalled();
-  });
-
   it('getListenerTarget：局部监听，目标外的事件不触发', () => {
     const local = document.createElement('div');
     document.body.appendChild(local);
@@ -139,9 +136,42 @@ describe('HotKeys 行为', () => {
     expect(onHotKey).not.toHaveBeenCalled();
   });
 
-  it('非法组合抛错（2 个普通键）', () => {
+  it('非法组合抛错（2 个普通键，对齐 Semi 错误消息）', () => {
     expect(() =>
       renderWithLocale(HotKeys, { props: { hotKeys: ['A', 'B'] } }),
-    ).toThrow(/恰含 1 个普通键/);
+    ).toThrow(/one common key/);
+  });
+
+  it('onClick：点击提示根节点触发回调（对齐 Semi onClick）', () => {
+    const onClick = vi.fn();
+    const { container } = renderWithLocale(HotKeys, {
+      props: { hotKeys: ['Control', 'K'], onClick },
+    });
+    const root = container.querySelector('.cd-hotKeys') as HTMLElement;
+    root.click();
+    expect(onClick).toHaveBeenCalledTimes(1);
+  });
+
+  it('render 分支仍套根节点 div.cd-hotKeys（对齐 Semi：class/style/onClick 照常生效）', () => {
+    const onClick = vi.fn();
+    const { container } = renderWithLocale(HotKeys, {
+      props: {
+        hotKeys: ['Control', 'R'],
+        class: 'custom-cls',
+        style: 'margin-top: 8px;',
+        onClick,
+        // 自定义渲染内容：用最小 snippet（$.text 形态由编译器生成，此处以子节点断言为准）。
+        render: createRawSnippet(() => ({ render: () => '<span id="custom">custom</span>' })),
+      },
+    });
+    const root = container.querySelector('.cd-hotKeys') as HTMLElement;
+    expect(root).not.toBeNull();
+    expect(root.classList.contains('custom-cls')).toBe(true);
+    expect(root.getAttribute('style')).toContain('margin-top: 8px');
+    // 自定义内容在根节点内部，且默认键位提示不再渲染。
+    expect(root.querySelector('#custom')).not.toBeNull();
+    expect(contents(container)).toHaveLength(0);
+    root.click();
+    expect(onClick).toHaveBeenCalledTimes(1);
   });
 });

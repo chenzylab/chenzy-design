@@ -38,6 +38,21 @@ export interface UseFloatingOptions {
    * box + scroll), instead of the viewport-fixed positioning used for body.
    */
   getContainer?: (() => HTMLElement | null | undefined) | undefined;
+  /**
+   * Forward a synthetic click on the trigger whenever the popup content is
+   * clicked (default false). The popup is portaled to `document.body`, so a
+   * real click inside it bubbles up the *actual* DOM tree (body's ancestors),
+   * never through the trigger's original subtree — unlike React, where Portal
+   * content still bubbles through the *virtual* tree to ancestor components.
+   * Svelte has no such virtual-tree bubbling, so callers that rely on "click
+   * inside the popup should also count as clicking the trigger" (e.g.
+   * Cascader's +N rest-tags popover reopening the panel) must opt in here.
+   * Default off: most popup content (menu items, form controls) handles its
+   * own click and would misfire if the trigger's click handler ran too (e.g.
+   * Select's trigger toggles open/closed — forwarding would reopen it right
+   * after an option selection closes it).
+   */
+  forwardClickToTrigger?: boolean;
 }
 
 export interface FloatingHandle {
@@ -73,6 +88,7 @@ export function useFloating(
     over = false,
     onPlacement,
     getContainer,
+    forwardClickToTrigger = false,
   } = options;
 
   // portal: detach the popup from its in-flow parent and append to the custom
@@ -87,6 +103,30 @@ export function useFloating(
   popup.style.insetBlockStart = '0';
   popup.style.insetInlineStart = '0';
   popup.style.margin = '0';
+
+  // forwardClickToTrigger: re-dispatch the click on the trigger so it travels
+  // the trigger's *real* subtree (the portal broke the popup out of it). Guard
+  // re-entrancy with a flag — the dispatched event is also a plain 'click', so
+  // without it the listener would catch its own forwarded event and loop.
+  // Deferred with queueMicrotask: dispatchEvent runs synchronously, so an
+  // immediate forward would nest the trigger's full click handling (e.g.
+  // Cascader's toggleOpen — a $state update + panel-open transition) inside
+  // the *current* click's call stack, competing with this click's own
+  // handling (the popup's hover-close transition) for the same animation
+  // frame and producing visible jank. Deferring lets the real click finish
+  // first so the two transitions don't fight over one frame.
+  let forwarding = false;
+  function onPopupClick() {
+    if (forwarding) return;
+    forwarding = true;
+    queueMicrotask(() => {
+      trigger.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, composed: true }));
+      forwarding = false;
+    });
+  }
+  if (forwardClickToTrigger) {
+    popup.addEventListener('click', onPopupClick);
+  }
 
   let frame = 0;
   // Layout-size snapshot (trigger + popup) captured at the last position(). The
@@ -177,12 +217,40 @@ export function useFloating(
     onPlacement?.({ placement: result.placement, arrowOffset: result.arrowOffset });
   }
 
-  function schedule() {
-    if (frame) return;
+  // Last trigger rect seen by the chase loop, to detect when native momentum/
+  // kinetic scrolling (trackpad fling, smooth-scroll) has actually settled.
+  let lastChaseX = 0;
+  let lastChaseY = 0;
+  let stableFrames = 0;
+
+  // 'scroll' events are not guaranteed to fire once per visual frame: the
+  // browser may coalesce/throttle them (most visibly during trackpad momentum
+  // scrolling), dispatching only one or two events for a fling that spans many
+  // frames. A single schedule()-then-stop reposition can therefore snapshot the
+  // trigger mid-fling and then never correct itself once the fling settles,
+  // leaving the popup stuck away from the trigger. Chase: keep repositioning on
+  // every rAF until the trigger's rect stops moving for two consecutive frames,
+  // not just once after the triggering event.
+  function chase() {
     frame = window.requestAnimationFrame(() => {
       frame = 0;
       position();
+      const r = trigger.getBoundingClientRect();
+      if (r.x === lastChaseX && r.y === lastChaseY) {
+        stableFrames++;
+      } else {
+        stableFrames = 0;
+        lastChaseX = r.x;
+        lastChaseY = r.y;
+      }
+      if (stableFrames < 2) chase();
     });
+  }
+
+  function schedule() {
+    stableFrames = 0;
+    if (frame) return;
+    chase();
   }
 
   // initial position before paint, then keep aligned on scroll/resize.
@@ -227,6 +295,9 @@ export function useFloating(
       window.removeEventListener('resize', schedule);
       ro?.disconnect();
       ro = undefined;
+      if (forwardClickToTrigger) {
+        popup.removeEventListener('click', onPopupClick);
+      }
       // Svelte may have already run its {#if} unmount against the popup's
       // original slot (a no-op, since the node now lives in <body>), so the
       // action owns teardown: remove the portaled popup outright. On the next

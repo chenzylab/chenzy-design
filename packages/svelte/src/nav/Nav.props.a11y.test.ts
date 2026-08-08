@@ -5,7 +5,8 @@ import { tick } from 'svelte';
 import { renderWithLocale } from '../test-utils/a11y.js';
 import Nav from './Nav.svelte';
 import NavDeclarativeFixture from './NavDeclarativeFixture.svelte';
-import { collectNavItemsByKeys, collectAncestorKeys } from './types.js';
+import NavChildrenFixture from './NavChildrenFixture.svelte';
+import { collectNavItemsByKeys, collectAncestorKeys } from './nav-foundation.js';
 
 const items = [
   { itemKey: 'home', text: '首页' },
@@ -33,7 +34,7 @@ describe('Nav 渲染（对齐 Semi）', () => {
     // 对齐 Semi：根为纯 <div>（无 nav landmark）。
     expect(root?.tagName).toBe('DIV');
     expect(container.querySelector('nav')).toBeNull();
-    expect(container.querySelector('.cd-nav__list[role="menu"]')).not.toBeNull();
+    expect(container.querySelector('.cd-nav-list[role="menu"]')).not.toBeNull();
     expect(container.textContent).toContain('首页');
   });
 
@@ -41,7 +42,7 @@ describe('Nav 渲染（对齐 Semi）', () => {
     const { container } = renderWithLocale(Nav, {
       props: { items, header: { text: '后台' } },
     });
-    expect(container.querySelector('.cd-nav__header')).not.toBeNull();
+    expect(container.querySelector('.cd-nav-header')).not.toBeNull();
     expect(container.textContent).toContain('后台');
   });
 
@@ -50,8 +51,8 @@ describe('Nav 渲染（对齐 Semi）', () => {
     const { container } = renderWithLocale(Nav, {
       props: { mode: 'vertical', items, footer: { collapseButton: true }, onCollapseChange },
     });
-    // 收起按钮为 div.cd-nav__collapse-btn 内的 Button。
-    const wrap = container.querySelector('.cd-nav__collapse-btn');
+    // 收起按钮为 div.cd-nav-collapse-btn 内的 Button。
+    const wrap = container.querySelector('.cd-nav-collapse-btn');
     expect(wrap).not.toBeNull();
     const btn = wrap?.querySelector<HTMLButtonElement>('button');
     expect(btn).not.toBeNull();
@@ -63,14 +64,14 @@ describe('Nav 渲染（对齐 Semi）', () => {
     const { container } = renderWithLocale(Nav, {
       props: { mode: 'horizontal', items, footer: { collapseButton: true } },
     });
-    expect(container.querySelector('.cd-nav__collapse-btn')).toBeNull();
+    expect(container.querySelector('.cd-nav-collapse-btn')).toBeNull();
   });
 
   it('受控 isCollapsed：根节点带 collapsed 修饰类', () => {
     const { container } = renderWithLocale(Nav, {
       props: { mode: 'vertical', items, isCollapsed: true },
     });
-    expect(container.querySelector('.cd-nav--collapsed')).not.toBeNull();
+    expect(container.querySelector('.cd-nav-collapsed')).not.toBeNull();
   });
 
   it('items string 简写：string 子项取值作 text 与 itemKey（对齐 Semi）', () => {
@@ -80,7 +81,7 @@ describe('Nav 渲染（对齐 Semi）', () => {
     const { container } = renderWithLocale(Nav, {
       props: { mode: 'vertical', items: shorthandItems, defaultOpenKeys: ['job'] },
     });
-    const text = container.querySelector('.cd-nav__list-wrapper')?.textContent ?? '';
+    const text = container.querySelector('.cd-nav-list-wrapper')?.textContent ?? '';
     expect(text).toContain('任务管理');
     expect(text).toContain('用户任务查询');
   });
@@ -92,13 +93,27 @@ describe('Nav 声明式写法（Nav.Item / Nav.Sub）', () => {
     // 声明式项经 microtask bump 异步渲染，等一拍。
     await Promise.resolve();
     await tick();
-    const body = container.querySelector('.cd-nav__list-wrapper')!;
+    const body = container.querySelector('.cd-nav-list-wrapper')!;
     const text = body.textContent ?? '';
     expect(text).toContain('首页');
     expect(text).toContain('管理');
     // 展开的子项也在（defaultOpenKeys=['mgmt']）
     expect(text).toContain('用户');
     expect(text).toContain('角色');
+  });
+
+  it('items 与任意 children 并存：children 渲染在 ul 内 items 之后（对齐 Semi）', () => {
+    const { container } = renderWithLocale(NavChildrenFixture, {});
+    const list = container.querySelector('.cd-nav-list')!;
+    const free = list.querySelector('[data-testid="free-content"]');
+    // 非 Nav.Item 的子内容可见渲染（旧实现塞进 hidden div 且 items 存在时整个丢弃）。
+    expect(free).not.toBeNull();
+    expect(free?.textContent).toBe('模版推荐');
+    // 位置在 items 之后（对齐 Semi `{itemElems}{children}`）。
+    const items = list.querySelectorAll('[role="menuitem"]');
+    expect(items.length).toBeGreaterThan(0);
+    const lastItem = items[items.length - 1]!;
+    expect(lastItem.compareDocumentPosition(free!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 });
 
@@ -109,7 +124,7 @@ describe('Nav 交互回调与新增透传（对齐 Semi）', () => {
     const { container } = renderWithLocale(Nav, {
       props: { mode: 'vertical', items, onClick, onSelect },
     });
-    const leaf = container.querySelector<HTMLElement>('.cd-nav__list .cd-nav__item-normal');
+    const leaf = container.querySelector<HTMLElement>('.cd-nav-list .cd-nav-item-normal');
     leaf?.click();
     expect(onSelect).toHaveBeenCalledWith(
       expect.objectContaining({ itemKey: 'home', selectedKeys: ['home'], isOpen: false }),
@@ -125,7 +140,7 @@ describe('Nav 交互回调与新增透传（对齐 Semi）', () => {
     const { container } = renderWithLocale(Nav, {
       props: { mode: 'vertical', items, multiple: true, onSelect, onDeselect },
     });
-    const leaf = container.querySelector<HTMLElement>('.cd-nav__list .cd-nav__item-normal');
+    const leaf = container.querySelector<HTMLElement>('.cd-nav-list .cd-nav-item-normal');
     leaf?.click();
     expect(onSelect).toHaveBeenCalledWith(expect.objectContaining({ itemKey: 'home' }));
     leaf?.click();
@@ -138,7 +153,7 @@ describe('Nav 交互回调与新增透传（对齐 Semi）', () => {
     const { container } = renderWithLocale(Nav, {
       props: { mode: 'vertical', items: localItems },
     });
-    const leaf = container.querySelector<HTMLElement>('.cd-nav__list .cd-nav__item-normal');
+    const leaf = container.querySelector<HTMLElement>('.cd-nav-list .cd-nav-item-normal');
     leaf?.click();
     expect(itemOnClick).toHaveBeenCalledOnce();
   });
@@ -147,12 +162,12 @@ describe('Nav 交互回调与新增透传（对齐 Semi）', () => {
     const open = renderWithLocale(Nav, {
       props: { mode: 'vertical', items, defaultOpenKeys: ['tasks'], subNavMotion: true },
     });
-    expect(open.container.querySelector('.cd-nav__sub--motion')).not.toBeNull();
+    expect(open.container.querySelector('.cd-nav-sub-motion')).not.toBeNull();
 
     const noMotion = renderWithLocale(Nav, {
       props: { mode: 'vertical', items, defaultOpenKeys: ['tasks'], subNavMotion: false },
     });
-    expect(noMotion.container.querySelector('.cd-nav__sub--motion')).toBeNull();
-    expect(noMotion.container.querySelector('.cd-nav__sub')).not.toBeNull();
+    expect(noMotion.container.querySelector('.cd-nav-sub-motion')).toBeNull();
+    expect(noMotion.container.querySelector('.cd-nav-sub')).not.toBeNull();
   });
 });

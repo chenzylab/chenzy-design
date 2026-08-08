@@ -10,26 +10,26 @@
 <div style="display: flex; flex-direction: column; gap: 16px;">
   <div style="display: flex; gap: 8px; align-items: center;">
     <strong style="flex-shrink: 0; white-space: nowrap;">默认状态：</strong>
-    <Button icon={camera} ariaLabel="截屏" />
+    <Button icon={camera} aria-label="截屏" />
   </div>
 
   <div style="display: flex; gap: 8px; align-items: center;">
     <strong style="flex-shrink: 0; white-space: nowrap;">禁用状态：</strong>
-    <Button disabled icon={camera} ariaLabel="截屏" />
+    <Button disabled icon={camera} aria-label="截屏" />
   </div>
 
   <div style="display: flex; gap: 8px; align-items: center;">
     <strong style="flex-shrink: 0; white-space: nowrap;">复合类型：</strong>
-    <Button type="primary" icon={camera} ariaLabel="截屏" />
-    <Button type="secondary" icon={camera} ariaLabel="截屏" />
-    <Button type="warning" icon={camera} ariaLabel="截屏" />
-    <Button type="danger" icon={camera} ariaLabel="截屏" />
+    <Button type="primary" icon={camera} aria-label="截屏" />
+    <Button type="secondary" icon={camera} aria-label="截屏" />
+    <Button type="warning" icon={camera} aria-label="截屏" />
+    <Button type="danger" icon={camera} aria-label="截屏" />
   </div>
 
   <div style="display: flex; gap: 8px; align-items: center;">
     <strong style="flex-shrink: 0; white-space: nowrap;">更改主题：</strong>
-    <Button icon={camera} theme="solid" ariaLabel="截屏" />
-    <Button icon={camera} theme="light" ariaLabel="截屏" />
+    <Button icon={camera} theme="solid" aria-label="截屏" />
+    <Button icon={camera} theme="light" aria-label="截屏" />
   </div>
 
   <div style="display: flex; gap: 8px; align-items: center;">

@@ -25,8 +25,8 @@ function activeNodeText(tree: HTMLElement): string | null {
   const id = tree.getAttribute('aria-activedescendant');
   if (!id) return null;
   const el = document.getElementById(id);
-  // label 在 .cd-tree__label 内（含 switcher/icon 等兄弟），只取 label 文本。
-  return el?.querySelector('.cd-tree__label')?.textContent?.trim() ?? null;
+  // label 在 .cd-tree-option-label 内（含 switcher/icon 等兄弟），只取 label 文本。
+  return el?.querySelector('.cd-tree-option-label')?.textContent?.trim() ?? null;
 }
 
 describe('Tree 键盘 e2e（aria-activedescendant roving + typeahead）', () => {
@@ -83,7 +83,7 @@ describe('Tree 键盘 e2e（aria-activedescendant roving + typeahead）', () => 
     // 3. `*` 展开当前层级全部可展开同级：Date 展开 → 子节点 Deglet/Medjool 可见。
     await userEvent.keyboard('*');
     const labels = Array.from(
-      tree.querySelectorAll<HTMLElement>('.cd-tree__label'),
+      tree.querySelectorAll<HTMLElement>('.cd-tree-option-label'),
     ).map((n) => n.textContent?.trim());
     expect(labels).toContain('Deglet');
     expect(labels).toContain('Medjool');

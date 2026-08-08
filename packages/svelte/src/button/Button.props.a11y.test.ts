@@ -10,7 +10,7 @@ import ButtonGroup from './ButtonGroup.svelte';
 describe('Button props（对齐 Semi）', () => {
   it('class / style 透传到根 button', () => {
     const { container } = render(Button, {
-      props: { ariaLabel: 'x', class: 'my-cls', style: 'opacity: 0.3' },
+      props: { 'aria-label': 'x', class: 'my-cls', style: 'opacity: 0.3' },
     });
     const btn = container.querySelector('button')!;
     expect(btn.classList.contains('my-cls')).toBe(true);
@@ -21,7 +21,7 @@ describe('Button props（对齐 Semi）', () => {
   it('noHorizontalPadding=true（有 icon）用 inline padding 去内距（对齐 Semi）', () => {
     const icon = createRawSnippet(() => ({ render: () => '<svg></svg>' }));
     const { container } = render(Button, {
-      props: { ariaLabel: 'x', icon, noHorizontalPadding: true },
+      props: { 'aria-label': 'x', icon, noHorizontalPadding: true },
     });
     const btn = container.querySelector('button')!;
     // 浏览器会把 padding-left:0 规整为 padding-left: 0px，用 replace 去空格后断言。
@@ -32,7 +32,7 @@ describe('Button props（对齐 Semi）', () => {
 
   it('noHorizontalPadding 无 icon 时不生效', () => {
     const { container } = render(Button, {
-      props: { ariaLabel: 'x', noHorizontalPadding: true },
+      props: { 'aria-label': 'x', noHorizontalPadding: true },
     });
     const btn = container.querySelector('button')!;
     const style = (btn.getAttribute('style') ?? '').replace(/\s/g, '');
@@ -42,7 +42,7 @@ describe('Button props（对齐 Semi）', () => {
   it('circle 加 cd-button-circle class（含与 icon-only 组合）', () => {
     const icon = createRawSnippet(() => ({ render: () => '<svg></svg>' }));
     const { container } = render(Button, {
-      props: { ariaLabel: 'x', icon, circle: true },
+      props: { 'aria-label': 'x', icon, circle: true },
     });
     const btn = container.querySelector('button')!;
     expect(btn.classList.contains('cd-button-circle')).toBe(true);
@@ -50,7 +50,7 @@ describe('Button props（对齐 Semi）', () => {
   });
 
   it('circle 默认关闭', () => {
-    const { container } = render(Button, { props: { ariaLabel: 'x' } });
+    const { container } = render(Button, { props: { 'aria-label': 'x' } });
     expect(container.querySelector('button')!.classList.contains('cd-button-circle')).toBe(false);
   });
 
@@ -58,7 +58,7 @@ describe('Button props（对齐 Semi）', () => {
     // Button 对齐 Semi 透传任意原生属性到根 <button>（`[key: string]: unknown`），
     // 故 href 类型上合法，但 Button 始终是 <button>，绝不渲染 <a>。
     const { container } = render(Button, {
-      props: { href: 'https://x.com', ariaLabel: 'x' },
+      props: { href: 'https://x.com', 'aria-label': 'x' },
     });
     expect(container.querySelector('a')).toBeNull();
     expect(container.querySelector('button')).not.toBeNull();
@@ -68,7 +68,7 @@ describe('Button props（对齐 Semi）', () => {
 describe('ButtonGroup（对齐 Semi）', () => {
   it('colorful prop 渲染不报错，并透传 class/style/aria-label', () => {
     const { container } = render(ButtonGroup, {
-      props: { colorful: true, class: 'grp', style: 'gap: 4px', ariaLabel: 'g' },
+      props: { colorful: true, class: 'grp', style: 'gap: 4px', 'aria-label': 'g' },
     });
     const root = container.querySelector('.cd-button-group')!;
     expect(root.classList.contains('grp')).toBe(true);

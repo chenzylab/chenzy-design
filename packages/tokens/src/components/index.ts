@@ -62,11 +62,13 @@ import { audioPlayerTokens } from './audio-player.js';
 import { jsonViewerTokens } from './json-viewer.js';
 import { chatTokens } from './chat.js';
 import { aiChatInputTokens } from './ai-chat-input.js';
+import { aiChatDialogueTokens } from './ai-chat-dialogue.js';
 import { hotKeysTokens } from './hotkeys.js';
 import { floatButtonTokens } from './float-button.js';
 import { userGuideTokens } from './user-guide.js';
 import { sideBarTokens } from './sidebar.js';
 import { feedbackTokens } from './feedback.js';
+import { resizableTokens } from './resizable.js';
 
 export const componentTokens = {
   ...buttonTokens,
@@ -132,9 +134,11 @@ export const componentTokens = {
   ...jsonViewerTokens,
   ...chatTokens,
   ...aiChatInputTokens,
+  ...aiChatDialogueTokens,
   ...hotKeysTokens,
   ...floatButtonTokens,
   ...userGuideTokens,
   ...sideBarTokens,
   ...feedbackTokens,
+  ...resizableTokens,
 } as const;

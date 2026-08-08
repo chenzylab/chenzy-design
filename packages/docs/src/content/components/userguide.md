@@ -3,7 +3,6 @@ title: UserGuide 用户引导
 name: userguide
 category: show
 brief: 用于页面对新用户进行功能引导
-docMode: inline
 ---
 
 <script>

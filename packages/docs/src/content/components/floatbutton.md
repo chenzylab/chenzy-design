@@ -3,7 +3,6 @@ title: FloatButton 悬浮按钮
 name: floatbutton
 category: basic
 brief: 悬浮按钮是可以悬浮在页面上的可操作按钮。
-docMode: inline
 ---
 
 <script>

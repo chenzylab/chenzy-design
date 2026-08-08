@@ -51,69 +51,90 @@ Tree（树形控件）以层级缩进的方式展示具有父子关系的结构�
 
 ### Props
 
-| 名称 | 类型 | 默认值 | 说明 |
-|---|---|---|---|
-| `treeData` | `TreeNodeData[]` | `[]` | 树数据源；`{ key, label, value?, icon?, disabled?, checkable?, selectable?, isLeaf?, children? }` |
-| `treeDataSimpleJson` | `Record<string, unknown>` | — | 简单 JSON 树数据：扁平 `{ key: value }`，key 作 key/label，value 作节点 value，嵌套对象转子树。`treeData` 非空时优先 |
-| `fieldNames` | `{ key?; label?; children?; }` | `{key:'key',label:'label',children:'children'}` | 自定义数据字段映射 |
-| `value` | `Key \| Key[] \| TreeNodeData \| TreeNodeData[]` | — | 受控选中项（selection）；`multiple` 时为数组。`onChangeWithObject` 时为节点对象形态 |
-| `defaultValue` | `Key \| Key[] \| TreeNodeData \| TreeNodeData[]` | — | 非受控初始选中项；`onChangeWithObject` 时为节点对象形态 |
-| `onChangeWithObject` | `boolean` | `false` | 以对象形态收发选中项：`onChange` 的 value 及受控 `value`/`defaultValue` 均为节点对象（含 label/value/其它字段）。对象标识优先取 `key` 缺省回退 `value` |
-| `multiple` | `boolean` | `false` | 是否多选高亮选择 |
-| `checkable` | `boolean` | `false` | 是否显示勾选框 |
-| `checkedKeys` | `Key[]` | — | 受控勾选项 |
-| `defaultCheckedKeys` | `Key[]` | `[]` | 非受控初始勾选项 |
-| `checkRelation` | `'related' \| 'unRelated'` | `'related'` | 父子勾选是否联动 |
-| `checkStrictly` | `boolean` | `false` | 父子勾选状态解耦（联动时仍各自独立） |
-| `disableStrictly` | `boolean` | `false` | 严格禁用：disabled 节点勾选态被锁定，不能通过父/子级联动改变（区别于普通 disabled 仅禁直接点击）。仅 checkable 联动下有意义 |
-| `leafOnly` | `boolean` | `false` | 多选勾选时 `onCheck` 回传的 checked/halfChecked 只含叶子节点 key（滤掉父/半选节点） |
-| `expandedKeys` | `Key[]` | — | 受控展开项 |
-| `defaultExpandedKeys` | `Key[]` | `[]` | 非受控初始展开项 |
-| `defaultExpandAll` | `boolean` | `false` | 首屏展开全部 |
-| `expandedDepth` | `number` | — | 默认展开到第 N 层 |
-| `accordion` | `boolean` | `false` | 手风琴模式，同层只展开一个 |
-| `selectable` | `boolean` | `true` | 节点是否可选择 |
-| `draggable` | `boolean` | `false` | 是否可拖拽 |
-| `showLine` | `boolean` | `false` | 显示层级连接线 |
-| `showIcon` | `boolean` | `true` | 显示节点图标 |
-| `filterTreeNode` | `boolean \| ((input, node) => boolean)` | `false` | 是否开启/自定义搜索过滤 |
-| `treeNodeFilterProp` | `string` | `'label'` | 内置搜索匹配节点的哪个字段（仅内置谓词生效） |
-| `searchStyle` | `string` | — | 搜索框内联样式（透传到 input style） |
-| `searchClassName` | `string` | — | 搜索框附加 class（追加到 input） |
-| `showClear` | `boolean` | `true` | 搜索框有内容时显示清除按钮 |
-| `showFilteredOnly` | `boolean` | `false` | 搜索状态下只渲染命中节点及其祖先链，隐藏其它未命中节点（默认展示全树、命中高亮、祖先自动展开） |
-| `searchValue` | `string` | — | 受控搜索关键词 |
-| `expandAction` | `false \| 'click' \| 'doubleClick'` | `false` | 展开触发方式：false 仅点箭头；'click' 点整行；'doubleClick' 双击整行 |
-| `autoMergeValue` | `boolean` | `true` | 多选受控 value 自动合并父子：父完全选中时 `onCheck` 只保留父不含子孙。仅 multiple+checkable 联动且 leafOnly=false 有意义 |
-| `labelEllipsis` | `boolean` | `false`（virtualized 时 `true`） | label 超长单行省略 |
-| `preventScroll` | `boolean` | `false` | 组件内 `focus()` 时是否阻止浏览器滚动文档 |
-| `onDoubleClick` | `(e: MouseEvent, node: TreeNodeData) => void` | — | 节点双击回调 |
-| `autoExpandWhenDragEnter` | `boolean` | `true` | 拖到节点内部时是否延时自动展开（仅 draggable） |
-| `hideDraggingNode` | `boolean` | `false` | 是否隐藏拖拽 dragImg（设透明 drag image，仅 draggable） |
-| `renderDraggingNode` | `(nodeInstance: HTMLElement, node: TreeNodeData) => HTMLElement` | — | 自定义拖拽 dragImg 元素，优先级高于 hideDraggingNode（仅 draggable） |
-| `loadData` | `(node) => Promise<void>` | — | 异步加载子节点 |
-| `virtualized` | `boolean \| { itemSize?: number; height?: number }` | `false` | 虚拟滚动配置 |
-| `disabled` | `boolean` | `false` | 整树禁用 |
-| `size` | `'small' \| 'default' \| 'large'` | `'default'` | 行高尺寸 |
-| `status` | `'default' \| 'warning' \| 'error'` | `'default'` | 容器校验态（嵌入表单用） |
-| `emptyContent` | `Snippet \| string` | — | 空态内容 |
-| `blockNode` | `boolean` | `false` | 节点占满整行（点击行任意处选中） |
-| `autoExpandParent` | `boolean` | `true` | 受控展开时自动展开父节点 |
+> 本表由 `packages/svelte/src/tree/meta.ts` 真源生成（2026-07-30 重校）。此前本表列的 prop 多为 Semi 对齐前的旧名或已删除项（如 `value`→`activeKey`、`change`→`onChange`），改 prop 时请同步 meta.ts，勿手写「规划中」的 prop。
+
+| Prop | 类型 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| treeData | `TreeNodeData[]` | `[]` | 树数据源；字段名可经 keyMaps 自定义 |
+| treeDataSimpleJson | `Record<string, unknown>` | `undefined` | 简单 JSON 形式的树数据（对齐 Semi）：扁平 { key: value } 键值对，key 同时作 key/label，value 作节点 value，嵌套对象转子树。treeData 非空时优先，忽略此项 |
+| keyMaps | `{ key?: string; label?: string; children?: string }` | `{ key:'key', label:'label', children:'children' }` | 自定义节点字段名映射（对齐 Semi keyMaps），适配任意后端数据（如 { key:'id', label:'name', children:'sub' }）。派生只读映射，回调回传原始节点 |
+| value | `TreeKey \| TreeNodeData \| Array<TreeKey \| TreeNodeData> \| null` | `undefined` | 受控选中值（对齐 Semi value）；单选为标量、multiple 时为选中 key 数组（含父子联动结果）。onChangeWithObject 时为节点对象形态。受控时不回写 |
+| defaultValue | `TreeKey \| TreeNodeData \| Array<TreeKey \| TreeNodeData> \| null` | `null` | 非受控初始选中值；形态同 value |
+| onChangeWithObject | `boolean` | `false` | 以对象形态收发选中项：开启后 onChange 的 value 及受控 value/defaultValue 均为节点对象（含 label/value/其它字段），对象标识优先取 key 缺省回退 value |
+| multiple | `boolean` | `false` | 多选模式（对齐 Semi multiple）：开启渲染 checkbox + 父子联动，值经 value/onChange 收发 |
+| disableStrictly | `boolean` | `false` | 严格禁用：disabled 节点勾选态被锁定，不能通过父/子级联动改变（区别于普通 disabled 仅禁直接点击）。仅 multiple 联动下有意义 |
+| leafOnly | `boolean` | `false` | 多选时 onChange 回传的 value 只含叶子节点 key（滤掉父/半选节点） |
+| checkRelation | `'related' \| 'unRelated'` | `'related'` | 多选父子勾选联动关系（对齐 Semi）。'related'（默认）联动含半选；'unRelated' 父子独立无半选 |
+| expandedKeys | `TreeKey[]` | `undefined` | 受控展开。受控时不回写 |
+| defaultExpandedKeys | `TreeKey[]` | `[]` | 非受控初始展开 |
+| defaultExpandAll | `boolean` | `false` | 初始展开全部 |
+| autoExpandParent | `boolean` | `false` | 自动展开父节点（对齐 Semi 默认 false）：初次挂载时把初始展开节点的祖先链并入；开启后收起父节点需先收起其展开的子节点 |
+| expandAction | `false \| 'click' \| 'doubleClick'` | `false` | 展开触发方式：false 仅点箭头；'click' 点整行展开；'doubleClick' 双击整行展开（箭头任意模式可点） |
+| autoMergeValue | `boolean` | `true` | 多选 value 自动合并父子：父节点完全选中时 onChange 回传只保留父不含子孙。仅 multiple 联动且 leafOnly=false 时有意义 |
+| labelEllipsis | `boolean` | `false（virtualize 时 true）` | label 超长单行省略；未显式传时跟随虚拟化 |
+| preventScroll | `boolean` | `false` | 组件内 focus() 时是否阻止浏览器滚动文档（作用于导出的命令式 focus 方法） |
+| showLine | `boolean` | `false` | 显示层级连接线（├/└/竖线，对齐 Semi showLine） |
+| virtualize | `{ itemSize: number; height?: number \| string; width?: number \| string }` | `undefined` | 列表虚拟化（对齐 Semi virtualize）：传对象即开启，itemSize（行高 px）必传；仅渲染视口内可见行，适合大数据树；开启强制关闭动画 |
+| filterTreeNode | `boolean \| ((input: string, node: TreeNodeData) => boolean)` | `false` | 是否根据输入项筛选（对齐 Semi）：true 用内置谓词（按 treeNodeFilterProp 字段包含匹配），传函数自定义命中逻辑；命中节点祖先链自动展开 |
+| treeNodeFilterProp | `string` | `'label'` | 内置搜索匹配节点的哪个字段（仅内置谓词生效，传自定义谓词时由函数决定） |
+| searchStyle | `string` | `undefined` | 搜索框内联样式（透传到 input style） |
+| searchClassName | `string` | `undefined` | 搜索框附加 class（追加到 input） |
+| showClear | `boolean` | `true` | 搜索框有内容时显示清除按钮，点击清空（对齐 Semi showClear） |
+| showFilteredOnly | `boolean` | `false` | 搜索状态下只渲染命中节点及其祖先链，隐藏其它未命中节点（默认 false 展示全树、命中高亮、祖先自动展开） |
+| blockNode | `boolean` | `true` | 整行点击选中（对齐 Semi 默认 true；directory 时强制整行） |
+| directory | `boolean` | `false` | 目录树模式：整行块 + 内置目录/文件图标 + 默认点击整行展开 |
+| motion | `boolean` | `true` | 展开/收起动画开关；virtualized 时强制关闭 |
+| expandAll | `boolean` | `false` | 展开全部：数据变化时仍生效（区别于仅初始化的 defaultExpandAll）；仅非受控展开有意义 |
+| loadedKeys | `TreeKey[]` | `undefined` | 受控已加载节点 key，配合 loadData；已加载节点展开时不再触发 loadData |
+| style | `string` | `undefined` | 根容器内联样式（对齐 Semi style）；设 height 时列表区限高滚动 |
+| class | `string` | `undefined` | 根元素自定义类名（对齐 Semi className） |
+| searchPlaceholder | `string` | `undefined` | 搜索框占位文案（不传用内置 i18n） |
+| searchRender | `false \| Snippet<[SearchRenderContext]>` | `undefined` | 自定义搜索框渲染；传 false 隐藏内置搜索框（仍可经 search() 方法驱动） |
+| onSelect | `(key, selected, node) => void` | `undefined` | 节点选中回调（早于 onChange） |
+| onDragOver | `(info) => void` | `undefined` | 拖拽悬停在候选目标上 |
+| onDragLeave | `(info) => void` | `undefined` | 拖拽离开候选目标 |
+| onDragEnd | `(info) => void` | `undefined` | 拖拽结束（无论是否成功放下） |
+| renderFullLabel | `Snippet<[FullLabelContext]>` | `undefined` | 完全接管整行渲染（叶子分组勾选、单选高亮子节点等高级场景） |
+| disabled | `boolean` | `false` | 整树禁用 |
+| emptyContent | `string` | `undefined` | 空态文案 |
+| aria-label | `string` | `undefined` | 无障碍标签 |
+| loadData | `(node) => Promise<TreeNodeData[]>` | `undefined` | 异步加载子节点：展开未加载的非叶子节点时调用 |
+| onLoad | `(loadedKeys: string[], info: { event: 'load'; node: TreeNodeData }) => void` | `undefined` | 异步加载完成回调 |
+| draggable | `boolean` | `false` | 启用 HTML5 拖拽排序：节点可拖动改变层级/顺序（before/inside/after） |
+| autoExpandWhenDragEnter | `boolean` | `true` | 拖拽到节点内部（inside）时是否延时自动展开该节点。仅 draggable 时有意义 |
+| hideDraggingNode | `boolean` | `false` | 是否隐藏拖拽跟随的 dragImg（设透明 drag image）。仅 draggable 时有意义 |
+| renderDraggingNode | `(nodeInstance: HTMLElement, node: TreeNodeData) => HTMLElement` | `undefined` | 自定义拖拽 dragImg 元素，优先级高于 hideDraggingNode。仅 draggable 时有意义 |
+| onDoubleClick | `(e: MouseEvent, node: TreeNodeData) => void` | `undefined` | 节点双击回调 |
+| onDrop | `(info: { dragNode, dropNode, dropPosition }) => void` | `undefined` | 放下时回调；受控数据由父组件按 info 重排 treeData，组件不内部改 |
+| onDragStart | `(node: TreeNodeData) => void` | `undefined` | 开始拖拽节点 |
+| onDragEnter | `(info: { dragNode: TreeNodeData; dropNode: TreeNodeData }) => void` | `undefined` | 拖拽进入候选目标节点 |
+| onContextMenu | `(e: MouseEvent, node: TreeNodeData) => void` | `undefined` | 节点右键菜单回调（对齐 Semi onContextMenu） |
+| onSearch | `(value: string, filteredExpandedKeys: string[]) => void` | `undefined` | 搜索关键词变化回调（对齐 Semi）；第二参为因搜索而展开的祖先链 key |
+| onChange | `(value) => void` | `undefined` | 选中变更（对齐 Semi）：单选回 key，多选回选中 key 数组 |
+| onExpand | `(expandedKeys, { expanded, node }) => void` | `undefined` | 展开/收起回调（对齐 Semi onExpand） |
+| renderLabel | `Snippet` | `undefined` | 自定义节点内容（对齐 Semi renderLabel） |
+| icon | `Snippet<[{ node, expanded, isLeaf }]>` | `undefined` | 自定义节点图标（对齐 Semi icon；传入时渲染在 label 前） |
+| expandIcon | `Snippet<[{ node: TreeNodeData; expanded: boolean; loading: boolean }]>` | `undefined` | 自定义展开/收起图标（对齐 Semi expandIcon）；参数含节点、展开态与加载态 |
+| suffix | `Snippet<[{ node: TreeNodeData }]>` | `undefined` | 节点尾部操作区（渲染在 label 右侧） |
+| dragGhost | `Snippet<[{ node: TreeNodeData }]>` | `undefined` | 自定义拖拽幽灵节点 |
+
+**事件**（回调 prop 形式，对齐 Semi）：
+
+| 事件 | 说明 |
+| --- | --- |
+| `onChange` | 选中变更：单选回选中 key（或节点对象），多选回选中 key 数组 |
+| `onSelect` | 单个节点选中：(key, selected, node)，早于 onChange |
+| `onExpand` | 展开/收起：(expandedKeys, { expanded, node }) |
+| `onDrop` | 拖拽放下：{ dragNode, dropNode, dropPosition: before\|inside\|after } |
 
 ### Events
 
-| 名称 | payload | 说明 |
-|---|---|---|
-| `change` | `{ value: Key \| Key[]; node: TreeNodeData; selected: boolean }` | selection 变化（受控核心事件，配合 `value`） |
-| `check` | `{ checked: Key[]; node: TreeNodeData; checkedNodes: TreeNodeData[]; halfChecked: Key[] }` | 勾选变化 |
-| `expandedChange` | `{ expanded: Key[]; node: TreeNodeData; expand: boolean }` | 展开/折叠变化（对齐 open+openChange 约定的展开语义） |
-| `searchChange` | `{ value: string; filteredKeys: Key[] }` | 搜索关键词或过滤结果变化 |
-| `load` | `{ node: TreeNodeData; loadedKeys: Key[] }` | 异步加载完成 |
-| `dragStart` | `{ node: TreeNodeData; event: DragEvent }` | 开始拖拽 |
-| `dragEnter` | `{ node: TreeNodeData; dropPosition: 'before'\|'after'\|'inside' }` | 拖入候选节点 |
-| `drop` | `{ dragNode; dropNode; dropPosition; dropToGap: boolean }` | 放置完成（业务据此重排 `treeData`） |
-| `rightClick` | `{ node: TreeNodeData; event: MouseEvent }` | 节点右键（用于上下文菜单） |
-| `nodeFocus` | `{ node: TreeNodeData }` | roving focus 移动到节点 |
+| 事件 | 说明 |
+| --- | --- |
+| `onChange` | 选中变更：单选回选中 key（或节点对象），多选回选中 key 数组 |
+| `onSelect` | 单个节点选中：(key, selected, node)，早于 onChange |
+| `onExpand` | 展开/收起：(expandedKeys, { expanded, node }) |
+| `onDrop` | 拖拽放下：{ dragNode, dropNode, dropPosition: before\|inside\|after } |
 
 ### Slots
 
@@ -191,23 +212,14 @@ Tree（树形控件）以层级缩进的方式展示具有父子关系的结构�
 - 用户可见文案零硬编码，全部走 i18n。日期类节点 label 由业务侧用 `Intl.DateTimeFormat` 预格式化（组件不内置）；计数（如"已选 N 项"）用 `Intl.NumberFormat` 与 ICU 复数。
 - i18n keys：
 
-| key | 默认（zh-CN） | 用途 |
-|---|---|---|
-| `Tree.emptyText` | 暂无数据 | 空态默认文案 |
-| `Tree.searchPlaceholder` | 搜索 | 搜索框占位 |
-| `Tree.loading` | 加载中… | 异步节点加载 |
-| `Tree.loadMore` | 加载更多 | 异步触发提示 |
-| `Tree.selectedCount` | 已选 {count, plural, other {# 项}} | 选中计数（ICU 复数） |
-| `Tree.checkAll` | 全选 | 全选操作 |
-| `Tree.expandAll` | 展开全部 | 展开操作 |
-| `Tree.collapseAll` | 收起全部 | 折叠操作 |
-| `Tree.a11yExpanded` | 已展开 {label} | 展开播报 |
-| `Tree.a11yCollapsed` | 已收起 {label} | 折叠播报 |
-| `Tree.a11yChecked` | 已勾选 {label} | 勾选播报 |
-| `Tree.a11yMoved` | 已将 {drag} 移动到 {drop} {position} | 拖拽完成播报 |
-| `Tree.a11yPositionBefore` | 之前 | 拖拽位置 |
-| `Tree.a11yPositionAfter` | 之后 | 拖拽位置 |
-| `Tree.a11yPositionInside` | 内部 | 拖拽位置 |
+> 本表由 `packages/locale/src/zh_CN.ts` 真源生成（2026-07-30 重校）。键名与键值都是 Semi 契约，勿手写「规划中」的键——历史上本表列过大量从未实现的键名，见 [[locale-dangling-keys-render-raw-key]]。
+
+| i18n key | 默认（zh-CN） |
+| --- | --- |
+| `Tree.emptyText` | 暂无数据 |
+| `Tree.searchPlaceholder` | 搜索 |
+| `Tree.expand` | 展开 |
+| `Tree.collapse` | 收起 |
 
 ## 8. 文案
 

@@ -56,6 +56,9 @@ export const modalTokens = {
   'width-modal-medium': { value: '684px', category: 'other', label: '中尺寸宽度', usage: '模态框宽度 - 中' },
   'width-modal-large': { value: '920px', category: 'other', label: '大尺寸宽度', usage: '模态框宽度 - 大' },
   'width-modal-full-width': { value: 'calc(100vw - 64px)', category: 'other', label: '全宽宽度', usage: '模态框宽度 - 全宽' },
+  // Modal.svelte:599 一直在引 --cd-width-modal-content 但从未定义过（无兜底，width 直接失效）。
+  // check-token-refs 闸门扫出来的；Semi 有 $width-modal_content: 100%。
+  'width-modal-content': { value: '100%', category: 'width', label: '内容宽度', usage: 'Semi $width-modal_content' },
   'height-modal-content': { value: 'max-content', category: 'other', label: '内容高度', usage: '模态框内容高度' },
 
   // —— Radius（对齐 $radius-modal_*）——

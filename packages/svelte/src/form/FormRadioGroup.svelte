@@ -41,7 +41,7 @@
       {...(control.buttonSize !== undefined ? { buttonSize: control.buttonSize as NonNullable<RadioGroupProps['buttonSize']> } : {})}
       {...(control.direction !== undefined ? { direction: control.direction as NonNullable<RadioGroupProps['direction']> } : {})}
       {id}
-      {...(labelledById !== undefined ? { ariaLabelledby: labelledById } : labelForAria !== undefined ? { ariaLabel: labelForAria } : {})}
+      {...(labelledById !== undefined ? { ariaLabelledby: labelledById } : labelForAria !== undefined ? { 'aria-label': labelForAria } : {})}
       {...(describedBy !== undefined ? { ariaDescribedby: describedBy } : {})}
       {...(errorMessageId !== undefined ? { ariaErrormessage: errorMessageId } : {})}
       {...(required ? { ariaRequired: true } : {})}

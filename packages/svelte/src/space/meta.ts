@@ -33,7 +33,7 @@ export const meta = {
   slots: [{ name: 'children', desc: '需要被施加间距的一组子元素' }],
   a11y: {
     role: 'none',
-    note: '纯布局容器，不引入语义；不重排 DOM，视觉顺序 = DOM 顺序 = Tab 顺序。对齐 Semi，无 role/tag 超集，data-*/aria-* 经 ...rest 透传',
+    note: '纯布局容器，不引入语义；不重排 DOM，视觉顺序 = DOM 顺序 = Tab 顺序。对齐 Semi，无 role/tag 超集，仅 data-* 透传到根 div（对齐 getDataAttr，不透传 aria-*/on*）',
   },
   tokens: ['--cd-spacing-space-tight', '--cd-spacing-space-medium', '--cd-spacing-space-loose'],
   examples: [

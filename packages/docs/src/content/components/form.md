@@ -3,7 +3,6 @@ title: Form 表单
 name: form
 category: input
 brief: Form 是表单容器组件，负责承载并编排一组输入控件，提供字段注册、值收集、校验、错误展示与布局四大核心能力。
-docMode: inline
 ---
 
 <script>
@@ -22,8 +21,14 @@ docMode: inline
   import controlsSrc from '../../demos/form/02-controls.svelte?raw';
   import ValueBinding from '../../demos/form/03-value-binding.svelte';
   import valueBindingSrc from '../../demos/form/03-value-binding.svelte?raw';
+  import LayoutVertical from '../../demos/form/14-layout-vertical.svelte';
+  import layoutVerticalSrc from '../../demos/form/14-layout-vertical.svelte?raw';
+  import LayoutHorizontal from '../../demos/form/15-layout-horizontal.svelte';
+  import layoutHorizontalSrc from '../../demos/form/15-layout-horizontal.svelte?raw';
   import Layout from '../../demos/form/04-layout.svelte';
   import layoutSrc from '../../demos/form/04-layout.svelte?raw';
+  import LayoutGrid from '../../demos/form/16-layout-grid.svelte';
+  import layoutGridSrc from '../../demos/form/16-layout-grid.svelte?raw';
   import SectionDemo from '../../demos/form/05-section.svelte';
   import sectionSrc from '../../demos/form/05-section.svelte?raw';
   import NoLabel from '../../demos/form/06-no-label.svelte';
@@ -36,6 +41,8 @@ docMode: inline
   import slotSrc from '../../demos/form/09-slot.svelte?raw';
   import HelpExtra from '../../demos/form/08-help-extra.svelte';
   import helpExtraSrc from '../../demos/form/08-help-extra.svelte?raw';
+  import HelpExtraPosition from '../../demos/form/17-help-extra-position.svelte';
+  import helpExtraPositionSrc from '../../demos/form/17-help-extra-position.svelte?raw';
   import InputGroup from '../../demos/form/10-input-group.svelte';
   import inputGroupSrc from '../../demos/form/10-input-group.svelte?raw';
   import ModalDemo from '../../demos/form/13-modal.svelte';
@@ -133,16 +140,38 @@ Form 的 children 是一个带参 snippet，return 出所有表单控件。
 
 每个表单控件都需要以 `field` 属性绑定一个字段名称，用于将表单项的值正确映射到 `FormState` 的 values / errors / touched 中。  
 字段可以是简单的字符串，也可以是包含 `.` 或者 `[]` 的字符串，支持多级嵌套。  
+下面是字段名称以及它们在 FormState 中映射路径的示例：
+
+| Field                  | Resolution                         |
+| ---------------------- | ----------------------------------- |
+| username               | formState.values.username          |
+| user\[0\]              | formState.values.user\[0\]         |
+| siblings.1             | formState.values.siblings\[1\]     |
+| siblings\['2'\]        | formState.values.siblings\[2\]     |
+| parents\[0\].name      | formState.values.parents\[0\].name |
+| parents\[1\]\['name'\] | formState.values.parents\[1\].name |
+
 带参 snippet 可实时映射 `formState.values`。
 
 <DemoBox code={valueBindingSrc}><ValueBinding /></DemoBox>
 
 ### 表单布局
 
-`layout` 控制表单控件间的布局（垂直 vertical / 水平 horizontal，默认垂直）；  
-`labelPosition`（top / left / inset）与 `labelAlign`（left / right）控制 label 在 Field 中出现的位置与文本对齐方向。
+- 垂直布局：表单控件之间上下垂直排列（默认）。更推荐表单采用垂直布局。
+
+<DemoBox code={layoutVerticalSrc}><LayoutVertical /></DemoBox>
+
+- 水平布局：表单控件之间水平排列。可通过设置 `layout='horizontal'` 来使用水平布局。
+
+<DemoBox code={layoutHorizontalSrc}><LayoutHorizontal /></DemoBox>
+
+- `labelPosition`、`labelAlign`：可通过设置 `labelPosition`（top / left / inset）、`labelAlign`（left / right）控制 label 在 Field 中出现的位置，文本对齐的方向。
 
 <DemoBox code={layoutSrc}><Layout /></DemoBox>
+
+- 更复杂的布局：还可以结合 `Row`、`Col`，来对表单进行你想要的排列。
+
+<DemoBox code={layoutGridSrc}><LayoutGrid /></DemoBox>
 
 ### 表单分组
 
@@ -179,10 +208,16 @@ Form 的 children 是一个带参 snippet，return 出所有表单控件。
 
 ### 使用 helpText、extraText 放置提示信息
 
-可以通过 `helpText` 放置自定义提示信息，与校验信息（error）公用同一区块展示，两者均有值时优先展示校验信息；  
-可以通过 `extraText` 放置额外的提示信息，常显，位于 helpText / error 后，`extraTextPosition` 控制其位置。
+可以通过 `helpText` 放置自定义提示信息，与校验信息（error）公用同一区块展示，两者均有值时优先展示校验信息。  
+可以通过 `extraText` 放置额外的提示信息，当需要错误信息和提示文案同时出现时可以使用这个配置，常显，位于 helpText / error 后。  
+当传入 `validateStatus` 时，优先展示 validateStatus 值对应的 UI 样式；不传入时，以 field 内部校验状态为准。
 
 <DemoBox code={helpExtraSrc}><HelpExtra /></DemoBox>
+
+通过配置 `extraTextPosition`，你可以控制 extraText 的显示位置，可选值 `bottom`、`middle`。例如当你希望将 extraText 提示信息显示在 Label 与 Field 控件中间时。  
+该属性可在 Form 上统一配置，亦可在每个 Field 上单独配置，同时传入时以 Field 的配置为准。
+
+<DemoBox code={helpExtraPositionSrc}><HelpExtraPosition /></DemoBox>
 
 ### 使用 InputGroup 组合多个 Field
 

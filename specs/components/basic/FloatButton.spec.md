@@ -29,20 +29,29 @@ FloatButton 是**悬浮固定在页面视口上的可操作按钮**，用于承�
 
 ### FloatButton Props
 
-| 名称 | 类型 | 默认值 | 说明 |
+> 本表由 `packages/svelte/src/float-button/meta.ts` 真源生成（2026-07-30 重校）。此前本表列的 prop 多为 Semi 对齐前的旧名或已删除项（如 `value`→`activeKey`、`change`→`onChange`），改 prop 时请同步 meta.ts，勿手写「规划中」的 prop。
+
+| Prop | 类型 | 默认值 | 说明 |
 | --- | --- | --- | --- |
-| `icon` | `Snippet \| Component` | — | 图标内容，渲染在按钮主体内。 |
-| `badge` | `BadgeProps` | — | 徽章参数（复用本库 Badge：`dot`/`count`/`overflowCount`/`type` 等），有值时外层包裹 Badge。 |
-| `shape` | `'round' \| 'square'` | `'round'` | 形状：round=圆角矩形，square=方形。 |
-| `size` | `'small' \| 'default' \| 'large'` | `'default'` | 尺寸三档。 |
-| `colorful` | `boolean` | `false` | AI 风格多彩渐变外观。 |
-| `disabled` | `boolean` | `false` | 禁用（不触发跳转/onClick，`aria-disabled` 或原生 disabled）。 |
-| `href` | `string` | — | 有值时渲染为 `<a>`（语义化链接，超越 Semi 的 JS 跳转）。 |
-| `target` | `string` | — | 链接打开目标；`_blank` 时自动补 `rel="noopener noreferrer"`。 |
-| `ariaLabel` | `string` | — | 无可视文字时的可访问名（图标按钮必填，dev 缺失时 warn）。 |
-| `onClick` | `(e: MouseEvent) => void` | — | 点击回调。 |
-| `class` | `string` | — | 根节点类名。 |
-| `style` | `string` | — | **主要定位方式**：设 `inset-inline-end`/`inset-block-end`（推荐，RTL 友好）或 `bottom`/`right` 等。组件不提供独立 top/right/bottom/left prop（对齐 Semi）。 |
+| icon | `Snippet` | `undefined` | 图标内容（Snippet） |
+| badge | `BadgeProps` | `undefined` | 徽章参数（复用本库 Badge：dot/count/overflowCount/type/theme），有值时外层包裹 Badge |
+| shape | `'round'\|'square'` | `'round'` | 形状：round=正圆（默认）、square=方形（对齐 Semi） |
+| size | `'small'\|'default'\|'large'` | `'default'` | 尺寸三档（24/32/40px） |
+| colorful | `boolean` | `false` | AI 风格多彩渐变外观 |
+| disabled | `boolean` | `false` | 禁用（不触发跳转/onClick） |
+| href | `string` | `undefined` | 有值时点击经 JS 跳转（对齐 Semi：_blank 用 window.open，否则 location.href） |
+| target | `string` | `undefined` | 链接打开目标；'_blank' 时用 window.open 新开 |
+| onClick | `(e: MouseEvent) => void` | `undefined` | 点击回调；disabled 时不触发 |
+| class | `string` | `''` | 根节点自定义类名 |
+| style | `string` | `undefined` | 定位方式：设 bottom/right 等覆盖默认 fixed 位置 |
+
+**事件**（回调 prop 形式，对齐 Semi）：
+
+| 事件 | 说明 |
+| --- | --- |
+| `onClick` | 点击；disabled 时不触发 |
+
+**子组件**：`FloatButtonGroup`
 
 ### FloatButtonGroup Props
 
@@ -50,7 +59,8 @@ FloatButton 是**悬浮固定在页面视口上的可操作按钮**，用于承�
 | --- | --- | --- | --- |
 | `items` | `FloatButtonGroupItem[]` | `[]` | 子项数组，遍历渲染。 |
 | `disabled` | `boolean` | `false` | 组级禁用样式。 |
-| `ariaLabel` | `string` | i18n 默认 | 组的可访问名（`role="group"`）。 |
+> 注：`ariaLabel` **驼峰形态不存在**——FloatButtonGroup 无该 prop；无障碍名请在外层容器自行提供
+> （FloatButton 本体的无障碍名走 `aria-label`，连字符形态）。
 | `onClick` | `(value: string, e: MouseEvent) => void` | — | 组级点击委托，回传被点项 `value`。 |
 | `class` | `string` | — | 根节点类名。 |
 | `style` | `string` | — | 定位方式，同 FloatButton。 |
@@ -59,10 +69,9 @@ FloatButton 是**悬浮固定在页面视口上的可操作按钮**，用于承�
 
 ### Events
 
-| 名称 | 载荷 | 说明 |
-| --- | --- | --- |
-| FloatButton `onClick` | `MouseEvent` | 点击；disabled 时不触发。 |
-| Group `onClick` | `(value, MouseEvent)` | 事件委托读 data-value。 |
+| 事件 | 说明 |
+| --- | --- |
+| `onClick` | 点击；disabled 时不触发 |
 
 ### Slots
 

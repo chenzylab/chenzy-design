@@ -1,8 +1,8 @@
 <script lang="ts">
   import { Tree, Text } from '@chenzy-design/svelte';
-  import type { TreeNode } from '@chenzy-design/svelte';
+  import type { TreeNodeData } from '@chenzy-design/core';
 
-  const treeData: TreeNode[] = [
+  const treeData: TreeNodeData[] = [
     {
       label: '亚洲',
       key: 'asia',
@@ -22,7 +22,7 @@
       style="border: 1px solid var(--cd-color-border); border-radius: 6px"
       {treeData}
       defaultExpandAll
-      ariaLabel="整行高亮树"
+      aria-label="整行高亮树"
     />
   </div>
   <div style="width:220px">
@@ -32,7 +32,7 @@
       {treeData}
       blockNode={false}
       defaultExpandAll
-      ariaLabel="仅 label 高亮树"
+      aria-label="仅 label 高亮树"
     />
   </div>
 </div>

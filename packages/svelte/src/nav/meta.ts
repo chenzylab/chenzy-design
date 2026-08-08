@@ -48,14 +48,13 @@ export const meta = {
     { name: 'onCollapseChange', payload: 'boolean', desc: '折叠态变化时触发' },
   ],
   slots: [
-    { name: 'headerSlot', desc: '自定义头部（覆盖 header 配置对象）' },
-    { name: 'footerSlot', desc: '自定义底部（覆盖 footer 配置对象）' },
-    { name: 'children', desc: '声明式子项（<Nav.Item>/<Nav.Sub>），与 items 二选一' },
+    { name: 'children', desc: '子内容，渲染在 ul 内 items 之后（对齐 Semi）：可放声明式 <Nav.Item>/<Nav.Sub>（与 items 二选一）、<Nav.Header>/<Nav.Footer>（与 header/footer 配置对象二选一，声明式优先），也可放任意内容' },
   ],
   subComponents: [
     {
       name: 'Nav.Header',
       element: 'div',
+      note: '与 header 配置对象二选一：可作为 Nav 直接子元素声明式使用（对齐 Semi children 层级 JSX 写法），经 context 注册摘出到头部位置，自身不产 DOM。',
       props: [
         { name: 'logo', type: 'Snippet', default: 'undefined', desc: 'Logo 节点' },
         { name: 'text', type: 'string | Snippet', default: 'undefined', desc: 'Logo 文案' },
@@ -68,6 +67,7 @@ export const meta = {
     {
       name: 'Nav.Footer',
       element: 'div',
+      note: '与 footer 配置对象二选一：可作为 Nav 直接子元素声明式使用（对齐 Semi children 层级 JSX 写法），经 context 注册摘出到底部位置，自身不产 DOM。',
       props: [
         { name: 'collapseButton', type: 'boolean | Snippet', default: 'false', desc: '收起按钮（或自定义节点，仅 vertical 生效）' },
         { name: 'collapseText', type: '(collapsed: boolean) => string', default: 'undefined', desc: '收起按钮文案（默认用 locale）' },
@@ -109,7 +109,7 @@ export const meta = {
         { name: 'dropdownStyle', type: 'string', default: 'undefined', desc: '透传给该子导航浮层 Dropdown 的内联样式' },
         { name: 'onMouseEnter', type: '(e: MouseEvent) => void', default: 'undefined', desc: '标题鼠标移入' },
         { name: 'onMouseLeave', type: '(e: MouseEvent) => void', default: 'undefined', desc: '标题鼠标移出' },
-        { name: 'children', type: 'Snippet', default: 'undefined', desc: '内嵌 Nav.Item / Nav.Sub' },
+        { name: 'children', type: 'Snippet', default: 'undefined', desc: '内嵌 Nav.Item / Nav.Sub，或任意内容（渲染在 ul 内 items 之后）' },
       ],
     },
   ],

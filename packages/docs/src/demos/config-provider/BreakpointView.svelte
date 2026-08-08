@@ -1,30 +1,20 @@
 <script lang="ts">
+  // 严格复刻 Semi 的 `BreakpointSubscriber`：订阅 onBreakpoint 后打印完整 screens 映射。
+  // React 版把 onBreakpoint/screens 经 ConfigConsumer 的 render-props 拿到再 useEffect 订阅；
+  // 本库用 getConfigResponsive()（须在组件初始化期调用），订阅放 $effect 并返回取消函数。
   import { getConfigResponsive, Text, type BreakpointScreens } from '@chenzy-design/svelte';
 
-  // 在子组件里读 ConfigProvider 的响应式断点能力（等价 Semi ConfigConsumer 的
-  // onBreakpoint / screens）。订阅须在 $effect 内并返回取消函数。
   const responsive = getConfigResponsive();
-  let screens = $state<BreakpointScreens | undefined>(responsive?.screens);
+  let subscribedScreens = $state<BreakpointScreens | undefined>(responsive?.screens);
 
   $effect(() => {
     const onBreakpoint = responsive?.onBreakpoint;
     if (!onBreakpoint) return;
-    // onBreakpoint(cb)：cb 拿到完整 screens 映射，订阅时立即回调一次当前状态。
-    const unsubscribe = onBreakpoint((next) => {
-      screens = next;
+    // 订阅即回调一次当前命中情况（对齐 Semi：无需在挂载时另调 matchMedia）。
+    return onBreakpoint((next) => {
+      subscribedScreens = next;
     });
-    return unsubscribe;
   });
-
-  const active = $derived(
-    screens
-      ? Object.entries(screens)
-          .filter(([, v]) => v)
-          .map(([k]) => k)
-          .join(', ') || '（无命中）'
-      : '（未订阅）',
-  );
 </script>
 
-<Text>当前命中断点：<strong>{active}</strong></Text>
-<Text type="tertiary" size="small">{JSON.stringify(screens)}</Text>
+<Text>{JSON.stringify(subscribedScreens ?? responsive?.screens)}</Text>

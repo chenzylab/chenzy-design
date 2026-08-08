@@ -9,12 +9,7 @@
   import { replaceState } from '$app/navigation';
   import { loadScrollSection, beginRestore, endRestore } from '$lib/scroll-restore';
   import { browser } from '$app/environment';
-  import componentsJson from '@chenzy-design/svelte/components.json';
-  import type { DemoEntry } from './+page.ts';
-  import ApiTable from '$lib/components/ApiTable.svelte';
   import DesignTokenTable from '$lib/components/DesignTokenTable.svelte';
-  import DemoBox from '$lib/components/DemoBox.svelte';
-  import CodeBlock from '$lib/components/CodeBlock.svelte';
   import Toc from '$lib/components/Toc.svelte';
   import SectionAnchor from '$lib/components/SectionAnchor.svelte';
   import PrevNextNav from '$lib/components/PrevNextNav.svelte';
@@ -35,12 +30,6 @@
     const name = meta?.name;
     if (browser && name) untrack(() => pushRecentComponent(name));
   });
-  // docMode='inline'：整页由 md 内联驱动（复刻 Semi 无 tab 纵向流）。
-  // 其余组件保持 meta 驱动的 api/usage 双 tab 不变。
-  const inlineDoc = $derived(data.docMode === 'inline');
-
-  let activeTab = $state<'api' | 'usage'>('api');
-
   // —— inline 模式：TOC 由 md 渲染出的标题实时扫描生成 ——
   // md 编译时已由 rehypeSemiAnchor 给每个标题加上与 Semi 一致的 id。
   // 对齐 Semi PageAnchor：① 从「代码演示」标题之后才开始收集（之前的总述章节不进 TOC）；
@@ -76,7 +65,7 @@
   }
 
   $effect(() => {
-    if (!inlineDoc || !browser) return;
+    if (!browser) return;
     lowerName; // 切换组件时重扫
     lang; // 切换语言时 md 换、标题变，重扫 TOC
     hasTokens; // 有无设计变量决定 TOC 末尾是否补 tokens 条目
@@ -107,6 +96,9 @@
         // 进入下一个 h2 即离开「代码演示」辖区，此后 h3 不再收录。
         if (isH2) inDemos = false;
         if (!isH2 && !inDemos) continue;
+        // 「设计变量」h2 现在也带原生 id="tokens"（供锚点跳转），但它由下方专属
+        // 逻辑手动补进 TOC 末尾——此处跳过，避免 key 重复导致 Toc 的 keyed each 报错。
+        if (h.id === 'tokens') continue;
         sections.push({ id: h.id, title, level: 1 });
       }
       // 设计变量 section 由页面在 md 之后补渲染（不在 md 标题里），故手动补进 TOC 末尾。
@@ -115,9 +107,6 @@
     });
   });
 
-  // demo 场景与「使用场景」正文改由 load（+page.ts）同步预取，页面首帧即完整。
-  // 不再客户端异步加载，避免 TOC/锚点/页面高度在渲染后才变化导致的滚动错位。
-  const demoList = $derived<DemoEntry[]>(data.demos ?? []);
   // 按文档站语言选中/英 md（对齐 Semi 双 md）；英文缺失时回退中文。
   const ContentComponent = $derived<Component | null>(
     lang === 'en' ? (data.ContentEn ?? data.Content ?? null) : (data.Content ?? null),
@@ -130,87 +119,8 @@
   // 「设计文档」外链：对齐 Semi 的 /design 子站习惯，新窗口打开
   const designUrl = $derived(`${base}/design/components/${lowerName}`);
 
-  // —— meta 字段归一化（命名不统一：subComponents/subcomponents、configObjects/config）——
-  interface SubComp {
-    name: string;
-    element?: string;
-    desc?: string;
-    props?: any[];
-  }
-  const subComponents = $derived<SubComp[]>(meta.subComponents ?? meta.subcomponents ?? []);
-
-  interface ConfigObj {
-    name: string;
-    fields: { name: string; type: string; default?: string; desc?: string }[];
-  }
-  const configObjects = $derived.by<ConfigObj[]>(() => {
-    if (Array.isArray(meta.configObjects)) return meta.configObjects;
-    // Notification.config 是 { key: 说明 } 形态 → 归一为单个配置对象
-    if (meta.config && typeof meta.config === 'object') {
-      return [
-        {
-          name: 'Config',
-          fields: Object.entries(meta.config as Record<string, string>).map(([k, v]) => ({
-            name: k,
-            type: '—',
-            desc: v,
-          })),
-        },
-      ];
-    }
-    return [];
-  });
-
-  const methods = $derived<any[]>(meta.methods ?? meta.imperative ?? []);
-
-  // a11y 归一：兼容 role/hasRole、note/notes 等。
-  // 注意 hasRole 是布尔标记（「是否有 role」），不是 role 值本身，故只取字符串 role。
-  const a11y = $derived(meta.a11y ?? null);
-  const a11yRole = $derived(typeof a11y?.role === 'string' ? a11y.role : null);
-  // keyboard 形态不统一：多数组件是 string[]（按键芯片），少数是单条 string（用 / 分隔的说明）。
-  // 归一为数组：string 按 / 切分为多段，避免 {#each} 误把字符串按字符迭代（重复空格 key 崩溃）。
-  const a11yKeyboard = $derived<string[]>(
-    Array.isArray(a11y?.keyboard)
-      ? a11y.keyboard
-      : typeof a11y?.keyboard === 'string'
-        ? a11y.keyboard.split('/').map((s: string) => s.trim()).filter(Boolean)
-        : [],
-  );
-  const a11yNotes = $derived<string[]>(
-    a11y?.notes ?? (a11y?.note ? [a11y.note] : []),
-  );
-  const a11yPattern = $derived(meta.a11yPattern ?? a11y?.pattern ?? null);
-  const apgRef = $derived(meta.apgRef ?? null);
-
-  // 文案规范来源
-  const usageHints = $derived(meta.usageHints ?? null);
-  const dangerousActions = $derived(meta.dangerousActions ?? null);
-  // 仅保留实际存在文档页的相关组件，避免预渲染爬到不存在的页面（如 Numeral）报 404
-  const validNames = new Set(
-    Object.values(componentsJson.components).map((m: any) => m.name.toLowerCase()),
-  );
-  const relatedComponents = $derived<string[]>(
-    (meta.relatedComponents ?? []).filter((rc: string) => validNames.has(rc.toLowerCase())),
-  );
-
-  // 场景 demo：demos.ts 全部条目，逐个作为顶级章节
-  // 每个场景生成稳定锚点 id（按序号），供 TOC 跳转
-  const allDemos = $derived(demoList.map((d, i) => ({ ...d, anchorId: `demo-${i}` })));
-  // pageHead demo（如图标列表）置于「如何引入」之前、裸渲染；其余为常规场景。
-  const headDemos = $derived(allDemos.filter((d) => d.pageHead));
-  const sceneDemos = $derived(allDemos.filter((d) => !d.pageHead));
-
-  const hasA11y = $derived(!!(a11yRole || a11yKeyboard.length || a11yNotes.length || a11yPattern));
-  const hasContent = $derived(!!(usageHints || dangerousActions || relatedComponents.length));
+  // 设计变量章节由页面在 md 之后统一补渲染，需知道该组件是否有 token。
   const hasTokens = $derived(tokenComponent.length > 0);
-
-  // 「如何引入」import 片段：主组件 + 子组件具名导入（对齐 Semi 的安装/引入节）
-  const importNames = $derived(
-    [meta.name, ...subComponents.map((s) => s.name)]
-      .filter((n, i, arr) => n && arr.indexOf(n) === i)
-      .join(', '),
-  );
-  const importCode = $derived(`import { ${importNames} } from '@chenzy-design/svelte';`);
 
   interface TocItem {
     id: string;
@@ -218,19 +128,6 @@
     level?: number;
   }
 
-  // TOC 章节：每个 demo 场景都是顶级章节（对齐 Semi——按钮类型/主题/尺寸… 平铺，
-  // 不再统一收进「代码演示」一节）。交互式 playground 作为首个「代码演示」节。
-  const tocSections = $derived(
-    [
-      // 页首区块（图标列表等）不进 TOC（对齐 Semi：图标列表不在右侧目录）
-      { id: 'install', title: t('section.install', lang) },
-      ...sceneDemos.map((d) => ({ id: d.anchorId, title: localize(d.title, lang) })),
-      { id: 'api', title: t('section.api', lang) },
-      hasA11y ? { id: 'a11y', title: t('section.a11y', lang) } : null,
-      hasContent ? { id: 'content', title: t('section.content', lang) } : null,
-      hasTokens ? { id: 'tokens', title: t('section.tokens', lang) } : null,
-    ].filter((s): s is TocItem => s !== null),
-  );
 
   // 恢复滚动位置。demo/正文已由 load 同步预取，页面首帧即完整——锚点从一开始
   // 就在 DOM 里、页面高度稳定，故恢复简单可靠。两种来源：
@@ -242,9 +139,8 @@
     if (!browser) return;
     lowerName; // 依赖组件名：SPA 切换组件时按新页重新恢复
     const rawHash = decodeURIComponent(location.hash.slice(1));
-    // inline 模式复制的 hash 是原始标题文本（对齐 Semi），需 makeAnchorId 转回元素 id 定位；
-    // 非 inline 页复制的本就是 id，原样用。
-    const hashId = rawHash ? (inlineDoc ? makeAnchorId(rawHash) : rawHash) : '';
+    // 复制的 hash 是原始标题文本（对齐 Semi），需 makeAnchorId 转回元素 id 定位。
+    const hashId = rawHash ? makeAnchorId(rawHash) : '';
     const fromHash = !!hashId;
     const targetId = hashId || loadScrollSection(location.pathname) || '';
     if (!targetId) return;
@@ -286,248 +182,36 @@
         <span>{meta.category}</span>
       </div>
       <h1>{meta.name}</h1>
-      <!-- inline 页头部用 md brief（简洁，对齐 Semi 头部简介）；旧 tab 页保持 meta.description。 -->
-      <p class="description">{inlineDoc && data.brief ? data.brief : meta.description}</p>
-    </div>
-
-    {#if inlineDoc}
-      <!-- 整页由 md 内联驱动：单页纵向流，无 tab（复刻 Semi）。
-           md 顶部 import DemoBox/Notice/各 demo，正文按 Semi 章节顺序内联书写。 -->
-      <div class="content-body inline-doc prose" bind:this={contentEl}>
-        {#if ContentComponent}
-          <ContentComponent />
-        {/if}
-        <!-- 设计变量：md 是静态内容，无法内联组件表格，故由页面在 md 之后统一补渲染
-             （数据驱动，对齐 Semi 组件页末尾的「设计变量」章节 <DesignToken/>）。 -->
-        {#if hasTokens}
-          <section class="section" id="tokens">
-            <h2>{t('section.tokens', lang)}<SectionAnchor id="tokens" /></h2>
-            <DesignTokenTable component={tokenComponent} />
-          </section>
-        {/if}
-      </div>
-    {:else}
-    <div class="tabs">
-      <button class="tab" class:active={activeTab === 'api'} onclick={() => (activeTab = 'api')}>
-        {t('tab.api', lang)}
-      </button>
-      <button class="tab" class:active={activeTab === 'usage'} onclick={() => (activeTab = 'usage')}>
-        {t('tab.usage', lang)}
-      </button>
-      <a class="tab tab-link" href={designUrl} target="_blank" rel="noreferrer" title={t('design.openInNew', lang)}>
-        {t('tab.design', lang)}
-        <span class="ext-icon" aria-hidden="true">↗</span>
+      <!-- 头部用 md brief（简洁，对齐 Semi 头部简介），缺省回退 meta.description。 -->
+      <p class="description">{data.brief || meta.description}</p>
+      <!-- 「设计文档」外链。原挂在双 tab 栏里，收尾清理删 tab 路径后移到头部：
+           它同时是 /design/components/[name] 的站内入口，删掉会让该页对用户不可达。 -->
+      <a class="design-link" href={designUrl} target="_blank" rel="noreferrer">
+        {t('design.openInNew', lang)}
       </a>
     </div>
 
-    {#if activeTab === 'api'}
-      <!-- 页首区块（如图标列表）：置于「如何引入」之前，裸渲染无 DemoBox（对齐 Semi）-->
-      {#each headDemos as demo (demo.anchorId)}
-        {@const HeadComp = demo.component}
-        <section class="section" id={demo.anchorId}>
-          <h2>{localize(demo.title, lang)}<SectionAnchor id={demo.anchorId} /></h2>
-          {#if demo.description}
-            <p class="section-desc">{localize(demo.description, lang)}</p>
-          {/if}
-          <HeadComp />
-        </section>
-      {/each}
-
-      <!-- 如何引入：具名导入片段（对齐 Semi 的引入说明）-->
-      <section class="section" id="install">
-        <h2>{t('section.install', lang)}<SectionAnchor id="install" /></h2>
-        <CodeBlock code={importCode} codeLang="typescript" />
-      </section>
-
-      <!-- 每个场景都是顶级章节：标题作 h2，与 API/Accessibility 同级（对齐 Semi）-->
-      {#each sceneDemos as demo (demo.anchorId)}
-        {@const SceneComp = demo.component}
-        <section class="section" id={demo.anchorId}>
-          <h2>{localize(demo.title, lang)}<SectionAnchor id={demo.anchorId} /></h2>
-          {#if demo.description || demo.seeAlso}
-            <p class="section-desc">
-              {#if demo.description}{localize(demo.description, lang)}{/if}
-              {#if demo.seeAlso}<a
-                  class="see-also"
-                  href="{base}/components/{demo.seeAlso.component.toLowerCase()}"
-                >{localize(demo.seeAlso.text, lang)}</a
-                >{/if}
-            </p>
-          {/if}
-          {#if demo.raw}
-            <SceneComp />
-          {:else}
-            <DemoBox code={demo.code} highlightLines={demo.highlightLines}>
-              <SceneComp />
-            </DemoBox>
-          {/if}
-        </section>
-      {/each}
-
-      <!-- API 参考：主组件 + 子组件 + 配置对象 + 方法 -->
-      <section class="section" id="api">
-        <h2>{t('section.api', lang)}<SectionAnchor id="api" /></h2>
-
-        <h3 class="api-group-title">{meta.name}</h3>
-        <ApiTable props={meta.props ?? []} events={meta.events ?? []} slots={meta.slots ?? []} />
-
-        {#each subComponents as sub (sub.name)}
-          <div class="sub-api">
-            <h3 class="api-group-title">
-              {sub.name}
-              {#if sub.element}<span class="el-tag">&lt;{sub.element}&gt;</span>{/if}
-            </h3>
-            {#if sub.desc}<p class="sub-desc">{sub.desc}</p>{/if}
-            <ApiTable props={sub.props ?? []} events={[]} slots={[]} />
-          </div>
-        {/each}
-
-        {#each configObjects as cfg (cfg.name)}
-          <div class="sub-api">
-            <h3 class="api-group-title">{cfg.name}</h3>
-            <table class="api-table">
-              <thead>
-                <tr>
-                  <th>{t('api.name', lang)}</th>
-                  <th>{t('api.type', lang)}</th>
-                  <th>{t('api.default', lang)}</th>
-                  <th>{t('api.desc', lang)}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {#each cfg.fields as f (f.name)}
-                  <tr>
-                    <td><code>{f.name}</code></td>
-                    <td><code class="type">{f.type}</code></td>
-                    <td>{f.default ?? '—'}</td>
-                    <td>{f.desc ?? '—'}</td>
-                  </tr>
-                {/each}
-              </tbody>
-            </table>
-          </div>
-        {/each}
-
-        {#if methods.length}
-          <div class="sub-api">
-            <h3 class="api-group-title">Methods</h3>
-            <table class="api-table">
-              <thead>
-                <tr>
-                  <th>{t('api.name', lang)}</th>
-                  <th>{t('api.type', lang)}</th>
-                  <th>{t('api.desc', lang)}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {#each methods as m (m.name)}
-                  <tr>
-                    <td><code>{m.name}</code></td>
-                    <td><code class="type">{m.type ?? '—'}</code></td>
-                    <td>{m.desc ?? '—'}</td>
-                  </tr>
-                {/each}
-              </tbody>
-            </table>
-          </div>
-        {/if}
-      </section>
-
-      <!-- Accessibility -->
-      {#if hasA11y}
-        <section class="section" id="a11y">
-          <h2>{t('section.a11y', lang)}<SectionAnchor id="a11y" /></h2>
-          {#if a11yRole || a11yPattern || a11yKeyboard.length}
-            <table class="api-table a11y-table">
-              <tbody>
-                {#if a11yRole}
-                  <tr>
-                    <td class="a11y-key">{t('a11y.role', lang)}</td>
-                    <td><code>{a11yRole}</code></td>
-                  </tr>
-                {/if}
-                {#if a11yPattern}
-                  <tr>
-                    <td class="a11y-key">APG</td>
-                    <td><code>{a11yPattern}</code></td>
-                  </tr>
-                {/if}
-                {#if a11yKeyboard.length}
-                  <tr>
-                    <td class="a11y-key">{t('a11y.keyboard', lang)}</td>
-                    <td>
-                      {#each a11yKeyboard as k, i (i)}<kbd>{k}</kbd>{/each}
-                    </td>
-                  </tr>
-                {/if}
-              </tbody>
-            </table>
-          {/if}
-          {#if a11yNotes.length}
-            <ul class="a11y-notes">
-              {#each a11yNotes as note (note)}<li>{note}</li>{/each}
-            </ul>
-          {/if}
-          {#if apgRef}
-            <p class="apg-ref">
-              {t('a11y.apg', lang)}：<code>{apgRef}</code>
-            </p>
-          {/if}
-        </section>
+    <!-- 整页由 md 内联驱动：单页纵向流，无 tab（复刻 Semi）。
+         md 顶部 import DemoBox/Notice/各 demo，正文按 Semi 章节顺序内联书写。 -->
+    <div class="content-body inline-doc prose" bind:this={contentEl}>
+      {#if ContentComponent}
+        <ContentComponent />
       {/if}
-
-      <!-- 文案规范 -->
-      {#if hasContent}
-        <section class="section" id="content">
-          <h2>{t('section.content', lang)}<SectionAnchor id="content" /></h2>
-          {#if usageHints}
-            <h3 class="content-sub">{t('content.usage', lang)}</h3>
-            <p class="content-text">{usageHints}</p>
-          {/if}
-          {#if dangerousActions}
-            <h3 class="content-sub">{t('content.danger', lang)}</h3>
-            <p class="content-text">{dangerousActions}</p>
-          {/if}
-          {#if relatedComponents.length}
-            <h3 class="content-sub">{t('content.related', lang)}</h3>
-            <div class="related">
-              {#each relatedComponents as rc (rc)}
-                <a class="related-chip" href="{base}/components/{rc.toLowerCase()}">{rc}</a>
-              {/each}
-            </div>
-          {/if}
-          <p class="guide-link">
-            {t('content.guideLink', lang)}
-            <a href="{base}/guide/content-guidelines">{t('content.guideLinkText', lang)}</a>。
-          </p>
-        </section>
-      {/if}
-
-      <!-- 设计变量 -->
+      <!-- 设计变量：md 是静态内容，无法内联组件表格，故由页面在 md 之后统一补渲染
+           （数据驱动，对齐 Semi 组件页末尾的「设计变量」章节 <DesignToken/>）。 -->
       {#if hasTokens}
         <section class="section" id="tokens">
-          <h2>{t('section.tokens', lang)}<SectionAnchor id="tokens" /></h2>
+          <h2 id="tokens">{t('section.tokens', lang)}<SectionAnchor id="tokens" /></h2>
           <DesignTokenTable component={tokenComponent} />
         </section>
       {/if}
-    {:else if ContentComponent}
-      <div class="content-body prose">
-        <ContentComponent />
-      </div>
-    {:else}
-      <p class="no-content">{t('usage.empty', lang)}</p>
-    {/if}
-    {/if}
+    </div>
 
     <!-- 页脚「上一个 / 下一个」组件导航（对齐 Semi PrevAndNext），置于主内容区底部。 -->
     <PrevNextNav name={lowerName} />
   </div>
 
-  {#if inlineDoc}
-    <Toc sections={inlineTocSections} />
-  {:else if activeTab === 'api'}
-    <Toc sections={tocSections} />
-  {/if}
+  <Toc sections={inlineTocSections} />
 </div>
 
 <style>
@@ -564,25 +248,22 @@
   }
   .description {
     color: var(--cd-color-text-1, #4e5969);
+    margin: 0 0 12px;
+  }
+  /* 「设计文档」外链（原双 tab 栏里的 .tab-link，收尾清理后移到头部简介下方）。 */
+  .design-link {
+    display: inline-block;
     margin: 0 0 24px;
+    font-size: 13px;
+    color: var(--cd-color-text-2, #86909c);
+    text-decoration: none;
+  }
+  .design-link:hover {
+    color: var(--cd-color-primary, #0064fa);
   }
   .section {
     margin-bottom: 48px;
     scroll-margin-top: 80px;
-  }
-  /* 场景章节描述：h2 与 DemoBox 之间的说明文字 */
-  .section-desc {
-    font-size: 14px;
-    color: var(--cd-color-text-1, #4e5969);
-    margin: 0 0 16px;
-    line-height: 1.7;
-  }
-  .see-also {
-    color: var(--cd-color-primary, #0064fa);
-    text-decoration: none;
-  }
-  .see-also:hover {
-    text-decoration: underline;
   }
   h2 {
     font-size: 18px;
@@ -594,65 +275,6 @@
   h2:hover :global(.section-anchor),
   h2 :global(.section-anchor:focus-visible) {
     opacity: 1;
-  }
-  .api-group-title {
-    font-size: 15px;
-    margin: 24px 0 8px;
-    color: var(--cd-color-text-0, #1f2329);
-    font-weight: 600;
-  }
-  .api-group-title:first-of-type {
-    margin-top: 0;
-  }
-  .el-tag {
-    font-size: 12px;
-    font-weight: 400;
-    color: var(--cd-color-text-2, #86909c);
-    font-family: 'JetBrains Mono', monospace;
-    margin-left: 6px;
-  }
-  .sub-desc {
-    font-size: 13px;
-    color: var(--cd-color-text-1, #4e5969);
-    margin: 0 0 8px;
-    line-height: 1.6;
-  }
-  .sub-api {
-    margin-top: 24px;
-  }
-  .tabs {
-    display: flex;
-    gap: 0;
-    border-bottom: 1px solid var(--cd-color-border, #e5e7eb);
-    margin-bottom: 24px;
-  }
-  .tab {
-    padding: 8px 20px;
-    background: none;
-    border: none;
-    border-bottom: 2px solid transparent;
-    cursor: pointer;
-    font-size: 14px;
-    color: var(--cd-color-text-1, #4e5969);
-    margin-bottom: -1px;
-    text-decoration: none;
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-  }
-  .tab.active {
-    color: var(--cd-color-primary, #0064fa);
-    border-bottom-color: var(--cd-color-primary, #0064fa);
-  }
-  .tab-link {
-    margin-left: auto;
-    color: var(--cd-color-text-2, #86909c);
-  }
-  .tab-link:hover {
-    color: var(--cd-color-primary, #0064fa);
-  }
-  .ext-icon {
-    font-size: 12px;
   }
   /* preset-typography 的 prose 默认给容器加 max-width:65ch（Tailwind Typography 惯例，
      约 655px），会把正文压窄。本站正文跟随内容区全宽，故重置。特异性 (0,1,0) 覆盖
@@ -710,121 +332,6 @@
   }
   /* 正文段落/列表/链接/行内代码/强调/表格已迁至 UnoCSS presetTypography 的 cssExtend
      （prose 作用域收敛 + demo not-prose 隔离，取代此前手写 :global + :not([class])）。 */
-  .no-content {
-    color: var(--cd-color-text-2, #86909c);
-    font-size: 14px;
-    padding: 24px 0;
-  }
-  /* inline api/config/method 表（与 ApiTable 视觉一致） */
-  .api-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 13px;
-  }
-  .api-table th {
-    text-align: left;
-    padding: 8px 12px;
-    background: var(--cd-color-fill-1, #f2f3f5);
-    font-weight: 600;
-    border-bottom: 1px solid var(--cd-color-border, #e5e7eb);
-  }
-  .api-table td {
-    padding: 8px 12px;
-    border-bottom: 1px solid var(--cd-color-border, #e5e7eb);
-    vertical-align: top;
-  }
-  .api-table code {
-    font-family: 'JetBrains Mono', 'Fira Code', monospace;
-    font-size: 12px;
-    background: var(--cd-color-fill-1, #f2f3f5);
-    padding: 1px 4px;
-    border-radius: 3px;
-  }
-  .api-table code.type {
-    color: var(--cd-color-primary, #0064fa);
-    background: transparent;
-  }
 
-  /* Accessibility */
-  .a11y-table .a11y-key {
-    width: 140px;
-    color: var(--cd-color-text-2, #86909c);
-    font-weight: 600;
-  }
-  kbd {
-    display: inline-block;
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 12px;
-    padding: 2px 7px;
-    margin: 0 4px 4px 0;
-    border: 1px solid var(--cd-color-border, #e5e7eb);
-    border-bottom-width: 2px;
-    border-radius: 5px;
-    background: var(--cd-color-bg-0, #fff);
-    color: var(--cd-color-text-0, #1f2329);
-  }
-  .a11y-notes {
-    margin: 16px 0 0;
-    padding-left: 20px;
-  }
-  .a11y-notes li {
-    line-height: 1.7;
-    color: var(--cd-color-text-1, #4e5969);
-    margin-bottom: 6px;
-  }
-  .apg-ref {
-    margin-top: 12px;
-    font-size: 13px;
-    color: var(--cd-color-text-2, #86909c);
-  }
-  .apg-ref code {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 12px;
-    background: var(--cd-color-fill-1, #f2f3f5);
-    padding: 1px 5px;
-    border-radius: 3px;
-  }
 
-  /* 文案规范 */
-  .content-sub {
-    font-size: 14px;
-    margin: 20px 0 8px;
-    color: var(--cd-color-text-0, #1f2329);
-    font-weight: 600;
-  }
-  .content-sub:first-child {
-    margin-top: 0;
-  }
-  .content-text {
-    line-height: 1.7;
-    color: var(--cd-color-text-1, #4e5969);
-    margin: 0;
-  }
-  .related {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-  }
-  .related-chip {
-    display: inline-block;
-    padding: 4px 12px;
-    border: 1px solid var(--cd-color-border, #e5e7eb);
-    border-radius: 16px;
-    font-size: 13px;
-    text-decoration: none;
-    color: var(--cd-color-text-1, #4e5969);
-  }
-  .related-chip:hover {
-    border-color: var(--cd-color-primary, #0064fa);
-    color: var(--cd-color-primary, #0064fa);
-  }
-  .guide-link {
-    margin-top: 20px;
-    font-size: 13px;
-    color: var(--cd-color-text-2, #86909c);
-  }
-  .guide-link a {
-    color: var(--cd-color-primary, #0064fa);
-    text-decoration: none;
-  }
 </style>

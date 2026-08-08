@@ -7,7 +7,7 @@ describe('Button a11y', () => {
   it('按钮：原生 <button>，type=button，无 axe violations', async () => {
     // 无默认插槽文字时用 ariaLabel 提供可访问名（否则 axe button-name 报错）。
     const { container } = renderWithLocale(Button, {
-      props: { type: 'primary', ariaLabel: 'Confirm' },
+      props: { type: 'primary', 'aria-label': 'Confirm' },
     });
     const btn = container.querySelector('button');
     expect(btn).not.toBeNull();
@@ -17,7 +17,7 @@ describe('Button a11y', () => {
 
   it('icon-only 按钮：用 ariaLabel 提供可访问名，无 axe violations', async () => {
     const { container } = renderWithLocale(Button, {
-      props: { ariaLabel: 'Close panel' },
+      props: { 'aria-label': 'Close panel' },
     });
     const btn = container.querySelector('button');
     expect(btn?.getAttribute('aria-label')).toBe('Close panel');
@@ -26,7 +26,7 @@ describe('Button a11y', () => {
 
   it('disabled 按钮：原生 disabled 属性', async () => {
     const { container } = renderWithLocale(Button, {
-      props: { ariaLabel: 'Submit', disabled: true },
+      props: { 'aria-label': 'Submit', disabled: true },
     });
     const btn = container.querySelector('button');
     expect(btn?.hasAttribute('disabled')).toBe(true);
@@ -35,7 +35,7 @@ describe('Button a11y', () => {
 
   it('loading 按钮：aria-busy=true', async () => {
     const { container } = renderWithLocale(Button, {
-      props: { ariaLabel: 'Saving', loading: true },
+      props: { 'aria-label': 'Saving', loading: true },
     });
     const btn = container.querySelector('button');
     expect(btn?.getAttribute('aria-busy')).toBe('true');

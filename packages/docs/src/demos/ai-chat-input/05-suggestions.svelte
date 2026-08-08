@@ -1,22 +1,40 @@
 <script lang="ts">
+  // 严格对齐 Semi「建议」demo：建议列表**由输入内容动态派生**（而非静态常量）——
+  // 输入长度 1–3 个字符时，把四条模版拼在输入内容后作为候选；≥4 或为空则清空。
+  // 逻辑逐条照搬 Semi 的 onChange（含 `\n` 早退与 suggestion 已空则不重复 setState）。
   import { AIChatInput } from '@chenzy-design/svelte';
-  import type { AIChatInputSuggestion } from '@chenzy-design/svelte';
+  import type { AIChatInputChangePayload, AIChatInputSuggestion } from '@chenzy-design/svelte';
 
-  // 聚焦编辑区弹出建议面板：↑↓ 环绕导航、Enter 选中、Esc 关闭、点击外部关闭。
-  // onSuggestClick 未提供时默认把建议文本填入编辑器；此处自定义为记录选择。
-  const suggestions: AIChatInputSuggestion[] = [
-    '帮我写一段 Svelte 5 组件',
-    { content: '把这段文字翻译成英文' },
-    '总结要点并给出 TODO',
-  ];
-  let picked = $state('（点击输入框查看建议）');
+  const uploadProps = { action: 'https://api.semi.design/upload' };
+  const suggestionTemplate = ['天气如何', '空气质量', '工作进程', '日程安排'];
+
+  let suggestions = $state<AIChatInputSuggestion[]>([]);
+
+  // Semi 的 onContentChange 入参是 Content[]，取 content[0].text；
+  // 本库载荷是 { text, html, json }，text 即整段纯文本，语义等价。
+  function onContentChange(payload: AIChatInputChangePayload): void {
+    const value = payload.text;
+
+    if (value === undefined || value.includes('\n')) {
+      if (suggestions.length === 0) return;
+      suggestions = [];
+      return;
+    }
+    if (value.length === 0) {
+      suggestions = [];
+    } else if (value.length > 0 && value.length < 4) {
+      suggestions = suggestionTemplate.map((item) => `${value}，${item}`);
+    } else {
+      suggestions = [];
+    }
+  }
 </script>
 
-<div style="max-width: 560px;">
+<div style="margin: 12px;">
   <AIChatInput
     {suggestions}
-    placeholder="点此聚焦查看建议…"
-    onSuggestClick={(s) => (picked = typeof s === 'string' ? s : s.content)}
+    {onContentChange}
+    {uploadProps}
+    placeholder="输入内容，当内容长度小于 4 个字符可以看到建议，使用上下按键可切换候选项"
   />
-  <p style="margin-top: 12px; color: var(--cd-color-text-2);">已选建议：{picked}</p>
 </div>

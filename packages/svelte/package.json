@@ -36,6 +36,9 @@
   "scripts": {
     "build": "svelte-package -i src -o dist && node scripts/clean-dist.mjs && pnpm build:meta",
     "build:meta": "tsx scripts/build-components-json.ts",
+    "check:lineheight": "node scripts/check-font-lineheight.mjs",
+    "check:rtl-scope": "node scripts/check-rtl-scope.mjs",
+    "check:token-refs": "node scripts/check-token-refs.mjs",
     "typecheck": "svelte-check --tsconfig ./tsconfig.json"
   },
   "dependencies": {
@@ -53,6 +56,7 @@
     "@tiptap/pm": "^3.0.0",
     "@tiptap/starter-kit": "^3.0.0",
     "date-fns": "^2.30.0",
+    "esm-env": "^1.2.2",
     "lottie-web": "^5.13.0",
     "prism-svelte": "^0.5.0",
     "prismjs": "^1.29.0",

@@ -9,6 +9,29 @@
 @import '@fontsource/inter/latin-600.css';
 
 *, *::before, *::after { box-sizing: border-box; }
+/* UnoCSS presetUno 的 reset 清零了 <hr> 的默认 margin（类 Tailwind preflight），
+   但 demo 里裸 <hr>（如 Button loading demo，逐字节抄 Semi story、无 inline style）
+   依赖浏览器 UA 默认间距分隔上下内容——被清零后贴住甚至看似与下方内容重叠。
+   demo 沙盒不应该加 inline style 去 hack（那样就不是「与 Semi 逐字节一致」了），
+   补回 UA 默认值（Chrome/Firefox 通例 0.5em）才是对齐 Semi 官网裸 <hr> 观感的正解。 */
+hr {
+  margin-block: 0.5em;
+}
+/* tailwind-compat reset 给 img,video 写死 height:auto（类 Tailwind preflight），
+   意在让响应式图片按宽度自适应缩放。但组件库内部固定尺寸的图片（如 AudioPlayer
+   封面图，走 <img width height> HTML attribute 锁定尺寸）会被这条 auto 覆盖——
+   height:auto 下浏览器按 naturalWidth/naturalHeight 比例重算高度而非直接用
+   height attribute 的值，外层容器仍是 width×height 且 overflow:hidden，视觉上
+   就是"图片只显示了一部分"（50×50 容器内非正方形图片被从中间裁掉一截）。
+   revert 只能回退到 UA 样式表，而 UA 对 <img> 没有 height 声明，等效于 auto，
+   解决不了问题；必须显式改用 object-fit 撑满容器（同时避免非正方形图片拉伸
+   变形，比 Semi 官方实现更稳健），attr()/px 硬编码都会与 width/height prop
+   实际取值脱节。 */
+img[width][height] {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
 /* 固定顶栏（.docs-header 高 60px，sticky top:0）下的锚点跳转留白：滚动容器统一
    scroll-padding-top，所有 scrollIntoView / hash 跳转（TOC、复制链接、meta 页与
    inline md 页标题）自动避开顶栏，无需给每个标题单独设 scroll-margin-top。 */

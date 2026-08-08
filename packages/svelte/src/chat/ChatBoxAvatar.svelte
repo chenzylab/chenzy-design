@@ -12,10 +12,12 @@
     message: Message;
     role?: Metadata | undefined;
     title: string;
+    /** 连续同角色消息（对齐 Semi continueSend），挂 -avatar-hidden class。 */
+    continueSend?: boolean;
     renderChatBoxAvatar?: Snippet<[RenderAvatarProps]> | undefined;
   }
 
-  let { message, role, title, renderChatBoxAvatar }: Props = $props();
+  let { message, role, title, continueSend = false, renderChatBoxAvatar }: Props = $props();
 </script>
 
 {#if renderChatBoxAvatar}
@@ -29,7 +31,7 @@
   {@const avatarStyle =
     role?.color && typeof role.avatar !== 'string' ? `background:${role.color};` : ''}
   <Avatar
-    class="cd-chat-chatBox-avatar"
+    class={continueSend ? 'cd-chat-chatBox-avatar cd-chat-chatBox-avatar-hidden' : 'cd-chat-chatBox-avatar'}
     size="extra-small"
     src={avatarSrc}
     alt={title}

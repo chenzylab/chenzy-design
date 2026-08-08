@@ -15,32 +15,52 @@
 
 ## 4. API
 ### Props
-| 名称 | 类型 | 默认 | 说明 |
-|---|---|---|---|
-| type | `'primary'\|'secondary'\|'tertiary'\|'warning'\|'danger'` | `'secondary'` | 语义类型 |
-| theme | `'solid'\|'borderless'\|'light'\|'outline'` | `'light'` | 视觉变体 |
-| size | `'small'\|'default'\|'large'` | `'default'` | 尺寸 |
-| block | `boolean` | `false` | 撑满宽度 |
-| disabled | `boolean` | `false` | 禁用 |
-| loading | `boolean` | `false` | 加载态（带 Spin，禁用点击）|
-| colorful | `boolean` | `false` | AI 多彩：所有 theme 下蓝→紫渐变；type 仅 `primary`/`tertiary` 有意义（其余回退 `primary`）|
-| icon | `Snippet` | — | 图标插槽 |
-| iconPosition | `'left'\|'right'` | `'left'` | 图标位置 |
-| ariaLabel | `string` | — | 无障碍名；纯图标按钮必填 |
-| htmlType | `'button'\|'submit'\|'reset'` | `'button'` | 原生 type |
-| noHorizontalPadding | `boolean\|'left'\|'right'\|('left'\|'right')[]` | `false` | 仅 `icon` 时去单/双侧水平内距 |
-| class | `string` | — | 根元素自定义类名（透传） |
-| style | `string` | — | 根元素自定义内联样式（透传） |
-| contentClassName | `string` | — | 内容区自定义类名（仅传入时包裹 `display:contents` 层） |
+
+> 本表由 `packages/svelte/src/button/meta.ts` 真源生成（2026-07-30 重校）。此前本表列的 prop 多为 Semi 对齐前的旧名或已删除项（如 `value`→`activeKey`、`change`→`onChange`），改 prop 时请同步 meta.ts，勿手写「规划中」的 prop。
+
+| Prop | 类型 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| type | `'primary'\|'secondary'\|'tertiary'\|'warning'\|'danger'` | `primary` | 语义类型 |
+| theme | `'solid'\|'borderless'\|'light'\|'outline'` | `light` | 视觉变体：有背景/无背景/浅背景/边框 |
+| size | `'small'\|'default'\|'large'` | `default` | 尺寸 |
+| block | `boolean` | `false` | 撑满容器宽度 |
+| disabled | `boolean` | `false` | 禁用状态（底灰 + 灰字，优先级高于 loading） |
+| loading | `boolean` | `false` | 加载态（带旋转图标，禁用点击） |
+| colorful | `boolean` | `false` | AI 多彩按钮：type 仅 primary/tertiary 有意义（对齐 Semi） |
+| circle | `boolean` | `false` | 圆形按钮（border-radius:50%），配合 icon-only 呈正圆 |
+| htmlType | `'button'\|'submit'\|'reset'` | `button` | 原生 button 的 type 值 |
+| icon | `Snippet` | `undefined` | 图标插槽；纯图标按钮需提供 aria-label |
+| iconPosition | `'left'\|'right'` | `left` | 图标相对文字位置 |
+| iconSize | `IconSize` | `undefined` | 图标尺寸（作用在图标元素上，需搭配 icon 使用） |
+| iconStyle | `string` | `undefined` | 图标内联样式（作用在图标元素上，需搭配 icon 使用） |
+| noHorizontalPadding | `boolean\|'left'\|'right'\|('left'\|'right')[]` | `false` | 仅设置 icon 时去单/双侧水平内距（inline padding） |
+| aria-label | `string` | `undefined` | 无障碍名（透传 aria-label）；纯图标按钮必填 |
+| class | `string` | `undefined` | 根元素自定义类名 |
+| style | `string` | `undefined` | 根元素自定义内联样式 |
+| contentClassName | `string` | `undefined` | 内容区（.cd-button-content）自定义类名 |
+| ...rest | `HTMLButtonAttributes` | `-` | 其余原生属性透传到根 button：data-*/name/value/form/title/tabindex/aria-controls/aria-expanded 等 |
+
+**事件**（回调 prop 形式，对齐 Semi）：
+
+| 事件 | 说明 |
+| --- | --- |
+| `onclick` | disabled/loading 时不触发（原生 disabled 阻断） |
+| `onmousedown` | 鼠标按下 |
+| `onmouseenter` | 鼠标移入 |
+| `onmouseleave` | 鼠标移出 |
+
+**子组件**：`ButtonGroup`、`SplitButtonGroup`
 
 > 纯图标按钮：仅传 `icon`（无默认插槽文本）时自动收成正方形（宽=高、去水平内距），应提供 `ariaLabel`。
 > 链接式跳转不再由 Button 承担（已移除 `href`），统一用 `Typography.Link`（对齐 Semi）。
 
 ### Events
-| 事件 | 载荷 | 说明 |
-|---|---|---|
-| on:click | `MouseEvent` | disabled/loading 时不触发 |
-| on:mousedown / on:mouseenter / on:mouseleave | `MouseEvent` | 鼠标按下/移入/移出 |
+| 事件 | 说明 |
+| --- | --- |
+| `onclick` | disabled/loading 时不触发（原生 disabled 阻断） |
+| `onmousedown` | 鼠标按下 |
+| `onmouseenter` | 鼠标移入 |
+| `onmouseleave` | 鼠标移出 |
 ### Slots
 | 名称 | 说明 |
 |---|---|

@@ -3,7 +3,6 @@ title: Nav 导航
 name: nav
 category: navigation
 brief: 为网页和应用提供导航的菜单列表，支持垂直、水平两种布局。
-docMode: inline
 ---
 
 <script>
@@ -21,6 +20,8 @@ docMode: inline
   import verticalSrc from '../../demos/nav/05-vertical.svelte?raw';
   import Horizontal from '../../demos/nav/06-horizontal.svelte';
   import horizontalSrc from '../../demos/nav/06-horizontal.svelte?raw';
+  import MixedLayout from '../../demos/nav/11-mixed-layout.svelte';
+  import mixedLayoutSrc from '../../demos/nav/11-mixed-layout.svelte?raw';
   import ToggleIcon from '../../demos/nav/07-toggle-icon.svelte';
   import toggleIconSrc from '../../demos/nav/07-toggle-icon.svelte?raw';
   import Indent from '../../demos/nav/08-indent.svelte';
@@ -80,6 +81,10 @@ Navigation 提供了 `style` 和 `bodyStyle` 两个参数用于定义导航样�
 <DemoBox code={verticalSrc}><Vertical /></DemoBox>
 
 <DemoBox code={horizontalSrc}><Horizontal /></DemoBox>
+
+一般的平台设计会采取水平加垂直导航的模式，这里有一个比较常见的例子：水平 Nav 作为顶部导航，垂直 Nav 作为侧边栏，配合 `Layout`、`Dropdown`、`Avatar`、`Breadcrumb`、`Skeleton` 组合出完整页面结构。
+
+<DemoBox code={mixedLayoutSrc}><MixedLayout /></DemoBox>
 
 ### 展开收起箭头位置
 

@@ -3,7 +3,6 @@ title: ScrollList 滚动列表
 name: scrolllist
 category: show
 brief: 滚动列表。
-docMode: inline
 ---
 
 <script>
@@ -43,7 +42,7 @@ import { ScrollList, ScrollItem } from '@chenzy-design/svelte';
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
-| ariaLabel | 该列的无障碍标签 | string | - |
+| aria-label | 该列的无障碍标签 | string | - |
 | class | 样式类名 | string | - |
 | cycled | 是否为无限循环，仅在 mode 为 `wheel` 时生效 | boolean | false |
 | list | 列表内容 | ItemData[] | [] |
@@ -67,6 +66,6 @@ import { ScrollList, ScrollItem } from '@chenzy-design/svelte';
 
 ### ARIA
 
-- `ScrollItem` 支持传入 `ariaLabel`，指定该列标签
+- `ScrollItem` 支持传入 `aria-label`，指定该列标签
 - `ScrollItem` 使用 `aria-disabled` 表示该项目是否被禁用
 - `ScrollItem` 使用 `aria-selected` 表示该项目是否被选中

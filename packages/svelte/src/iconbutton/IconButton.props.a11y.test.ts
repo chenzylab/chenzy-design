@@ -10,7 +10,7 @@ const text = createRawSnippet(() => ({ render: () => '新增' }));
 
 describe('IconButton', () => {
   it('渲染原生 <button>，透传 aria-label，纯图标为 icon-only（方形）', () => {
-    const { container } = render(IconButton, { props: { icon, ariaLabel: '编辑' } });
+    const { container } = render(IconButton, { props: { icon, 'aria-label': '编辑' } });
     const btn = container.querySelector('button')!;
     expect(btn).not.toBeNull();
     expect(btn.getAttribute('aria-label')).toBe('编辑');
@@ -18,7 +18,7 @@ describe('IconButton', () => {
   });
 
   it('不传 children 时仅有图标（icon-only）', () => {
-    const { container } = render(IconButton, { props: { icon, ariaLabel: 'x' } });
+    const { container } = render(IconButton, { props: { icon, 'aria-label': 'x' } });
     const btn = container.querySelector('button')!;
     expect(container.querySelector('[data-testid="ic"]')).not.toBeNull();
     expect(btn.textContent?.trim()).toBe('');
@@ -42,7 +42,7 @@ describe('IconButton', () => {
 
   it('转发 type / theme / size 到内部 Button', () => {
     const { container } = render(IconButton, {
-      props: { icon, ariaLabel: 'x', type: 'danger', theme: 'solid', size: 'large' },
+      props: { icon, 'aria-label': 'x', type: 'danger', theme: 'solid', size: 'large' },
     });
     const btn = container.querySelector('button')!;
     expect(btn.classList.contains('cd-button-danger')).toBe(true);
@@ -51,13 +51,13 @@ describe('IconButton', () => {
   });
 
   it('circle 加 cd-button-circle class', () => {
-    const { container } = render(IconButton, { props: { icon, ariaLabel: 'x', circle: true } });
+    const { container } = render(IconButton, { props: { icon, 'aria-label': 'x', circle: true } });
     const btn = container.querySelector('button')!;
     expect(btn.classList.contains('cd-button-circle')).toBe(true);
   });
 
   it('loading 时 aria-busy=true 且带 spin 图标', () => {
-    const { container } = render(IconButton, { props: { icon, ariaLabel: 'x', loading: true } });
+    const { container } = render(IconButton, { props: { icon, 'aria-label': 'x', loading: true } });
     const btn = container.querySelector('button')!;
     expect(btn.getAttribute('aria-busy')).toBe('true');
     expect(btn.classList.contains('cd-button-loading')).toBe(true);
@@ -66,7 +66,7 @@ describe('IconButton', () => {
 
   it('转发 class / style / disabled', () => {
     const { container } = render(IconButton, {
-      props: { icon, ariaLabel: 'x', class: 'my-cls', style: 'opacity: 0.3', disabled: true },
+      props: { icon, 'aria-label': 'x', class: 'my-cls', style: 'opacity: 0.3', disabled: true },
     });
     const btn = container.querySelector('button')!;
     expect(btn.classList.contains('my-cls')).toBe(true);

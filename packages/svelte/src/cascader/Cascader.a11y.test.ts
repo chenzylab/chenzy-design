@@ -1,4 +1,5 @@
-// Cascader a11y：combobox 触发器 + 每列 listbox/option 浮层（use:floating portal 到 body）。
+// Cascader a11y：combobox 触发器 + 浮层 role=listbox，内部各列 role=menu/menuitem
+// （对齐 Semi item.tsx：树状列 <ul role=menu><li role=menuitem>，非 option）。
 // 只断言静态 ARIA + axe 0 violations，不测真实键盘/焦点（jsdom 限制）。
 // 打开态面板 portal 到 document.body，故扫描 document.body。
 import { describe, it, expect } from 'vitest';
@@ -23,37 +24,43 @@ const treeData = [
 describe('Cascader a11y', () => {
   it('关闭态：触发器 role=combobox / aria-expanded=false，无 axe violations', async () => {
     const { container } = renderWithLocale(Cascader, {
-      props: { treeData, ariaLabel: 'Region', placeholder: 'Select region' },
+      props: { treeData, 'aria-label': 'Region', placeholder: 'Select region' },
     });
     const combobox = container.querySelector('[role="combobox"]');
     expect(combobox).not.toBeNull();
     expect(combobox?.getAttribute('aria-expanded')).toBe('false');
-    expect(combobox?.getAttribute('aria-haspopup')).toBe('listbox');
+    expect(combobox?.getAttribute('aria-haspopup')).toBe('menu');
     expect(combobox?.getAttribute('aria-label')).toBe('Region');
     await expectNoAxeViolations(container);
   });
 
-  // 每列 listbox 经 locale Cascader.columnLabel 获可访问名（「第 N 级选项」）。
-  it('打开态：面板列 listbox + option 渲染（portal 到 body），无 axe violations', async () => {
+  // 浮层根不设 role（对齐 Semi 内容语义 + 避免 axe aria-required-children 违规：
+  // role=listbox 不允许直接包含 role=menu 子节点，Semi 字面 DOM 虽如此嵌套但本库
+  // 有 axe 零违规闸门，改为浮层根无 role，触发器 aria-haspopup="menu" 描述实际弹出类型）。
+  // 内部各列 role=menu 经 locale Cascader.columnLabel 获可访问名（「第 N 级选项」），
+  // 列项 role=menuitem（非 option，对齐 Semi item.tsx）。
+  it('打开态：列 menu/menuitem 渲染（portal 到 body），无 axe violations', async () => {
     renderWithLocale(Cascader, {
-      props: { treeData, defaultOpen: true, ariaLabel: 'Region' },
+      props: { treeData, defaultOpen: true, 'aria-label': 'Region' },
     });
-    const listbox = document.querySelector('[role="listbox"]');
-    expect(listbox).not.toBeNull();
-    expect(listbox?.getAttribute('aria-label')).toBeTruthy();
-    const optionEls = document.querySelectorAll('[role="option"]');
-    expect(optionEls.length).toBeGreaterThan(0);
+    const menu = document.querySelector('[role="menu"]');
+    expect(menu).not.toBeNull();
+    expect(menu?.getAttribute('aria-label')).toBeTruthy();
+    const menuItemEls = document.querySelectorAll('[role="menuitem"]');
+    expect(menuItemEls.length).toBeGreaterThan(0);
     await expectNoAxeViolations(document.body);
   });
 
-  it('已选路径：触发器 aria-expanded 切换，选中 option 标记 aria-selected', async () => {
+  it('已选路径：触发器 aria-expanded 切换，展开节点标记 aria-expanded=true', async () => {
     renderWithLocale(Cascader, {
-      props: { treeData, defaultOpen: true, defaultValue: ['zj', 'hz', 'xh'], ariaLabel: 'Region' },
+      props: { treeData, defaultOpen: true, defaultValue: ['zj', 'hz', 'xh'], 'aria-label': 'Region' },
     });
     const combobox = document.querySelector('[role="combobox"]');
     expect(combobox?.getAttribute('aria-expanded')).toBe('true');
-    const selected = document.querySelector('[role="option"][aria-selected="true"]');
-    expect(selected).not.toBeNull();
+    // 对齐 Semi item.tsx：li[role=menuitem] 的 aria-expanded 标记该节点是否在当前选中路径上
+    // （非 aria-selected——menuitem 不支持该属性）。
+    const expanded = document.querySelector('[role="menuitem"][aria-expanded="true"]');
+    expect(expanded).not.toBeNull();
     await expectNoAxeViolations(document.body);
   });
 
@@ -62,7 +69,7 @@ describe('Cascader a11y', () => {
   // 根容器不再是 combobox（避免嵌套双 combobox）。
   it('可搜索打开态：combobox 落在触发器内原生 input，root 非 combobox，无 axe violations', async () => {
     const { container } = renderWithLocale(Cascader, {
-      props: { treeData, defaultOpen: true, filterTreeNode: true, ariaLabel: 'Region', placeholder: 'Select region' },
+      props: { treeData, defaultOpen: true, filterTreeNode: true, 'aria-label': 'Region', placeholder: 'Select region' },
     });
     // combobox 现在是搜索 Input 的原生 input（.cd-input），而非根 .cd-cascader div。
     const combobox = container.querySelector('input.cd-input[role="combobox"]');
@@ -84,17 +91,21 @@ describe('Cascader a11y', () => {
         treeData,
         multiple: true,
         defaultValue: [['zj', 'hz', 'xh']],
-        ariaLabel: 'Region',
+        'aria-label': 'Region',
         placeholder: 'Select region',
       },
     });
     // 触发器内是 TagInput（role=group），而非旧的自绘 tag 列表。
     const tagInput = container.querySelector('.cd-tag-input[role="group"]');
     expect(tagInput).not.toBeNull();
-    // 选中路径以 tag 渲染，文本为整条路径 label（separator 连接）。
+    // 选中唯一叶子 West Lake，联动令祖先 Hangzhou/Zhejiang 也全选。autoMergeValue
+    // 默认 true：对齐 Semi normalizeKeyList（非 leafOnly 分支——保留 checkedKeys 中
+    // "父节点不在 checkedKeys 里"的那些 key），单一路径全选会一路折叠到最外层根
+    // Zhejiang（其父 Hangzhou/West Lake 均因父节点也在 checkedKeys 中被跳过），
+    // 只显示该节点自身 label（tagLabelOf 对齐 Semi renderTagItem，不拼接路径）。
     const tag = container.querySelector('.cd-cascader-selection-tag');
     expect(tag).not.toBeNull();
-    expect(tag?.textContent).toContain('West Lake');
+    expect(tag?.textContent).toContain('Zhejiang');
     await expectNoAxeViolations(container);
   });
 
@@ -106,7 +117,7 @@ describe('Cascader a11y', () => {
         multiple: true,
         maxTagCount: 1,
         defaultValue: [['zj', 'hz', 'xh'], ['js', 'nj']],
-        ariaLabel: 'Region',
+        'aria-label': 'Region',
       },
     });
     const restN = container.querySelector('.cd-tag-input-wrapper-n');
@@ -115,31 +126,33 @@ describe('Cascader a11y', () => {
     await expectNoAxeViolations(container);
   });
 
-  // 回归：autoMergeValue 合并态删除叶子 tag。value 合并为父路径（[zj,hz]，代表其下 xh 全选），
-  // 但 tag 按叶子展开显示（West Lake）。点该 tag 的关闭按钮，删除必须生效并回调 onChange。
+  // 回归：autoMergeValue 合并态删除 tag。value 合并为根路径（[zj]——Hangzhou 是
+  // Zhejiang 唯一子节点、West Lake 是 Hangzhou 唯一子节点，选中 Hangzhou 会联动令
+  // 三层全部 checked，normalizeKeyList 一路折叠到最外层根，tag 显示 Zhejiang 自身）。
+  // 点该 tag 的关闭按钮，删除必须生效并回调 onChange。
   // 修复前 removeLeaf 在合并态 checkedBase（含父 key、不含叶子）上 delete(叶子) 会 miss → 删不掉。
-  it('多选 autoMergeValue 合并态：删除叶子 tag 生效并回调 onChange', async () => {
+  it('多选 autoMergeValue 合并态：删除 tag 生效并回调 onChange', async () => {
     let changed: unknown = undefined;
     const { container } = renderWithLocale(Cascader, {
       props: {
         treeData,
         multiple: true,
         autoMergeValue: true,
-        // 合并态：杭州(hz)父路径代表其唯一叶子 xh 全选；tag 展开显示 West Lake。
+        // 勾选中间节点 Hangzhou：联动令子孙 West Lake、祖先 Zhejiang 均全选。
         defaultValue: [['zj', 'hz']],
-        ariaLabel: 'Region',
+        'aria-label': 'Region',
         onChange: (v: unknown) => {
           changed = v;
         },
       },
     });
-    // 合并态下 tag 仍按叶子展开：应有 1 个路径 tag（West Lake）。
+    // 合并态一路折叠到根：应有 1 个路径 tag（Zhejiang）。
     const tag = container.querySelector('.cd-cascader-selection-tag');
     expect(tag).not.toBeNull();
-    expect(tag?.textContent).toContain('West Lake');
-    // 点该 tag 的关闭按钮（TagInput 内 Tag 的 .cd-tag__close / [aria-label*=close] 等）。
+    expect(tag?.textContent).toContain('Zhejiang');
+    // 点该 tag 的关闭按钮（TagInput 内 Tag 的 .cd-tag-close / [aria-label*=close] 等）。
     const closeBtn = container.querySelector(
-      '.cd-cascader-selection-tag .cd-tag__close, .cd-cascader-selection-tag button, .cd-tag-input .cd-tag__close',
+      '.cd-cascader-selection-tag .cd-tag-close, .cd-cascader-selection-tag button, .cd-tag-input .cd-tag-close',
     ) as HTMLElement | null;
     expect(closeBtn).not.toBeNull();
     closeBtn?.click();
@@ -159,7 +172,7 @@ describe('Cascader a11y', () => {
         checkRelation: 'unRelated',
         // 勾选中间节点 Hangzhou（其下有叶子 West Lake）。unRelated 下应独立选中它本身。
         defaultValue: [['zj', 'hz']],
-        ariaLabel: 'Region',
+        'aria-label': 'Region',
       },
     });
     const tags = [...container.querySelectorAll('.cd-cascader-selection-tag')];
@@ -169,11 +182,13 @@ describe('Cascader a11y', () => {
     expect(tags[0]?.textContent).not.toContain('West Lake');
   });
 
-  // 回归（渲染层）：unRelated 下多个跨层中间节点的完整路径 value 都渲染成含父路径的 tag。
+  // 回归（渲染层）：unRelated 下多个跨层中间节点各自独立回显为 tag，只显示该节点
+  // 自身 label（tagLabelOf 对齐 Semi renderTagItem `data[displayProp]`，取路径末端
+  // 节点自身字段，不拼接完整路径——同「Hangzhou 不含 West Lake」的既定规则）。
   // 覆盖 checkedLeafPaths 的 unRelated 分支（用 currentPaths 直取、findPath 解析路径）。
   // 注：交互层「点击 checkbox 经 toggleCheckNode 构建完整路径」的修复（colIndex 传参）走真机
   // 与 kbd 测试覆盖——此处用 defaultValue 传入已完整的路径，绕过 toggleCheckNode，故只验渲染。
-  it('多选 unRelated：多个中间节点的完整路径 value 均渲染含父路径的 tag', () => {
+  it('多选 unRelated：多个中间节点各自独立回显为 tag（只显示自身 label）', () => {
     const { container } = renderWithLocale(Cascader, {
       props: {
         treeData,
@@ -181,14 +196,13 @@ describe('Cascader a11y', () => {
         checkRelation: 'unRelated',
         // 两个跨层中间节点：Hangzhou（zj>hz）与 Jiangsu（js，第一层）。
         defaultValue: [['zj', 'hz'], ['js']],
-        ariaLabel: 'Region',
+        'aria-label': 'Region',
       },
     });
     const tags = [...container.querySelectorAll('.cd-cascader-selection-tag')];
     expect(tags.length).toBe(2);
     const texts = tags.map((t) => t.textContent ?? '');
-    // 完整路径回显：Hangzhou 带父 Zhejiang，Jiangsu 独立。
-    expect(texts.some((t) => t.includes('Zhejiang') && t.includes('Hangzhou'))).toBe(true);
+    expect(texts.some((t) => t.includes('Hangzhou') && !t.includes('Zhejiang'))).toBe(true);
     expect(texts.some((t) => t.includes('Jiangsu'))).toBe(true);
   });
 });

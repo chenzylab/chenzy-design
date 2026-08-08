@@ -30,9 +30,11 @@
   import {
     useId,
     useDismiss,
+    registerOverlayRoot,
     fixedRange,
     scrollOffsetForIndex,
     type Placement,
+    resolveDefault,
   } from '@chenzy-design/core';
   import { IconClear, IconChevronDown, IconTick } from '@chenzy-design/icons';
   import { useLocale } from '../locale-provider/index.js';
@@ -76,7 +78,7 @@
     position?: Placement;
     placeholder?: string;
     /** combobox 触发器可访问名；缺省回退到 placeholder 或 locale 默认 */
-    ariaLabel?: string;
+    'aria-label'?: string;
     /** 关联外部 label 的 id（优先于 ariaLabel） */
     ariaLabelledby?: string;
     /** 关联外部辅助说明的 id（对齐 Semi withField aria-describedby 注入） */
@@ -118,7 +120,7 @@
     maxHeight?: number;
     /** 浮层宽度是否跟随触发器（默认 true）；false 时浮层自适应内容宽度 */
     dropdownMatchSelectWidth?: boolean;
-    /** 浮层根 div 追加的自定义 className（与内置 cd-select__dropdown 并存） */
+    /** 浮层根 div 追加的自定义 className（与内置 cd-select-dropdown 并存） */
     dropdownClassName?: string;
     /** 浮层根 div 合并的自定义内联样式（拼在内置 style 之后；勿含 position/transform，会与定位冲突） */
     dropdownStyle?: string;
@@ -221,9 +223,9 @@
     /** 携带完整 option 对象的 change 回调（单选 OptionData；多选 OptionData[]） */
     onChangeWithObject?: (option: OptionData | OptionData[]) => void;
     /** 触发器左侧前缀 */
-    prefix?: Snippet;
+    prefix?: Snippet | string;
     /** 触发器右侧后缀（覆盖默认箭头区域） */
-    suffix?: Snippet;
+    suffix?: Snippet | string;
     /** 根容器内联样式（对齐 Semi style，可设 width 等） */
     style?: string;
     /** 根容器自定义类名（与内置 cd-select 并存，对齐 Semi className） */
@@ -260,7 +262,8 @@
     renderCreateItem?: Snippet<[string]>;
     /**
      * 完全自定义触发器渲染，替换默认 combobox 触发框。
-     * 入参含当前 value/选中项/placeholder/open 态，供调用方自绘触发器。
+     * 入参含当前 value/选中项/placeholder/open 态，供调用方自绘触发器；
+     * 另含 onSearch/onRemove/onClear（对齐 Semi TriggerRenderProps），用于向 Select 内部同步搜索词/移除单项/清空。
      * a11y 注意：默认触发框携带的 role=combobox / aria-expanded / 键盘（↑↓/Enter/Esc）随之移除；
      * 自定义触发器需自行把必要 aria（role/aria-expanded/aria-controls）与聚焦/键盘事件挂到自绘元素上，
      * 或复用 params 里透传的 open/toggle/onTriggerKeydown 保持键盘可达。
@@ -275,6 +278,12 @@
           disabled: boolean;
           toggle: () => void;
           onTriggerKeydown: (e: KeyboardEvent) => void;
+          /** 更新搜索词并向 Select 内部同步（对齐 Semi onSearch；需同时开启 filter 才会参与过滤） */
+          onSearch: (value: string) => void;
+          /** 移除单个已选项（对齐 Semi onRemove；option 至少带 value/label） */
+          onRemove: (option: OptionData) => void;
+          /** 清空所有已选（对齐 Semi onClear） */
+          onClear: () => void;
         },
       ]
     >;
@@ -284,58 +293,58 @@
     value = $bindable(),
     defaultValue,
     optionList = [],
-    multiple = false,
-    filter = false,
+    multiple: multipleProp,
+    filter: filterProp,
     open: openProp = $bindable(),
-    defaultOpen = false,
+    defaultOpen: defaultOpenProp,
     size: sizeProp,
     style,
     class: className,
     validateStatus = 'default',
     position = 'bottomStart',
     placeholder,
-    ariaLabel,
+    'aria-label': ariaLabel,
     ariaLabelledby,
     ariaDescribedby,
     ariaErrormessage,
     ariaRequired,
     id,
     disabled: disabledProp,
-    showClear = false,
+    showClear: showClearProp,
     max,
     maxTagCount = 0,
     maxTagTextLength,
-    allowCreate = false,
-    remote = false,
+    allowCreate: allowCreateProp,
+    remote: remoteProp,
     onSearch,
     loading = false,
     virtualize,
-    maxHeight = 270,
-    dropdownMatchSelectWidth = true,
+    maxHeight: maxHeightProp,
+    dropdownMatchSelectWidth: dropdownMatchSelectWidthProp,
     dropdownClassName,
     dropdownStyle,
     zIndex,
     dropdownMargin,
-    stopPropagation = true,
+    stopPropagation: stopPropagationProp,
     onMouseEnter,
     onMouseLeave,
     destroyOnClose = false,
     getPopupContainer,
-    autoAdjustOverflow = true,
-    borderless = false,
+    autoAdjustOverflow: autoAdjustOverflowProp,
+    borderless: borderlessProp,
     autoFocus = false,
-    autoClearSearchValue = true,
-    showRestTagsPopover = false,
+    autoClearSearchValue: autoClearSearchValueProp,
+    showRestTagsPopover: showRestTagsPopoverProp,
     restTagsPopoverProps,
-    defaultActiveFirstOption = true,
+    defaultActiveFirstOption: defaultActiveFirstOptionProp,
     inputProps,
-    showArrow = true,
+    showArrow: showArrowProp,
     clickToHide = false,
     onListScroll,
     preventScroll = false,
-    expandRestTagsOnClick = false,
-    ellipsisTrigger = false,
-    searchPosition = 'trigger',
+    expandRestTagsOnClick: expandRestTagsOnClickProp,
+    ellipsisTrigger: ellipsisTriggerProp,
+    searchPosition: searchPositionProp,
     searchPlaceholder,
     insetLabel,
     insetLabelId,
@@ -364,6 +373,26 @@
     renderCreateItem,
     triggerRender,
   }: Props = $props();
+  // cdGlobal 全局默认 props（对齐 Semi semiGlobal.config.overrideDefaultProps）：
+  // 优先级 = 显式传值 > cdGlobal['Select'] > 组件内置默认值。
+  const stopPropagation = $derived(resolveDefault(stopPropagationProp, 'Select', 'stopPropagation', true));
+  const borderless = $derived(resolveDefault(borderlessProp, 'Select', 'borderless', false));
+  const filter = $derived(resolveDefault(filterProp, 'Select', 'filter', false));
+  const multiple = $derived(resolveDefault(multipleProp, 'Select', 'multiple', false));
+  const defaultOpen = $derived(resolveDefault(defaultOpenProp, 'Select', 'defaultOpen', false));
+  const allowCreate = $derived(resolveDefault(allowCreateProp, 'Select', 'allowCreate', false));
+  const maxHeight = $derived(resolveDefault(maxHeightProp, 'Select', 'maxHeight', 270));
+  const dropdownMatchSelectWidth = $derived(resolveDefault(dropdownMatchSelectWidthProp, 'Select', 'dropdownMatchSelectWidth', true));
+  const defaultActiveFirstOption = $derived(resolveDefault(defaultActiveFirstOptionProp, 'Select', 'defaultActiveFirstOption', true));
+  const showArrow = $derived(resolveDefault(showArrowProp, 'Select', 'showArrow', true));
+  const showClear = $derived(resolveDefault(showClearProp, 'Select', 'showClear', false));
+  const searchPosition = $derived(resolveDefault(searchPositionProp, 'Select', 'searchPosition', 'trigger'));
+  const remote = $derived(resolveDefault(remoteProp, 'Select', 'remote', false));
+  const autoAdjustOverflow = $derived(resolveDefault(autoAdjustOverflowProp, 'Select', 'autoAdjustOverflow', true));
+  const autoClearSearchValue = $derived(resolveDefault(autoClearSearchValueProp, 'Select', 'autoClearSearchValue', true));
+  const showRestTagsPopover = $derived(resolveDefault(showRestTagsPopoverProp, 'Select', 'showRestTagsPopover', false));
+  const expandRestTagsOnClick = $derived(resolveDefault(expandRestTagsOnClickProp, 'Select', 'expandRestTagsOnClick', false));
+  const ellipsisTrigger = $derived(resolveDefault(ellipsisTriggerProp, 'Select', 'ellipsisTrigger', false));
 
   // InputGroup 组级默认（size/disabled）：显式 prop 始终优先，否则回退组级，再回退组件默认。
   const group = getInputGroupContext();
@@ -833,6 +862,14 @@
   // dropdownEl：内层 role=listbox 滚动容器（onListScroll/虚拟化/触底/浮层搜索聚焦均以它为准）。
   let dropdownEl = $state<HTMLDivElement | null>(null);
 
+  // --- 全局浮层注册（见 core registerOverlayRoot 注释）：dropdown portal 到 body 后
+  //     与祖先浮层（如包裹本 Select 的 hover 触发 Popover）在真实 DOM 树上脱节，
+  //     登记后祖先浮层的 pointerleave 判断能识别"鼠标去了合法子浮层"而非真的离开。---
+  $effect(() => {
+    if (!dropdownRootEl) return;
+    return registerOverlayRoot(dropdownRootEl);
+  });
+
   // --- 虚拟化滚动监听（命令式 + rAF 节流 + cleanup，红线 #3）---
   // 开启下拉后绑定到滚动容器；scrollTop 写本地 $state 驱动 vRange 派生。
   // 同时处理 onScrollToBottom（无论是否虚拟化）。
@@ -892,7 +929,7 @@
 
   // 浮层根 div class：内置类名 + dropdownClassName。
   const dropdownCls = $derived(
-    ['cd-select__dropdown', dropdownClassName].filter(Boolean).join(' '),
+    ['cd-select-dropdown', dropdownClassName].filter(Boolean).join(' '),
   );
 
   // 浮层最外层 div 内联样式：可选 z-index + dropdownStyle（用户自定义样式，如 width）。
@@ -912,16 +949,19 @@
   const cls = $derived(
     [
       'cd-select',
-      `cd-select--${size}`,
+      `cd-select-${size}`,
       // 校验态（对齐 Semi validateStatus）：仅 warning/error 有视觉样式，default 不加类。
-      validateStatus === 'warning' && 'cd-select--warning',
-      validateStatus === 'error' && 'cd-select--error',
-      disabled && 'cd-select--disabled',
-      isOpen && 'cd-select--open',
-      multiple && 'cd-select--multiple',
-      borderless && 'cd-select--borderless',
+      validateStatus === 'warning' && 'cd-select-warning',
+      validateStatus === 'error' && 'cd-select-error',
+      disabled && 'cd-select-disabled',
+      isOpen && 'cd-select-open',
+      multiple && 'cd-select-multiple',
+      borderless && 'cd-select-borderless',
       // ellipsisTrigger：多选 tag 溢出时对可见 tag 文本作单行省略（对齐 Semi）。
-      ellipsisTrigger && multiple && 'cd-select--ellipsis-trigger',
+      ellipsisTrigger && multiple && 'cd-select-ellipsis-trigger',
+      // 对齐 Semi `.semi-select-with-prefix`：左侧留白改由 prefix / insetLabel 自身的
+      // 外边距承担，内容区的 margin-left 归零（否则会叠出双份留白）。
+      (prefix !== undefined || insetLabel !== undefined) && 'cd-select-with-prefix',
       className,
     ]
       .filter(Boolean)
@@ -950,7 +990,7 @@
   // searchPosition='dropdown' 时，打开浮层后自动聚焦浮层内搜索框，便于直接键入过滤。
   $effect(() => {
     if (!isOpen || triggerSearch || !filterEnabled || !dropdownEl) return;
-    const searchEl = dropdownEl.querySelector<HTMLInputElement>('.cd-select__search--dropdown');
+    const searchEl = dropdownEl.querySelector<HTMLInputElement>('.cd-select-search-dropdown');
     searchEl?.focus();
   });
 </script>
@@ -960,15 +1000,21 @@
     {@render triggerRender({
       value: currentValue,
       selectedOptions,
-      placeholder: placeholder ?? loc().t('Select.placeholder'),
+      placeholder: placeholder ?? '',
       open: isOpen,
       disabled,
       toggle: toggleOpen,
       onTriggerKeydown,
+      onSearch: search,
+      onRemove: (option) => removeTag(option.value),
+      onClear: () => {
+        setValue(multiple ? [] : '');
+        onClear?.();
+      },
     })}
   {:else}
   <div
-    class="cd-select__trigger"
+    class="cd-select-trigger"
     role="combobox"
     {id}
     aria-label={triggerAriaLabel}
@@ -991,11 +1037,14 @@
     onmouseleave={(e) => onMouseLeave?.(e)}
   >
     {#if prefix}
-      <span class="cd-select__prefix">{@render prefix()}</span>
+      <!-- prefix 支持 string | Snippet（对齐 Semi ReactNode；与 insetLabel 同款分派）。 -->
+      <span class="cd-select-prefix">
+        {#if typeof prefix === 'string'}{prefix}{:else}{@render prefix()}{/if}
+      </span>
     {/if}
 
     {#if hasInsetLabel}
-      <span class="cd-select__inset-label" id={insetLabelId}>
+      <span class="cd-select-inset-label" id={insetLabelId}>
         {#if typeof insetLabel === 'string'}
           {insetLabel}
         {:else if insetLabel}
@@ -1004,7 +1053,7 @@
       </span>
     {/if}
 
-    <div class="cd-select__content">
+    <div class="cd-select-content">
       {#if multiple && selectedOptions.length > 0}
         {#if tagsCollapsed}
           <!--
@@ -1015,7 +1064,7 @@
             expandRestTagsOnClick 展开由浮层打开态驱动（见 tagsCollapsed 派生），无需 +N 单独点击。
           -->
           <TagGroup
-            class="cd-select__tag-group"
+            class="cd-select-tag-group"
             mode="custom"
             tagList={allTags.map((tag) => ({ tagKey: tag.opt.value, tagInfo: tag }))}
             maxTagCount={tagGroupMaxCount}
@@ -1034,7 +1083,7 @@
         {#if triggerSearch}
           <input
             {...inputProps}
-            class="cd-select__search"
+            class="cd-select-search cd-select-search-multiple"
             type="text"
             value={query}
             placeholder={searchPlaceholderText}
@@ -1044,33 +1093,62 @@
             onclick={(e) => e.stopPropagation()}
           />
         {/if}
-      {:else if triggerSearch}
-        <input
-          {...inputProps}
-          class="cd-select__search"
-          type="text"
-          value={query}
-          placeholder={hasSelection ? singleLabel : (placeholder ?? loc().t('Select.placeholder'))}
-          aria-label={searchPlaceholderText}
-          oninput={onSearchInput}
-          onkeydown={onTriggerKeydown}
-          onclick={(e) => e.stopPropagation()}
-        />
-      {:else if hasSelection}
-        {#if renderSelectedItem}
-          {@render renderSelectedItem({ option: selectedOptions[0]! })}
-        {:else}
-          <span class="cd-select__value">{singleLabel}</span>
-        {/if}
       {:else}
-        <span class="cd-select__placeholder">{placeholder ?? loc().t('Select.placeholder')}</span>
+        <!--
+          对齐 Semi renderSingleSelection：回填文本 span 与触发器内搜索框是
+          **content-wrapper 内的兄弟节点、始终并存**（非二选一），由 span 上的三态类区分：
+            有输入 → -text-hide（隐藏原文本，只见输入）
+            无输入 → -text-inactive（原文本 opacity 0.4 垫在输入框下方）
+            非搜索 → 正常显示
+          本库原实现把原文本塞进 input 的 placeholder 二选一渲染，拿不到叠字淡出效果。
+        -->
+        {#if hasSelection && renderSelectedItem}
+          <span
+            class="cd-select-value"
+            class:cd-select-value-hide={triggerSearch && !!query}
+            class:cd-select-value-inactive={triggerSearch && !query}
+          >
+            {@render renderSelectedItem({ option: selectedOptions[0]! })}
+          </span>
+        {:else if hasSelection}
+          <span
+            class="cd-select-value"
+            class:cd-select-value-hide={triggerSearch && !!query}
+            class:cd-select-value-inactive={triggerSearch && !query}
+          >{singleLabel}</span>
+        {:else}
+          <!--
+            严格对齐 Semi：placeholder 无内置文案（Semi select/index.tsx:349
+            `defaultProps.placeholder = ''`，其 Select locale 只有 emptyText/createText）。
+            本库原先兜底到一个自造的 Select 占位 locale 键，会凭空显示「请选择」，现已连键一并删除。
+            （注意：注释里别写出完整的 locale 取值调用形式——locale-coverage 闸门按文本扫描引用，
+             会把注释当成真实消费方而误报悬空键。）
+          -->
+          <span
+            class="cd-select-placeholder"
+            class:cd-select-value-hide={triggerSearch && !!query}
+            class:cd-select-value-inactive={triggerSearch && !query}
+          >{placeholder ?? ''}</span>
+        {/if}
+        {#if triggerSearch}
+          <input
+            {...inputProps}
+            class="cd-select-search cd-select-search-single"
+            type="text"
+            value={query}
+            aria-label={searchPlaceholderText}
+            oninput={onSearchInput}
+            onkeydown={onTriggerKeydown}
+            onclick={(e) => e.stopPropagation()}
+          />
+        {/if}
       {/if}
     </div>
 
     {#if showClearBtn}
       <button
         type="button"
-        class="cd-select__clear"
+        class="cd-select-clear"
         aria-label={loc().t('Select.clear')}
         onclick={clearAll}
       >
@@ -1083,9 +1161,11 @@
     {/if}
 
     {#if suffix}
-      <span class="cd-select__suffix">{@render suffix()}</span>
+      <span class="cd-select-suffix">
+        {#if typeof suffix === 'string'}{suffix}{:else}{@render suffix()}{/if}
+      </span>
     {:else if showArrow}
-      <span class="cd-select__arrow" aria-hidden="true">
+      <span class="cd-select-arrow" aria-hidden="true">
         {#if arrowIcon}
           {@render arrowIcon()}
         {:else}
@@ -1110,10 +1190,10 @@
       hidden={!isOpen || undefined}
     >
       {#if outerTopSlot}
-        <div class="cd-select__outer-top">{@render outerTopSlot()}</div>
+        <div class="cd-select-outer-top">{@render outerTopSlot()}</div>
       {/if}
       <div
-        class="cd-select__list"
+        class="cd-select-list"
         bind:this={dropdownEl}
         role="listbox"
         id={listId}
@@ -1123,10 +1203,10 @@
       >
       {#if filterEnabled && !triggerSearch}
         <!-- searchPosition='dropdown'：搜索框在浮层顶部 -->
-        <div class="cd-select__dropdown-search">
+        <div class="cd-select-dropdown-search">
           <input
             {...inputProps}
-            class="cd-select__search cd-select__search--dropdown"
+            class="cd-select-search cd-select-search-dropdown"
             type="text"
             value={query}
             placeholder={searchPlaceholderText}
@@ -1139,18 +1219,18 @@
         </div>
       {/if}
       {#if innerTopSlot}
-        <div class="cd-select__dropdown-header">{@render innerTopSlot()}</div>
+        <div class="cd-select-dropdown-header">{@render innerTopSlot()}</div>
       {/if}
       {#if loading}
-        <div class="cd-select__loading">
-          <span class="cd-select__spinner" aria-hidden="true"></span>
+        <div class="cd-select-loading">
+          <span class="cd-select-spinner" aria-hidden="true"></span>
           <span>{loc().t('Select.loading')}</span>
         </div>
       {/if}
       {#if canCreate}
         <!-- svelte-ignore a11y_click_events_have_key_events -->
         <div
-          class="cd-select__option cd-select__option--create"
+          class="cd-select-option cd-select-option-create"
           role="option"
           aria-selected={false}
           tabindex="-1"
@@ -1159,12 +1239,15 @@
           {#if renderCreateItem}
             {@render renderCreateItem(query.trim())}
           {:else}
-            <span class="cd-select__option-label">{loc().t('Select.create', { label: query.trim() })}</span>
+            <!-- 对齐 Semi：`<span class="-create-tips">创建</span>` + 裸的输入值两个节点，
+                 而非把值插值进一整串（Semi locale.createText 就是不含占位符的「创建」）。 -->
+            <span class="cd-select-create-tips">{loc().t('Select.createText')}</span>
+            {query.trim()}
           {/if}
         </div>
       {/if}
       {#if filteredOptions.length === 0 && !canCreate && !loading}
-        <div class="cd-select__empty">
+        <div class="cd-select-empty">
           {#if emptyContent !== undefined}
             {#if typeof emptyContent === 'string'}
               {emptyContent}
@@ -1178,7 +1261,7 @@
       {:else if hasGroups}
         {#each groupedView as group, gi (group.label ?? `g-${gi}`)}
           {#if group.label !== null}
-            <div class="cd-select__group-label" role="presentation">{group.label}</div>
+            <div class="cd-select-group-label" role="presentation">{group.label}</div>
           {/if}
           {#each group.items as it (it.opt.value)}
             {@render optionRow(it.opt, it.flatIndex)}
@@ -1186,7 +1269,7 @@
         {/each}
       {:else if isVirtual}
         <!-- 虚拟化：spacer 撑总高，可见 option 绝对定位按全局索引偏移；只渲染视口切片 -->
-        <div class="cd-select__spacer" style={`block-size:${vTotalHeight}px`}>
+        <div class="cd-select-spacer" style={`block-size:${vTotalHeight}px`}>
           {#each vRenderOptions as opt, i (opt.value)}
             {@render optionRow(
               opt,
@@ -1201,11 +1284,11 @@
         {/each}
       {/if}
       {#if innerBottomSlot}
-        <div class="cd-select__dropdown-footer">{@render innerBottomSlot()}</div>
+        <div class="cd-select-dropdown-footer">{@render innerBottomSlot()}</div>
       {/if}
       </div>
       {#if outerBottomSlot}
-        <div class="cd-select__outer-bottom">{@render outerBottomSlot()}</div>
+        <div class="cd-select-outer-bottom">{@render outerBottomSlot()}</div>
       {/if}
     </div>
   {/if}
@@ -1215,9 +1298,9 @@
   <!-- 选项通过 combobox 的 roving + aria-activedescendant 键盘操作，无需自身键事件 -->
   <!-- svelte-ignore a11y_click_events_have_key_events -->
   <div
-    class="cd-select__option"
-    class:cd-select__option--active={i === activeIndex}
-    class:cd-select__option--selected={isSelected(opt.value)}
+    class="cd-select-option"
+    class:cd-select-option-active={i === activeIndex}
+    class:cd-select-option-selected={isSelected(opt.value)}
     id={`${listId}-opt-${i}`}
     role="option"
     aria-selected={isSelected(opt.value)}
@@ -1241,13 +1324,13 @@
       })}
     {:else}
       {#if multiple}
-        <span class="cd-select__check" aria-hidden="true">
+        <span class="cd-select-check" aria-hidden="true">
           {#if isSelected(opt.value)}
             <IconTick aria-hidden="true" />
           {/if}
         </span>
       {/if}
-      <span class="cd-select__option-label">{getOptionLabel(opt)}</span>
+      <span class="cd-select-option-label">{getOptionLabel(opt)}</span>
     {/if}
   </div>
 {/snippet}
@@ -1258,11 +1341,11 @@
 -->
 {#snippet selectTag(tag: TagInfo)}
   <Tag
-    class="cd-select__tag"
+    class="cd-select-tag"
     size="small"
     color="white"
     closable={!disabled}
-    ariaLabel={loc().t('Select.removeItem', { label: getOptionLabel(tag.opt) })}
+    aria-label={loc().t('Select.removeItem', { label: getOptionLabel(tag.opt) })}
     onClose={(_c, e) => {
       (e as Event)?.stopPropagation?.();
       removeTag(tag.opt.value);
@@ -1272,7 +1355,7 @@
       {@render renderSelectedItem({ option: tag.opt })}
     {:else}
       <span
-        class="cd-select__tag-label"
+        class="cd-select-tag-label"
         title={tag.truncated ? getOptionLabel(tag.opt) : undefined}
       >{tag.display}</span>
     {/if}
@@ -1294,13 +1377,29 @@
     inline-size: 100%;
     font-size: var(--cd-select-font-size);
   }
-  .cd-select__trigger {
+  .cd-select-trigger {
     display: flex;
     align-items: center;
-    gap: var(--cd-spacing-tight);
+    /* 对齐 Semi `.semi-select { box-sizing: border-box }`：高度含 1px 边框，
+       不靠站点全局 reset（组件自持才不会在无 reset 的宿主里胖 2px）。 */
+    box-sizing: border-box;
     inline-size: 100%;
+    /*
+     * 高度对齐 Semi `.semi-select { height: 32px; max-height: 300px; overflow-y: auto }`：
+     * **固定 height 而非 min-height**——内容（Avatar / 多个 tag）比行高高时 Semi 是滚动，
+     * 不是把触发器撑开。本库原用 min-block-size，实测 41 个实例里有 3 个被撑到 42/43/34
+     * （Semi 同页 42 个实例只有 24/32/40 三种高度，多选带 tag 的也恒 32）。
+     */
+    block-size: var(--cd-select-height-default);
     min-block-size: var(--cd-select-height-default);
-    padding-inline: var(--cd-select-padding-x);
+    max-block-size: var(--cd-select-max-height);
+    overflow-y: auto;
+    /*
+     * 对齐 Semi：触发器**本身无水平内边距、无 gap**——左侧留白由 .cd-select-content 的
+     * margin-left（12px）承担，右侧由固定 32px 宽的箭头盒承担（图标 16px 在其中居中）。
+     * 原先写 padding 0 12px + gap 8px，右侧被 12+8+16=36px 吃掉，80px 宽的格式选择器
+     * 只剩 30px 放文本，"rgba" 被截成 "rg…"（Semi 同宽下文本区有 34px）。
+     */
     background: var(--cd-select-bg);
     border: 1px solid var(--cd-select-border);
     border-radius: var(--cd-select-radius);
@@ -1314,68 +1413,107 @@
         var(--cd-transition-function-select-border) var(--cd-transition-delay-select-border);
     transform: var(--cd-transform-scale-select);
   }
-  .cd-select--small .cd-select__trigger {
+  /*
+   * 尺寸对齐 Semi select.scss：`&-small { height }` 是**固定 height 不是 min-height**，
+   * `&-large { min-height }` 才是 min。真正让小尺寸从 26.5px 收回 24px 的是
+   * content 的 line-height（见下方 .cd-select-content）——docs 正文 24.5px 的继承行高
+   * 撑开内容后，只有 min-block-size 拦不住。此处固定 height 是照抄 Semi 的写法。
+   */
+  .cd-select-small .cd-select-trigger {
+    block-size: var(--cd-select-height-small);
     min-block-size: var(--cd-select-height-small);
   }
-  .cd-select--large .cd-select__trigger {
+  /* 大尺寸对齐 Semi `&-large { min-height }`：是 min 不是固定值，故要抵消基础规则的固定 height。 */
+  .cd-select-large .cd-select-trigger {
+    block-size: auto;
     min-block-size: var(--cd-select-height-large);
   }
   /* 对齐 Semi 填充式：悬浮加深底色（非展开/禁用态） */
-  .cd-select:not(.cd-select--open):not(.cd-select--disabled) .cd-select__trigger:hover {
+  .cd-select:not(.cd-select-open):not(.cd-select-disabled) .cd-select-trigger:hover {
     background: var(--cd-select-bg-hover);
   }
-  .cd-select__trigger:focus-visible {
+  .cd-select-trigger:focus-visible {
     outline: none;
     background: var(--cd-select-bg);
     border-color: var(--cd-select-border-active);
     box-shadow: var(--cd-focus-ring);
   }
-  .cd-select--open .cd-select__trigger {
+  .cd-select-open .cd-select-trigger {
     background: var(--cd-select-bg);
     border-color: var(--cd-select-border-active);
   }
   /* 校验态 warning（对齐 Semi &-warning：背景 + 描边 light 变体，聚焦时描边加深） */
-  .cd-select--warning .cd-select__trigger {
+  .cd-select-warning .cd-select-trigger {
     background: var(--cd-color-select-warning-bg);
     border-color: var(--cd-color-select-warning-border);
   }
-  .cd-select--warning:not(.cd-select--disabled) .cd-select__trigger:hover {
+  .cd-select-warning:not(.cd-select-disabled) .cd-select-trigger:hover {
     background: var(--cd-color-select-warning-bg-hover);
   }
-  .cd-select--warning .cd-select__trigger:focus-visible,
-  .cd-select--warning.cd-select--open .cd-select__trigger {
+  .cd-select-warning .cd-select-trigger:focus-visible,
+  .cd-select-warning.cd-select-open .cd-select-trigger {
     border-color: var(--cd-color-select-warning-border-focus);
   }
   /* 校验态 error（对齐 Semi &-error：danger light 背景 + 描边，聚焦时描边加深） */
-  .cd-select--error .cd-select__trigger {
+  .cd-select-error .cd-select-trigger {
     background: var(--cd-color-select-danger-bg);
     border-color: var(--cd-color-select-danger-border);
   }
-  .cd-select--error:not(.cd-select--disabled) .cd-select__trigger:hover {
+  .cd-select-error:not(.cd-select-disabled) .cd-select-trigger:hover {
     background: var(--cd-color-select-danger-bg-hover);
   }
-  .cd-select--error .cd-select__trigger:focus-visible,
-  .cd-select--error.cd-select--open .cd-select__trigger {
+  .cd-select-error .cd-select-trigger:focus-visible,
+  .cd-select-error.cd-select-open .cd-select-trigger {
     border-color: var(--cd-color-select-danger-border-focus);
   }
-  .cd-select--disabled .cd-select__trigger {
+  .cd-select-disabled .cd-select-trigger {
     background: var(--cd-color-select-input-disabled-bg);
     color: var(--cd-color-select-input-disabled-text);
     cursor: not-allowed;
   }
-  .cd-select__content {
+  .cd-select-content {
     display: flex;
     flex: 1 1 auto;
-    flex-wrap: wrap;
+    /* 对齐 Semi `.semi-select-selection { flex-wrap: nowrap }`（单选/多选皆然，
+       只有多选内层的 content-wrapper 才 wrap）：原先无条件 wrap，触发器窄时
+       占位文本会折行，再被固定高度裁掉半行（实测「请选择业务 / 线」）。 */
+    flex-wrap: nowrap;
     align-items: center;
     gap: var(--cd-spacing-extra-tight);
     min-inline-size: 0;
+    /*
+     * 行高对齐 Semi：`.semi-select-selection` 用 `@include font-size-regular`，
+     * 该 mixin 的 line-height 恒为 20px（semi-theme-default/scss/_font.scss），
+     * 对应本库 --cd-line-height-regular。必须写在 content（内层）而非 trigger——
+     * 挂到 trigger 会让行高等于容器高，把 Semi 留的 1px 边框内缩吃掉（实测 gap 1→0）。
+     */
+    line-height: var(--cd-line-height-regular);
+    /* 对齐 Semi `.semi-select-selection { height: 100%; margin-left; overflow: hidden }`：
+       触发器无 padding，左侧留白由此承担；撑满高度 + overflow hidden 保证内容
+       （长文本 / Avatar / 多 tag）被裁而非撑破触发器（Semi 实测 selection 恒 = root − 2 边框）。 */
+    block-size: 100%;
+    margin-inline-start: var(--cd-spacing-select-selection-marginleft);
+    overflow: hidden;
   }
-  .cd-select__placeholder {
+  /* 对齐 Semi `.semi-select-multiple .semi-select-selection { margin-left: 4px }`：多选左距更小 */
+  .cd-select-multiple .cd-select-content {
+    margin-inline-start: var(--cd-spacing-select-multiple-selection-marginleft);
+  }
+  /* 对齐 Semi `.semi-select-with-prefix .semi-select-selection { margin-left: 0 }` */
+  .cd-select-with-prefix .cd-select-content {
+    margin-inline-start: 0;
+  }
+  /* 对齐 Semi `.semi-select-selection-text { width:100%; overflow:hidden; text-overflow:ellipsis }`：
+     占位文本单行省略，绝不换行——触发器窄时换行会被固定高度裁掉半行（实测「请选择业务/线」）。 */
+  .cd-select-placeholder {
+    inline-size: 100%;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
     color: var(--cd-color-select-input-placeholder-text);
   }
   /* 内嵌标签：常驻触发器左侧的标签文本 */
-  .cd-select__inset-label {
+  .cd-select-inset-label {
     display: inline-flex;
     align-items: center;
     flex: 0 0 auto;
@@ -1384,10 +1522,10 @@
     user-select: none;
   }
   /* searchPosition='dropdown'：浮层顶部搜索框容器 */
-  .cd-select__dropdown-search {
+  .cd-select-dropdown-search {
     padding: var(--cd-spacing-extra-tight) var(--cd-select-option-padding, var(--cd-spacing-tight));
   }
-  .cd-select__search--dropdown {
+  .cd-select-search-dropdown {
     inline-size: 100%;
     box-sizing: border-box;
     min-block-size: var(--cd-select-height-small);
@@ -1396,17 +1534,17 @@
     border-radius: var(--cd-select-radius);
     background: var(--cd-select-bg);
   }
-  .cd-select__search--dropdown:focus-visible {
+  .cd-select-search-dropdown:focus-visible {
     border-color: var(--cd-select-border-active);
     box-shadow: var(--cd-focus-ring);
   }
-  .cd-select__value {
+  .cd-select-value {
     overflow: hidden;
     color: var(--cd-color-select-main-text-default);
     white-space: nowrap;
     text-overflow: ellipsis;
   }
-  .cd-select__search {
+  .cd-select-search {
     flex: 1 1 auto;
     min-inline-size: 2rem;
     margin: 0;
@@ -1417,59 +1555,92 @@
     font: inherit;
     outline: none;
   }
-  .cd-select__search::placeholder {
+  .cd-select-search::placeholder {
     color: var(--cd-color-select-input-placeholder-text);
   }
+  /*
+   * 单选 + 触发器内搜索（对齐 Semi `.semi-select-single.semi-select-filterable`）：
+   * content 作定位上下文，输入框绝对定位铺满，与原回填文本**叠在一起**——
+   * 无输入时原文本以 0.4 透明度垫在下方（-inactive），有输入时隐藏（-hide）。
+   * 修饰符 --single / --multiple 对齐 Semi 的 `-input-single` / `-input-multiple`。
+   */
+  .cd-select-content:has(.cd-select-search-single) {
+    position: relative;
+  }
+  .cd-select-search-single {
+    position: absolute;
+    inset-block-start: 0;
+    inset-inline-start: 0;
+    inline-size: 100%;
+    block-size: 100%;
+  }
+  /* 对齐 Semi `-selection-text-inactive`（opacity 0.4）与 `-selection-text-hide`（隐藏）。 */
+  .cd-select-value-inactive {
+    opacity: var(--cd-opacity-select-selection-text-inactive);
+  }
+  .cd-select-value-hide {
+    display: none;
+  }
   /* 折叠态 TagGroup 实例：在触发器 flex 内联排布（与 search input 并排），随内容换行 */
-  .cd-select :global(.cd-select__tag-group) {
+  /* 对应 Semi `.semi-select-content-wrapper`：撑满高度 + 多选态换行 + 溢出裁切
+     （Semi 实测 content-wrapper 高度恒 = selection = root − 2 边框）。 */
+  .cd-select :global(.cd-select-tag-group) {
     display: inline-flex;
     flex-wrap: wrap;
     align-items: center;
     min-inline-size: 0;
-    height: auto;
+    block-size: 100%;
+    overflow: hidden;
   }
   /* ellipsisTrigger：多选 tag 溢出时，对可见 tag 文本做单行省略（完整文本经 title 查看） */
-  .cd-select--ellipsis-trigger .cd-select__content {
+  .cd-select-ellipsis-trigger .cd-select-content {
     flex-wrap: nowrap;
     overflow: hidden;
   }
-  .cd-select--ellipsis-trigger .cd-select__tag-label {
+  .cd-select-ellipsis-trigger .cd-select-tag-label {
     overflow: hidden;
     white-space: nowrap;
     text-overflow: ellipsis;
   }
-  .cd-select__option--create {
-    color: var(--cd-color-select-option-keyword-text);
+  /* 对齐 Semi：只有「创建」提示前缀染色（$color-select_create_tips-text = text-2）+ 右间距 4px，
+     整行不额外染色（Semi 无 `.semi-select-option-create` 规则，原先本库把整行染成 primary 是自造差异）。 */
+  .cd-select-create-tips {
+    margin-inline-end: var(--cd-spacing-select-create-tips-marginright);
+    color: var(--cd-color-select-create-tips-text);
   }
-  .cd-select__clear,
-  .cd-select__arrow {
+  .cd-select-clear,
+  /* 对齐 Semi `.semi-select-arrow { width: $width-select_arrow }`：固定 32px 盒、撑满高度，
+     图标 16px 在其中居中，右侧留白即由此产生（触发器不再出 padding）。 */
+  .cd-select-arrow {
     display: inline-flex;
     align-items: center;
     justify-content: center;
     flex: 0 0 auto;
+    inline-size: var(--cd-width-select-arrow);
+    block-size: 100%;
     color: var(--cd-color-select-icon-default);
   }
-  .cd-select__clear {
+  .cd-select-clear {
     padding: 0;
     border: none;
     background: transparent;
     color: var(--cd-color-select-clearbtn-text-default);
     cursor: pointer;
   }
-  .cd-select__clear:hover {
+  .cd-select-clear:hover {
     color: var(--cd-color-select-clearbtn-text-hover);
   }
-  .cd-select__arrow {
+  .cd-select-arrow {
     transform: var(--cd-transform-rotate-select-arrow);
     transition: transform var(--cd-transition-duration-select-border)
       var(--cd-transition-function-select-border) var(--cd-transition-delay-select-border);
   }
-  .cd-select--open .cd-select__arrow {
+  .cd-select-open .cd-select-arrow {
     transform: rotate(180deg);
   }
   /* 下拉 portal 到 body，由 JS 写 position:fixed + transform + matchWidth。
-     外层容器只负责底色/圆角/阴影/层级；滚动限高在内层 .cd-select__list（使 outer slot 固定不滚） */
-  .cd-select__dropdown {
+     外层容器只负责底色/圆角/阴影/层级；滚动限高在内层 .cd-select-list（使 outer slot 固定不滚） */
+  .cd-select-dropdown {
     z-index: var(--cd-select-dropdown-z);
     display: flex;
     flex-direction: column;
@@ -1479,39 +1650,39 @@
   }
   /* destroyOnClose=false 时浮层保持挂载，靠 [hidden] 隐藏；
      display:flex 会压过 [hidden] 的 UA display:none，故显式补一条属性选择器（对齐关闭态真正不可见）。 */
-  .cd-select__dropdown[hidden] {
+  .cd-select-dropdown[hidden] {
     display: none;
   }
   /* 内层滚动列表：optionList + inner header/footer + 浮层搜索框，超出 maxHeight 时纵向滚动 */
-  .cd-select__list {
+  .cd-select-list {
     max-block-size: 16rem;
     overflow-y: auto;
     padding-block: var(--cd-spacing-extra-tight);
   }
   /* outer slot：与滚动列表平级、位于滚动区之外，始终固定展现 */
-  .cd-select__outer-top,
-  .cd-select__outer-bottom {
+  .cd-select-outer-top,
+  .cd-select-outer-bottom {
     flex: 0 0 auto;
     padding: var(--cd-spacing-extra-tight) var(--cd-select-option-padding, var(--cd-spacing-tight));
   }
   /* 虚拟化：spacer 撑出未渲染选项的总高，可见 option 绝对定位于其内 */
-  .cd-select__spacer {
+  .cd-select-spacer {
     position: relative;
     inline-size: 100%;
   }
   /* 虚拟化行带固定 block-size + 内边距，需 border-box 保证行高与 virtualize.itemSize 一致 */
-  .cd-select__spacer .cd-select__option {
+  .cd-select-spacer .cd-select-option {
     box-sizing: border-box;
     overflow: hidden;
   }
-  .cd-select__group-label {
+  .cd-select-group-label {
     padding: var(--cd-spacing-extra-tight) var(--cd-select-option-padding, var(--cd-spacing-tight));
     color: var(--cd-color-select-group-text);
     font-size: var(--cd-font-size-small);
     font-weight: var(--cd-font-weight-medium, 500);
     user-select: none;
   }
-  .cd-select__option {
+  .cd-select-option {
     display: flex;
     align-items: center;
     gap: var(--cd-spacing-tight);
@@ -1520,18 +1691,18 @@
     transition: background-color var(--cd-transition-duration-select-option-bg)
       var(--cd-transition-function-select-option-bg) var(--cd-transition-delay-select-option-bg);
   }
-  .cd-select__option--active {
+  .cd-select-option-active {
     background: var(--cd-select-option-bg-hover);
   }
-  .cd-select__option--selected {
+  .cd-select-option-selected {
     color: var(--cd-select-option-color-selected);
     background: var(--cd-select-option-bg-selected);
   }
-  .cd-select__option[aria-disabled='true'] {
+  .cd-select-option[aria-disabled='true'] {
     color: var(--cd-color-select-option-disabled-text);
     cursor: not-allowed;
   }
-  .cd-select__check {
+  .cd-select-check {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -1539,12 +1710,12 @@
     flex: 0 0 auto;
     color: var(--cd-select-option-check-color);
   }
-  .cd-select__empty {
+  .cd-select-empty {
     padding: var(--cd-select-option-padding);
     color: var(--cd-color-text-3);
     text-align: center;
   }
-  .cd-select__loading {
+  .cd-select-loading {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1552,7 +1723,7 @@
     padding: var(--cd-select-option-padding);
     color: var(--cd-color-text-3);
   }
-  .cd-select__spinner {
+  .cd-select-spinner {
     inline-size: 1em;
     block-size: 1em;
     border: 2px solid var(--cd-color-select-option-border-default);
@@ -1566,48 +1737,54 @@
     }
   }
   /* 无边框模式：移除触发器边框与背景 */
-  .cd-select--borderless .cd-select__trigger {
+  .cd-select-borderless .cd-select-trigger {
     border-color: transparent;
     background: transparent;
   }
-  .cd-select--borderless .cd-select__trigger:focus-visible {
+  .cd-select-borderless .cd-select-trigger:focus-visible {
     border-color: transparent;
     box-shadow: var(--cd-focus-ring);
   }
   /* 前缀 / 后缀插槽 */
-  .cd-select__prefix,
-  .cd-select__suffix {
+  .cd-select-prefix,
+  .cd-select-suffix {
     display: inline-flex;
     align-items: center;
     flex: 0 0 auto;
     color: var(--cd-color-select-prefix-suffix-text-default);
   }
-  .cd-select__prefix {
-    margin-inline-end: var(--cd-spacing-extra-tight);
+  /*
+   * 触发器无 padding 后，prefix/suffix 的左右留白必须自持（对齐 Semi：其 prefix/suffix
+   * 靠自身 margin 撑开，触发器不出内边距）。
+   * 注：Semi 还按 text(12px) / icon(8px) 拆两套外边距变体，本库 Select 尚未拆，
+   * 统一用 8px（同 icon 档）——待 Select 整体对齐时一并处理。
+   */
+  .cd-select-prefix {
+    margin-inline: var(--cd-spacing-tight);
   }
-  .cd-select__suffix {
-    margin-inline-start: var(--cd-spacing-extra-tight);
+  .cd-select-suffix {
+    margin-inline: var(--cd-spacing-tight);
   }
   /* 浮层顶/底固定区 */
-  .cd-select__dropdown-header,
-  .cd-select__dropdown-footer {
+  .cd-select-dropdown-header,
+  .cd-select-dropdown-footer {
     padding: var(--cd-spacing-extra-tight) var(--cd-select-option-padding, var(--cd-spacing-tight));
     border-block-color: var(--cd-color-select-option-border-default);
   }
-  .cd-select__dropdown-header {
+  .cd-select-dropdown-header {
     border-block-end-width: 1px;
     border-block-end-style: solid;
   }
-  .cd-select__dropdown-footer {
+  .cd-select-dropdown-footer {
     border-block-start-width: 1px;
     border-block-start-style: solid;
   }
   @media (prefers-reduced-motion: reduce) {
-    .cd-select__spinner {
+    .cd-select-spinner {
       animation: none;
     }
-    .cd-select__trigger,
-    .cd-select__arrow {
+    .cd-select-trigger,
+    .cd-select-arrow {
       transition: none;
     }
   }

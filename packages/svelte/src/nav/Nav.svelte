@@ -11,6 +11,7 @@
   回调富载荷对齐 Semi（{itemKey,selectedKeys,selectedItems,domEvent,isOpen}）。
 -->
 <script lang="ts" module>
+  import { resolveDefault } from '@chenzy-design/core';
   export { NAV_CONTEXT_KEY } from './context.js';
 </script>
 
@@ -18,29 +19,42 @@
   import type { Snippet } from 'svelte';
   import { setContext, untrack } from 'svelte';
   import { SvelteSet } from 'svelte/reactivity';
+  import type {
+    NavItemDef,
+    NavItemInput,
+    NavKey,
+    NavMode,
+    NavHeaderConfig,
+    NavFooterConfig,
+    NavSelectData,
+    NavClickData,
+    NavOpenChangeData,
+  } from './types.js';
   import {
     collectNavItemsByKeys,
     collectAncestorKeys,
     normalizeNavItems,
-    type NavItemDef,
-    type NavItemInput,
-    type NavKey,
-    type NavMode,
-    type NavHeaderConfig,
-    type NavFooterConfig,
-    type NavSelectData,
-    type NavClickData,
-    type NavOpenChangeData,
-  } from './types.js';
+  } from './nav-foundation.js';
+  import {
+    MODE_VERTICAL,
+    DEFAULT_SUBNAV_OPEN_DELAY,
+    DEFAULT_SUBNAV_CLOSE_DELAY,
+    DEFAULT_TOOLTIP_SHOW_DELAY,
+    DEFAULT_TOOLTIP_HIDE_DELAY,
+  } from './constants.js';
   import {
     NAV_CONTEXT_KEY,
     NAV_COLLECTOR_KEY,
+    NAV_SLOT_KEY,
     type NavContext,
     type NavCollector,
+    type NavSlotRegistry,
+    type NavHeaderSlotProps,
+    type NavFooterSlotProps,
   } from './context.js';
   import NavItemRender from './NavItemRender.svelte';
-  import NavHeader from './NavHeader.svelte';
-  import NavFooter from './NavFooter.svelte';
+  import NavHeader from './Header.svelte';
+  import NavFooter from './Footer.svelte';
 
   interface Props {
     /** 导航项列表（字段对齐 Semi：itemKey/text/icon/items）。string 项取值作 text 与 itemKey。 */
@@ -61,9 +75,9 @@
     isCollapsed?: boolean;
     /** 默认折叠态（非受控，仅 vertical 有效）。 */
     defaultIsCollapsed?: boolean;
-    /** 头部区域配置对象（{logo, text, link, ...}）。与 headerSlot 二选一。 */
+    /** 头部区域配置对象（{logo, text, link, ...}）。与声明式 `<Nav.Header>` 子元素二选一（声明式优先）。 */
     header?: NavHeaderConfig;
-    /** 底部区域配置对象（{collapseButton, ...}）。与 footerSlot 二选一。 */
+    /** 底部区域配置对象（{collapseButton, ...}）。与声明式 `<Nav.Footer>` 子元素二选一（声明式优先）。 */
     footer?: NavFooterConfig;
     /** 缩进限制：仅一级缩进（默认 true）；false 时逐级缩进。 */
     limitIndent?: boolean;
@@ -118,17 +132,18 @@
     onOpenChange?: (data: NavOpenChangeData) => void;
     /** 折叠态变化回调。 */
     onCollapseChange?: (isCollapsed: boolean) => void;
-    /** 自定义头部（覆盖 header 配置对象）。 */
-    headerSlot?: Snippet;
-    /** 自定义底部（覆盖 footer 配置对象）。 */
-    footerSlot?: Snippet;
-    /** 声明式子项（<Nav.Item>/<Nav.Sub>）。与 items 二选一，items 优先。 */
+    /**
+     * 子内容，渲染在导航列表 ul 内、items 之后（对齐 Semi `{itemElems}{children}`）。
+     * 可放声明式子项 <Nav.Item>/<Nav.Sub>（与 items 二选一，items 优先）、
+     * <Nav.Header>/<Nav.Footer>（与 header/footer object prop 二选一，声明式优先，
+     * 经 context 注册摘出到对应位置，自身不产 DOM），也可放任意内容原样渲染。
+     */
     children?: Snippet;
   }
 
   let {
     items = [],
-    mode = 'vertical',
+    mode: modeProp,
     selectedKeys,
     defaultSelectedKeys,
     openKeys,
@@ -138,16 +153,16 @@
     defaultIsCollapsed = false,
     header,
     footer,
-    limitIndent = true,
-    toggleIconPosition = 'right',
+    limitIndent: limitIndentProp,
+    toggleIconPosition: toggleIconPositionProp,
     expandIcon,
     renderIcon,
-    subNavMotion = true,
-    subNavOpenDelay = 0,
-    subNavCloseDelay = 100,
+    subNavMotion: subNavMotionProp,
+    subNavOpenDelay: subNavOpenDelayProp,
+    subNavCloseDelay: subNavCloseDelayProp,
     subDropdownProps,
-    tooltipShowDelay = 0,
-    tooltipHideDelay = 100,
+    tooltipShowDelay: tooltipShowDelayProp,
+    tooltipHideDelay: tooltipHideDelayProp,
     getPopupContainer,
     renderWrapper,
     class: className = '',
@@ -158,10 +173,18 @@
     onClick,
     onOpenChange,
     onCollapseChange,
-    headerSlot,
-    footerSlot,
     children,
   }: Props = $props();
+  // cdGlobal 全局默认 props（对齐 Semi semiGlobal.config.overrideDefaultProps）：
+  // 优先级 = 显式传值 > cdGlobal['Navigation'] > 组件内置默认值。
+  const subNavCloseDelay = $derived(resolveDefault(subNavCloseDelayProp, 'Navigation', 'subNavCloseDelay', DEFAULT_SUBNAV_CLOSE_DELAY));
+  const subNavOpenDelay = $derived(resolveDefault(subNavOpenDelayProp, 'Navigation', 'subNavOpenDelay', DEFAULT_SUBNAV_OPEN_DELAY));
+  const tooltipHideDelay = $derived(resolveDefault(tooltipHideDelayProp, 'Navigation', 'tooltipHideDelay', DEFAULT_TOOLTIP_HIDE_DELAY));
+  const tooltipShowDelay = $derived(resolveDefault(tooltipShowDelayProp, 'Navigation', 'tooltipShowDelay', DEFAULT_TOOLTIP_SHOW_DELAY));
+  const toggleIconPosition = $derived(resolveDefault(toggleIconPositionProp, 'Navigation', 'toggleIconPosition', 'right'));
+  const limitIndent = $derived(resolveDefault(limitIndentProp, 'Navigation', 'limitIndent', true));
+  const subNavMotion = $derived(resolveDefault(subNavMotionProp, 'Navigation', 'subNavMotion', true));
+  const mode = $derived(resolveDefault(modeProp, 'Navigation', 'mode', 'vertical'));
 
   // ---------- 声明式子项收集（<Nav.Item>/<Nav.Sub>）----------
   let declared: NavItemDef[] = [];
@@ -189,11 +212,25 @@
     return r >= 0 ? declared.slice() : [];
   });
 
+  // ---------- 声明式 Header/Footer 注册（<Nav.Header>/<Nav.Footer> 作为 Nav 直接子元素）----------
+  // 对齐 Semi children 层级 JSX 写法：与 header/footer object prop 二选一，声明式优先
+  // （二者同传时以声明式为准，因为它更贴近字面书写顺序）。
+  let declaredHeader: NavHeaderSlotProps | undefined = $state(undefined);
+  let declaredFooter: NavFooterSlotProps | undefined = $state(undefined);
+  setContext<NavSlotRegistry>(NAV_SLOT_KEY, {
+    setHeader: (props) => {
+      declaredHeader = props;
+    },
+    setFooter: (props) => {
+      declaredFooter = props;
+    },
+  });
+
   // ---------- 折叠态（受控/非受控，仅 vertical）----------
   const isCollapsedControlled = $derived(isCollapsed !== undefined);
   let innerCollapsed = $state(untrack(() => defaultIsCollapsed));
   const collapsedState = $derived(
-    mode === 'vertical' && (isCollapsedControlled ? !!isCollapsed : innerCollapsed),
+    mode === MODE_VERTICAL && (isCollapsedControlled ? !!isCollapsed : innerCollapsed),
   );
   function toggleCollapsed(): void {
     const next = !collapsedState;
@@ -220,7 +257,7 @@
   // openKeys 受控 = openKeys 受控 且 vertical 且未折叠（对齐 Semi openKeysIsControlled）。
   // 浮层 SubNav 据此在受控时用 trigger='custom' + visible。
   const openKeysIsControlled = $derived(
-    isOpenControlled && mode === 'vertical' && !collapsedState,
+    isOpenControlled && mode === MODE_VERTICAL && !collapsedState,
   );
 
   function isSelected(key: NavKey): boolean {
@@ -338,24 +375,36 @@
   });
 
   const cls = $derived(
-    ['cd-nav', `cd-nav--${mode}`, collapsedState && 'cd-nav--collapsed', className]
+    ['cd-nav', `cd-nav-${mode}`, collapsedState && 'cd-nav-collapsed', className]
       .filter(Boolean)
       .join(' '),
   );
 
-  const hasHeader = $derived(!!headerSlot || !!header);
-  const hasFooter = $derived(!!footerSlot || (!!footer && !!footer.collapseButton));
+  const hasHeader = $derived(!!declaredHeader || !!header);
+  const hasFooter = $derived(!!declaredFooter || (!!footer && !!footer.collapseButton));
 </script>
 
 <!-- 根为纯容器 <div>（对齐 Semi index.tsx：无 nav landmark）；列表用 role=menu 语义。 -->
 <div class={cls} {style}>
-  <div class="cd-nav__inner">
-    <div class="cd-nav__header-list-outer" class:cd-nav__header-list-outer-collapsed={collapsedState}>
+  <div class="cd-nav-inner">
+    <div class="cd-nav-header-list-outer" class:cd-nav-header-list-outer-collapsed={collapsedState}>
       {#if hasHeader}
-        {#if headerSlot}
-          {@render headerSlot()}
+        {#if declaredHeader}
+          <NavHeader
+            _internalRender
+            {...declaredHeader.logo !== undefined ? { logo: declaredHeader.logo } : {}}
+            {...declaredHeader.text !== undefined ? { text: declaredHeader.text } : {}}
+            {...declaredHeader.link !== undefined ? { link: declaredHeader.link } : {}}
+            {...declaredHeader.linkOptions !== undefined ? { linkOptions: declaredHeader.linkOptions } : {}}
+            {...declaredHeader.class !== undefined ? { class: declaredHeader.class } : {}}
+            {...declaredHeader.style !== undefined ? { style: declaredHeader.style } : {}}
+            {...declaredHeader.children !== undefined ? { children: declaredHeader.children } : {}}
+            {mode}
+            {collapsedState}
+          />
         {:else if header}
           <NavHeader
+            _internalRender
             {...header.logo !== undefined ? { logo: header.logo } : {}}
             {...header.text !== undefined ? { text: header.text } : {}}
             {...header.link !== undefined ? { link: header.link } : {}}
@@ -368,21 +417,33 @@
         {/if}
       {/if}
 
-      <div class="cd-nav__list-wrapper" style={bodyStyle}>
-        <!-- 对齐 Semi index.tsx:434：ul[role=menu][aria-orientation=mode]；项为 role=menuitem。 -->
-        <ul class="cd-nav__list" role="menu" aria-orientation={mode}>
+      <div class="cd-nav-list-wrapper" style={bodyStyle}>
+        <!-- 对齐 Semi index.tsx:434：ul[role=menu][aria-orientation=mode]；项为 role=menuitem。
+             children 紧随 items 之后渲染在 ul 内（对齐 Semi `{itemElems}{children}`）：
+             <Nav.Item>/<Nav.Sub> 经 context 注册后自身不产 DOM，其余任意内容原样渲染。 -->
+        <ul class="cd-nav-list" role="menu" aria-orientation={mode}>
           {#each resolvedItems as item (item.itemKey)}
             <NavItemRender {item} level={0} />
           {/each}
+          {#if children}{@render children()}{/if}
         </ul>
       </div>
     </div>
 
     {#if hasFooter}
-      {#if footerSlot}
-        {@render footerSlot()}
+      {#if declaredFooter}
+        <NavFooter
+          _internalRender
+          collapseButton={declaredFooter.collapseButton ?? false}
+          {...declaredFooter.collapseText !== undefined ? { collapseText: declaredFooter.collapseText } : {}}
+          {...declaredFooter.class !== undefined ? { class: declaredFooter.class } : {}}
+          {...declaredFooter.style !== undefined ? { style: declaredFooter.style } : {}}
+          {...declaredFooter.onClick !== undefined ? { onClick: declaredFooter.onClick } : {}}
+          {...declaredFooter.children !== undefined ? { children: declaredFooter.children } : {}}
+        />
       {:else if footer}
         <NavFooter
+          _internalRender
           collapseButton={footer.collapseButton ?? false}
           {...footer.collapseText !== undefined ? { collapseText: footer.collapseText } : {}}
           {...footer.class !== undefined ? { class: footer.class } : {}}
@@ -392,11 +453,6 @@
       {/if}
     {/if}
   </div>
-
-  <!-- 声明式子项注册宿主：仅当未传 items 且有 children 时挂载。不产可见 DOM。 -->
-  {#if !items.length && children}
-    <div hidden style="display:none">{@render children()}</div>
-  {/if}
 </div>
 
 <style>
@@ -416,7 +472,7 @@
        导致折叠后宽度停在展开态。折叠为即时切换（功能优先）。 */
     transition: padding var(--cd-motion-duration-fast) var(--cd-motion-ease-standard);
   }
-  .cd-nav__inner {
+  .cd-nav-inner {
     inline-size: 100%;
     block-size: 100%;
     display: flex;
@@ -425,52 +481,65 @@
   }
 
   /* 折叠态：容器收窄到图标轨宽度。 */
-  .cd-nav--collapsed {
+  .cd-nav-collapsed {
     width: var(--cd-width-navigation-container-collapsed);
     padding-inline: var(--cd-spacing-navigation-collapsed-paddingx);
   }
 
-  .cd-nav__header-list-outer {
+  .cd-nav-header-list-outer {
     block-size: 100%;
     display: flex;
     flex-direction: column;
     min-block-size: 0;
   }
-  .cd-nav__list-wrapper {
+  .cd-nav-list-wrapper {
     padding-block-start: var(--cd-spacing-navigation-list-wrapper-paddingtop);
     overflow-y: auto;
     overflow-x: hidden;
     flex: 1 1 auto;
     min-block-size: 0;
   }
-  .cd-nav__list {
+  .cd-nav-list {
     margin: 0;
     padding: 0;
     list-style: none;
   }
 
   /* 水平顶部导航。 */
-  .cd-nav--horizontal {
+  .cd-nav-horizontal {
     inline-size: 100%;
     block-size: var(--cd-height-navigation-horizontal-header);
     border-inline-end: none;
     border-block-end: var(--cd-width-navigation-border) solid var(--cd-color-navigation-border-default);
     padding-inline: var(--cd-spacing-navigation-horizontal-paddingleft);
   }
-  .cd-nav--horizontal .cd-nav__inner {
+  .cd-nav-horizontal .cd-nav-inner {
     flex-direction: row;
   }
-  .cd-nav--horizontal .cd-nav__header-list-outer {
+  .cd-nav-horizontal .cd-nav-header-list-outer {
     flex-direction: row;
     align-items: center;
     block-size: auto;
   }
-  .cd-nav--horizontal .cd-nav__list-wrapper {
+  .cd-nav-horizontal .cd-nav-list-wrapper {
     padding-block-start: 0;
     overflow: visible;
   }
-  .cd-nav--horizontal .cd-nav__list {
+  .cd-nav-horizontal .cd-nav-list {
     display: inline-flex;
     align-items: center;
+  }
+  /* 顶部导航 footer：无分割线、右内边距归 0（对齐 Semi navigation.scss horizontal .footer）。 */
+  .cd-nav-horizontal :global(.cd-nav-footer) {
+    border-block-start: none;
+    padding-inline-end: 0;
+  }
+
+  /* —— RTL（对齐 Semi navigation/rtl.scss）——
+     只需声明方向：本库 Nav 的内边距与右侧分隔边框**已全部用逻辑属性**
+     （padding-inline / border-inline-end），RTL 下自己就翻，
+     不像 Semi 那样要写 `border-right:0; border-left:...` 掰回来。 */
+  :global(.cd-rtl) .cd-nav {
+    direction: rtl;
   }
 </style>

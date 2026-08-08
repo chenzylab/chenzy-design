@@ -3,7 +3,6 @@ title: Modal 模态对话框
 name: modal
 category: feedback
 brief: 模态对话框用于等待用户响应、告知用户重要信息或在不丢失上下文的情况下展示更多信息
-docMode: inline
 ---
 
 <script>
@@ -122,9 +121,9 @@ import { Modal } from '@chenzy-design/svelte';
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
 | afterClose | 对话框完全关闭后的回调函数 | `() => void` | 无 |
-| ariaLabel | 无 title 时对话框的无障碍名称（本库补充） | string | 无 |
+| aria-label | 无 title 时对话框的无障碍名称（本库补充） | string | 无 |
 | bodyStyle | 对话框内容的样式 | string | 无 |
-| cancelButtonProps | 取消按钮的 props | [ButtonProps](/components/button#API-参考) | 无 |
+| cancelButtonProps | 取消按钮的 props | [ButtonProps](/components/button#api-参考) | 无 |
 | cancelText | 取消按钮的文字 | string | 无 |
 | centered | 是否居中显示 | boolean | false |
 | children | 对话框内容（对齐 Semi content） | Snippet | 无 |
@@ -149,7 +148,7 @@ import { Modal } from '@chenzy-design/svelte';
 | modalContentClass | 可用于设置对话框内容的样式类名 | string | 无 |
 | modalRender | 自定义渲染 Modal（Snippet，接收默认 content Snippet） | `Snippet<[Snippet]>` | - |
 | motion | 动画效果开关 | boolean | true |
-| okButtonProps | 确认按钮的 props | [ButtonProps](/components/button#API-参考) | 无 |
+| okButtonProps | 确认按钮的 props | [ButtonProps](/components/button#api-参考) | 无 |
 | okText | 确认按钮的文字 | string | 无 |
 | okType | 确认按钮的类型, 可选: 'primary'、'secondary'、'tertiary'、'warning'、'danger' | string | primary |
 | onCancel | 取消对话框时的回调函数，返回 Promise 时，取消按钮会出现 loading 态 | `() => void`\|`Promise` | 无 |
@@ -174,7 +173,7 @@ import { Modal } from '@chenzy-design/svelte';
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
 | bodyStyle | 对话框内容的样式 | string | 无 |
-| cancelButtonProps | 取消按钮的 props | [ButtonProps](/components/button#API-参考) | 无 |
+| cancelButtonProps | 取消按钮的 props | [ButtonProps](/components/button#api-参考) | 无 |
 | cancelText | 取消按钮的文字 | string | 无 |
 | centered | 是否居中显示 | boolean | false |
 | class | 可用于设置样式类名 | string | 无 |
@@ -189,7 +188,7 @@ import { Modal } from '@chenzy-design/svelte';
 | maskClosable | 是否允许通过点击遮罩来关闭对话框 | boolean | true |
 | maskStyle | 遮罩的样式 | string | 无 |
 | modalContentClass | 可用于设置对话框内容的样式类名 | string | 无 |
-| okButtonProps | 确认按钮的 props | [ButtonProps](/components/button#API-参考) | 无 |
+| okButtonProps | 确认按钮的 props | [ButtonProps](/components/button#api-参考) | 无 |
 | okText | 确认按钮的文字 | string | 无 |
 | okType | 确认按钮的类型 | string | primary |
 | style | 可用于设置样式 | string | 无 |
@@ -220,7 +219,7 @@ modal.destroy();
 
 - `Modal.useModal`
 
-当你需要使用 Context 时，可以通过 Modal.useModal 创建 `[modal, holder]`，把 `<ModalContextHolder items={holder.items} />` 插入相应的节点中。此时通过 hooks 创建的 Modal 将会得到 contextHolder 所在位置的所有上下文（如 LocaleProvider / ConfigProvider 的配置）。创建的 modal 对象拥有与 [Modal.method](#modalmethod) 相同的创建方法。
+当你需要使用 Context 时，可以通过 Modal.useModal 创建 `[modal, holder]`，把 `<ModalContextHolder items={holder.items} />` 插入相应的节点中。此时通过 hooks 创建的 Modal 将会得到 contextHolder 所在位置的所有上下文（如 LocaleProvider / ConfigProvider 的配置）。创建的 modal 对象拥有与 [Modal.method](#modal-methodaaaaaa) 相同的创建方法。
 
 ## Accessibility
 

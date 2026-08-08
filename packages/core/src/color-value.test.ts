@@ -11,6 +11,13 @@ import {
   colorValueFromHsva,
   colorValueToInputString,
   parseColorInput,
+  colorStringToValue,
+  parseHue,
+  rgbaStringToRgba,
+  hsvaStringToHsva,
+  hsvaToHslString,
+  hsvaToHslaString,
+  hsvaToRgbaString,
   DEFAULT_COLOR_VALUE,
 } from './color-value.js';
 
@@ -117,5 +124,80 @@ describe('ColorValue: parseColorInput', () => {
   });
   it('returns null when too few numbers', () => {
     expect(parseColorInput('57,197', 'rgba')).toBeNull();
+  });
+});
+
+describe('ColorValue: colorStringToValue（对齐 Semi 静态方法，逐值与 Semi convert 实测一致）', () => {
+  it('hex 串', () => {
+    expect(colorStringToValue('#39c5bb')).toEqual({
+      hsva: { h: 176, s: 71, v: 77, a: 1 },
+      rgba: { r: 57, g: 197, b: 187, a: 1 },
+      hex: '#39c5bb',
+    });
+  });
+  it('rgb 串（Semi 文档同款 rgb(57,197,187)）', () => {
+    expect(colorStringToValue('rgb(57,197,187)')).toEqual({
+      hsva: { h: 176, s: 71, v: 77, a: 1 },
+      rgba: { r: 57, g: 197, b: 187, a: 1 },
+      hex: '#39c5bb',
+    });
+  });
+  it('rgba 串带 alpha', () => {
+    expect(colorStringToValue('rgba(57,197,187,0.5)')).toEqual({
+      hsva: { h: 176, s: 71, v: 77, a: 0.5 },
+      rgba: { r: 57, g: 197, b: 187, a: 0.5 },
+      hex: '#39c5bb80',
+    });
+  });
+  it('hsv 串（Semi 文档同款 hsv(176,71,77)）', () => {
+    expect(colorStringToValue('hsv(176,71,77)')).toEqual({
+      hsva: { h: 176, s: 71, v: 77, a: 1 },
+      rgba: { r: 57, g: 196, b: 187, a: 1 },
+      hex: '#39c4bb',
+    });
+  });
+  it('hsva 串带 alpha', () => {
+    expect(colorStringToValue('hsva(176,71,77,0.4)').hex).toBe('#39c4bb66');
+  });
+  it('非法串抛错（对齐 Semi，避免静默拿到黑色）', () => {
+    expect(() => colorStringToValue('not-a-color')).toThrow();
+  });
+});
+
+describe('ColorValue: 颜色串解析工具（对齐 Semi convert）', () => {
+  it('parseHue 支持 turn 单位', () => {
+    expect(parseHue('0.5', 'turn')).toBe(180);
+  });
+  it('parseHue 缺省 deg', () => {
+    expect(parseHue('176')).toBe(176);
+  });
+  it('rgbaStringToRgba 百分比通道', () => {
+    expect(rgbaStringToRgba('rgba(10%,20%,30%,50%)')).toEqual({
+      r: 25.5,
+      g: 51,
+      b: 76.5,
+      a: 0.5,
+    });
+  });
+  it('rgbaStringToRgba 无法匹配回落黑色（对齐 Semi）', () => {
+    expect(rgbaStringToRgba('nope')).toEqual({ r: 0, g: 0, b: 0, a: 1 });
+  });
+  it('hsvaStringToHsva 支持角度单位', () => {
+    expect(hsvaStringToHsva('hsv(0.5turn,50,50)')).toEqual({ h: 180, s: 50, v: 50, a: 1 });
+  });
+  it('hsvaStringToHsva 无法匹配回落全 0（对齐 Semi）', () => {
+    expect(hsvaStringToHsva('nope')).toEqual({ h: 0, s: 0, v: 0, a: 1 });
+  });
+});
+
+describe('ColorValue: hsla / 展示串（对齐 Semi hsvaToHsl*）', () => {
+  it('hsvaToHslString 用于色板底色', () => {
+    expect(hsvaToHslString({ h: 176, s: 100, v: 100, a: 1 })).toBe('hsl(176, 100%, 50%)');
+  });
+  it('hsvaToHslaString 保留 alpha', () => {
+    expect(hsvaToHslaString({ h: 176, s: 71, v: 77, a: 0.4 })).toBe('hsla(176, 55%, 50%, 0.4)');
+  });
+  it('hsvaToRgbaString 用于 alpha 把手色', () => {
+    expect(hsvaToRgbaString({ h: 176, s: 71, v: 77, a: 0.4 })).toBe('rgba(57, 196, 187, 0.4)');
   });
 });

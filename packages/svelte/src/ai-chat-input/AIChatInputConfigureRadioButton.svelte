@@ -17,11 +17,18 @@
     options?: unknown[];
     /** 附加变更回调。 */
     onChange?: ((value: RadioValue) => void) | undefined;
+    /** 附加类名（与组件固有类名合并，对齐 Semi getConfigureItem 的 cls 合并）。 */
+    class?: string;
     /** 其余透传给 RadioGroup。 */
     [key: string]: unknown;
   }
 
-  let { field, initValue, options, onChange, ...rest }: Props = $props();
+  let { field, initValue, options, onChange, class: className, ...rest }: Props = $props();
+
+  // Semi getConfigureItem 把 opts.className 与调用方 className 合并后传给内层组件。
+  const cls = $derived(
+    ['cd-ai-chat-input-footer-configure-radio-button', className].filter(Boolean).join(' '),
+  );
 
   const ctx = getConfigureContext();
 
@@ -45,8 +52,27 @@
 
 <RadioGroup
   {...rest}
+  class={cls}
   type="button"
   options={options as never}
   {...(value !== undefined ? { value } : {})}
   onChange={handleChange}
 />
+
+<style>
+  /* 逐条对齐 Semi aiChatInput.scss:296-308：单选按钮的高/内距/字号 +
+     选中态前景/底色。本库此前只挂了类名（上一轮补的），一条样式都没接。
+     RadioGroup 的内部节点 class 在子组件里，故走 :global。 */
+  :global(.cd-ai-chat-input-footer-configure-radio-button .cd-radio-addon-buttonRadio) {
+    height: var(--cd-height-ai-chat-input-footer-configure-radio-button);
+    padding: var(--cd-spacing-ai-chat-input-footer-configure-radio-button-padding);
+    font-size: var(--cd-font-ai-chat-input-footer-configure-radio-button-fontsize);
+  }
+
+  :global(
+    .cd-ai-chat-input-footer-configure-radio-button .cd-radio-addon-buttonRadio-checked
+  ) {
+    color: var(--cd-color-ai-chat-input-footer-configure-radio-button-checked);
+    background: var(--cd-color-ai-chat-input-footer-configure-radio-button-checked-bg);
+  }
+</style>

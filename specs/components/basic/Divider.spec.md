@@ -26,8 +26,8 @@ Divider（分割线）用于在内容之间建立视觉与语义上的分隔，�
 - **方向语义**：
   - 水平：`display:flex`（带文字时）或 `block`（border-top 实现纯线），高度为线宽，宽度撑满。
   - 垂直：`display:inline-block`，宽度为线宽，高度继承父级 line-height（默认 `1em`），通过 `vertical-align:middle` 与文字对齐。
-- **间距语义**：水平方向 margin 作用于 `margin-block`，垂直方向作用于 `margin-inline`，由 `--cd-divider-spacing` 统一控制。
-- **暗色模式**：仅依赖 `--cd-color-border` / `--cd-color-text-2` 的 Alias 翻转，组件无需额外逻辑。
+- **间距语义**：严格对齐 Semi，使用物理属性而非逻辑属性——水平方向 margin 作用于 `margin-top`/`margin-bottom`，垂直方向作用于 `margin-left`/`margin-right`，由 4 组独立 Component Token 分别控制（见第 5 节），不做 LTR/RTL 镜像。
+- **暗色模式**：仅依赖 `--cd-color-border` / `--cd-color-text-0` 的 Alias 翻转，组件无需额外逻辑。
 
 ## 3. 分层实现
 
@@ -101,9 +101,9 @@ Divider 为**纯展示组件，省略 core**：无键盘交互、无焦点管理
 - **带文字时的语义**：文字作为可见内容随元素读出；若文字纯装饰（如仅图标），消费者应自行提供 `aria-label`。
 - **键盘交互**：无。Divider 不可聚焦（无 `tabindex`），不参与 Tab 序列，符合非交互分隔元素规范。
 - **焦点管理**：不涉及（无可聚焦子元素）。若插槽内放入交互元素（不推荐），其语义由该元素自身负责。
-- **对比度**：线条颜色 `--cd-color-border` 属于非文本图形元素，需对相邻背景满足 **≥ 3:1**（WCAG 1.4.11 Non-text Contrast）。文字 `--cd-color-text-2` 对背景需满足 **≥ 4.5:1**（正文）。Token 体系须保证两者达标。
+- **对比度**：线条颜色 `--cd-color-border` 属于非文本图形元素，需对相邻背景满足 **≥ 3:1**（WCAG 1.4.11 Non-text Contrast）。文字 `--cd-color-divider-text-default` 对背景需满足 **≥ 4.5:1**（正文）。Token 体系须保证两者达标。
 - **reduced-motion**：组件无动画，天然满足 `prefers-reduced-motion`，无需额外处理。
-- **RTL**：使用逻辑属性（`margin-block`/`margin-inline`/`padding-inline`）。`align="left|right"` 在 RTL 下随书写方向自动镜像（内部映射为 `inline-start`/`inline-end`）；`center` 不受影响。
+- **RTL**：严格对齐 Semi，不做 RTL 适配。间距/线宽全部使用物理属性（`margin-left/right/top/bottom`、`border-left`、`border-bottom`），`align="left|right"` 不随书写方向镜像，`dir="rtl"` 下表现与 LTR 一致（与 Semi 行为一致）。
 
 ## 7. 国际化
 
@@ -136,7 +136,7 @@ Divider 为**纯展示组件，省略 core**：无键盘交互、无焦点管理
 
 - **虚拟化**：组件自身不需要；若用于超长列表，由外层列表/虚拟滚动容器负责。
 - **惰性渲染 / destroyOnClose**：不适用（无浮层、无显隐状态）。
-- **优化点**：垂直分隔优先用 `border-inline` / `width` 实现而非额外伪元素，避免布局抖动。
+- **优化点**：垂直分隔用 `border-left` + `height` 实现（对齐 Semi），非额外伪元素，避免布局抖动。
 
 ## 10. AI 元数据
 

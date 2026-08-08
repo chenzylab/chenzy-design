@@ -32,9 +32,16 @@ export interface TokenDef {
 /** 一组组件 token：值为裸字符串或 TokenDef。 */
 export type TokenGroup = Record<string, string | TokenDef>;
 
-/** 取 token 的 CSS 值（归一化裸字符串 / TokenDef）。 */
-export function tokenValue(v: string | TokenDef): string {
-  return typeof v === 'string' ? v : v.value;
+/**
+ * 取 token 的 CSS 值（归一化裸字符串 / TokenDef / TokenRef）。
+ *
+ * `TokenRef`（`ref('blue-5')`）同时带 `value`（解析后的字面值）与 `css`
+ * （`var(--cd-color-blue-5)`）；**构建产物必须取 `css`**，否则引用关系被展开成字面值，
+ * 覆盖色板将无法联动语义色（见 global/color.ts 的 `ref()` 注释）。
+ */
+export function tokenValue(v: string | TokenDef | { value: string; css?: string }): string {
+  if (typeof v === 'string') return v;
+  return 'css' in v && v.css ? v.css : v.value;
 }
 
 /** 取 token 的元数据（裸字符串归一为仅含 value）。 */

@@ -53,40 +53,40 @@ Timeline 以展示为主，但"交替布局测量、水平滚动定位、可选�
 
 ### Props
 
+> 本表由 `packages/svelte/src/timeline/meta.ts` 真源生成（2026-07-30 重校）。此前本表列的 prop 多为 Semi 对齐前的旧名或已删除项（如 `value`→`activeKey`、`change`→`onChange`），改 prop 时请同步 meta.ts，勿手写「规划中」的 prop。
+
 | 名称 | 类型 | 默认值 | 说明 |
 |---|---|---|---|
-| `mode` | `'left' \| 'right' \| 'alternate' \| 'center'` | `'left'` | 内容相对轴线的对齐/分布方式；`alternate` 左右交替，`center` 居中两侧。 |
-| `direction` | `'vertical' \| 'horizontal'` | `'vertical'` | 时间轴方向。 |
-| `dataSource` | `TimelineItemData[]` | `[]` | 数据驱动用法；与声明式 `Timeline.Item` 二选一，二者并存时声明式优先。 |
-| `reverse` | `boolean` | `false` | 是否倒序渲染（最新在顶部）。 |
-| `pending` | `boolean \| string \| Snippet` | `false` | 末尾追加"进行中/加载中"幽灵节点；为 string/snippet 时作为其内容。 |
-| `pendingDot` | `Snippet` | — | 自定义 pending 节点的 dot。 |
-| `size` | `'small' \| 'default' \| 'large'` | `'default'` | 控制节点尺寸与节奏间距。 |
-| `interactive` | `boolean` | `false` | 启用键盘漫游与节点聚焦/点击（开启后注入 a11y 交互逻辑）。 |
-| `virtualized` | `boolean \| { itemHeight: number; height: number }` | `false` | 超长列表虚拟化（仅 vertical 支持）。 |
-| `lineStyle` | `'solid' \| 'dashed'` | `'solid'` | 轴线样式。 |
-| `class` | `string` | — | 根节点自定义类名。 |
+| `mode` | `'left'\|'right'\|'alternate'\|'center'` | `left` | 时间轴模式 |
+| `dataSource` | `TimelineItemData[]` | `-` | 数据驱动渲染（与 children 二选一） |
+| `class` | `string` | `-` | 类名 |
+| `style` | `string` | `-` | 样式 |
+| `aria-label` | `string` | `-` | 无障碍标签 |
+| `children` | `Snippet` | `-` | 组合式子节点（`Timeline.Item`） |
+
+**子组件**：`Timeline.Item`
 
 `TimelineItemData` / `Timeline.Item` Props：
 
 | 名称 | 类型 | 默认值 | 说明 |
 |---|---|---|---|
-| `id` | `string \| number` | 自动生成 | 唯一键，用于 `{#each}` key 与 aria 关联。 |
-| `status` | `'default' \| 'ongoing' \| 'success' \| 'warning' \| 'error'` | `'default'` | 节点语义状态（决定色/默认图标）。 |
-| `color` | `string` | — | 覆盖节点颜色（须传 token 引用，如 `var(--cd-color-primary)`，禁写死十六进制）。 |
-| `time` | `string \| Date` | — | 时间标签；`Date` 经 `Intl.DateTimeFormat` 格式化。 |
-| `title` | `string \| Snippet` | — | 节点标题。 |
-| `dot` | `Snippet` | — | 自定义节点（图标/头像/序号），覆盖默认圆点。 |
-| `position` | `'left' \| 'right'` | — | 在 `alternate`/`center` 下强制该项所在侧，覆盖自动交替。 |
-| `clickable` | `boolean` | 继承 `interactive` | 该项是否可聚焦/点击。 |
+| `type` | `'default'\|'ongoing'\|'success'\|'warning'\|'error'` | `default` | 当前圆圈的模式（**状态字段真名，非 `status`**） |
+| `color` | `string` | `-` | 自定义的圆圈色值 |
+| `dot` | `string \| Snippet` | `-` | 自定义时间轴点 |
+| `time` | `string \| Snippet` | `-` | 时间文本 |
+| `extra` | `string \| Snippet` | `-` | 自定义辅助内容 |
+| `position` | `'left'\|'right'` | `-` | 自定义节点位置，可覆盖 Timeline 的 mode |
+| `class` | `string` | `-` | 类名 |
+| `style` | `string` | `-` | 样式 |
+| `onClick` | `(e: MouseEvent) => void` | `-` | 鼠标点击事件的回调 |
+| `children` | `Snippet` | `-` | 节点内容 |
+
+> 本表由 `timeline/meta.ts` 真源生成（2026-07-30 重校）。此前列的 `id` / `title` / `clickable`
+> 从未实现，状态字段真名是 `type`；Timeline 严格对齐 Semi 极简版，见 [[timeline-semi-minimal-no-extras]]。
 
 ### Events
 
-| 事件 | 载荷 (`event.detail`) | 触发时机 |
-|---|---|---|
-| `on:itemClick` | `{ id: string \| number; index: number; data: TimelineItemData; nativeEvent: MouseEvent \| KeyboardEvent }` | `interactive`/`clickable` 项被点击或在聚焦时按 Enter/Space。 |
-| `on:itemFocus` | `{ id; index }` | 节点通过键盘漫游或 Tab 获得焦点。 |
-| `on:reachEnd` | `{ }` | 虚拟化模式滚动到末尾（用于无限追加/加载更多）。 |
+> 本组件无事件回调 prop（meta.events 为空）。此前本表列的回调均未实现，已删。
 
 说明：Timeline 无受控显隐，故不涉及 `value/on:change`、`open/on:openChange`；保持事件命名小驼峰、与库一致性约定（输出动作语义）一致。
 
@@ -130,7 +130,7 @@ Timeline 以展示为主，但"交替布局测量、水平滚动定位、可选�
 参考 WAI-ARIA APG —— 纯展示时按 list 语义；可交互时按可聚焦列表项处理。
 
 - 角色：根容器 `role="list"`（纯展示）；每个 item `role="listitem"`。`interactive` 时，可点击项加 `role="button"`（或包裹 `<button>`）+ `tabindex`，由 `useRovingTabindex` 管理（聚焦项 `tabindex=0`，其余 `-1`）。
-- 状态语义不靠颜色：节点状态附 `aria-label`，i18n key 如 `Timeline.status.error`，并附状态图标（图标 `aria-hidden`，文本由 aria-label 承载）。
+- 状态语义不靠颜色：节点状态附 `aria-label`（文案由调用方传入——**Timeline 不消费 locale**，`useLocale` 出现 0 次，原 `Timeline.*` 键已随悬空键清理删除），并附状态图标（图标 `aria-hidden`，文本由 aria-label 承载）。
 - 时间：time 文本用 `<time datetime="ISO">` 元素，`datetime` 为 ISO 8601，可见文本为本地化格式。
 - 键盘交互（仅 `interactive`）：
   - vertical：`ArrowUp/ArrowDown` 在节点间移动焦点；`Home/End` 跳首/末。

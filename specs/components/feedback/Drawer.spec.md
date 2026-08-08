@@ -40,37 +40,51 @@ Drawer（抽屉）是从视口边缘滑入的浮层容器，承载临时性的�
 
 ### Props
 
-| 名称 | 类型 | 默认值 | 说明 |
-|---|---|---|---|
-| open | `boolean` | `false` | 受控显隐，配合 `on:openChange` |
-| placement | `'left' \| 'right' \| 'top' \| 'bottom'` | `'right'` | 滑入方向 |
-| size | `'small' \| 'default' \| 'large'` | `'default'` | 预设尺寸，被 width/height 覆盖 |
-| width | `number \| string` | — | left/right 时宽度，优先于 size |
-| height | `number \| string` | — | top/bottom 时高度，优先于 size |
-| title | `string` | — | 标题文案，未设则需用 slot 或 `aria-label` |
-| mask | `boolean` | `true` | 是否显示遮罩 |
-| maskClosable | `boolean` | `true` | 点击遮罩是否关闭（即 closeOnMaskClick） |
-| closeOnEsc | `boolean` | `true` | Esc 是否关闭（仅顶层响应） |
+> 本表由 `packages/svelte/src/side-sheet/meta.ts` 真源生成（2026-07-30 重校）。此前本表列的 prop 多为 Semi 对齐前的旧名或已删除项（如 `value`→`activeKey`、`change`→`onChange`），改 prop 时请同步 meta.ts，勿手写「规划中」的 prop。
+
+| Prop | 类型 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| visible | `boolean` | `false` | 面板是否可见（受控，不回写） |
+| placement | `'left'\|'right'\|'top'\|'bottom'` | `'right'` | 滑出位置 |
+| size | `'small'\|'medium'\|'large'` | `'small'` | 尺寸（448/684/920px），仅 left/right 生效 |
+| width | `number\|string` | `448` | left/right 宽度，数字按 px |
+| height | `number\|string` | `400` | top/bottom 高度，数字按 px |
+| title | `string` | `undefined` | 面板标题 |
+| titleSnippet | `Snippet` | `undefined` | 自定义标题区（覆盖 title）；对齐 Semi title(ReactNode) |
 | closable | `boolean` | `true` | 是否显示右上角关闭按钮 |
-| keyboard | `boolean` | `true` | 是否启用键盘交互总开关 |
-| destroyOnClose | `boolean` | `false` | 关闭时卸载内容（重置内部状态） |
-| getContainer | `() => HTMLElement` | `() => document.body` | 浮层挂载点 |
-| zIndex | `number` | — | 覆盖自动层级 |
-| returnFocusOnClose | `boolean` | `true` | 关闭后归还焦点到触发元素 |
-| disableScrollLock | `boolean` | `false` | 禁用 body 滚动锁定 |
-| className | `string` | — | 透传到 `__panel` |
-| style | `string` | — | 透传到 `__panel` |
-| ariaLabel | `string` | — | 无 title 时的可访问名 |
+| closeIcon | `Snippet\|null` | `IconClose` | 关闭按钮 icon |
+| closeOnEsc | `boolean` | `false` | 是否允许 Esc 关闭 |
+| mask | `boolean` | `true` | 是否显示遮罩；false 时允许操作外部区域 |
+| maskClosable | `boolean` | `true` | 是否允许点击遮罩关闭 |
+| disableScroll | `boolean` | `true` | 渲染在 body 层时是否禁止 body 滚动 |
+| keepDOM | `boolean` | `false` | 关闭时是否保留内部组件不销毁 |
+| getPopupContainer | `() => HTMLElement \| null` | `undefined` | 指定父级 DOM，弹层渲染至该 DOM |
+| zIndex | `number` | `1000` | 弹层 z-index |
+| motion | `boolean` | `true` | 是否允许动画 |
+| style | `string` | `undefined` | 面板根内联样式 |
+| bodyStyle | `string` | `undefined` | 内容区域内联样式 |
+| headerStyle | `string` | `undefined` | Header 区域内联样式 |
+| maskStyle | `string` | `undefined` | 遮罩内联样式 |
+| footer | `Snippet<[{ close: () => void }]>\|null` | `undefined` | Footer 操作区；提供 close() 关闭面板；未提供不渲染 |
+| children | `Snippet` | `undefined` | Body 主内容区（可滚动） |
+| aria-label | `string` | `undefined` | 无可见标题时提供 aria-label |
+| class | `string` | `undefined` | 根元素自定义类名 |
+| afterVisibleChange | `(isVisible: boolean) => void` | `undefined` | 展示/隐藏动画结束触发 |
+| onCancel | `(e: MouseEvent \| KeyboardEvent) => void` | `undefined` | 取消面板时的回调 |
+
+**事件**（回调 prop 形式，对齐 Semi）：
+
+| 事件 | 说明 |
+| --- | --- |
+| `onCancel` | 取消面板（关闭按钮 / 遮罩 / Esc），payload 为触发事件 |
+| `afterVisibleChange` | 面板展示/隐藏动画结束触发，payload 为当前是否可见 |
 
 ### Events
 
-| 名称 | payload | 说明 |
-|---|---|---|
-| on:openChange | `boolean` | 显隐变更意图（Esc/遮罩/关闭按钮触发），父组件据此更新 `open` |
-| on:close | `void` | 关闭动作发生（语义糖，等价 openChange(false)） |
-| on:afterEnter | `void` | 入场过渡结束（已完全展开） |
-| on:afterLeave | `void` | 出场过渡结束（DOM 卸载后），适合配合 destroyOnClose 清理 |
-| on:maskClick | `MouseEvent` | 遮罩被点击（无论 maskClosable 是否生效） |
+| 事件 | 说明 |
+| --- | --- |
+| `onCancel` | 取消面板（关闭按钮 / 遮罩 / Esc），payload 为触发事件 |
+| `afterVisibleChange` | 面板展示/隐藏动画结束触发，payload 为当前是否可见 |
 
 ### Slots
 

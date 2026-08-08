@@ -4,16 +4,15 @@
 </script>
 
 <Cascader
-  defaultValue={[
-    ['zhejiang', 'hangzhou', 'xihu'],
-    ['zhejiang', 'hangzhou', 'xiaoshan'],
-    ['zhejiang', 'ningbo', 'haishu'],
-  ]}
   style="width: 300px"
   {treeData}
   placeholder="请选择所在地区"
   multiple
-  maxTagCount={2}
   showRestTagsPopover={true}
   restTagsPopoverProps={{ position: 'top' }}
+  maxTagCount={1}
+  defaultValue={[
+    ['zhejiang', 'ningbo', 'haishu'],
+    ['zhejiang', 'hangzhou', 'xihu'],
+  ]}
 />

@@ -6,10 +6,17 @@
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
-  import { MESSAGE_STATUS, type Message, type Metadata, type Content } from '@chenzy-design/core';
-  import { IconBriefStroked } from '@chenzy-design/icons';
+  import {
+    MESSAGE_STATUS,
+    escapeHtmlInMarkdown,
+    type Message,
+    type Metadata,
+    type Content,
+  } from '@chenzy-design/core';
   import { MarkdownRender } from '../markdown-render/index.js';
   import ChatCode from './ChatCode.svelte';
+  import FileAttachment from './FileAttachment.svelte';
+  import ImageAttachment from './ImageAttachment.svelte';
   import type { RenderContentProps } from './types.js';
 
   interface Props {
@@ -21,6 +28,8 @@
     showBubble: boolean;
     markdownRenderProps?: Record<string, unknown> | undefined;
     renderChatBoxContent?: Snippet<[RenderContentProps]> | undefined;
+    /** 是否转义用户消息中的 HTML 标签（对齐 Semi escapeHtml，仅作用于 user 角色）。 */
+    escapeHtml?: boolean;
   }
 
   let {
@@ -32,9 +41,14 @@
     showBubble,
     markdownRenderProps,
     renderChatBoxContent,
+    escapeHtml = true,
   }: Props = $props();
 
-  const contentText = $derived(resolveText(message.content));
+  // 对齐 Semi chatBoxContent：仅 user 角色的消息做转义，助手输出的 markdown 原样渲染。
+  const shouldEscapeHtml = $derived(escapeHtml && isUser);
+  const contentText = $derived(
+    shouldEscapeHtml ? escapeHtmlInMarkdown(resolveText(message.content)) : resolveText(message.content),
+  );
   const contentAttachments = $derived(resolveAttachments(message.content));
 
   function resolveText(content: Message['content']): string {
@@ -83,29 +97,24 @@
       </div>
     {:else}
       {#if contentText}
-        <!-- 代码块用 chat 专属 ChatCode 覆盖（深色 topSlot + 语言标签 + 复制，对齐 Semi）。 -->
+        <!-- 代码块用 chat 专属 ChatCode 覆盖（深色 topSlot + 语言标签 + 复制，对齐 Semi chat/code.tsx 挂 code 键）。 -->
         <MarkdownRender
           raw={contentText}
           format="md"
-          components={{ pre: ChatCode }}
+          components={{ code: ChatCode }}
           {...markdownRenderProps}
         />
       {/if}
       {#each contentAttachments as att, i (i)}
         {#if att.type === 'image_url'}
-          <img class="cd-chat-attachment-img" src={att.image_url?.url} alt="" />
+          <ImageAttachment src={att.image_url?.url ?? ''} />
         {:else}
-          <a
-            class="cd-chat-attachment-file"
-            href={att.file_url?.url}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <IconBriefStroked class="cd-chat-attachment-file-icon" />
-            <div class="cd-chat-attachment-file-info">
-              <span class="cd-chat-attachment-file-title">{att.file_url?.name}</span>
-            </div>
-          </a>
+          <FileAttachment
+            url={att.file_url?.url}
+            name={att.file_url?.name}
+            size={att.file_url?.size}
+            type={att.file_url?.name?.split('.').pop() ?? att.file_url?.type?.split('/').pop()}
+          />
         {/if}
       {/each}
     {/if}
@@ -192,47 +201,19 @@
     }
   }
 
-  /* —— 附件（对齐 Semi -attachment-img/-file） —— */
-  .cd-chat-attachment-img {
-    border-radius: var(--cd-chat-attachment-img-radius);
-    vertical-align: top;
+  /* —— 附件（对齐 Semi chatBoxContent 场景覆盖：marginY/marginRight + 非默认背景色） ——
+       基础结构/圆角/内边距/文字色由 FileAttachment/ImageAttachment 组件自身承担，
+       此处仅覆盖消息正文场景专属的外边距与背景色（Semi chat.scss:239-250）。 */
+  .cd-chat-chatBox-content :global(.cd-chat-attachment-img),
+  .cd-chat-chatBox-content :global(.cd-chat-attachment-file) {
     margin-top: var(--cd-chat-chatBox-content-attachment-marginY);
     margin-bottom: var(--cd-chat-chatBox-content-attachment-marginY);
     margin-right: var(--cd-chat-chatBox-content-attachment-marginRight);
-    object-fit: cover;
-    max-width: 240px;
-    max-height: 240px;
   }
-  .cd-chat-attachment-file {
-    display: inline-flex;
-    flex-direction: row;
-    align-items: center;
-    height: var(--cd-chat-attachment-file-width);
-    column-gap: var(--cd-chat-attachment-file-columnGap);
-    padding: var(--cd-chat-attachment-file-padding);
-    border-radius: var(--cd-chat-attachment-file-radius);
+  .cd-chat-chatBox-content :global(.cd-chat-attachment-file) {
     background: var(--cd-chat-chatBox-other-attachment-file-bg);
-    text-decoration: none;
-    margin-top: var(--cd-chat-chatBox-content-attachment-marginY);
-    margin-bottom: var(--cd-chat-chatBox-content-attachment-marginY);
-    margin-right: var(--cd-chat-chatBox-content-attachment-marginRight);
   }
-  .cd-chat-chatBox-content-user .cd-chat-attachment-file {
+  .cd-chat-chatBox-content-user :global(.cd-chat-attachment-file) {
     background: var(--cd-chat-chatBox-user-attachment-file-bg);
-  }
-  .cd-chat-attachment-file :global(.cd-chat-attachment-file-icon) {
-    color: var(--cd-chat-attachment-file-icon);
-  }
-  .cd-chat-attachment-file-info {
-    display: flex;
-    flex-direction: column;
-  }
-  .cd-chat-attachment-file-title {
-    font-size: var(--cd-chat-attachment-file-title-font-size);
-    color: var(--cd-chat-attachment-file-title);
-    max-width: var(--cd-chat-attachment-file-title-width);
-    text-overflow: ellipsis;
-    overflow: hidden;
-    white-space: nowrap;
   }
 </style>

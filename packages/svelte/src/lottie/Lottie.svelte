@@ -50,6 +50,7 @@
     class?: string;
     /** 根节点内联样式。 */
     style?: string;
+    [key: string]: unknown;
   }
 
   let {
@@ -60,6 +61,7 @@
     getLottie: getLottieProp,
     class: className,
     style,
+    ...rest
   }: Props = $props();
 
   let containerEl = $state<HTMLDivElement | null>(null);
@@ -134,5 +136,5 @@
 
 <!-- params.container 存在 → 用户自管容器，组件不渲染 DOM（对齐 Semi 返回 null）。 -->
 {#if !params.container}
-  <div bind:this={containerEl} class={cls} style={wrapperStyle}></div>
+  <div bind:this={containerEl} class={cls} style={wrapperStyle} {...rest}></div>
 {/if}

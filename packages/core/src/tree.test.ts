@@ -275,7 +275,7 @@ describe('normalizeToLeaves', () => {
 describe('computeFilteredKeys', () => {
   it('expands ancestor chain of a match', () => {
     const { matched, expand } = computeFilteredKeys(data, (n) =>
-      n.label.includes('1-2-1'),
+      (n.label as string).includes('1-2-1'),
     );
     expect(matched.has('1-2-1')).toBe(true);
     expect(expand.has('1')).toBe(true);

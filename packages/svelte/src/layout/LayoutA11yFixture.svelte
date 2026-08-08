@@ -7,7 +7,7 @@
 </script>
 
 <Layout hasSider>
-  <Layout.Sider ariaLabel="主导航">Navigation</Layout.Sider>
+  <Layout.Sider aria-label="主导航">Navigation</Layout.Sider>
   <Layout>
     <Layout.Header>Page header</Layout.Header>
     <Layout.Content>Main content</Layout.Content>

@@ -27,9 +27,11 @@
     children?: Snippet;
     id?: string;
     /** 无可见标题时的可访问名称（role=list）。 */
-    ariaLabel?: string;
-    /** 关联组的可见标题元素 id（优先于 ariaLabel 体现可访问名）。 */
+    'aria-label'?: string;
+    /** 关联组的可见标题元素 id（对齐 Semi aria-labelledby，与 aria-label 不互斥，都可同时渲染）。 */
     ariaLabelledby?: string;
+    /** 关联组的辅助说明 id（对齐 Semi aria-describedby）。 */
+    ariaDescribedby?: string;
     /** 根容器内联样式（对齐 Semi style，可设 width 等）。 */
     style?: string;
     /** 根容器自定义类名（与内置 cd-checkboxGroup 并存，对齐 Semi className）。 */
@@ -47,8 +49,9 @@
     onChange,
     children,
     id,
-    ariaLabel,
+    'aria-label': ariaLabel,
     ariaLabelledby,
+    ariaDescribedby,
     style,
     class: className,
   }: Props = $props();
@@ -86,7 +89,8 @@
       commit(next);
     },
     getDisabled: () => disabled,
-    getName: () => name,
+    // 对齐 Semi checkboxGroupFoundation.getFormatName()：未传 name 时兜底 'default'（非 undefined）。
+    getName: () => name ?? 'default',
     getType: () => type,
   });
 
@@ -109,8 +113,9 @@
   {style}
   {id}
   role="list"
+  aria-label={ariaLabel}
   aria-labelledby={ariaLabelledby}
-  aria-label={ariaLabelledby ? undefined : ariaLabel}
+  aria-describedby={ariaDescribedby}
 >
   {#if options}
     {#each options as opt (normalize(opt).value)}

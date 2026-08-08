@@ -20,7 +20,7 @@ Anchor（锚点导航）用于在长页面内提供章节级目录与快速跳�
 
 ## 2. 设计语义
 
-- **结构**：根容器 `cd-anchor` + 滑轨 `cd-anchor__rail`（含跟随滑块 `cd-anchor__ink`）+ 链接列表 `cd-anchor__list` > 链接项 `cd-anchor__link`（激活态 `cd-anchor__link--active`，嵌套层级 `cd-anchor__link--level-{n}`）。
+- **结构**：根容器 `cd-anchor` + 滑轨 `cd-anchor-slide`（含跟随滑块 `cd-anchor-slide-bar`）+ 链接列表 `cd-anchor-link-wrapper` > 链接项 `cd-anchor-link`（激活态 `cd-anchor-link-title-active`，嵌套层级 `cd-anchor-link-level-{n}`）。
 - **视觉态**：default / hover / active（当前章节）/ focus-visible / disabled。active 项左侧滑块对齐文本基线，使用 `--cd-color-primary`。
 - **方位语义**：`position: sticky`（默认）使 Anchor 在滚动中固定；`affix` 控制是否启用 sticky。`direction: vertical | horizontal`，水平模式滑块改为底部下划线。
 - **层级缩进**：每级缩进步进由 `--cd-anchor-indent` 控制，保证嵌套可读。
@@ -48,21 +48,29 @@ Anchor（锚点导航）用于在长页面内提供章节级目录与快速跳�
 
 ### Props
 
+> 本表由 `packages/svelte/src/anchor/meta.ts` 真源生成（2026-07-30 重校）。此前本表列的 prop 多为 Semi 对齐前的旧名或已删除项（如 `value`→`activeKey`、`change`→`onChange`），改 prop 时请同步 meta.ts，勿手写「规划中」的 prop。
+
 | Prop | 类型 | 默认值 | 说明 |
-|---|---|---|---|
-| `value` | `string` | — | 受控的当前激活 link key（href/id）。配合 `on:change`。 |
-| `defaultValue` | `string` | — | 非受控初始激活项。 |
-| `direction` | `'vertical' \| 'horizontal'` | `'vertical'` | 排列方向；水平模式滑块为下划线。 |
-| `size` | `'small' \| 'default' \| 'large'` | `'default'` | 尺寸。 |
-| `affix` | `boolean \| { offsetTop?: number; offsetBottom?: number }` | `true` | 是否 sticky 固定及偏移。 |
-| `offsetTop` | `number` | `0` | 滚动/高亮计算的顶部偏移（避开固定头部），单位 px。 |
-| `bounds` | `number` | `5` | scroll-spy 触发的边界容差（px）。 |
-| `targetOffset` | `number` | `offsetTop` | 点击滚动时的额外目标偏移，缺省继承 `offsetTop`。 |
-| `getContainer` | `() => HTMLElement \| Window` | `() => window` | 自定义滚动监听/滚动容器。 |
-| `showInk` | `boolean` | `true` | 是否显示跟随滑块。 |
-| `scrollMotion` | `boolean` | `true` | 点击是否平滑滚动（reduced-motion 下强制 false）。 |
-| `updateHash` | `boolean` | `true` | 激活变更时是否同步 location.hash（不触发跳转）。 |
-| `class` | `string` | — | 根节点附加类名。 |
+| --- | --- | --- | --- |
+| autoCollapse | `boolean` | `false` | 滚动时动态展示下一级锚点（对齐 Semi）；默认全展开 |
+| class | `string` | `undefined` | 根类名（对齐 Semi className） |
+| defaultAnchor | `string` | `''` | 默认高亮锚点 href（对齐 Semi defaultAnchor 1.20.0） |
+| getContainer | `() => HTMLElement \| Window \| null` | `window` | 指定滚动容器（对齐 Semi）；缺省 window |
+| maxHeight | `string \| number` | `'750px'` | 组件 max-height，超出滚动（数字转 px，对齐 Semi） |
+| maxWidth | `string \| number` | `'200px'` | 组件 max-width，超出 ellipsis（数字转 px，对齐 Semi） |
+| offsetTop | `number` | `0` | 滚动偏移触发 Link 切换（对齐 Semi） |
+| position | `Placement` | `undefined` | Tooltip 显示位置；仅 showTooltip 时生效（对齐 Semi） |
+| railTheme | `'primary' \| 'tertiary' \| 'muted'` | `'primary'` | 滑轨主题色（对齐 Semi）；muted 隐藏滑轨 |
+| scrollMotion | `boolean` | `false` | 是否开启滚动动画（对齐 Semi）；reduced-motion 下强制即时 |
+| showTooltip | `boolean \| { type: 'tooltip' \| 'popover'; opts?: Record<string, unknown> }` | `false` | 文字缩略时显示 Tooltip 及配置（对齐 Semi 2.36.0 object 形式） |
+| size | `'small' \| 'default'` | `'default'` | 锚点尺寸（对齐 Semi） |
+| style | `string` | `undefined` | 根节点自定义内联样式（对齐 Semi） |
+| targetOffset | `number` | `0` | 锚点滚动时距顶部偏移量（对齐 Semi 1.9.0） |
+| onChange | `(currentLink: string, previousLink: string) => void` | `undefined` | 改变锚点回调（对齐 Semi：href 字符串） |
+| onClick | `(event: MouseEvent, currentLink: string) => void` | `undefined` | 点击锚点回调（对齐 Semi：event + href 字符串） |
+| aria-label | `string` | `undefined` | 根 nav aria-label（缺省走 locale） |
+
+**子组件**：`Anchor.Link`
 
 #### AnchorLink Props
 
@@ -71,15 +79,12 @@ Anchor（锚点导航）用于在长页面内提供章节级目录与快速跳�
 | `href` | `string` | 必填 | 目标锚点，如 `#section-1`，作为 link key。 |
 | `title` | `string` | — | 链接显示文本（也可用默认插槽）。 |
 | `disabled` | `boolean` | `false` | 禁用该链接（不可点击/不参与高亮）。 |
-| `target` | `string \| HTMLElement` | 由 `href` 解析 | 显式指定滚动目标，覆盖按 href 查找。 |
+> 注：`target` **未实现**（2026-07-30 重校）——滚动目标一律按 `href` 查找；容器用 `getContainer`、
+> 偏移用 `targetOffset`（见主表）。
 
 ### Events
 
-| Event | Payload | 说明 |
-|---|---|---|
-| `on:change` | `{ value: string; prevValue?: string }` | 激活项变更（点击或 scroll-spy 触发）。 |
-| `on:click` | `{ value: string; href: string; event: MouseEvent }` | 用户点击某 link（可 `preventDefault` 阻止默认滚动）。 |
-| `on:scrollEnd` | `{ value: string }` | 平滑滚动到目标完成。 |
+> 本组件无事件回调 prop（meta.events 为空）。此前本表列的回调均未实现，已删。
 
 ### Slots
 
@@ -130,7 +135,7 @@ Anchor（锚点导航）用于在长页面内提供章节级目录与快速跳�
 - 用户可见文案零硬编码，经 i18n provider 注入。
 - i18n key：
   - `Anchor.ariaLabel`（默认 "页面导航" / "Page navigation"，根 nav 标签）。
-  - `Anchor.currentAnnounce`（播报模板，含 `{title}` 占位）。
+  - `Anchor.ariaLabel`（`<nav>` 可访问名）。当前 Anchor slice 仅此一键；「当前锚点」播报未实现（无 `currentAnnounce` 键）。
 - 链接 `title` 由业务传入，不属于库内置文案。
 - 数字/偏移为像素值，无需 Intl；若未来展示「第 N 节」序号，用 `Intl.NumberFormat` 本地化。
 - RTL：方向键语义与滑块定位随 `dir` 自适应（见第 6/5 节）。

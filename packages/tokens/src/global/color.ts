@@ -186,11 +186,135 @@ export const palette = {
   'violet-8': '#361c8a',
   'violet-9': '#281475',
   // 纯黑/纯白基元（对齐 Semi $white / $black = 255,255,255 / 0,0,0，供反色文字等直接消费）
+  // —— AI purple（镜像 Semi --semi-ai-purple-0..9）——
+  'ai-purple-0': '#f8edff',
+  'ai-purple-1': '#f2daff',
+  'ai-purple-2': '#e3b5ff',
+  'ai-purple-3': '#d191ff',
+  'ai-purple-4': '#bd6cff',
+  'ai-purple-5': '#a647ff',
+  'ai-purple-6': '#8636db',
+  'ai-purple-7': '#6928b8',
+  'ai-purple-8': '#4e1c94',
+  'ai-purple-9': '#361270',
+  // —— AI general 渐变停靠点（镜像 Semi --semi-ai-general-<档>-<停靠点>）——
+  // 档 0
+  'ai-general-0-0': '#fff2ff',
+  'ai-general-0-1': '#f8edff',
+  'ai-general-0-2': '#f4f4ff',
+  'ai-general-0-3': '#eff7ff',
+  // 档 1
+  'ai-general-1-0': '#ffdafe',
+  'ai-general-1-1': '#f2daff',
+  'ai-general-1-2': '#dfe0ff',
+  'ai-general-1-3': '#d5ebff',
+  // 档 2
+  'ai-general-2-0': '#feb5ff',
+  'ai-general-2-1': '#e3b5ff',
+  'ai-general-2-2': '#c1c0ff',
+  'ai-general-2-3': '#abd5ff',
+  // 档 3
+  'ai-general-3-0': '#f98fff',
+  'ai-general-3-1': '#d191ff',
+  'ai-general-3-2': '#a3a0ff',
+  'ai-general-3-3': '#82beff',
+  // 档 4
+  'ai-general-4-0': '#f26aff',
+  'ai-general-4-1': '#bd6cff',
+  'ai-general-4-2': '#8681ff',
+  'ai-general-4-3': '#58a6ff',
+  // 档 5
+  'ai-general-5-0': '#e945ff',
+  'ai-general-5-1': '#a647ff',
+  'ai-general-5-2': '#6b61ff',
+  'ai-general-5-3': '#2e8cff',
+  // 档 6
+  'ai-general-6-0': '#c235db',
+  'ai-general-6-1': '#8636db',
+  'ai-general-6-2': '#584ddb',
+  'ai-general-6-3': '#2172db',
+  // 档 7
+  'ai-general-7-0': '#9d27b8',
+  'ai-general-7-1': '#6928b8',
+  'ai-general-7-2': '#473bb8',
+  'ai-general-7-3': '#1659b8',
+  // 档 8
+  'ai-general-8-0': '#791b94',
+  'ai-general-8-1': '#4e1c94',
+  'ai-general-8-2': '#372b94',
+  'ai-general-8-3': '#0d4394',
+  // 档 9
+  'ai-general-9-0': '#581170',
+  'ai-general-9-1': '#361270',
+  'ai-general-9-2': '#281d70',
+  'ai-general-9-3': '#072f70',
   white: 'rgba(255, 255, 255, 1)',
   black: 'rgba(0, 0, 0, 1)',
 } as const;
 
 export type GlobalColorKey = keyof typeof palette;
+
+/**
+ * AI general 渐变档位 —— 镜像 Semi `--semi-ai-general-0..9`（_palette.scss:227-236）。
+ *
+ * Semi 把它拆成两层：先有 4 个停靠点 `ai-general-<档>-<0..3>`，再由它们
+ * **组合**出该档的 `linear-gradient`；语义色 `--semi-color-ai-general` 再指向 `ai-general-5`。
+ * 本库此前把三层压成一条写死的 gradient 字面量，主题定制无法改其中任何一档。
+ * 这里补回中间层：值是引用停靠点变量的 gradient，与 Semi 同构。
+ *
+ * 角度 278deg 与 0/30/60/100% 的停靠比例均照抄 Semi。
+ */
+const AI_GENERAL_STEPS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9] as const;
+
+export const aiGeneralGradients = Object.fromEntries(
+  AI_GENERAL_STEPS.map((n) => [
+    `ai-general-${n}`,
+    `linear-gradient(278deg, var(--cd-color-ai-general-${n}-0) 0%, var(--cd-color-ai-general-${n}-1) 30%, var(--cd-color-ai-general-${n}-2) 60%, var(--cd-color-ai-general-${n}-3) 100%)`,
+  ]),
+) as Record<`ai-general-${(typeof AI_GENERAL_STEPS)[number]}`, string>;
+
+/**
+ * 一条「指向色板的引用」，而不是把色值抄一份。
+ *
+ * ## 为什么必须是引用
+ *
+ * Semi 的语义色是 `--semi-color-primary: rgba(var(--semi-blue-5), 1)` —— 运行时
+ * **真的**指向色板变量。所以用户覆盖 `--semi-blue-5` 时，primary 及其所有下游会跟着变，
+ * 这正是「换一个品牌色即换肤」的机制。
+ *
+ * 本库此前写 `'color-primary': palette['blue-5']`，TS 里看着是引用，
+ * 但那是**取值**——构建后产物是 `--cd-color-primary: #0064fa`，引用关系在编译期就没了。
+ * 实测（2026-07-31，本库文档站 + Semi 官网双侧验证）：
+ *   覆盖 `--cd-color-blue-5` → 本库 `--cd-color-primary` **不动**；
+ *   覆盖 `--semi-blue-5`     → Semi `--semi-color-primary` **跟随**。
+ * 即本库的主题定制在语义层是断的，属真实功能缺陷而非记法差异。
+ *
+ * 用 `ref('blue-5')` 声明后，构建产物为 `var(--cd-color-blue-5)`，
+ * 与 Semi 同构；`.value` 保留解析后的字面值，供对比度检查等需要真实色值的地方使用。
+ */
+export interface TokenRef {
+  readonly __ref: GlobalColorKey;
+  /** 解析后的 light 主题字面值（对比度检查等用）。 */
+  readonly value: string;
+  /** 构建期输出的 CSS 值。 */
+  readonly css: string;
+}
+
+export function ref(key: GlobalColorKey): TokenRef {
+  return {
+    __ref: key,
+    value: palette[key],
+    css: `var(--cd-color-${key})`,
+  };
+}
+
+/** 取一个「值或引用」的字面色值（引用则解析到对应主题色板）。 */
+export function resolveRef(v: string | TokenRef, dark = false): string {
+  if (typeof v === 'string') return v;
+  if (!dark) return v.value;
+  const dk = v.__ref as Exclude<GlobalColorKey, 'white' | 'black'>;
+  return paletteDark[dk] ?? v.value;
+}
 
 /**
  * Dark-mode palette —— 对齐 Semi `body[theme-mode="dark"]` 的整套色阶反转
@@ -360,4 +484,66 @@ export const paletteDark: Record<Exclude<GlobalColorKey, 'white' | 'black'>, str
   'violet-7': '#beade9',
   'violet-8': '#ddd4f4',
   'violet-9': '#f1eefa',
+  // —— AI purple（镜像 Semi --semi-ai-purple-0..9）——
+  'ai-purple-0': '#3a1770',
+  'ai-purple-1': '#532394',
+  'ai-purple-2': '#6f31b8',
+  'ai-purple-3': '#8d41db',
+  'ai-purple-4': '#a744ff',
+  'ai-purple-5': '#c375ff',
+  'ai-purple-6': '#d598ff',
+  'ai-purple-7': '#e5baff',
+  'ai-purple-8': '#f3ddff',
+  'ai-purple-9': '#fbf3ff',
+  // —— AI general 渐变停靠点（镜像 Semi --semi-ai-general-<档>-<停靠点>）——
+  // 档 0
+  'ai-general-0-0': '#092c64',
+  'ai-general-0-1': '#271d6c',
+  'ai-general-0-2': '#3a1770',
+  'ai-general-0-3': '#501265',
+  // 档 1
+  'ai-general-1-0': '#114088',
+  'ai-general-1-1': '#362b90',
+  'ai-general-1-2': '#532394',
+  'ai-general-1-3': '#711c89',
+  // 档 2
+  'ai-general-2-0': '#1a56ac',
+  'ai-general-2-1': '#463bb4',
+  'ai-general-2-2': '#6f31b8',
+  'ai-general-2-3': '#9429ad',
+  // 档 3
+  'ai-general-3-0': '#266fcf',
+  'ai-general-3-1': '#584ed7',
+  'ai-general-3-2': '#8d41db',
+  'ai-general-3-3': '#b937d0',
+  // 档 4
+  'ai-general-4-0': '#237ff0',
+  'ai-general-4-1': '#5e54f8',
+  'ai-general-4-2': '#a744ff',
+  'ai-general-4-3': '#db38f1',
+  // 档 5
+  'ai-general-5-0': '#5ba2f5',
+  'ai-general-5-1': '#8681fc',
+  'ai-general-5-2': '#c375ff',
+  'ai-general-5-3': '#ea6bf6',
+  // 档 6
+  'ai-general-6-0': '#83bbf8',
+  'ai-general-6-1': '#a3a0fd',
+  'ai-general-6-2': '#d598ff',
+  'ai-general-6-3': '#f38ff8',
+  // 档 7
+  'ai-general-7-0': '#acd2fa',
+  'ai-general-7-1': '#c0c0fd',
+  'ai-general-7-2': '#e5baff',
+  'ai-general-7-3': '#f9b4fb',
+  // 档 8
+  'ai-general-8-0': '#d5e9fd',
+  'ai-general-8-1': '#dfdffe',
+  'ai-general-8-2': '#f3ddff',
+  'ai-general-8-3': '#fdd9fc',
+  // 档 9
+  'ai-general-9-0': '#eff7fe',
+  'ai-general-9-1': '#f4f4ff',
+  'ai-general-9-2': '#fbf3ff',
+  'ai-general-9-3': '#fef1fe',
 } as const;

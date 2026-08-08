@@ -3,7 +3,6 @@ title: Toast 提示
 name: toast
 category: feedback
 brief: Toast 提示是对用户的操作做出及时反馈，由用户的操作触发，反馈信息可以是操作的结果状态，如成功、失败、出错、警告等。
-docMode: inline
 ---
 
 <script>

@@ -1,29 +1,44 @@
 <script lang="ts">
-  import { ConfigProvider, Select, DatePicker, TimePicker, Text } from '@chenzy-design/svelte';
+  // 严格复刻 Semi「基本用法」：通过 timeZone 参数为时间类组件配置时区。
+  // GMT 列表按 Semi 原样从 -11 到 +14 逐时生成（两位补零）。
+  import { ConfigProvider, Select, DatePicker, TimePicker } from '@chenzy-design/svelte';
 
-  // 对齐 Semi 基本用法：通过 timeZone 为时间类组件统一配置时区，
-  // 切换时区后 DatePicker / TimePicker 的显示文案随之按新时区呈现。
   let timeZone = $state('GMT+08:00');
   const defaultTimestamp = new Date(1581599305265);
 
   const gmtList: { label: string; value: string }[] = [];
   for (let hourOffset = -11; hourOffset <= 14; hourOffset++) {
     const prefix = hourOffset >= 0 ? '+' : '-';
-    const h = Math.abs(hourOffset);
-    const gmt = `GMT${prefix}${String(h).padStart(2, '0')}:00`;
+    const hOffset = Math.abs(hourOffset);
+    const gmt = `GMT${prefix}${String(hOffset).padStart(2, '0')}:00`;
     gmtList.push({ label: gmt, value: gmt });
   }
 </script>
 
-<Text type="tertiary"
-  >传入 <code>timeZone</code> 参数，为时间类组件统一配置时区；切换下方时区观察 DatePicker /
-  TimePicker 的显示随之变化。</Text
->
-
 <ConfigProvider {timeZone}>
-  <div style="width:300px; margin-top:12px; display:flex; flex-direction:column; gap:16px">
-    <Select optionList={gmtList} value={timeZone} onChange={(v) => (timeZone = v as string)} />
-    <DatePicker type="dateTime" value={defaultTimestamp} />
-    <TimePicker value={defaultTimestamp} />
+  <div style="width: 300px">
+    <h5 style="margin: 10px">Select Time Zone:</h5>
+    <Select
+      placeholder="请选择时区"
+      style="width: 300px"
+      value={timeZone}
+      showClear={true}
+      optionList={gmtList}
+      onChange={(value) => (timeZone = value as string)}
+    />
+    <br />
+    <br />
+    <DatePicker
+      type="dateTime"
+      defaultValue={defaultTimestamp}
+      onChange={(date, dateString) => console.log('DatePicker changed: ', date, dateString)}
+    />
+    <br />
+    <br />
+    <!-- 本库 TimePicker 的 onChange 只回传值（单参），DatePicker 才是 (date, dateString) 两参。 -->
+    <TimePicker
+      defaultValue={defaultTimestamp}
+      onChange={(date) => console.log('TimePicker changed: ', date)}
+    />
   </div>
 </ConfigProvider>

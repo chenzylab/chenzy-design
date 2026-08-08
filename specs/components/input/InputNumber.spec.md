@@ -17,7 +17,7 @@ InputNumber 是受约束的数值输入控件，在原生 `<input>` 之上增加
 
 ## 2. 设计语义
 
-- **结构**：外层 `cd-input-number`（行内块容器，承载 border/状态/尺寸），内部依次为可选前缀 `prefix`、`<input>`、步进控制 `cd-input-number__actions`（上下两枚按钮 stacked，或 `controlsPosition="sides"` 时左右排布）。`innerButtons` 模式下按钮悬浮于输入区右内侧（hover/focus 显形）。
+- **结构**：外层 `cd-input-number`（行内块容器，承载 border/状态/尺寸），内部依次为可选前缀 `prefix`、`<input>`、步进控制 `cd-input-number-suffix-btns`（上下两枚按钮 stacked，或 `controlsPosition="sides"` 时左右排布）。`innerButtons` 模式下按钮悬浮于输入区右内侧（hover/focus 显形）。
 - **尺寸**：`small`(28px) / `default`(32px) / `large`(40px)，高度、内边距、字号、步进按钮宽度均由 token 派生，与 Input 完全对齐保证表单同行视觉一致。
 - **状态语义**：default / warning / error 对应 `--cd-color-border` / `--cd-color-warning` / `--cd-color-danger`；hover 加深边框，focus 显示 `--cd-color-primary` 边框 + focus ring；disabled 降透明度并禁用全部交互；readonly 保留选中复制但禁步进。
 - **步进按钮态**：当 `value` 达到 `max` 时「+」按钮 disabled，达到 `min` 时「−」disabled，提供到边界的明确反馈。长按按钮触发加速重复步进（首次延迟 → 加速间隔）。
@@ -45,57 +45,80 @@ InputNumber 是受约束的数值输入控件，在原生 `<input>` 之上增加
 
 ### Props
 
+> 本表由 `packages/svelte/src/input-number/meta.ts` 真源生成（2026-07-30 重校）。此前本表列的 prop 多为 Semi 对齐前的旧名或已删除项（如 `value`→`activeKey`、`change`→`onChange`），改 prop 时请同步 meta.ts，勿手写「规划中」的 prop。
+
 | Prop | 类型 | 默认值 | 说明 |
-|---|---|---|---|
-| `value` | `number \| null` | `null` | 受控值。配合 `on:change`。 |
-| `defaultValue` | `number \| null` | `null` | 非受控初始值。 |
-| `min` | `number` | `-Infinity` | 最小值（含）。 |
-| `max` | `number` | `Infinity` | 最大值（含）。 |
-| `step` | `number` | `1` | 步进基数，支持小数（如 `0.1`）。 |
-| `shiftStep` | `number` | `step * 10` | 按住 Shift 步进时的步长。 |
-| `precision` | `number` | `undefined` | 保留小数位数；定义后失焦自动 round。 |
-| `boundaryMode` | `'clamp' \| 'strict'` | `'clamp'` | 越界处理：钳制 or 拒绝回滚。 |
-| `formatter` | `(value: number) => string` | `undefined` | 数值→显示串（千分位/货币/百分比）。 |
-| `parser` | `(text: string) => number` | `undefined` | 显示串→数值，须与 formatter 逆向对应。 |
-| `keyboard` | `boolean` | `true` | 是否启用 ↑↓/PageUp/Down 步进。 |
-| `mouseWheel` | `boolean` | `false` | 聚焦时滚轮是否步进。 |
-| `controls` | `boolean` | `true` | 是否显示步进按钮。 |
-| `controlsPosition` | `'sides' \| 'right'` | `'right'` | 步进按钮布局（右侧 stacked / 两侧）。 |
-| `innerButtons` | `boolean` | `false` | 按钮内嵌悬浮（hover/focus 显形）。 |
-| `size` | `'small' \| 'default' \| 'large'` | `'default'` | 尺寸。 |
-| `status` | `'default' \| 'warning' \| 'error'` | `'default'` | 校验态。 |
-| `disabled` | `boolean` | `false` | 禁用。 |
-| `readonly` | `boolean` | `false` | 只读（可复制，禁步进）。 |
-| `prefix` | `string \| Snippet` | — | 输入框前置内容（如 `$`、单位）。 |
-| `suffix` | `string \| Snippet` | — | 输入框后置内容（如 `%`）。 |
-| `placeholder` | `string` | — | 占位提示。 |
-| `id` | `string` | 自动生成 | input 元素 id，关联外部 label。 |
-| `name` | `string` | — | 表单字段名。 |
-| `ariaLabel` | `string` | — | 无可见 label 时的可访问名。 |
-| `autofocus` | `boolean` | `false` | 挂载自动聚焦。 |
-| `selectOnFocus` | `boolean` | `false` | 聚焦时全选文本。 |
-| `locale` | `string` | 继承 ConfigProvider | 格式化 locale，传给内部 `Intl`。 |
-| `hideButtons` | `boolean` | `false` | 彻底隐藏步进按钮（对齐 Semi；优先于 controls）。 |
-| `preventScroll` | `boolean` | `false` | 命令式 `focus()` 时是否阻止滚动文档（对齐 Semi）。 |
-| `pressTimeout` | `number` | `250` | 长按后延迟多久开始连续步进（ms，对齐 Semi）。 |
-| `pressInterval` | `number` | `250` | 长按连续步进的间隔（ms，对齐 Semi）。 |
-| `scientificNotation` | `boolean \| { threshold?: number }` | `false` | 失焦时超阈值（默认 15 位）显示科学计数法，聚焦显示完整数字；仅影响显示，onChange/onNumberChange 仍为完整 number（对齐 Semi）。 |
-| `currency` | `boolean \| string` | `false` | 货币展示：`true` 按 localeCode 自动推断币种，字符串（`CNY`/`EUR`/`USD`/`JPY`…）指定币种码。用 `Intl.NumberFormat` currency 格式化，仅显示层，值仍为完整 number。与 scientificNotation 互斥（currency 优先）。（对齐 Semi） |
-| `currencyDisplay` | `'symbol' \| 'code' \| 'name'` | `'symbol'` | 货币展示方式：符号 ￥ / 代码 CNY / 名称 人民币（对齐 Semi）。 |
-| `localeCode` | `string` | — | 货币格式化 BCP-47 locale（`zh-CN`/`de-DE`/`ja-JP`…），决定千分位/小数位/符号位置；回退 `locale` 再回退 `zh-CN`（对齐 Semi）。 |
-| `showCurrencySymbol` | `boolean` | `true` | `false` 时隐藏内置货币符号/代码/名称（改用 decimal 千分位），供 prefix/suffix 自行展示（对齐 Semi）。 |
+| --- | --- | --- | --- |
+| value | `number \| null` | `undefined` | 受控值；提供则为受控 |
+| defaultValue | `number \| null` | `null` | 非受控初始值 |
+| min | `number` | `-Infinity` |  |
+| max | `number` | `Infinity` |  |
+| step | `number` | `1` |  |
+| shiftStep | `number` | `10` | Shift+↑↓ / PageUp·Down 步长（对齐 Semi 恒 10） |
+| precision | `number` | `undefined` | 失焦四舍五入保留小数位 |
+| formatter | `(n: number) => string` | `undefined` | 自定义显示格式化（仅非编辑态） |
+| parser | `(s: string) => number` | `undefined` | 自定义解析 |
+| size | `'small'\|'default'\|'large'` | `default` |  |
+| disabled | `boolean` | `false` |  |
+| readonly | `boolean` | `false` |  |
+| validateStatus | `'default'\|'error'\|'warning'\|'success'` | `default` | 校验状态（对齐 Semi InputProps validateStatus） |
+| innerButtons | `boolean` | `false` | 步进按钮内嵌悬浮（hover/focus 显形） |
+| hideButtons | `boolean` | `false` | 彻底隐藏步进按钮 |
+| placeholder | `string` | `undefined` |  |
+| prefix | `string \| Snippet` | `undefined` | 输入框前置内容（如货币符号、单位） |
+| insetLabel | `string \| Snippet` | `undefined` | 内嵌标签（与 prefix 同槽，对齐 Semi insetLabel） |
+| insetLabelId | `string` | `undefined` | 内嵌标签容器 id（对齐 Semi insetLabelId） |
+| suffix | `string \| Snippet` | `undefined` | 输入框后置内容（如单位 %、kg） |
+| name | `string` | `undefined` |  |
+| id | `string` | `自动生成` | input 元素 id，关联外部 label |
+| aria-label | `string` | `undefined` |  |
+| autofocus | `boolean` | `false` | 挂载自动聚焦 |
+| locale | `string` | `undefined` | 数字格式化 locale（仅未提供 formatter 时生效） |
+| borderless | `boolean` | `false` | 无边框模式 |
+| showClear | `boolean` | `false` | 显示清除按钮（有值时出现 ×） |
+| clearIcon | `Snippet` | `undefined` | 自定义清除图标 |
+| keepFocus | `boolean` | `false` | 点击 +/- 按钮后保持输入框聚焦 |
+| onChange | `(value: number \| string \| null, e?: Event) => void` | `undefined` | 值变化：货币/formatter 模式回字符串，其余回 number，空回 null（对齐 Semi） |
+| onNumberChange | `(value: number \| null, e?: Event) => void` | `undefined` | 携带 number 类型的变化回调（对齐 Semi） |
+| onUpClick | `(value: number \| null, e: MouseEvent) => void` | `undefined` | 点击「+」按钮回调（对齐 Semi） |
+| onDownClick | `(value: number \| null, e: MouseEvent) => void` | `undefined` | 点击「-」按钮回调（对齐 Semi） |
+| onFocus | `(e: FocusEvent) => void` | `undefined` | 聚焦 |
+| onBlur | `(e: FocusEvent) => void` | `undefined` | 失焦（已完成 commit 归一化） |
+| onKeyDown | `(e: KeyboardEvent) => void` | `undefined` | 透传原生 keydown（对齐 Semi onKeyDown） |
+| preventScroll | `boolean` | `false` | 命令式 focus() 时是否阻止滚动文档（对齐 Semi） |
+| pressTimeout | `number` | `250` | 长按后延迟多久开始连续步进（ms，对齐 Semi） |
+| pressInterval | `number` | `250` | 长按连续步进的间隔（ms，对齐 Semi） |
+| scientificNotation | `boolean \| { threshold?: number }` | `false` | 失焦时超阈值（默认 15 位）显示科学计数法，聚焦显示完整数字；仅影响显示（对齐 Semi） |
+| currency | `boolean \| string` | `false` | 货币展示：true 按 localeCode 推断币种，字符串指定 ISO 4217 币种码；仅显示层（对齐 Semi） |
+| currencyDisplay | `'symbol'\|'code'\|'name'` | `'symbol'` | 货币展示方式：符号 ￥ / 代码 CNY / 名称 人民币（对齐 Semi） |
+| localeCode | `string` | `undefined` | 货币格式化 BCP-47 locale；回退 locale 再回退 zh-CN（对齐 Semi） |
+| showCurrencySymbol | `boolean` | `true` | false 时隐藏内置货币符号/代码/名称（用 decimal 千分位）（对齐 Semi） |
+| class | `string` | `undefined` | 根节点自定义类名（对齐 Semi className） |
+| style | `string` | `undefined` | 根节点自定义内联样式（对齐 Semi style） |
+
+**事件**（回调 prop 形式，对齐 Semi）：
+
+| 事件 | 说明 |
+| --- | --- |
+| `change` | 归一化后值变化（受控核心事件） |
+| `numberChange` | 携带 number 类型的变化回调 |
+| `upClick` | 点击「+」按钮 |
+| `downClick` | 点击「-」按钮 |
+| `focus` | 聚焦 |
+| `blur` | 失焦（已完成 commit 归一化） |
+| `keyDown` | 透传原生 keydown |
 
 ### Events
 
-| Event | payload | 触发时机 |
-|---|---|---|
-| `change` | `{ value: number \| null }` | 归一化后值变化（step/commit/setValue）。受控核心事件。 |
-| `input` | `{ value: number \| null, displayValue: string }` | 每次键入（中间态可能 value 为旧值）。 |
-| `step` | `{ value: number, direction: 'up' \| 'down', source: 'button' \| 'keyboard' \| 'wheel' }` | 任一步进动作完成。 |
-| `blur` | `FocusEvent` | 失焦（已完成 commit 归一化）。 |
-| `focus` | `FocusEvent` | 聚焦。 |
-| `boundaryHit` | `{ boundary: 'min' \| 'max', value: number }` | 触达/试图越过边界。 |
-| `keydown` | `KeyboardEvent` | 透传原生（便于使用方扩展，如 Enter 提交表单）。 |
+| 事件 | 说明 |
+| --- | --- |
+| `change` | 归一化后值变化（受控核心事件） |
+| `numberChange` | 携带 number 类型的变化回调 |
+| `upClick` | 点击「+」按钮 |
+| `downClick` | 点击「-」按钮 |
+| `focus` | 聚焦 |
+| `blur` | 失焦（已完成 commit 归一化） |
+| `keyDown` | 透传原生 keydown |
 
 ### Slots（Snippets）
 
@@ -162,14 +185,13 @@ InputNumber 是受约束的数值输入控件，在原生 `<input>` 之上增加
 - 用户可见文案零硬编码，全部走 i18n。数字格式化用 `Intl.NumberFormat(locale, options)`，默认 `formatter`（启用千分位时）经其生成；`parser` 默认按 locale 的分组符/小数点解析（如 `1.234,56` vs `1,234.56`），避免硬编码 `,`/`.`。
 - locale 来源优先级：`locale` prop > ConfigProvider > 文档 `lang` > `'en'`。
 
-| i18n key | 默认（en） | 用途 |
-|---|---|---|
-| `InputNumber.increment` | "Increase value" | 「+」按钮 aria-label |
-| `InputNumber.decrement` | "Decrease value" | 「−」按钮 aria-label |
-| `InputNumber.atMax` | "Maximum value reached" | 触达 max 播报 |
-| `InputNumber.atMin` | "Minimum value reached" | 触达 min 播报 |
-| `InputNumber.invalid` | "Invalid number" | 解析失败提示（可选） |
-| `InputNumber.valueText` | "{value}" | valuetext 模板（带单位时 "{value} {unit}"） |
+> 本表由 `packages/locale/src/zh_CN.ts` 真源生成（2026-07-30 重校）。键名与键值都是 Semi 契约，勿手写「规划中」的键——历史上本表列过大量从未实现的键名，见 [[locale-dangling-keys-render-raw-key]]。
+
+| i18n key | 默认（zh-CN） |
+| --- | --- |
+| `InputNumber.increase` | 增加 |
+| `InputNumber.decrease` | 减少 |
+| `InputNumber.clampedAnnounce` | 已调整为 {value} |
 
 ## 8. 文案
 

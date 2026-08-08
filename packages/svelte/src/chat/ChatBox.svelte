@@ -18,6 +18,8 @@
     type ChatMode,
   } from '@chenzy-design/core';
   import { useLocale } from '../locale-provider/index.js';
+  import Divider from '../divider/Divider.svelte';
+  import type { ToastHookApi } from '../toast/index.js';
   import ChatBoxAvatar from './ChatBoxAvatar.svelte';
   import ChatBoxTitle from './ChatBoxTitle.svelte';
   import ChatBoxContent from './ChatBoxContent.svelte';
@@ -32,11 +34,17 @@
 
   interface Props {
     message: Message;
+    /** 上一条消息（对齐 Semi previousMessage，用于计算 continueSend：连续同角色折叠 title）。 */
+    previousMessage?: Message | undefined;
     role?: Metadata | undefined;
     align?: ChatAlign;
     mode?: ChatMode;
+    /** 局部 Toast 实例（对齐 Semi chatContent.tsx Toast.useToast() 一路透传）。 */
+    toast?: ToastHookApi | undefined;
     lastChat?: boolean;
     markdownRenderProps?: Record<string, unknown> | undefined;
+    /** 是否转义用户消息中的 HTML 标签（对齐 Semi escapeHtml）。 */
+    escapeHtml?: boolean;
     onMessageCopy?: ((message: Message) => void) | undefined;
     onMessageDelete?: ((message: Message) => void) | undefined;
     onMessageReset?: ((message: Message) => void) | undefined;
@@ -52,11 +60,14 @@
 
   let {
     message,
+    previousMessage,
     role,
     align = CHAT_ALIGN.LEFT_RIGHT,
     mode = CHAT_MODE.BUBBLE,
+    toast,
     lastChat = false,
     markdownRenderProps,
+    escapeHtml = true,
     onMessageCopy,
     onMessageDelete,
     onMessageReset,
@@ -83,6 +94,10 @@
   );
   // 右侧布局：user + leftRight（对齐 Semi chatBox-right）。
   const isRight = $derived(isUser && align === CHAT_ALIGN.LEFT_RIGHT);
+  // 连续同角色消息（对齐 Semi continueSend）：title 不重复渲染；
+  // avatar 挂 -avatar-hidden class 做 visibility:hidden（对齐 Semi chat.scss:142-144，
+  // 保留布局占位、仅视觉隐藏，非 display:none）。
+  const continueSend = $derived(message.role === previousMessage?.role);
 
   const title = $derived(role?.name ?? message.name ?? message.role ?? '');
 
@@ -104,9 +119,7 @@
   {#if renderDivider}
     {@render renderDivider(message)}
   {:else}
-    <div class="cd-chat-divider" role="separator">
-      {loc().t('Chat.clearContext')}
-    </div>
+    <Divider class="cd-chat-divider">{loc().t('Chat.clearContext')}</Divider>
   {/if}
 {:else if renderFullChatBox}
   {@render renderFullChatBox({
@@ -119,7 +132,7 @@
   <div class="cd-chat-chatBox" class:cd-chat-chatBox-right={isRight}>
     {@render avatarNode()}
     <div class="cd-chat-chatBox-wrap">
-      {@render titleNode()}
+      {#if !continueSend}{@render titleNode()}{/if}
       {@render contentNode()}
       {@render actionNode()}
     </div>
@@ -127,7 +140,7 @@
 {/if}
 
 {#snippet avatarNode()}
-  <ChatBoxAvatar {message} {role} {title} {renderChatBoxAvatar} />
+  <ChatBoxAvatar {message} {role} {title} {continueSend} {renderChatBoxAvatar} />
 {/snippet}
 {#snippet titleNode()}
   <ChatBoxTitle {message} {role} {title} {renderChatBoxTitle} />
@@ -141,12 +154,14 @@
     {isError}
     {showBubble}
     {markdownRenderProps}
+    {escapeHtml}
     {renderChatBoxContent}
   />
 {/snippet}
 {#snippet actionNode()}
   <ChatBoxAction
     {message}
+    {toast}
     {lastChat}
     {contentText}
     {onMessageCopy}
@@ -168,7 +183,9 @@
     column-gap: var(--cd-chat-chatBox-columnGap);
   }
 
-  .cd-chat-chatBox:hover :global(.cd-chat-chatBox-action) {
+  /* -hidden 态（loading/incomplete 消息）即使 hover 也不显示操作区（对齐 Semi
+     `:hover { .action:not(.-hidden) { visible } }`：内容未生成完整时不该出现复制/删除等操作）。 */
+  .cd-chat-chatBox:hover :global(.cd-chat-chatBox-action:not(.cd-chat-chatBox-action-hidden)) {
     visibility: visible;
   }
 
@@ -182,6 +199,10 @@
   .cd-chat-chatBox :global(.cd-chat-chatBox-avatar) {
     flex-shrink: 0;
   }
+  /* 连续同角色消息头像占位不可见（对齐 Semi chat.scss:142-144 &-avatar-hidden）。 */
+  .cd-chat-chatBox :global(.cd-chat-chatBox-avatar-hidden) {
+    visibility: hidden;
+  }
 
   .cd-chat-chatBox-wrap {
     display: flex;
@@ -192,12 +213,9 @@
     max-width: calc(100% - var(--cd-chat-chatBox-columnGap) - var(--cd-chat-chatBox-avatar-width));
   }
 
-  /* —— divider（对齐 Semi -divider） —— */
-  .cd-chat-divider {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
+  /* —— divider（对齐 Semi -divider：叠加在 Divider 组件自身布局之上的文字/间距覆盖，
+       不再自建 flex 布局——真正的分割线两侧横线由 Divider 组件负责） —— */
+  :global(.cd-chat-divider) {
     color: var(--cd-chat-divider);
     font-size: var(--cd-chat-divider-font-size);
     font-weight: var(--cd-chat-divider-font-weight);

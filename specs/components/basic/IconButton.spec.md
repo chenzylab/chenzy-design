@@ -1,7 +1,7 @@
 # SPEC · IconButton
 
 > 分类：basic · 阶段：M1（增补，对标 Semi 后补齐）
-> 对标 Semi：Semi 的 IconButton 是 Button 内部的图标分发分支（`ButtonProps extends IconButtonProps`），对外只暴露 Button。本库既有 Button 已完整覆盖 icon-only 语义；本组件作为**便捷封装 + Button 增补**落地。
+> 对标 Semi：Semi 的 `button/index.tsx` 派发器在 `icon || (loading && !disabled)` 时委托独立的 `iconButton/index.tsx` 渲染，否则渲染纯容器 `button/Button.tsx`。本库镜像同一委托方向：`Button.svelte` 是薄派发器，`IconButton.svelte` 是图标装配唯一逻辑源（icon 组装/loading spinner/colorful fill 注入），对外仍只暴露 `Button` 为主入口；本组件作为**便捷封装 + 独立公开组件**落地。
 
 ## 1. 概述
 
@@ -14,42 +14,62 @@ IconButton 是**纯图标按钮**的便捷组件：等价于 `Button` 传 `icon`
 - 有文字（或图标+文字）→ 用 `Button`（`icon` + children）。
 - 悬浮固定入口 → 用 `FloatButton`。
 
-**与 Button 的关系（重要）**：IconButton 内部就是 `Button`，`iconOnly` 语义（无 children + 有 icon → 方形 + `padding-inline: 0`）本库 Button 已实现。IconButton 的增量价值仅两点：① `ariaLabel` 从可选变必填（类型 + dev warn）；② 提供更聚焦的 DX 与文档定位。**同时给 Button 增补 `circle` prop**（圆形按钮），IconButton 复用。
+**与 Button 的关系（重要）**：`Button` 命中 `icon || (loading && !disabled)` 时内部渲染 `IconButton`（委托方向对齐 Semi index.tsx→IconButton），`iconOnly` 语义（无 children + 有 icon → 方形 + 内边距归零）由 IconButton 唯一实现，Button 不重复。IconButton 作为独立公开组件的增量价值：① `ariaLabel` 从可选变必填（类型 + dev warn）；② 提供更聚焦的 DX 与文档定位。**`circle` prop**（圆形按钮）落在 `BaseButton.svelte`，Button/IconButton 均可用。
 
 ## 3. 分层实现
 
-- **headless（core/）**：无需新建。复用 Button 现有逻辑。
+- **headless（core/）**：无需新建。
 - **渲染（svelte/）**：
-  - `IconButton.svelte`：极薄封装，转发全部 Button props（`type`/`theme`/`size`/`disabled`/`loading`/`colorful`/`circle`/`noHorizontalPadding` 等）+ `icon` + 必填 `ariaLabel`，内部渲染 `<Button icon={icon} ariaLabel={ariaLabel} {...rest} />`，不传 children。
-  - **Button 增补**：新增 `circle?: boolean` prop（CSS `border-radius: 50%` + 方形），Button 与 IconButton 共用。
+  - `IconButton.svelte`：图标装配唯一逻辑源，转发全部 Button props（`type`/`theme`/`size`/`disabled`/`loading`/`colorful`/`circle`/`noHorizontalPadding` 等）+ `icon` + 必填 `ariaLabel`，内部渲染 `<BaseButton>`（纯容器）。`Button.svelte` 命中图标分支时委托本组件渲染，否则渲染 `BaseButton.svelte`。
+  - **Button 增补**：`circle?: boolean` prop（CSS `border-radius: 50%` + 方形）落在 `BaseButton.svelte`，Button 与 IconButton 共用。
 
 ## 4. API
 
 ### IconButton Props
 
-| 名称 | 类型 | 默认值 | 说明 |
+> 本表由 `packages/svelte/src/iconbutton/meta.ts` 真源生成（2026-07-30 重校）。此前本表列的 prop 多为 Semi 对齐前的旧名或已删除项（如 `value`→`activeKey`、`change`→`onChange`），改 prop 时请同步 meta.ts，勿手写「规划中」的 prop。
+
+| Prop | 类型 | 默认值 | 说明 |
 | --- | --- | --- | --- |
-| `icon` | `Snippet \| Component` | — | **必填**。图标内容。 |
-| `ariaLabel` | `string` | — | **必填**。可访问名（纯图标无文字，屏幕阅读器唯一名称来源）。dev 缺失时 error/warn。 |
-| `type` | `'primary' \| 'secondary' \| 'tertiary' \| 'warning' \| 'danger'` | `'secondary'` | 语义类型（对齐本库 Button 默认，非 Semi 的 primary）。 |
-| `theme` | `'solid' \| 'borderless' \| 'light' \| 'outline'` | `'light'` | 视觉变体。 |
-| `size` | `'small' \| 'default' \| 'large'` | `'default'` | 尺寸三档。 |
-| `circle` | `boolean` | `false` | 圆形按钮（复用新增的 Button circle）。 |
-| `disabled` | `boolean` | `false` | 禁用。 |
-| `loading` | `boolean` | `false` | 加载态（用 spin 图标替换）。 |
-| `colorful` | `boolean` | `false` | AI 多彩。 |
-| `noHorizontalPadding` | `boolean \| 'left' \| 'right' \| ('left'\|'right')[]` | `false` | 去水平内边距。 |
-| `htmlType` | `'button' \| 'reset' \| 'submit'` | `'button'` | 原生 type。 |
-| `onClick` | `(e: MouseEvent) => void` | — | 点击回调。 |
-| `class` / `style` | `string` | — | 根节点透传。 |
+| icon | `Snippet<[{ fill?: string \| string[] }]>` | `undefined` | 图标内容（可选）；colorful 命中 multipleColor/twoColor 时收到 fill 数组，供支持 fill prop 的具名图标消费 |
+| children | `Snippet` | `undefined` | 文字内容（可选）；提供后非纯图标 |
+| aria-label | `string` | `undefined` | 可访问名（透传到 aria-label）；纯图标按钮建议提供 |
+| type | `'primary'\|'secondary'\|'tertiary'\|'warning'\|'danger'` | `primary` | 语义类型 |
+| theme | `'solid'\|'borderless'\|'light'\|'outline'` | `light` | 视觉变体 |
+| size | `'small'\|'default'\|'large'` | `default` | 尺寸三档 |
+| iconPosition | `'left'\|'right'` | `left` | 图标相对文字位置（透传给 Button） |
+| iconSize | `'inherit'\|'extra-small'\|'small'\|'default'\|'large'\|'extra-large'` | `undefined` | 图标尺寸（作用在图标元素上，对齐 Semi） |
+| iconStyle | `string` | `undefined` | 图标内联样式（作用在图标元素上，对齐 Semi） |
+| circle | `boolean` | `false` | 圆形按钮（复用 Button circle） |
+| disabled | `boolean` | `false` | 禁用 |
+| loading | `boolean` | `false` | 加载态（spin 图标替换） |
+| colorful | `boolean` | `false` | AI 多彩 |
+| block | `boolean` | `false` | 撑满容器宽度 |
+| noHorizontalPadding | `boolean\|'left'\|'right'\|('left'\|'right')[]` | `false` | 去水平内边距（仅 icon 时有效） |
+| htmlType | `'button'\|'submit'\|'reset'` | `button` | 原生 type |
+| contentClassName | `string` | `undefined` | 内容区自定义类名（透传给 Button） |
+| class | `string` | `undefined` | 根元素自定义类名 |
+| style | `string` | `undefined` | 根元素自定义内联样式 |
+
+**事件**（回调 prop 形式，对齐 Semi）：
+
+| 事件 | 说明 |
+| --- | --- |
+| `onclick` | disabled/loading 时不触发 |
+| `onmousedown` | 鼠标按下 |
+| `onmouseenter` | 鼠标移入 |
+| `onmouseleave` | 鼠标移出 |
 
 > 其余 Button props（`onmousedown`/`onmouseenter`/`onmouseleave`/`block` 等）原样转发。
 
 ### Events
 
-| 名称 | 载荷 | 说明 |
-| --- | --- | --- |
-| `onClick` | `MouseEvent` | 点击。 |
+| 事件 | 说明 |
+| --- | --- |
+| `onclick` | disabled/loading 时不触发 |
+| `onmousedown` | 鼠标按下 |
+| `onmouseenter` | 鼠标移入 |
+| `onmouseleave` | 鼠标移出 |
 
 ### Slots
 
@@ -68,6 +88,8 @@ IconButton 是**纯图标按钮**的便捷组件：等价于 `Button` 传 `icon`
 - **对比度**：icon 与背景 ≥3:1（非文本图形）。
 - **命中目标**：icon-only 按钮命中区 ≥24×24px（small 尺寸下扩展命中区满足 WCAG 2.5.8）。
 - **reduced-motion**：loading spin 停转。
+- **loading spinner**：严格对齐 Semi spin/icon.tsx——渐变描边圆弧（`<linearGradient>`），非纯色；SSR/hydration 用固定 fallback id，挂载后换实例唯一 id。
+- **RTL**：icon-only padding、content-left/right margin 严格对齐 Semi button/rtl.scss 的物理属性左右互换（`.cd-rtl` 作用域覆盖）。
 
 ## 7. 国际化
 

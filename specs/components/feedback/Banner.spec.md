@@ -47,33 +47,37 @@ Banner 含「关闭交互 + 关闭动画 + a11y 公告」逻辑，因此采用 c
 
 ### Props
 
-| 名称 | 类型 | 默认值 | 说明 |
-|---|---|---|---|
-| `type` | `'info' \| 'success' \| 'warning' \| 'danger'` | `'info'` | 语义类型，决定配色与默认图标 |
-| `fullMode` | `boolean` | `true` | `true` 为 full 铺满模式，`false` 为 card 卡片模式 |
-| `bordered` | `boolean` | `false` | card 模式下是否显示边框（full 模式忽略） |
-| `title` | `string` | `''` | 标题文案；为空时仅渲染描述 |
-| `description` | `string` | `''` | 描述文案；与 title 可单独或同时使用 |
-| `open` | `boolean` | `true` | 受控显隐；与 `on:openChange` 配合 |
-| `defaultOpen` | `boolean` | `true` | 非受控初始显隐 |
-| `closable` | `boolean` | `true` | 是否显示右侧关闭按钮 |
-| `closeIcon` | `Snippet \| boolean` | `true` | 自定义关闭图标，`false` 等价于 `closable=false` |
-| `icon` | `Snippet \| boolean` | `true` | 自定义左侧图标，`false` 隐藏图标 |
-| `closeOnEsc` | `boolean` | `false` | 是否允许按 Esc 关闭 |
-| `destroyOnClose` | `boolean` | `false` | 关闭后是否从 DOM 卸载（释放 slot 内重型内容） |
-| `animation` | `boolean` | `true` | 是否启用关闭过渡（受 reduced-motion 覆盖） |
-| `class` | `string` | `''` | 根节点附加类名 |
-| `style` | `string` | `''` | 根节点内联样式 |
+> 本表由 `packages/svelte/src/banner/meta.ts` 真源生成（2026-07-30 重校）。此前本表列的 prop 多为 Semi 对齐前的旧名或已删除项（如 `value`→`activeKey`、`change`→`onChange`），改 prop 时请同步 meta.ts，勿手写「规划中」的 prop。
+
+| Prop | 类型 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| type | `'info'\|'success'\|'danger'\|'warning'` | `'info'` | 类型，决定背景 / 文本 / 图标语义色 |
+| fullMode | `boolean` | `true` | 是否为全屏模式 |
+| bordered | `boolean` | `false` | 是否展示边框，仅在非全屏模式下有效 |
+| title | `string` | `''` | 标题文本，被 titleSnippet 覆盖 |
+| description | `string` | `''` | 描述内容，被 descriptionSnippet 覆盖 |
+| icon | `Snippet \| null` | `undefined` | 自定义 icon，为 null 时不显示 icon |
+| closeIcon | `Snippet \| null` | `undefined` | 自定义关闭 icon，为 null 时不显示关闭按钮 |
+| children | `Snippet` | `undefined` | 自定义渲染内容，渲染于尾部 extra 区 |
+| titleSnippet | `Snippet` | `undefined` | 自定义标题片段，覆盖 title |
+| descriptionSnippet | `Snippet` | `undefined` | 自定义描述片段，覆盖 description |
+| onClose | `(e: MouseEvent) => void` | `undefined` | 关闭时的回调函数 |
+| class | `string` | `''` | 类名 |
+| style | `string` | `undefined` | 样式 |
+
+**事件**（回调 prop 形式，对齐 Semi）：
+
+| 事件 | 说明 |
+| --- | --- |
+| `onClose` | 关闭按钮触发关闭 |
 
 > 注：Banner 形态由 `fullMode` 区分而非通用 `size`；无校验态 `status`（语义由 `type` 表达），符合本组件实际。
 
 ### Events
 
-| 事件 | 载荷 (detail) | 触发时机 |
-|---|---|---|
-| `on:openChange` | `{ open: boolean }` | 显隐状态变化时（点击关闭、Esc、外部受控变更）；受控模式下需据此回写 `open` |
-| `on:close` | `{ trigger: 'closeButton' \| 'esc' }` | 用户主动触发关闭的语义事件，便于埋点与文案差异化 |
-| `on:afterClose` | `void` | 关闭过渡结束后触发；`destroyOnClose` 卸载发生在此之后 |
+| 事件 | 说明 |
+| --- | --- |
+| `onClose` | 关闭按钮触发关闭 |
 
 ### Slots
 
@@ -113,7 +117,7 @@ Banner 含「关闭交互 + 关闭动画 + a11y 公告」逻辑，因此采用 c
 | `--cd-banner-close-hover-bg` | `--cd-color-fill-1` | 关闭按钮 hover 底色 |
 | `--cd-banner-motion-duration` | `--cd-motion-duration-fast` | 关闭过渡时长 |
 
-类名约定：根 `cd-banner`，修饰 `cd-banner--info/--success/--warning/--danger`、`cd-banner--full`、`cd-banner--card`、`cd-banner--bordered`；元素 `cd-banner__icon`、`cd-banner__content`、`cd-banner__title`、`cd-banner__description`、`cd-banner__action`、`cd-banner__close`。
+类名约定：根 `cd-banner`，修饰 `cd-banner-info/--success/--warning/--danger`、`cd-banner-full`、`cd-banner-content-wrapper`、`cd-banner-bordered`；元素 `cd-banner-icon`、`cd-banner-content`、`cd-banner-title`、`cd-banner-description`、`cd-banner-content-body`、`cd-banner-close`。
 
 ## 6. 无障碍 (WCAG 2.1 AA)
 
@@ -135,13 +139,11 @@ Banner 含「关闭交互 + 关闭动画 + a11y 公告」逻辑，因此采用 c
 - 用户可见文案零硬编码，全部走 i18n。
 - i18n keys：
 
-| key | 默认 (zh-CN) | 说明 |
-|---|---|---|
-| `Banner.closeButtonAriaLabel` | `关闭` | 关闭按钮无障碍标签 |
-| `Banner.info` | `提示` | info 类型默认 role 语义前缀（供 AT 朗读，可选） |
-| `Banner.success` | `成功` | success 语义前缀 |
-| `Banner.warning` | `警告` | warning 语义前缀 |
-| `Banner.danger` | `错误` | danger 语义前缀 |
+> 本表由 `packages/locale/src/zh_CN.ts` 真源生成（2026-07-30 重校）。键名与键值都是 Semi 契约，勿手写「规划中」的键——历史上本表列过大量从未实现的键名，见 [[locale-dangling-keys-render-raw-key]]。
+
+| i18n key | 默认（zh-CN） |
+| --- | --- |
+| `Banner.closeButtonAriaLabel` | 关闭 |
 
 - 业务传入的 `title`/`description`/slot 内容由调用方负责 i18n，组件不内置。
 - 日期/数字若出现在描述中由调用方用 `Intl.DateTimeFormat`/`Intl.NumberFormat` 格式化；组件不直接处理。

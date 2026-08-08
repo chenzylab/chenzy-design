@@ -5,9 +5,15 @@
   时间列复用本库 ScrollList/ScrollItem（mode='normal'，选择走 onSelect，非自造 roving）。
   触发器复用本库 Input（可键入时间串，镜像 Semi TimeInput：<Input hideSuffix suffix={IconClock}>）。
   value/defaultValue 支持 Date | string（如 '12:30:45'），字符串经 core parseTimeString 解析。
-  format 字符串（默认 'HH:mm:ss'）：经 core parseFormatSpec 决定显示列与 12h（showSecond = 含 ss）；
-    显示经 core formatTime 序列化，否则走 Intl.DateTimeFormat（不手拼时间串）。
+  format 字符串：经 core parseFormatSpec 决定显示列与 12h（showSecond = 含 ss）；未显式传时按
+    use12Hours 分派（'a h:mm:ss' / 'HH:mm:ss'，对齐 Semi getDefaultFormatIfNeed）。
   列项/禁用集生成 + 格式解析/序列化走 @chenzy-design/core 纯函数（红线 #2）。
+
+  文件分层对齐 Semi（见 semi-doc-alignment-sop.md「文件目录结构对齐」）：
+    · 本文件 = Semi semi-ui/timePicker/TimePicker.tsx（视图装配：触发器 + 浮层 + 事件接线）
+    · time-picker-foundation.svelte.ts = Semi semi-foundation/timePicker/foundation.ts（值模型/open/时区）
+    · time-input-foundation.ts = Semi inputFoundation.ts；combobox-foundation.svelte.ts = ComboxFoundation.ts
+    · constants.ts = Semi constants.ts（默认 format/分隔符/方位真源，勿散写字面量）
 -->
 <script lang="ts">
   import { getContext, type Snippet } from 'svelte';
@@ -15,13 +21,11 @@
   import {
     useId,
     useDismiss,
+    registerOverlayRoot,
     meridiemOf,
-    parseFormatSpec,
     formatTime,
     localeFormat,
-    parseTimeString,
     utcToZonedTime,
-    zonedTimeToUtc,
     isValidTimeZone,
   } from '@chenzy-design/core';
   import type { Placement } from '@chenzy-design/core';
@@ -29,12 +33,15 @@
   import { floating } from '../_floating/use-floating.js';
   import Combobox from './Combobox.svelte';
   import TimeInput from './TimeInput.svelte';
+  import { strings } from './constants.js';
+  import {
+    createTimePickerState,
+    type TimeInputValue,
+    type Pair,
+  } from './time-picker-foundation.svelte.js';
 
   type Size = 'small' | 'default' | 'large';
   type ValidateStatus = 'default' | 'warning' | 'error';
-
-  /** 单选入参：Date 或时间字符串（如 '12:30:45'）。（命名避开 TimeInput 组件 import） */
-  type TimeInputValue = Date | string | null;
 
   interface Props {
     /** 单选时 Date|string；范围时 [start, end]（各自 Date|string）。 */
@@ -53,7 +60,11 @@
     minuteStep?: number;
     secondStep?: number;
     use12Hours?: boolean;
-    /** 格式串（默认 'HH:mm:ss'）：决定显示列与 12h（showSecond = 含 ss），并作为展示/字符串值序列化格式。对齐 Semi format。 */
+    /**
+     * 格式串：决定显示列与 12h（showSecond = 含 ss），并作为展示/字符串值序列化格式。对齐 Semi format。
+     * 未显式传时按 use12Hours 分派默认值（对齐 Semi getDefaultFormatIfNeed）：
+     * use12Hours 为 true → 'a h:mm:ss'（DEFAULT_FORMAT_A），否则 'HH:mm:ss'（DEFAULT_FORMAT）。
+     */
     format?: string;
     /** 时区（数字偏移 / 'GMT±HH:mm' / IANA）：仅作用于无 format 时的 Intl 显示层；自身优先，未传回退 ConfigProvider。对齐 Semi timeZone。 */
     timeZone?: string | number;
@@ -90,10 +101,10 @@
     getPopupContainer?: () => HTMLElement;
     /** 面板展开动画（默认 true）。对齐 Semi motion。 */
     motion?: boolean;
-    /** 面板顶部自定义内容。对齐 Semi panelHeader。 */
-    panelHeader?: string | Snippet;
-    /** 面板底部自定义内容。对齐 Semi panelFooter。 */
-    panelFooter?: string | Snippet;
+    /** 面板顶部自定义内容；range 模式传数组时按面板取 [0]/[1]。对齐 Semi panelHeader。 */
+    panelHeader?: string | Snippet | Array<string | Snippet | undefined>;
+    /** 面板底部自定义内容；range 模式传数组时按面板取 [0]/[1]。对齐 Semi panelFooter。 */
+    panelFooter?: string | Snippet | Array<string | Snippet | undefined>;
     /** range 模式下按面板（0=start,1=end）分别指定 header/footer（对齐 Semi panels，优先级高于 panelHeader/Footer）。 */
     panels?: Array<string | Snippet | undefined>;
     /** 浮层弹出位置（默认 'bottomLeft'）。对齐 Semi position。 */
@@ -112,8 +123,13 @@
     onFocus?: (e: FocusEvent) => void;
     /** onChange 参数 dateFirst 模式（默认 true）。对齐 Semi onChangeWithDateFirst。 */
     onChangeWithDateFirst?: boolean;
-    /** 范围模式禁用函数。对齐 Semi disabledTime。 */
-    disabledTime?: (date: Date | null, panelType?: 'left' | 'right') => { disabledHours?: () => number[]; disabledMinutes?: (h: number) => number[]; disabledSeconds?: (h: number, m: number) => number[] } | undefined;
+    /**
+     * 范围模式禁用函数（对齐 Semi disabledTime）。**仅 type='timeRange' 生效**。
+     * 第一参 `dates` 是当前已选时间数组（长度 0/1/2，对齐 Semi 传 dates 而非单面板值），
+     * 右面板据此可实现「禁用早于开始时间的选项」这类联动；panelType 区分左右面板。
+     * 单选模式请直接用顶层 disabledHours/disabledMinutes/disabledSeconds。
+     */
+    disabledTime?: (dates: Date[], panelType?: 'left' | 'right') => { disabledHours?: () => number[]; disabledMinutes?: (h: number) => number[]; disabledSeconds?: (h: number, m: number) => number[] } | undefined;
     /** 输入框样式（透传到 Input）。对齐 Semi inputStyle。 */
     inputStyle?: string | Record<string, string>;
     /** 输入框 readonly（仅允许通过面板选择，不可键入）。对齐 Semi inputReadOnly。 */
@@ -160,7 +176,7 @@
     minuteStep = 1,
     secondStep = 1,
     use12Hours = false,
-    format = 'HH:mm:ss',
+    format,
     timeZone,
     disabledHours,
     disabledMinutes,
@@ -184,8 +200,8 @@
     panelHeader,
     panelFooter,
     panels,
-    position = 'bottomLeft',
-    rangeSeparator = ' ~ ',
+    position = strings.DEFAULT_POSITION[strings.DEFAULT_TYPE] ?? 'bottomLeft',
+    rangeSeparator = strings.DEFAULT_RANGE_SEPARATOR,
     scrollItemProps,
     stopPropagation = true,
     zIndex = 1030,
@@ -210,210 +226,117 @@
     ariaRequired,
   }: Props = $props();
 
-  const isRange = $derived(type === 'timeRange');
-
-  // --- format 串解析（红线 #2 经 core 纯函数）：决定列与 12h（对齐 Semi showSecond = 含 ss）---
-  const formatSpec = $derived(parseFormatSpec(format));
-  const effShowSecond = $derived(formatSpec.showSecond);
-  const effUse12Hours = $derived(use12Hours || formatSpec.use12Hours);
-
-  // --- 字符串/Date 入参归一化为 Date|null（字符串经 core parseTimeString）---
-  function toDate(input: TimeInputValue): Date | null {
-    if (input == null) return null;
-    if (input instanceof Date) return input;
-    const parts = parseTimeString(input);
-    if (!parts) return null;
-    const d = new Date();
-    d.setHours(parts.hour, parts.minute, parts.second, 0);
-    return d;
-  }
-
   const loc = useLocale();
   const baseId = useId('cd-time-picker-panel');
 
-  // --- 受控 value（红线 #1）：不无条件回写 value，仅 onChange ---
-  // 内部统一用 [start, end] 元组表示（单选只用 [0]），避免双分支。
-  type Pair = [Date | null, Date | null];
+  // --- 有效时区（对齐 Semi 值层时区转换）：自身 timeZone 优先，未传回退 ConfigProvider ---
+  // 必须声明在 createTimePickerState 之前——foundation 的 props getter 在初始化期就会读它，
+  // 放到后面会 ReferenceError: Cannot access 'effectiveTimeZone' before initialization。
+  const configCtx = getContext<ConfigContextValue | undefined>(CONFIG_CONTEXT_KEY);
+  const configTimeZone = $derived(configCtx?.current.timeZone);
+  const effectiveTimeZone = $derived<string | number | undefined>(timeZone ?? configTimeZone);
 
-  function toPair(input: Props['value']): Pair {
-    if (Array.isArray(input)) return [toDate(input[0] ?? null), toDate(input[1] ?? null)];
-    return [toDate((input ?? null) as TimeInputValue), null];
-  }
+  // --- foundation 分层（对齐 Semi semi-foundation/timePicker/foundation.ts）---
+  // 值模型 / open 受控 / format 分派 / 时区往返全在 time-picker-foundation.svelte.ts，
+  // 本文件只留视图装配（触发器 + 浮层 + 事件接线）。
+  const st = createTimePickerState(() => ({
+    type,
+    value,
+    defaultValue,
+    open,
+    defaultOpen,
+    format,
+    use12Hours,
+    disabled,
+    effectiveTimeZone,
+    disabledTime,
+    onChange,
+    onOpenChange,
+    formatDisplay,
+    rangeSeparator,
+    inputReadOnly,
+  }));
 
-  const isValueControlled = $derived(value !== undefined);
-  // 仅捕获初始 defaultValue（非受控初值）；用函数包裹避免 state_referenced_locally。
-  function getInitialPair(): Pair {
-    return toPair(defaultValue);
-  }
-  let innerValue = $state<Pair>(getInitialPair());
-  const currentPair = $derived<Pair>(isValueControlled ? toPair(value) : innerValue);
-  const current = $derived<Date | null>(currentPair[0]);
+  const isRange = $derived(st.isRange);
+  const effFormat = $derived(st.format);
+  const effUse12Hours = $derived(st.use12Hours);
+  const currentPair = $derived(st.currentPair);
+  const current = $derived(st.current);
+  const isOpen = $derived(st.isOpen);
 
-  function emit(next: Pair) {
-    if (!isValueControlled) innerValue = next;
-    onChange?.(isRange ? next : next[0]);
-  }
+  const setOpen = (next: boolean) => st.setOpen(next);
+  const toggleOpen = () => st.toggleOpen();
+  const wallDateOf = (i: 0 | 1) => st.wallDateOf(i);
+  const disabledRulesFor = (i: 0 | 1) => st.disabledRulesFor(i);
 
-  // --- 受控 open（红线 #1）：不无条件回写 open，仅 onOpenChange ---
-  const isOpenControlled = $derived(open !== undefined);
-  function getInitialOpen(): boolean {
-    return defaultOpen;
-  }
-  let innerOpen = $state(getInitialOpen());
-  const isOpen = $derived(isOpenControlled ? !!open : innerOpen);
-
-  function setOpen(next: boolean) {
-    if (next === isOpen) return;
-    if (!isOpenControlled) innerOpen = next;
-    onOpenChange?.(next);
-  }
-
-  function toggleOpen() {
-    if (disabled) return;
-    setOpen(!isOpen);
-  }
-
-  // 面板首次打开后常驻 DOM，关闭仅 CSS 隐藏（对齐 Semi Popover 惰性挂载）。
-  let hasOpened = $state(getInitialOpen());
   $effect(() => {
-    if (isOpen) hasOpened = true;
+    st.markOpened();
   });
-
-  // --- 单个编辑端（0=start,1=end）的 h/m/s 派生 + disabledTime 接线（对齐 Semi Combobox）---
-  // panelIndex：单选恒 0；范围左列 0 / 右列 1。
-  function dateOf(panelIndex: 0 | 1): Date | null {
-    return currentPair[panelIndex];
-  }
-
-  // 墙上时间视图（对齐 Semi）：Combobox 时间列/isAM 展示的时分秒须是目标时区墙上时间，
-  // 与触发器 displayOne 一致。存储层 UTC → utcToZonedTime → 墙上时间；无 timeZone 时原样。
-  function wallDateOf(panelIndex: 0 | 1): Date | null {
-    const d = currentPair[panelIndex];
-    if (!d) return null;
-    return isValidTimeZone(effectiveTimeZone)
-      ? utcToZonedTime(d, effectiveTimeZone as string | number)
-      : d;
-  }
-
-  function disabledRulesFor(panelIndex: 0 | 1) {
-    if (!disabledTime) return undefined;
-    return disabledTime(dateOf(panelIndex), panelIndex === 0 ? 'left' : 'right');
-  }
-
-  // 合成 Date：基于当前编辑端或今天，写入 h/m/s（对齐 onChangeWithDateFirst 保留日期部分）。
-  // 时区语义（对齐 Semi）：存储/抛出层始终是 UTC 时刻；用户在墙上时间(displayOne 用 utcToZonedTime)选择，
-  // 故 setHours 须作用在墙上时间 base 上，再 zonedTimeToUtc 转回 UTC 存储——保证读写往返自洽。
-  function commit(panelIndex: 0 | 1, h: number, m: number, s: number) {
-    const src = dateOf(panelIndex);
-    const tz = effectiveTimeZone;
-    if (isValidTimeZone(tz)) {
-      // 墙上时间 base（src 为 UTC → 转墙上时间；无 src 用当前墙上时间）
-      const base = src ? utcToZonedTime(src, tz as string | number) : utcToZonedTime(new Date(), tz as string | number);
-      base.setHours(h, m, s, 0);
-      const next: Pair = [...currentPair];
-      next[panelIndex] = zonedTimeToUtc(base, tz as string | number);
-      emit(next);
-      return;
-    }
-    const base = src ? new Date(src) : new Date();
-    base.setHours(h, m, s, 0);
-    const next: Pair = [...currentPair];
-    next[panelIndex] = base;
-    emit(next);
-  }
 
   // Combobox 时间列变化（抛新时间戳）→ commit 到对应编辑端（保留该端日期部分）。
   function onComboboxChange(panelIndex: 0 | 1, timeStampValue: number) {
     const t = new Date(timeStampValue);
-    commit(panelIndex, t.getHours(), t.getMinutes(), t.getSeconds());
-    invalid = false; // 面板选择是有效操作，清 invalid（对齐 Semi）
+    st.commit(panelIndex, t.getHours(), t.getMinutes(), t.getSeconds());
+    st.clearInvalid(); // 面板选择是有效操作，清 invalid（对齐 Semi）
   }
 
-  // --- Intl / core formatTime 展示（对齐 Semi 值层时区转换）---
-  const configCtx = getContext<ConfigContextValue | undefined>(CONFIG_CONTEXT_KEY);
-  const configTimeZone = $derived(configCtx?.current.timeZone);
-  const effectiveTimeZone = $derived<string | number | undefined>(timeZone ?? configTimeZone);
+  /**
+   * 有效 date-fns locale（对齐 Semi timePicker/index.tsx：LocaleConsumer 把 bundle 里的
+   * dateFnsLocale 自动注入组件）——prop 优先，未传回退当前语言包自带的。
+   * 缺了它，`a` token 恒渲染成英文 am/pm，与面板列的「上午/下午」不一致。
+   */
+  const effDateFnsLocale = $derived(dateFnsLocale ?? loc().component('dateFnsLocale'));
 
   function displayOne(d: Date): string {
     // 对齐 Semi：timeZone 有效时经 utcToZonedTime 转目标时区墙上时间再展示，否则原样（本地）。
     const shown = isValidTimeZone(effectiveTimeZone)
       ? utcToZonedTime(d, effectiveTimeZone as string | number)
       : d;
-    // dateFnsLocale 存在时走 core localeFormat（date-fns format + locale，本地化 AM/PM 等，对齐 Semi formatToString）；
-    // 否则走本库 core formatTime 纯函数（默认路径，不引入 date-fns locale 依赖）。
-    if (dateFnsLocale) {
-      // date-fns token 小写（HH:mm:ss / hh:mm:ss a 等；本库 format 已是 date-fns 兼容 token）。
-      return localeFormat(shown, format, dateFnsLocale);
+    // 有 date-fns locale 就走 core localeFormat（date-fns format + locale，本地化 AM/PM 等，
+    // 对齐 Semi formatToString）；否则退回纯函数 formatTime（英文 am/pm）。
+    if (effDateFnsLocale) {
+      // date-fns token 小写（HH:mm:ss / a h:mm:ss 等；本库 format 已是 date-fns 兼容 token）。
+      return localeFormat(shown, effFormat, effDateFnsLocale as import('date-fns').Locale);
     }
     return formatTime(
       { hour: shown.getHours(), minute: shown.getMinutes(), second: shown.getSeconds() },
-      format,
+      effFormat,
     );
   }
 
-  const placeholderText = $derived(placeholder ?? loc().t('TimePicker.placeholder'));
+  // 占位按 type 分派（对齐 Semi TimeInput 的 `locale.placeholder[type]`）：
+  // 范围模式用 timeRange（「请选择时间范围」），单选用 time。
+  const placeholderText = $derived(
+    placeholder ?? loc().t(isRange ? 'TimePicker.placeholder.timeRange' : 'TimePicker.placeholder.time'),
+  );
 
-  const displayText = $derived.by(() => {
+  function formatDisplay(pair: Pair): string {
     if (isRange) {
-      const [s, e] = currentPair;
+      const [s, e] = pair;
       if (!s && !e) return '';
       return `${s ? displayOne(s) : ''}${rangeSeparator}${e ? displayOne(e) : ''}`;
     }
-    return current ? displayOne(current) : '';
-  });
+    return pair[0] ? displayOne(pair[0]) : '';
+  }
 
   const hasValue = $derived(isRange ? currentPair[0] !== null || currentPair[1] !== null : current !== null);
 
   // --- 触发器可键入：解析输入串回写（镜像 Semi inputFoundation.handleInputChange/handleBlur）---
-  // 输入过程只做本地展示，Enter/Blur 时解析并提交（单选整串 → 时间；范围按 rangeSeparator 拆两端）。
-  let inputDraft = $state<string | null>(null);
-  const inputValue = $derived(inputDraft ?? displayText);
-  // invalid 校验态（对齐 Semi foundation invalid）：手输非法/无法解析时置 true，触发器显示 error 样式。
-  let invalid = $state(false);
-
-  function parseAndCommit(raw: string) {
-    if (inputReadOnly) return;
-    const text = raw.trim();
-    if (text === '') {
-      emit([null, null]);
-      inputDraft = null;
-      invalid = false;
-      return;
-    }
-    if (isRange) {
-      const parts = text.split(rangeSeparator.trim() === '' ? '~' : rangeSeparator.trim());
-      const s = parts[0] ? toDate(parts[0].trim()) : null;
-      const e = parts[1] ? toDate(parts[1].trim()) : null;
-      if (s || e) {
-        emit([s, e]);
-        invalid = false;
-      } else {
-        invalid = true; // 两端都解析失败
-      }
-    } else {
-      const d = toDate(text);
-      if (d) {
-        emit([d, currentPair[1]]);
-        invalid = false;
-      } else {
-        invalid = true; // 解析失败：标记 invalid，回落展示但给 error 反馈（对齐 Semi）
-      }
-    }
-    inputDraft = null;
-  }
+  // 草稿态/invalid/解析提交全在 foundation（time-picker-foundation.svelte.ts），本文件只转发 DOM 事件。
+  const inputValue = $derived(st.inputValue);
+  const invalid = $derived(st.invalid);
 
   function onInputChange(v: string) {
-    inputDraft = v;
+    st.onInputChange(v);
   }
   function onInputBlur(e: FocusEvent) {
-    if (inputDraft !== null) parseAndCommit(inputDraft);
+    st.onInputBlur();
     onBlur?.(e);
   }
   function onInputKeydown(e: KeyboardEvent) {
     if (disabled) return;
     if (e.key === 'Enter') {
-      if (inputDraft !== null) parseAndCommit(inputDraft);
-      setOpen(true);
+      st.commitDraftAndOpen();
     } else if (e.key === 'ArrowDown') {
       if (!isOpen) setOpen(true);
     } else if (e.key === 'Escape') {
@@ -426,8 +349,7 @@
 
   function clear() {
     if (disabled) return;
-    inputDraft = null;
-    emit([null, null]);
+    st.clear();
   }
 
   // 时间列面板（h/m/s/ampm 滚轮）已拆分为 Combobox（复用，对齐 Semi）；此处仅保留触发器/浮层/值模型。
@@ -436,6 +358,13 @@
   let rootEl = $state<HTMLDivElement | null>(null);
   let triggerComp = $state<{ focus: () => void; blur: () => void } | null>(null);
   let panelEl = $state<HTMLDivElement | null>(null);
+
+  // 全局浮层注册（见 core registerOverlayRoot 注释）：panel portal 到 body 后与祖先
+  // hover 浮层脱节，登记后祖先的 pointerleave 判断能识别"鼠标去了合法子浮层"。
+  $effect(() => {
+    if (!panelEl) return;
+    return registerOverlayRoot(panelEl);
+  });
 
   $effect(() => {
     if (!isOpen || !rootEl) return;
@@ -514,10 +443,10 @@
   const cls = $derived(
     [
       'cd-time-picker',
-      `cd-time-picker--${size}`,
-      validateStatus !== 'default' && `cd-time-picker--${validateStatus}`,
-      disabled && 'cd-time-picker--disabled',
-      isOpen && 'cd-time-picker--open',
+      `cd-time-picker-${size}`,
+      validateStatus !== 'default' && `cd-time-picker-${validateStatus}`,
+      disabled && 'cd-time-picker-disabled',
+      isOpen && 'cd-time-picker-open',
       isRange && 'cd-time-picker-range',
       className,
     ]
@@ -529,31 +458,39 @@
     [
       'cd-time-picker-panel',
       isRange && 'cd-time-picker-range-panel',
-      !motion && 'cd-time-picker-panel--no-motion',
+      !motion && 'cd-time-picker-panel-no-motion',
       popupClassName,
     ]
       .filter(Boolean)
       .join(' '),
   );
 
-  // 单列的 header 文案（范围：begin/end；单选：panelHeader 或空）。
-  const beginHeader = $derived(panelHeader ?? loc().t('TimePicker.rangeStart'));
-  const endHeader = $derived(loc().t('TimePicker.rangeEnd'));
+  // range 两端 header 的默认文案（对齐 Semi defaultHeaderMap = { 0: locale.begin, 1: locale.end }）。
+  const beginHeader = $derived(loc().t('TimePicker.begin'));
+  const endHeader = $derived(loc().t('TimePicker.end'));
+
+  /** 数组形态按面板取值，非数组原样返回（单选场景数组无意义，取 [0] 兜底）。 */
+  function pickPanelSlot(
+    v: string | Snippet | Array<string | Snippet | undefined> | undefined,
+    index: 0 | 1,
+  ): string | Snippet | undefined {
+    return Array.isArray(v) ? v[index] : v;
+  }
 
   // createPanelProps —— 对齐 Semi createPanelProps：range 时 panels[index] 优先，
   // 否则 panelHeader 无→begin/end 默认、panelHeader 是数组→[index]、否则 panelHeader。
   function panelHeaderOf(index: 0 | 1): string | Snippet | undefined {
-    if (!isRange) return panelHeader;
+    if (!isRange) return pickPanelSlot(panelHeader, 0);
     const fromPanels = panels?.[index];
     if (fromPanels != null) return fromPanels;
     if (panelHeader == null) return index === 0 ? beginHeader : endHeader;
-    return Array.isArray(panelHeader) ? panelHeader[index] : panelHeader;
+    return pickPanelSlot(panelHeader, index);
   }
   function panelFooterOf(index: 0 | 1): string | Snippet | undefined {
-    if (!isRange) return panelFooter;
+    if (!isRange) return pickPanelSlot(panelFooter, 0);
     const fromPanels = panels?.[index];
     if (fromPanels != null) return fromPanels;
-    return Array.isArray(panelFooter) ? panelFooter[index] : panelFooter;
+    return pickPanelSlot(panelFooter, index);
   }
 </script>
 
@@ -568,7 +505,7 @@
   {#if triggerRender}
     <!-- 自定义触发器：完全替换默认 Input + 图标区域（需父层 value=Date 等数据，故留在 TimePicker 层，不进 TimeInput）。 -->
     <div
-      class="cd-time-picker__control"
+      class="cd-time-picker-control"
       onclick={toggleOpen}
       onkeydown={onInputKeydown}
       role="button"
@@ -603,7 +540,7 @@
     />
   {/if}
 
-  {#if hasOpened && rootEl}
+  {#if st.hasOpened && rootEl}
     <!-- 首次打开后常驻 DOM，关闭态 hidden。定位由 use:floating 接管（portal 到 body + 避让 + 跟随滚动）。 -->
     <div
       bind:this={panelEl}
@@ -625,7 +562,7 @@
             {@const rules = disabledRulesFor(pIdx)}
             <Combobox
               timeStampValue={wallDateOf(pIdx)?.getTime() ?? null}
-              {format}
+              format={effFormat}
               use12Hours={effUse12Hours}
               isAM={meridiemOf(wallDateOf(pIdx)?.getHours() ?? 0) === 'am'}
               {hourStep}
@@ -647,7 +584,7 @@
         <!-- 单选：单个 Combobox（复用拆分后的时间列面板，对齐 Semi Combobox）。 -->
         <Combobox
           timeStampValue={wallDateOf(0)?.getTime() ?? null}
-          {format}
+          format={effFormat}
           use12Hours={effUse12Hours}
           isAM={meridiemOf(wallDateOf(0)?.getHours() ?? 0) === 'am'}
           {hourStep}
@@ -657,8 +594,8 @@
           disabledMinutes={(h) => (rules?.disabledMinutes ?? disabledMinutes)?.(h ?? 0) ?? []}
           disabledSeconds={(h, m) => (rules?.disabledSeconds ?? disabledSeconds)?.(h ?? 0, m ?? 0) ?? []}
           {hideDisabledOptions}
-          {panelHeader}
-          {panelFooter}
+          panelHeader={panelHeaderOf(0)}
+          panelFooter={panelFooterOf(0)}
           scrollItemProps={scrollItemProps ?? {}}
           onChange={(payload) => onComboboxChange(0, payload.timeStampValue)}
         />
@@ -668,10 +605,13 @@
 </div>
 
 <style>
+  /* 根节点对齐 Semi timePicker.scss `.semi-timepicker { display: inline-block }`——
+     **不设宽度**，由内部 Input 的自然宽度收缩定宽（Semi 实测 204px）。
+     曾误加 `inline-size: 100%` 致触发器撑满容器（实测 913px vs Semi 204px）：
+     Input 自身是 width:100%，只有外层 shrink-to-fit 才能收住它，勿再加宽度。 */
   .cd-time-picker {
     position: relative;
-    display: inline-flex;
-    inline-size: 100%;
+    display: inline-block;
     font-size: var(--cd-font-size-regular);
   }
 
@@ -681,7 +621,7 @@
   .cd-time-picker-panel:focus-visible {
     outline: none;
   }
-  .cd-time-picker-panel--no-motion {
+  .cd-time-picker-panel-no-motion {
     transition: none;
   }
 
@@ -738,7 +678,7 @@
   }
   /* 双列中间分割线（左列 body 右侧描边）。 */
   .cd-time-picker-lists :global(.cd-scrolllist:not(:last-child) .cd-scrolllist-body) {
-    border-inline-end: var(--cd-width-time-picker-range-panel-scrolllist-body-border) solid var(--cd-color-time-picker-range-picker-panel-split-border);
+    border-right: var(--cd-width-time-picker-range-panel-scrolllist-body-border) solid var(--cd-color-time-picker-range-picker-panel-split-border);
   }
   /* range 面板里 body 与 header 的 padding 覆盖为 0（镜像 Semi timePicker.scss L111-115
      `.semi-scrolllist { .semi-scrolllist-body, .semi-scrolllist-header { padding: 0 } }`）。
@@ -753,5 +693,14 @@
     .cd-time-picker-panel {
       transition: none;
     }
+  }
+
+  /* —— RTL（逐条对齐 Semi timePicker/rtl.scss）——
+     面板/range 分割线部分 Semi 挂在 `.semi-portal-rtl` 上：面板 portal 到 body 后脱离
+     `.semi-rtl`/`.cd-rtl` 祖先，而 `.semi-portal-rtl` 在 Semi 全仓 51 处 rtl.scss 引用却
+     0 处被赋值（上游死代码，见 Layout/Space 同类注释），故面板部分本就不生效，此处不搬。
+     仅触发器根节点（不 portal，`.cd-rtl` 祖先选择器可达）落地方向镜像。 */
+  :global(.cd-rtl) .cd-time-picker {
+    direction: rtl;
   }
 </style>

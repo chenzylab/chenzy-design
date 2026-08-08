@@ -172,14 +172,14 @@
   class={['cd-sidebar-annotation', className].filter(Boolean).join(' ')}
 >
   {#if isEmpty}
-    <div class="cd-sidebar-annotation__empty">{emptyText}</div>
+    <div class="cd-sidebar-annotation-empty">{emptyText}</div>
   {:else}
     <Collapse {...collapseProps}>
       {#each info as group (group.key)}
         {#snippet panelHead()}
-          <span class="cd-sidebar-annotation__group-header">
+          <span class="cd-sidebar-annotation-group-header">
             <svg
-              class="cd-sidebar-annotation__group-icon"
+              class="cd-sidebar-annotation-group-icon"
               width="16"
               height="16"
               viewBox="0 0 16 16"
@@ -193,18 +193,18 @@
                 stroke-linejoin="round"
               />
             </svg>
-            <span class="cd-sidebar-annotation__group-title">{group.header}</span>
+            <span class="cd-sidebar-annotation-group-title">{group.header}</span>
           </span>
         {/snippet}
         <Collapse.Panel itemKey={group.key} head={panelHead}>
-          <div class="cd-sidebar-annotation__list">
+          <div class="cd-sidebar-annotation-content">
             {#each group.annotations as item, index (index)}
               {#if renderItem}
                 {@render renderItem(item)}
               {:else if isInteractive(item)}
                 <button
                   type="button"
-                  class="cd-sidebar-annotation__card cd-sidebar-annotation__card--{item.type ??
+                  class="cd-sidebar-annotation-item cd-sidebar-annotation-item-{item.type ??
                     'text'}"
                   onclick={(e) => handleItemClick(e, item)}
                 >
@@ -212,8 +212,8 @@
                 </button>
               {:else}
                 <div
-                  class="cd-sidebar-annotation__card cd-sidebar-annotation__card--{item.type ??
-                    'text'} cd-sidebar-annotation__card--static"
+                  class="cd-sidebar-annotation-item cd-sidebar-annotation-item-{item.type ??
+                    'text'} cd-sidebar-annotation-item-static"
                 >
                   {@render cardBody(item)}
                 </div>
@@ -228,16 +228,16 @@
 
 {#snippet cardBody(item: SideBarAnnotationItem)}
   {#if item.type === 'video'}
-    <div class="cd-sidebar-annotation__cover">
+    <div class="cd-sidebar-annotation-item-video-img-wrapper">
       {#if item.img}
         <img
-          class="cd-sidebar-annotation__cover-img"
+          class="cd-sidebar-annotation-item-video-img"
           src={item.img}
           alt={item.title ?? ''}
         />
       {/if}
       <svg
-        class="cd-sidebar-annotation__play"
+        class="cd-sidebar-annotation-item-video-play"
         width="24"
         height="24"
         viewBox="0 0 24 24"
@@ -249,25 +249,28 @@
       </svg>
       {#if typeof item.duration === 'number'}
         <span
-          class="cd-sidebar-annotation__duration"
+          class="cd-sidebar-annotation-item-video-duration"
           aria-label={durationLabel(item.duration)}
         >
           <span aria-hidden="true">{formatDuration(item.duration)}</span>
         </span>
       {/if}
     </div>
-    <div class="cd-sidebar-annotation__content">
+    <!-- Semi 把 video 卡的「标题 + 页脚」包在 -item-video-content 里（annotation/item.tsx:45）。
+         本库原来复用了 -annotation-content，而那个类在分组网格上另有其义，
+         两处同名导致 style 段出现两个同名规则块、后者静默覆盖前者。 -->
+    <div class="cd-sidebar-annotation-item-video-content">
       {#if item.title}
-        <div class="cd-sidebar-annotation__title">{item.title}</div>
+        <div class="cd-sidebar-annotation-item-title">{item.title}</div>
       {/if}
       {@render cardFooter(item)}
     </div>
   {:else}
     {#if item.title}
-      <div class="cd-sidebar-annotation__title">{item.title}</div>
+      <div class="cd-sidebar-annotation-item-title">{item.title}</div>
     {/if}
     {#if item.detail}
-      <div class="cd-sidebar-annotation__detail">{item.detail}</div>
+      <div class="cd-sidebar-annotation-item-text-detail">{item.detail}</div>
     {/if}
     {@render cardFooter(item)}
   {/if}
@@ -275,21 +278,21 @@
 
 {#snippet cardFooter(item: SideBarAnnotationItem)}
   {#if item.logo || item.siteName || typeof item.order === 'number'}
-    <div class="cd-sidebar-annotation__footer">
+    <div class="cd-sidebar-annotation-item-footer">
       {#if item.logo}
         <img
-          class="cd-sidebar-annotation__logo"
+          class="cd-sidebar-annotation-item-footer-logo"
           src={item.logo}
           alt=""
           aria-hidden="true"
         />
       {/if}
       {#if item.siteName}
-        <span class="cd-sidebar-annotation__site">{item.siteName}</span>
+        <span class="cd-sidebar-annotation-item-footer-text">{item.siteName}</span>
       {/if}
       {#if typeof item.order === 'number'}
         <span
-          class="cd-sidebar-annotation__order"
+          class="cd-sidebar-annotation-item-footer-order"
           aria-label={orderLabel(item.order)}
         >
           <span aria-hidden="true">{item.order}</span>
@@ -300,40 +303,40 @@
 {/snippet}
 
 <style>
-  .cd-sidebar-annotation__empty {
+  .cd-sidebar-annotation-empty {
     padding: var(--cd-spacing-base, 16px) 0;
     color: var(--cd-color-text-2);
-    font-size: var(--cd-font-size-secondary);
+    font-size: var(--cd-font-size-small);
     text-align: center;
   }
-  .cd-sidebar-annotation__group-header {
+  .cd-sidebar-annotation-group-header {
     display: inline-flex;
     align-items: center;
     gap: var(--cd-spacing-tight, 8px);
     min-inline-size: 0;
   }
-  .cd-sidebar-annotation__group-icon {
+  .cd-sidebar-annotation-group-icon {
     flex-shrink: 0;
     color: var(--cd-color-text-2);
   }
-  .cd-sidebar-annotation__group-title {
+  .cd-sidebar-annotation-group-title {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
-  .cd-sidebar-annotation__list {
+  .cd-sidebar-annotation-content {
     display: flex;
     flex-direction: column;
-    gap: var(--cd-sidebar-annotation-gap);
+    gap: var(--cd-sidebar-annotation-content-gap);
     padding-block: var(--cd-spacing-tight, 8px);
   }
-  .cd-sidebar-annotation__card {
+  .cd-sidebar-annotation-item {
     box-sizing: border-box;
     display: flex;
     inline-size: 100%;
     flex-direction: column;
     gap: var(--cd-spacing-tight, 8px);
-    padding: var(--cd-sidebar-annotation-card-padding);
+    padding: var(--cd-sidebar-annotation-text-padding-y) var(--cd-sidebar-annotation-text-padding-x);
     border: 1px solid var(--cd-sidebar-annotation-card-border);
     border-radius: var(--cd-sidebar-annotation-card-radius);
     background: var(--cd-sidebar-annotation-card-bg);
@@ -342,21 +345,23 @@
     text-align: start;
     cursor: pointer;
   }
-  .cd-sidebar-annotation__card--video {
+  .cd-sidebar-annotation-item-video {
     flex-direction: row;
     align-items: flex-start;
   }
-  .cd-sidebar-annotation__card--static {
+  /* 本库自有：非交互（无来源链接）的卡片。Semi 的 -item-text 是「文本内容块」，
+     语义不同，故这里用 -item-static 区分，不复用那个名字。 */
+  .cd-sidebar-annotation-item-static {
     cursor: default;
   }
-  button.cd-sidebar-annotation__card:hover {
+  button.cd-sidebar-annotation-item:hover {
     background: var(--cd-sidebar-annotation-card-bg-hover);
   }
-  button.cd-sidebar-annotation__card:focus-visible {
+  button.cd-sidebar-annotation-item:focus-visible {
     outline: none;
     box-shadow: var(--cd-focus-ring);
   }
-  .cd-sidebar-annotation__cover {
+  .cd-sidebar-annotation-item-video-img-wrapper {
     position: relative;
     flex-shrink: 0;
     inline-size: 96px;
@@ -365,89 +370,99 @@
     border-radius: var(--cd-border-radius-small);
     background: var(--cd-sidebar-annotation-cover-bg);
   }
-  .cd-sidebar-annotation__cover-img {
+  .cd-sidebar-annotation-item-video-img {
     inline-size: 100%;
     block-size: 100%;
     object-fit: cover;
   }
-  .cd-sidebar-annotation__play {
+  .cd-sidebar-annotation-item-video-play {
     position: absolute;
     inset-block-start: 50%;
     inset-inline-start: 50%;
     transform: translate(-50%, -50%);
   }
-  .cd-sidebar-annotation__duration {
+  .cd-sidebar-annotation-item-video-duration {
     position: absolute;
     inset-block-end: 4px;
     inset-inline-end: 4px;
     padding: 0 4px;
     border-radius: var(--cd-border-radius-small);
-    background: var(--cd-sidebar-annotation-duration-bg);
-    color: var(--cd-sidebar-annotation-duration-color);
+    background: var(--cd-sidebar-annotation-video-duration-bg);
+    color: var(--cd-sidebar-annotation-video-duration-text);
     font-size: 11px;
-    line-height: 1.5;
+    /* Semi sidebar.scss:333 @include font-size-small → 16px */
+    line-height: var(--cd-line-height-small);
   }
-  .cd-sidebar-annotation__content {
+  .cd-sidebar-annotation-item-video-content {
     flex: 1;
     min-inline-size: 0;
     display: flex;
     flex-direction: column;
     gap: var(--cd-spacing-tight, 8px);
   }
-  .cd-sidebar-annotation__title {
+  .cd-sidebar-annotation-item-title {
     overflow: hidden;
-    color: var(--cd-sidebar-annotation-title-color);
-    font-size: var(--cd-sidebar-annotation-title-size);
+    color: var(--cd-sidebar-annotation-video-title-text);
+    font-size: var(--cd-font-size-regular);
     font-weight: var(--cd-font-weight-medium, 500);
-    line-height: 1.4;
+    /* Semi sidebar.scss:338 @include font-size-regular → 20px */
+    line-height: var(--cd-line-height-regular);
     display: -webkit-box;
     -webkit-line-clamp: 2;
     line-clamp: 2;
     -webkit-box-orient: vertical;
   }
-  .cd-sidebar-annotation__detail {
+  .cd-sidebar-annotation-item-text-detail {
     overflow: hidden;
     color: var(--cd-sidebar-annotation-detail-color);
     font-size: var(--cd-sidebar-annotation-detail-size);
-    line-height: 1.5;
+    /* Semi sidebar.scss:271 @include font-size-small → 16px */
+    line-height: var(--cd-line-height-small);
     display: -webkit-box;
     -webkit-line-clamp: 3;
     line-clamp: 3;
     -webkit-box-orient: vertical;
   }
-  .cd-sidebar-annotation__footer {
+  /* gap 改用 Semi 的 $spacing-sidebar_annotation_footer-columnGap（4px；本库原为 6px）。 */
+  .cd-sidebar-annotation-item-footer {
     display: flex;
     align-items: center;
-    gap: 6px;
+    column-gap: var(--cd-sidebar-annotation-footer-column-gap);
     min-inline-size: 0;
     color: var(--cd-sidebar-annotation-footer-color);
-    font-size: var(--cd-font-size-secondary);
+    font-size: var(--cd-font-size-small);
   }
-  .cd-sidebar-annotation__logo {
+  /* logo 宽高/字号改用 Semi 值（14px；本库原为 16px）。 */
+  .cd-sidebar-annotation-item-footer-logo {
     flex-shrink: 0;
-    inline-size: 16px;
-    block-size: 16px;
+    font-size: var(--cd-sidebar-annotation-footer-logo-font-size);
+    inline-size: var(--cd-sidebar-annotation-footer-logo);
+    block-size: var(--cd-sidebar-annotation-footer-logo);
     border-radius: var(--cd-border-radius-small);
     object-fit: cover;
   }
-  .cd-sidebar-annotation__site {
+  .cd-sidebar-annotation-item-footer-text {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
-  .cd-sidebar-annotation__order {
+  /* 尺寸/内边距/圆角改用 Semi 值（16px / 0 2px / 8px；本库原来是 18px / 0 5px / 9px、
+     字号 11px 也是自造）。字号走 font-size-small（Semi 该处 @include font-size-small）。 */
+  .cd-sidebar-annotation-item-footer-order {
+    box-sizing: border-box;
     display: inline-flex;
     flex-shrink: 0;
     align-items: center;
     justify-content: center;
     margin-inline-start: auto;
-    min-inline-size: 18px;
-    block-size: 18px;
-    padding: 0 5px;
-    border-radius: 9px;
+    min-inline-size: var(--cd-sidebar-annotation-footer-order-min-width);
+    block-size: var(--cd-height-sidebar-annotation-footer-order);
+    padding: var(--cd-sidebar-annotation-footer-order-padding-y)
+      var(--cd-sidebar-annotation-footer-order-padding-x);
+    border-radius: var(--cd-radius-sidebar-annotation-footer-order);
     background: var(--cd-sidebar-annotation-order-bg);
     color: var(--cd-sidebar-annotation-order-color);
-    font-size: 11px;
-    line-height: 1;
+    font-size: var(--cd-font-size-small);
+    line-height: 16px;
   }
 </style>

@@ -42,19 +42,23 @@ Steps（步骤条）用于引导用户按照预设的流程逐步完成任务，
 
 ### Props — Steps
 
-| 名称 | 类型 | 默认值 | 说明 |
+> 本表由 `packages/svelte/src/steps/meta.ts` 真源生成（2026-07-30 重校）。此前本表列的 prop 多为 Semi 对齐前的旧名或已删除项（如 `value`→`activeKey`、`change`→`onChange`），改 prop 时请同步 meta.ts，勿手写「规划中」的 prop。
+
+| Prop | 类型 | 默认值 | 说明 |
 | --- | --- | --- | --- |
-| `current` | `number` | `0` | 当前步索引（受控）。配合 `on:change` 实现可点击切换 |
-| `defaultCurrent` | `number` | `0` | 非受控初始当前步 |
-| `direction` | `'horizontal' \| 'vertical'` | `'horizontal'` | 布局方向 |
-| `type` | `'fill' \| 'basic' \| 'nav'` | `'fill'` | 步骤条类型 |
-| `dot` | `boolean` | `false` | 点状步骤条（覆盖图标，弱化标题区） |
-| `size` | `'small' \| 'default' \| 'large'` | `'default'` | 尺寸，影响图标与字号 |
-| `status` | `'process' \| 'finish' \| 'error' \| 'warning'` | `'process'` | 当前步（current）所处状态，影响其图标与配色 |
-| `steps` | `StepItem[]` | `—` | 数据式声明，等价于一组 `Steps.Step`；与 slot 二选一 |
-| `clickable` | `boolean` | `type==='nav'` | 是否允许点击切换步骤（默认仅 nav 开启） |
-| `initial` | `number` | `0` | 起始序号偏移（序号从 initial 开始计数） |
-| `class` | `string` | `—` | 透传根节点类名 |
+| current | `number` | `undefined` | 受控当前步（从 0 计数） |
+| defaultCurrent | `number` | `0` | 非受控初始当前步 |
+| direction | `'horizontal'\|'vertical'` | `horizontal` | 步骤条方向 |
+| type | `'fill'\|'basic'\|'nav'` | `fill` | fill 为块状（旧版默认）、basic 为简洁型、nav 为导航型（不可交互） |
+| status | `'wait'\|'process'\|'finish'\|'error'\|'warning'` | `process` | 当前步状态 |
+| size | `'small'\|'default'` | `default` | 尺寸（basic/nav 型生效） |
+| initial | `number` | `0` | 起始序号偏移 |
+| hasLine | `boolean` | `true` | basic 型是否显示连接线（对齐 Semi hasLine） |
+| onChange | `(current: number) => void` | `undefined` | 切换步骤回调（参数为 initial + index）；传入时 fill/basic 型步骤可点击 |
+| class | `string` | `''` |  |
+| style | `string` | `undefined` | 容器内联样式（对齐 Semi style） |
+| aria-label | `string` | `undefined` | 容器 aria-label（对齐 Semi aria-label） |
+| children | `Snippet` | `undefined` | 内嵌 <Steps.Step> 列表 |
 
 ### Props — Steps.Step / StepItem
 
@@ -64,13 +68,11 @@ Steps（步骤条）用于引导用户按照预设的流程逐步完成任务，
 | `description` | `string` | `—` | 步骤描述（次要信息） |
 | `status` | `'wait' \| 'process' \| 'finish' \| 'error' \| 'warning'` | `—` | 显式覆盖该步状态；不传时由 `current` 推断 |
 | `icon` | `string \| Component` | `—` | 自定义图标，覆盖默认序号/勾选 |
-| `disabled` | `boolean` | `false` | 禁用该步（不可点击、置灰） |
+> 注：`disabled` **未实现**（2026-07-30 重校）——Steps.Step 无禁用 prop，对齐 Semi。
 
 ### Events — Steps
 
-| 名称 | 载荷 (detail) | 触发时机 |
-| --- | --- | --- |
-| `change` | `{ current: number, previous: number }` | 用户点击可点击步骤（clickable/nav）切换当前步时。受控场景需据此回写 `current` |
+> 本组件无事件回调 prop（meta.events 为空）。此前本表列的回调均未实现，已删。
 
 ### Slots
 
@@ -125,16 +127,19 @@ Steps（步骤条）用于引导用户按照预设的流程逐步完成任务，
 
 用户可见文案零硬编码，通过 i18n 提供（默认值在 messages 包中）。序号与「共 N 步」用 `Intl.NumberFormat` 按 locale 格式化。
 
-| i18n key | 默认值 (zh) | 说明 |
-| --- | --- | --- |
-| `Steps.stepLabel` | `步骤 {index}` | 视觉隐藏的步骤序号标签 |
-| `Steps.ofTotal` | `，共 {total} 步` | 总数后缀，拼接为完整朗读文本 |
-| `Steps.statusWait` | `未开始` | wait 状态朗读 |
-| `Steps.statusProcess` | `进行中` | process 状态朗读 |
-| `Steps.statusFinish` | `已完成` | finish 状态朗读 |
-| `Steps.statusError` | `错误` | error 状态朗读 |
-| `Steps.statusWarning` | `警告` | warning 状态朗读 |
-| `Steps.navAriaLabel` | `步骤导航` | nav 类型外层 `<nav>` 的 aria-label |
+> 本表由 `packages/locale/src/zh_CN.ts` 真源生成（2026-07-30 重校）。键名与键值都是 Semi 契约，勿手写「规划中」的键——历史上本表列过大量从未实现的键名，见 [[locale-dangling-keys-render-raw-key]]。
+
+| i18n key | 默认（zh-CN） |
+| --- | --- |
+| `Steps.navAriaLabel` | 步骤导航 |
+| `Steps.stepLabel` | 步骤 {index} |
+| `Steps.ofTotal` | ，共 {total} 步 |
+| `Steps.statusSeparator` | ， |
+| `Steps.statusWait` | 未开始 |
+| `Steps.statusProcess` | 进行中 |
+| `Steps.statusFinish` | 已完成 |
+| `Steps.statusError` | 错误 |
+| `Steps.statusWarning` | 警告 |
 
 朗读组合示例：`Steps.stepLabel(2) + Steps.ofTotal(4) + Steps.statusFinish` → 「步骤 2，共 4 步，已完成」。
 

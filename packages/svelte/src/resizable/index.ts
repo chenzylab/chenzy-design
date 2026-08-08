@@ -1,17 +1,16 @@
-export { default as Resizable } from './Resizable.svelte';
-export { default as ResizeGroup } from './ResizeGroup.svelte';
-export { default as ResizeItem } from './ResizeItem.svelte';
-export { default as ResizeHandler } from './ResizeHandler.svelte';
+export { default as Resizable } from './single/Resizable.svelte';
+export { default as ResizableHandler } from './single/ResizableHandler.svelte';
+export { default as ResizeGroup } from './group/ResizeGroup.svelte';
+export { default as ResizeItem } from './group/ResizeItem.svelte';
+export { default as ResizeHandler } from './group/ResizeHandler.svelte';
 export { meta as resizableMeta } from './meta.js';
+export type { HandleClassName, HandleStyle, HandleNode } from './single/types.js';
 export {
   RESIZE_GROUP_KEY,
   type ResizeGroupContext,
   type ResizeItemRegistration,
   type ResizeHandlerRegistration,
-  type HandleClassName,
-  type HandleStyle,
-  type HandleNode,
-} from './context.js';
+} from './group/ResizeContext.js';
 export {
   createResizeDrag,
   computeGroupResize,

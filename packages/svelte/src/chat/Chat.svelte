@@ -35,11 +35,13 @@
     type ChatMode,
     type SendHotKey,
     type EnableUploadProps,
+    resolveDefault,
   } from '@chenzy-design/core';
   import { IconChevronDown, IconDisc } from '@chenzy-design/icons';
   import { useLocale } from '../locale-provider/index.js';
   import type { UploadFileItem } from '../upload/types.js';
   import Button from '../button/Button.svelte';
+  import { useToast, ToastHolder } from '../toast/index.js';
   import ChatBox from './ChatBox.svelte';
   import InputBox from './InputBox.svelte';
   import Hint from './Hint.svelte';
@@ -83,8 +85,18 @@
     uploadTipProps?: Record<string, unknown>;
     /** 透传 MarkdownRender props。 */
     markdownRenderProps?: Record<string, unknown>;
+    /** 是否对用户消息中的 HTML 标签进行转义，防止被 Markdown 解析器当作 HTML 处理导致内容丢失。 */
+    escapeHtml?: boolean;
     /** 输入框占位。 */
     placeholder?: string;
+    /** 输入框类名（对齐 Semi inputBoxCls）。 */
+    inputBoxCls?: string;
+    /** 输入框样式（对齐 Semi inputBoxStyle）。 */
+    inputBoxStyle?: string;
+    /** 提示区最外层类名（对齐 Semi hintCls）。 */
+    hintCls?: string;
+    /** 提示区最外层样式（对齐 Semi hintStyle）。 */
+    hintStyle?: string;
     /** 顶部插槽。 */
     topSlot?: Snippet;
     /** 底部插槽（列表与输入区之间）。 */
@@ -119,18 +131,23 @@
   let {
     chats,
     roleConfig,
-    align = CHAT_ALIGN.LEFT_RIGHT,
-    mode = CHAT_MODE.BUBBLE,
-    sendHotKey = 'enter',
-    showClearContext = false,
-    showStopGenerate = false,
+    align: alignProp,
+    mode: modeProp,
+    sendHotKey: sendHotKeyProp,
+    showClearContext: showClearContextProp,
+    showStopGenerate: showStopGenerateProp,
     canSend,
     hints,
     enableUpload = true,
     uploadProps,
     uploadTipProps,
     markdownRenderProps,
+    escapeHtml = true,
     placeholder,
+    inputBoxCls = '',
+    inputBoxStyle = '',
+    hintCls = '',
+    hintStyle = '',
     topSlot,
     bottomSlot,
     class: className = '',
@@ -155,8 +172,19 @@
     renderHintBox,
     renderDivider,
   }: Props = $props();
+  // cdGlobal 全局默认 props（对齐 Semi semiGlobal.config.overrideDefaultProps）：
+  // 优先级 = 显式传值 > cdGlobal['Chat'] > 组件内置默认值。
+  const align = $derived(resolveDefault(alignProp, 'Chat', 'align', CHAT_ALIGN.LEFT_RIGHT));
+  const showStopGenerate = $derived(resolveDefault(showStopGenerateProp, 'Chat', 'showStopGenerate', false));
+  const mode = $derived(resolveDefault(modeProp, 'Chat', 'mode', CHAT_MODE.BUBBLE));
+  const showClearContext = $derived(resolveDefault(showClearContextProp, 'Chat', 'showClearContext', false));
+  const sendHotKey = $derived(resolveDefault(sendHotKeyProp, 'Chat', 'sendHotKey', 'enter'));
 
   const loc = useLocale();
+
+  // 局部 Toast 实例（对齐 Semi chatContent.tsx Toast.useToast()）：复制成功提示渲染在
+  // chat 组件树内（继承 LocaleProvider 等上下文），非全局单例。见 .cd-chat-toast 挂载点。
+  const [toast, toastHolderStore] = useToast();
 
   // 受控（传了 chats）/ 非受控（内部 inner）——对齐 Upload 的 value 模式。
   // 受控：父级拥有 chats，我们只经 onChatsChange 回传、从不写 prop；
@@ -171,6 +199,16 @@
   // back-bottom 显隐：专用 state，仅 scroll / resize 事件命令式写入（红线：不在 effect 回读派生做二次 set）。
   let backBottomVisible = $state(false);
   let containerEl: HTMLDivElement | null = $state(null);
+
+  // 滚动条视觉（对齐 Semi wheelScroll）：容器恒为 overflow:scroll（预留固定轨道宽度，
+  // 避免内容区域宽度随「有无滚动条」跳动——hint/消息气泡的可用宽度需要稳定），但初始
+  // 用 ::-webkit-scrollbar{display:none} 隐藏滚动条视觉本身（对齐 Semi -scroll-hidden），
+  // 首次真实鼠标滚轮事件后永久切换为显示原生滚动条（对齐 Semi registerWheelEvent +
+  // setWheelScroll(true)，一次性、不可逆）。
+  let wheelScrolled = $state(false);
+  function handleWheel(): void {
+    wheelScrolled = true;
+  }
 
   let idSeq = 0;
   function makeId(): string {
@@ -329,19 +367,24 @@
       <div
         bind:this={containerEl}
         class="cd-chat-container"
+        class:cd-chat-container-scroll-hidden={!wheelScrolled}
         role="log"
         aria-live="polite"
         aria-label={loc().t('Chat.messageList')}
         onscroll={handleScroll}
+        onwheel={wheelScrolled ? undefined : handleWheel}
       >
         {#each currentChats as message, i (message.id ?? i)}
           <ChatBox
             {message}
+            previousMessage={i > 0 ? currentChats[i - 1] : undefined}
             role={roleOf(message)}
             {align}
             {mode}
+            {toast}
             lastChat={i === currentChats.length - 1}
             {markdownRenderProps}
+            {escapeHtml}
             onMessageCopy={(m) => onMessageCopy?.(m)}
             onMessageDelete={doDelete}
             onMessageReset={doReset}
@@ -355,6 +398,17 @@
             {renderDivider}
           />
         {/each}
+        <!-- hint 区域对齐 Semi：与消息列表同在 .cd-chat-container 内（非独立于外），共享
+             滚动容器的横向 padding（chat_container-paddingX 16px）与滚动行为——本库此前
+             把 Hint 挂在 container 外层（与 .cd-chat-content 平级），导致 hint 卡片右侧
+             缺失这段 padding，真机对比 Semi 官网发现自定义渲染 hint 紧贴容器边缘
+             （gap:0 vs Semi gap:16px）。 -->
+        {#if hints && hints.length > 0}
+          <Hint {hints} onHintClick={doHintClick} {renderHintBox} class={hintCls} style={hintStyle} />
+        {/if}
+      </div>
+      <div class="cd-chat-toast">
+        <ToastHolder store={toastHolderStore} />
       </div>
 
       <!-- 回到底部 / 停止生成悬浮按钮（对齐 Semi -action，Button + 具名图标） -->
@@ -365,7 +419,7 @@
             theme="light"
             type="tertiary"
             onclick={() => scrollToBottom(true)}
-            ariaLabel={loc().t('Chat.backToBottom')}
+            aria-label={loc().t('Chat.backToBottom')}
             title={loc().t('Chat.backToBottom')}
             icon={backBottomIcon}
           />
@@ -388,10 +442,6 @@
       <div class="cd-chat-bottomSlot">{@render bottomSlot()}</div>
     {/if}
 
-    {#if hints && hints.length > 0}
-      <Hint {hints} onHintClick={doHintClick} {renderHintBox} />
-    {/if}
-
     <InputBox
       {sendHotKey}
       {placeholder}
@@ -406,6 +456,8 @@
       onClearContext={doClearContext}
       onInputChange={(p) => onInputChange?.(p)}
       {renderInputArea}
+      class={inputBoxCls}
+      style={inputBoxStyle}
     />
   </div>
 </div>
@@ -443,7 +495,26 @@
     padding-left: var(--cd-chat-container-paddingX);
     padding-right: var(--cd-chat-container-paddingX);
     height: 100%;
-    overflow: auto;
+    /* 恒 scroll（非 auto，对齐 Semi）：预留固定滚动条轨道宽度，避免内容可用宽度随
+       「有无滚动条」跳动——hint 提示条/消息气泡的 width:fit-content 计算基准需要稳定，
+       用 auto 时内容不够长不出滚动条，宽度基准会比出滚动条时多出一条轨道宽度，
+       与 Semi 视觉不符（真机对比：Semi 提示条右侧始终留有轨道宽度的空白）。 */
+    overflow: scroll;
+  }
+
+  /* 滚动条视觉初始隐藏（对齐 Semi -scroll-hidden，仅 WebKit，Firefox 无等效私有属性可用，
+     对齐 Semi 亦未做 Firefox 处理）：轨道空间仍占用（overflow:scroll 保证），只是滚动条
+     滑块本身不可见，首次真实滚轮滚动后移除该 class 显示原生滚动条。 */
+  .cd-chat-container-scroll-hidden::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* —— Toast 挂载点（对齐 Semi -toast：绝对定位、居中顶部） —— */
+  .cd-chat-toast {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
   }
 
   /* —— 回到底部 / 停止生成（对齐 Semi -action，绝对定位居中底部） —— */
@@ -479,5 +550,11 @@
   .cd-chat-topSlot,
   .cd-chat-bottomSlot {
     flex: 0 0 auto;
+  }
+
+  /* —— RTL（对齐 Semi chat/rtl.scss）：根节点声明方向；
+     图标镜像分别在 Hint / InputBox / ChatBoxAction 各自的 <style> 里。 —— */
+  :global(.cd-rtl) .cd-chat {
+    direction: rtl;
   }
 </style>

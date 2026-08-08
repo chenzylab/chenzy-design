@@ -21,7 +21,13 @@ export {
   type LiveAnnouncer,
   type Politeness,
 } from './live-announcer.js';
-export { useDismiss, type DismissOptions, type DismissReason } from './dismiss.js';
+export {
+  useDismiss,
+  registerOverlayRoot,
+  isInsideAnyOverlay,
+  type DismissOptions,
+  type DismissReason,
+} from './dismiss.js';
 export { useScrollLock, __resetScrollLock } from './scroll-lock.js';
 export {
   useInertBackground,
@@ -90,15 +96,6 @@ export {
   type CheckState,
   type DropPosition,
 } from './tree.js';
-export {
-  flattenCascaderPaths,
-  filterCascaderPaths,
-  resolveColumnWidth,
-  type CascaderKey,
-  type CascaderPathNode,
-  type CascaderFlatPath,
-  type CascaderFilterFn,
-} from './cascader.js';
 export {
   nextSortOrder,
   toggleSort,
@@ -210,6 +207,7 @@ export {
   type CompileToHastOptions,
   type UnifiedPluginEntry,
 } from './markdown-render.js';
+export { escapeHtmlInMarkdown } from './escape-html.js';
 export {
   createToastStore,
   type ToastStore,
@@ -283,6 +281,15 @@ export {
   type OnBreakpointChangeCallback,
 } from './config-provider.js';
 export {
+  cdGlobal,
+  getGlobalDefaultProp,
+  getGlobalDefaults,
+  resolveDefault,
+  resetGlobalConfig,
+  type GlobalConfig,
+  type ComponentDefaultProps,
+} from './global-config.js';
+export {
   toIANA,
   isValidTimezoneIANAString,
   utcToZonedTime,
@@ -307,6 +314,7 @@ export {
   getGlobalResizeObserver,
   type ResizeBox,
   type ResizeSchedule,
+  type ResizeObserverProperty,
   type CDResizeEntry,
   type ResizeObserverApi,
   type ResizeObserverOptions,
@@ -451,6 +459,18 @@ export {
   colorValueFromHex,
   colorValueToInputString,
   parseColorInput,
+  colorStringToValue,
+  parseHue,
+  rgbaStringToRgba,
+  rgbaStringToHsva,
+  rgbStringToRgba,
+  rgbStringToHsva,
+  hsvaStringToHsva,
+  hsvStringToHsva,
+  hsvaToHsla,
+  hsvaToHslString,
+  hsvaToHslaString,
+  hsvaToRgbaString,
   DEFAULT_COLOR_VALUE,
   type HsvaColor,
   type RgbaColor,
@@ -557,6 +577,12 @@ export {
   type OutputMessage,
   type OutputText,
   type Reasoning,
+  dialogueFileIconType,
+  dialogueFileRealType,
+  type DialogueFileIconType,
+  type DialogueStep,
+  type DialogueStepAction,
+  type StepsContentItem,
   type Annotation,
   type ToolCallContentItem,
   type InputMessage,
@@ -584,8 +610,6 @@ export {
   isValidHotKeys,
   matchHotKeys,
   attachHotKeys,
-  isApplePlatform,
-  modifierSymbol,
   type HotKey,
   type MatchHotKeysOptions,
   type AttachHotKeysOptions,
@@ -612,6 +636,11 @@ export {
   nextSuggestionIndex,
   referenceLabel,
   isImageReference,
+  isImageType,
+  getAttachmentType,
+  getContentType,
+  AI_CHAT_INPUT_PIC_PREFIX,
+  AI_CHAT_INPUT_PIC_SUFFIX,
   skillLabel,
   getSkillSlotHTML,
   getSelectSlotHTML,

@@ -1,6 +1,6 @@
 /**
  * Machine-readable component metadata for AI/docs consumption.
- * IconButton 严格对齐 Semi iconButton：带图标的 Button 薄封装，icon/children/ariaLabel 均可选。
+ * IconButton 严格对齐 Semi iconButton：带图标的 Button 薄封装，icon/children/aria-label 均可选。
  */
 // 严格对齐 Semi：IconButton 在 Semi 无独立文档页（属 Icon/Button 的一部分），故不带 category、
 // 不作为独立组件进侧边栏（对齐 build-components-json isComponentMeta：无 category 即不单列）。
@@ -12,9 +12,9 @@ export const meta = {
   /** IconButton = Button 的薄封装（复用全部 Button 组装逻辑与 token）。 */
   relatedTo: 'Button',
   props: [
-    { name: 'icon', type: 'Snippet', default: 'undefined', desc: '图标内容（可选）' },
+    { name: 'icon', type: 'Snippet<[{ fill?: string | string[] }]>', default: 'undefined', desc: '图标内容（可选）；colorful 命中 multipleColor/twoColor 时收到 fill 数组，供支持 fill prop 的具名图标消费' },
     { name: 'children', type: 'Snippet', default: 'undefined', desc: '文字内容（可选）；提供后非纯图标' },
-    { name: 'ariaLabel', type: 'string', default: 'undefined', desc: '可访问名（透传到 aria-label）；纯图标按钮建议提供' },
+    { name: 'aria-label', type: 'string', default: 'undefined', desc: '可访问名（透传到 aria-label）；纯图标按钮建议提供' },
     { name: 'type', type: "'primary'|'secondary'|'tertiary'|'warning'|'danger'", default: 'primary', desc: '语义类型' },
     { name: 'theme', type: "'solid'|'borderless'|'light'|'outline'", default: 'light', desc: '视觉变体' },
     { name: 'size', type: "'small'|'default'|'large'", default: 'default', desc: '尺寸三档' },
@@ -44,10 +44,10 @@ export const meta = {
   ],
   a11y: { role: 'button', keyboard: ['Enter', 'Space'], recommendedName: 'aria-label' },
   tokens: ['--cd-button-*'],
-  doNot: ['纯图标按钮建议提供 ariaLabel（否则屏幕阅读器无可访问名）。'],
+  doNot: ['纯图标按钮建议提供 aria-label（否则屏幕阅读器无可访问名）。'],
   examples: [
-    { title: '基础图标按钮', code: '<IconButton icon={editIcon} ariaLabel="编辑" />' },
+    { title: '基础图标按钮', code: '<IconButton icon={editIcon} aria-label="编辑" />' },
     { title: '图标+文字', code: '<IconButton icon={plusIcon}>新增</IconButton>' },
-    { title: '圆形', code: '<IconButton circle icon={plusIcon} ariaLabel="新增" />' },
+    { title: '圆形', code: '<IconButton circle icon={plusIcon} aria-label="新增" />' },
   ],
 } as const;

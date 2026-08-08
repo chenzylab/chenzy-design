@@ -20,7 +20,7 @@
 <LocaleProvider locale="en_US">
   <Select
     {optionList}
-    ariaLabel="Fruit"
+    aria-label="Fruit"
     defaultActiveFirstOption={false}
     onChange={(v) => {
       lastValue = v;

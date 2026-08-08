@@ -15,7 +15,7 @@
  * accepted, so those pairs are exempt. Semi-compliant pairs that DO clear AA
  * (primary/link/text) remain hard gates.
  */
-import { palette, type GlobalColorKey } from './global/color.js';
+import { palette, paletteDark, resolveRef, type GlobalColorKey, type TokenRef } from './global/color.js';
 import { aliasLight, aliasDark, type AliasKey } from './alias/index.js';
 
 /** 前景/背景可以是 alias 语义 token，也可以是全局基元（如纯白 white）。 */
@@ -27,14 +27,46 @@ const AA_NORMAL = 4.5;
 function resolve(token: ColorKey, theme: 'light' | 'dark'): string {
   // 先查 alias 语义层；未命中则回退全局基元（palette，如纯白 white）。
   const alias = theme === 'dark' ? (aliasDark[token as AliasKey] ?? aliasLight[token as AliasKey]) : aliasLight[token as AliasKey];
-  return (alias ?? palette[token as GlobalColorKey]) as string;
+  const raw = (alias ?? palette[token as GlobalColorKey]) as string | TokenRef;
+  // alias 里指向色板的条目是 TokenRef（构建期输出 var()），对比度计算要的是**字面色值**，
+  // 且须按当前主题解析到对应色板（dark 色板整套反转）。
+  return resolveRef(raw, theme === 'dark');
 }
 
 type RGBA = { r: number; g: number; b: number; a: number };
 
-/** Parse #rrggbb / #rgb / rgb()/rgba() into RGBA (0-255 channels, 0-1 alpha). */
-function parse(color: string): RGBA {
+/**
+ * `var(--cd-color-x)` → 对应主题色板的字面色值；非 var() 原样返回。
+ * 只解析全局色板层（alias 层的引用由 resolve() 负责，不会走到这里）。
+ */
+function resolveVar(v: string, theme: 'light' | 'dark'): string {
+  const m = v.trim().match(/^var\(\s*--cd-color-([a-z0-9-]+)\s*\)$/);
+  if (!m || !m[1]) return v;
+  const key = m[1] as GlobalColorKey;
+  if (theme === 'dark') {
+    const dk = key as Exclude<GlobalColorKey, 'white' | 'black'>;
+    return paletteDark[dk] ?? palette[key] ?? v;
+  }
+  return palette[key] ?? v;
+}
+
+/**
+ * Parse #rrggbb / #rgb / rgb()/rgba() / color-mix() into RGBA (0-255 channels, 0-1 alpha).
+ *
+ * `color-mix(in srgb, <色> N%, transparent)` 是本库表达「色板色 + 透明度」的标准写法
+ * （对齐 Semi 的 `rgba(var(--semi-X), .N)`，见 alias/index.ts）。语义上等价于
+ * 「该色以 N% 不透明度呈现」，故解析为同色 + alpha=N/100。
+ * theme 参数用于把内嵌的 var(--cd-color-*) 解析到对应主题的色板。
+ */
+function parse(color: string, theme: 'light' | 'dark' = 'light'): RGBA {
   const c = color.trim();
+
+  const mix = c.match(/^color-mix\(\s*in\s+srgb\s*,\s*(.+?)\s+([\d.]+)%\s*,\s*transparent\s*\)$/i);
+  if (mix && mix[1] && mix[2]) {
+    const base = parse(resolveVar(mix[1], theme), theme);
+    return { ...base, a: parseFloat(mix[2]) / 100 };
+  }
+
   if (c.startsWith('#')) {
     let h = c.slice(1);
     if (h.length === 3) h = h.split('').map((x) => x + x).join('');
@@ -71,9 +103,9 @@ function luminance(c: RGBA): number {
   return 0.2126 * channel(c.r) + 0.7152 * channel(c.g) + 0.0722 * channel(c.b);
 }
 
-function contrast(fgColor: string, bgColor: string): number {
-  const bg = parse(bgColor);
-  const fg = over(parse(fgColor), bg);
+function contrast(fgColor: string, bgColor: string, theme: 'light' | 'dark' = 'light'): number {
+  const bg = parse(bgColor, theme);
+  const fg = over(parse(fgColor, theme), bg);
   const l1 = luminance(fg);
   const l2 = luminance(bg);
   const hi = Math.max(l1, l2);
@@ -146,7 +178,7 @@ const lines: string[] = [];
 for (const p of PAIRS) {
   const fg = resolve(p.fg, p.theme);
   const bg = resolve(p.bg, p.theme);
-  const ratio = contrast(fg, bg);
+  const ratio = contrast(fg, bg, p.theme);
   const ok = ratio >= AA_NORMAL;
   let status: string;
   if (ok) status = 'PASS';

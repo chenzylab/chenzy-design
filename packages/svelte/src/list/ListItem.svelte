@@ -170,4 +170,14 @@
     flex: 0 0 auto;
     margin-left: var(--cd-spacing-list-extra-marginleft);
   }
+
+  /* —— RTL：头部与 extra 区的单侧外边距换边（对齐 Semi list/rtl.scss）—— */
+  :global(.cd-rtl) .cd-list-item-body-header {
+    margin-right: 0;
+    margin-left: var(--cd-spacing-list-header-marginright);
+  }
+  :global(.cd-rtl) .cd-list-item-extra {
+    margin-left: 0;
+    margin-right: var(--cd-spacing-list-extra-marginleft);
+  }
 </style>

@@ -15,4 +15,4 @@
   ];
 </script>
 
-<VideoPlayer {src} {poster} height={360} {markers} />
+<VideoPlayer {src} {poster} height={630} {markers} />

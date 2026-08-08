@@ -3,7 +3,6 @@ title: OverflowList 折叠列表
 name: overflowlist
 category: show
 brief: OverflowList 是一个行为组件，用于展示列表，并支持自适应来展示尽可能多的项目。因过长而溢出项目将折叠为一个元素。当检测到调整大小时，可见项将被重新计算。
-docMode: inline
 ---
 
 <script>

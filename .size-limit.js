@@ -53,10 +53,12 @@ const ignore = [
 // 取该组件的主渲染组件（含子组件时取代表/全部，与 spec 预算口径一致）。
 const components = [
   // basic
-  // 破坏性对齐 Semi 重建三层架构（BaseButton 纯容器 + Button 派发器 + IconButton 组装）后实测 4.44 KB，预算按 +15% buffer 校准。
-  ['button', '{ Button }', '5.1 KB'],
-  // 破坏性对齐 Semi iconButton 后（去必填约束、补 iconPosition/iconSize/iconStyle/noHorizontalPadding/contentClassName 等透传、iconSize/iconStyle 走 Icon 包裹）实测 0.71 KB，预算按 +15% buffer 校准。
-  ['iconbutton', '{ IconButton }', '0.85 KB'],
+  // 委托方向对齐 Semi index.tsx→IconButton（Button 变薄派发器，图标装配/loading 渐变/colorful fill
+  // 注入/RTL 镜像全部移到 IconButton，单一逻辑源）后实测 3.81 KB，预算按 +15% buffer 校准。
+  ['button', '{ Button }', '4.4 KB'],
+  // 承接原 Button 内嵌的图标装配逻辑（loading 渐变 SVG + colorful multipleColor/twoColor fill 注入
+  // + icon-only/content RTL 镜像 CSS）后实测 3.05 KB，预算按 +15% buffer 校准。
+  ['iconbutton', '{ IconButton }', '3.55 KB'],
   // 破坏性对齐 Semi 重写（纯 div+onClick、删 button/a/dev warn/focus/a11y/自定义 shape）瘦身，实测 2.06 KB，预算按 +20% buffer 校准。
   ['float-button', '{ FloatButton, FloatButtonGroup }', '2.5 KB'],
   ['divider', '{ Divider }', '1.55 KB'],
@@ -71,7 +73,8 @@ const components = [
   // feedback
   ['banner', '{ Banner }', '3.3 KB'],
   // modal：6.2→6.4 对齐 Semi 补 onOk/onCancel Promise loading、preventScroll、命令式 config 全字段（实测 6.29）
-  ['modal', '{ modal }', '6.4 KB'],
+  //        →6.5 接 cdGlobal 全局默认 props（12 个 prop 走 resolveDefault，实测 6.41）
+  ['modal', '{ modal }', '6.5 KB'],
   ['notification', '{ notification }', '5.5 KB'],
   // 浮层三件套对齐 Semi 破坏性重写后箭头定位职责回归 Tooltip 基座：Tooltip 内联 12 方位
   // x-placement CSS（+40%），Popover/Popconfirm 移除重复箭头 CSS 与中间变量层而下降。
@@ -88,9 +91,23 @@ const components = [
   // 对齐 Semi 的功能补齐带来必要体积增长（无异常第三方依赖，已 grep 反证只依赖本库+svelte）。
   // 预算按实测校准 + 少量余量：cascader 10.63 / checkbox 3.8 / radio 4.63 / textarea 4.77 KB。
   // radio 破坏性重写严格对齐 Semi（全类型原生 input + IconRadio + 全套 card/button token class），
-  // 实测 4.63 KB（含 IconRadio SVG），无异常第三方依赖，预算校准至 4.7 KB。
-  ['cascader', '{ Cascader }', '10.8 KB'],
-  ['checkbox', '{ Checkbox, CheckboxGroup }', '4 KB'],
+  // 实测 4.63 KB（含 IconRadio SVG），无异常第三方依赖，预算曾校准至 4.7 KB。
+  // 2026-07-31 补 RTL 镜像（direction + buttonRadioGroup 内边距换边）后实测 4.71 KB，
+  // 属对齐 Semi rtl.scss 的真实功能增长，预算上调至 4.8 KB。
+  // cascader：10.8→11 接 cdGlobal 全局默认 props（24 个 prop 走 resolveDefault，实测 10.85）
+  // 2026-08-04 逐 demo 真机对齐 Semi 一轮修复（loadData 重构为 Semi 同构、拆出
+  // Item.svelte 承载面板渲染、triggerRender onClear 事件透传、filterRender 虚拟化
+  // 字号/padding/gap 对齐等真实功能/bug 修复，非无谓膨胀），实测 13.15 KB，预算随之上调。
+  // 2026-08-07 全量严格对齐 Semi 第二轮修复：warning/error 触发器背景+边框、单选
+  // IconTick/empty 占位图标、tag 节点级 disabled 态、ARIA menu/menuitem 模型改造
+  // （aria-owns/haspopup/expanded）、RTL 键义对调、TagInput wrapper 精细化覆盖等
+  // 真实功能补齐（非无谓膨胀），实测 13.95 KB，预算随之上调。
+  ['cascader', '{ Cascader }', '14.1 KB'],
+  // 2026-08-07 全量严格对齐 Semi：拆分 CheckboxInner.svelte（对齐 checkboxInner.tsx 文件结构），
+  // 去掉 pointer-events:none 点击互斥 hack 改为单一入口，补 JS focusVisible/clickState 状态机
+  // （对齐 handleFocusVisible，替代纯 CSS :focus-visible 在“JS 主动 focus()”场景的误判），
+  // 真实功能补齐非无谓膨胀，实测 4.46 KB，预算随之上调。
+  ['checkbox', '{ Checkbox, CheckboxGroup }', '4.6 KB'],
   ['color-picker', '{ ColorPicker }', '7.5 KB'],
   // DatePicker 从零重写并严格对齐 Semi（7 type + range 双框触发器 + dateTime + 手输解析 +
   // multiple/max + needConfirm+Footer + preset + inset + 触发器/面板定制 + 四向 slot + 时区），
@@ -106,18 +123,22 @@ const components = [
   ['form', '{ FormField, FormInput, FieldArray }', '14 KB'],
   // TextArea 迁入 input/ 目录、与 Input/InputGroup 同为 input 条目导出（对齐 Semi 目录结构，
   // 原独立 textarea 条目随目录迁移移除）。三者共享 input.scss token/locale，合并测量。
-  ['input', '{ Input, InputGroup, TextArea }', '9 KB'],
+  // autosize 测量改用隐藏克隆节点（对齐 Semi calculateNodeHeight.ts，修复原生 rows 属性
+  // 污染 scrollHeight 测量导致 minRows 收缩失效的 bug）后实测 9.06 KB，预算 +微量 buffer 校准。
+  ['input', '{ Input, InputGroup, TextArea }', '9.2 KB'],
   ['input-number', '{ InputNumber }', '5 KB'],
   ['pincode', '{ PinCode }', '3.5 KB'],
-  ['radio', '{ Radio, RadioGroup }', '4.7 KB'],
+  ['radio', '{ Radio, RadioGroup }', '4.8 KB'],
   ['rating', '{ Rating }', '4 KB'],
   ['select', '{ Select }', '10 KB'],
   ['slider', '{ Slider }', '5.5 KB'],
   ['switch', '{ Switch }', '2.7 KB'],
   ['tag-input', '{ TagInput }', '6.25 KB'],
-  // 7.75→8 KB：TimeInput 拆分成独立组件 + time-input-foundation（对齐 Semi timePicker/TimeInput.tsx）
-  // 后实测 7.82 KB，按实测校准并留余量（对齐 memory perf-budgets-calibrated-from-real-measurement）。
-  ['time-picker', '{ TimePicker }', '8 KB'],
+  // 8→8.6 KB：文档整页对齐轮次拆出 time-picker-foundation + constants（对齐 Semi
+  // semi-foundation/timePicker/{foundation,constants}.ts 的文件分层），并补齐 use12Hours 默认
+  // format 分派 / panelHeader·panelFooter 数组 / disabledTime 传 dates 数组等 Semi 能力，
+  // 实测 8.33 KB，按实测校准留余量（对齐 memory perf-budgets-calibrated-from-real-measurement）。
+  ['time-picker', '{ TimePicker }', '8.6 KB'],
   ['transfer', '{ Transfer }', '10.9 KB'],
   ['tree-select', '{ TreeSelect }', '12 KB'],
   // 13 KB → 14 KB：破坏性重写严格对齐 Semi，FileCard 拆分后按 Semi「组件调用组件」
@@ -128,7 +149,11 @@ const components = [
   // 4 KB → 4.8 KB：全面对齐 Semi 引入的真实新功能（ellipsisPos:'middle' JS 二分截断 +
   // ResizeObserver、IconMore 折叠图标、showTooltip 对象化、链接三态、字符串 route 归一化）。
   // 实测 baseline 3460 B → 4620 B，纯功能增长；同类导航组件 anchor 4.5 / pagination 3.8 / tabs 7.3。
-  ['breadcrumb', '{ BreadcrumbItem }', '4.8 KB'],
+  // 4.8 KB → 5 KB：声明式 <Breadcrumb.Item> 补齐 maxItemCount 折叠能力（原先只有 routes
+  // 数据驱动分支支持，组合式分支被标注为「Svelte Snippet 不可切片」绕过）。实现为 context
+  // 注册式：子项上报序号 → 父级算出折叠区间 → 被折叠项自身不渲染 + 「…」点击展开。
+  // 实测 4.9 KB（净增 102 B），预算按实测校准留余量。
+  ['breadcrumb', '{ BreadcrumbItem }', '5 KB'],
   ['dropdown', '{ Dropdown }', '7.85 KB'],
   // 3.46 KB → 4.82 KB：全面对齐 Semi 引入的真实新功能（hoverShowPageSelect Popover 集成、
   // pageSizeOpts 动态选项 + Select size-changer、quickJumper、preventPageChangeOnPageSizeChange
@@ -182,7 +207,9 @@ const components = [
   ['timeline', '{ TimelineItem }', '5.4 KB'],
   // 对齐 Semi 破坏性重写：单 path 箭头 + .cd-tooltip-wrapper[x-placement] 12 方位定位 CSS
   // 全部内联进基座（原 3.07 KB → 4.2 KB 实测）；预算按 +15% buffer 校准（见浮层三件套注）。
-  ['tooltip', '{ Tooltip }', '5 KB'],
+  // 新增 registerOverlayRoot 全局浮层注册（修复嵌套 portal 浮层 pointerleave 误关闭，
+  // 见 nested-portal-overlay-pointerleave-false-close）后实测 5.03 KB，预算按小幅 headroom 校准。
+  ['tooltip', '{ Tooltip }', '5.1 KB'],
   ['tree', '{ Tree }', '11 KB'],
   ['user-guide', '{ UserGuide }', '5.5 KB'],
   ['virtual-list', '{ VirtualList }', '2.65 KB'],
@@ -190,23 +217,57 @@ const components = [
   // code-highlight 含 prismjs core；markdown-render 的 unified/remark 与
   // json-viewer 的内核均为动态 import，不计入组件壳（json-viewer ignore 内核）。
   ['code-highlight', '{ CodeHighlight }', '16 KB'],
-  ['markdown-render', '{ MarkdownRender }', '3.5 KB'],
+  // 严格对齐 Semi 文件结构（h1~h6/a/img/p/table/code 单文件拆分，非 pre 键改为 code 键
+  // 统一处理行内+围栏代码块）后实测 3.69 KB，预算按实测 +~10% 校准。
+  ['markdown-render', '{ MarkdownRender }', '4 KB'],
   ['video-player', '{ VideoPlayer }', '9 KB'],
   // 破坏性对齐 Semi 后复用 Button/Dropdown/Popover/Tooltip/Image + 具名图标 + 自建 AudioSlider，
   // 功能显著增长（单行布局/Popover 音量面板/Dropdown 5 档倍速/40 token）。按实测 5.13KB +7% 校准。
   ['audio-player', '{ AudioPlayer }', '5.5 KB'],
-  ['json-viewer', '{ JsonViewer }', '4 KB'],
+  // 补齐 renderTooltip（hoverNode/renderHoverNode 事件桥接）+ autoWrap 场景 ResizeObserver
+  // 响应式重排 + value 变化重建实例三个行为对齐 Semi 后，实测 4.14 KB，预算按实测 +buffer 校准。
+  ['json-viewer', '{ JsonViewer }', '4.3 KB'],
   // chat 严格对齐 Semi 后含 CodeHighlight（代码块 topSlot 深色高亮，prismjs 静态入壳）
   // + Avatar/Button/TextArea/Upload + chatBox 拆分子组件，实测 9.96 KB，预算 +~5% 校准。
-  ['chat', '{ Chat }', '10.5 KB'],
+  // 补齐 Semi attachment.tsx 独立文件（Attachment/FileAttachment/ImageAttachment，
+  // InputBox 已选附件预览 clear/progress/fail 三态 + Progress 组件依赖）后实测 11.36 KB，预算按 +~5% buffer 校准。
+  // 操作区角色显隐（showFeedback/complete/showReset 对齐 Semi render() 条件渲染）+
+  // Toast 局部 Hook 定位修复 + Tooltip custom trigger 盒模型修复后实测 12.11 KB，预算按 +~5% buffer 校准。
+  ['chat', '{ Chat }', '12.5 KB'],
   ['cropper', '{ Cropper }', '4 KB'],
   // 引用区（references）+ dialogueRenderConfig 四区块 snippet 结构后实测 6.71 KB，预算按 +15% buffer 校准。
-  ['ai-chat-dialogue', '{ AIChatDialogue }', '7.7 KB'],
+  // 7.7 → 10.5 KB：补齐 Semi 有而本库完全没有的两个内容类型后实测 9.57 KB（纯功能增长，
+  // 已 grep 反证未引入第三方依赖；Collapsible/CodeHighlight 走 `../` 属兄弟组件被 externalize 不计入）：
+  //   · steps（Semi widgets/contentItem/dialogueStep.tsx）：可折叠步骤 + action 列表；
+  //   · code（Semi widgets/contentItem/code.tsx）：语言标签栏 + 复制按钮的代码块覆盖。
+  // 10.5 → 12 KB：再按 Semi widgets/ 拆出 reasoning / action / annotation 三个 widget，
+  // 实测 11.2 KB。同样是纯功能增长（Semi 有本库缺的部分）：
+  //   · reasoning 补 -wrapper 外框 + 三段 header + 两态文案 + status 决定默认展开；
+  //   · action 从裸 emoji 换成复用 Button 的具名图标，并补剪贴板/Toast/删除确认 Modal；
+  //   · annotation 从「一排药丸」改成 Semi 的头像组折叠摘要（复用 AvatarGroup）。
+  // Button/Dropdown/Modal/Toast/AvatarGroup/Collapsible 均走 `../` 属兄弟组件被 externalize 不计入。
+  // 12 → 13 KB：再拆出 file 卡片（Semi dialogueContent.tsx 的 FileAttachment），实测 12.41 KB。
+  // 同样是补 Semi 有本库缺的部分：<a> 跳转 + 6 类底色图标框 + 「类型 大小」第二行 + 引用入口。
+  // 13 → 13.5 KB：第二遍对齐补两处 Semi 有本库缺的，实测 13.06 KB。
+  //   · DialogueHint：Semi 的 chat/hint 与 aiChatDialogue/dialogueHint 是两个不同组件
+  //     （前缀/图标/prop 名/selecting 态都不同），本库原来直接复用了 chat 那个；
+  //   · DialogueBox 补 container 层 + continueSend，多选框从裸 input 换成复用 Checkbox。
+  // Checkbox 走 `../` 属兄弟组件被 externalize 不计入，增量主要来自 DialogueHint 自身。
+  // 13.5 → 14 KB：内容区补齐 Semi dialogueContent.tsx 的分层与状态，实测 13.6 KB。
+  //   · -content-wrapper > -content-failed + -content-inner 两层；
+  //   · 失败态改成 IconAlertCircle 图标（本库原来是一行自造 locale 文案）；
+  //   · loading 从裸文字换成 Semi 的三个弹跳圆点 + 文案（含 keyframes）。
+  // 14 → 14.5 KB：引用区补齐 Semi renderReferenceIcon 的五类映射，实测 14.3 KB。
+  // 增量来自 IconWord/Pdf/Excel/Code/Video 五个具名图标 + 扩展名分派分支
+  // （原来只有一个 IconFile 通用图标）。
+  // 14.5 → 14 KB：工具调用块按 Semi ToolCallWidget 收敛成扁平 div（删掉本库自造的
+  // 折叠面板 + 10 个子类名 + 4 个 locale 键），实测 13.57 KB。
+  ['ai-chat-dialogue', '{ AIChatDialogue }', '14 KB'],
   // SideBar P0+P1+P2+P4（Container 浮层壳 + 主壳 mode 路由 + Options + Annotation 引用溯源
   // + CodeContent 代码/JSON 预览）；spec §9 各阶段增量。Annotation/CodeContent 复用
   // Collapse；CodeContent 的 CodeHighlight(prismjs) 静态入壳计入、JsonViewer 内核动态
   // import（下方 ignore）。度量含各自壳；预算按实测校准（P3/P5 后续阶段各自增量）。
-  ['sidebar', '{ SideBar, SideBarContainer, SideBarAnnotation, SideBarCodeContent, SideBarMcpConfigure, SideBarFileContent }', '20 KB'],
+  ['sidebar', '{ SideBar, SideBarContainer, SideBarAnnotation, SideBarCodeContent, SideBarMCPConfigure, SideBarFileContent }', '20 KB'],
   // AIChatInput 的 tiptap 内核（@tiptap/core+starter-kit+extensions，gzip ~126KB）
   // 是「动态 import」惰性加载（见 AIChatInput.svelte，spec §0 要求内核不进主 bundle），
   // 故度量组件壳时 ignore 内核。内核体积单独在 spec §0 记录。
@@ -215,7 +276,16 @@ const components = [
   // tiptap 内核/pm/svelte-tiptap 第三方均 per-component ignore；本组件自己的懒加载代码
   // （input-slot-plugins 等本地相对 import）size-limit 的 esbuild 会内联进 entry 度量，
   // 属组件功能成本正当计入。
-  ['ai-chat-input', '{ AIChatInput }', '12 KB'],
+  // 12 → 14.5 KB：对齐 Semi 补齐附件区真实能力后实测 13.61 KB（纯功能增长，已 grep 反证
+  // 未引入任何第三方依赖，Progress 走 `../progress/` 属兄弟组件被 externalize 不计入）：
+  //   · 附件卡片从自造 chip 重写为 Semi 的 224×36 双行卡片（图标/缩略图 + name + `类型 大小`）；
+  //   · 补 Semi horizontalScroller.tsx 整个组件（ResizeObserver + 左右滚动按钮 + smooth scrollBy）；
+  //   · 技能/建议项按 Semi 拆成独立子组件（各自带 scoped 样式，比内联多一份组件壳）。
+  // 14.5 → 15.5 KB：三个浮层（建议/技能/模版）改由 Popover 承载后实测 14.7 KB
+  //   （Popover 走 `../popover/` 属兄弟组件被 externalize 不计入，增量是本组件自身的
+  //    浮层装配 + dropdownMatchTriggerWidth 的 ResizeObserver + rePosKey 重定位）。
+  // 预算按实测 +~5% 余量校准（对齐 perf-budgets-calibrated-from-real-measurement）。
+  ['ai-chat-input', '{ AIChatInput }', '15.5 KB'],
 ];
 
 // JsonViewer 的内核 @douyinfe/semi-json-viewer-core 是「动态 import」惰性加载
