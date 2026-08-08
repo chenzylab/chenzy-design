@@ -289,6 +289,11 @@
       var(--cd-radius-date-picker-day-main, 3px) 0;
   }
 
+  /* compact 下的圆角/宽度已由本库变量覆写机制自动跟随（.cd-datepicker-compact 覆写
+     --cd-radius-date-picker-day-main: 4px 与 --cd-width-date-picker-day: 28px，见
+     DatePicker.svelte 根 compact 规则），上面这条通用规则无需为 compact 单独重复一份
+     ——不同于 Semi 用字面量分别写 default/compact 两套选择器。 */
+
   /* range 悬停高亮背景（对齐 Semi：inRangeHover=fill-0 / hoverDay=fill-1 /
      hoverday_range=primary-light-active / selectedRange-hover=primary-light-hover） */
   :global(.cd-datepicker-day-inoffsetrange .cd-datepicker-day-main),
@@ -371,4 +376,24 @@
     background-color: var(--cd-color-disabled-fill);
     color: var(--cd-color-date-picker-date-disabled-text-default);
   }
+
+  /* —— RTL（逐条对齐 Semi datePicker/rtl.scss &-day）——
+     selected-start/offsetrange-start 与 selected-end/offsetrange-end 镜像 margin +
+     border-radius（本库 LTR 已把 Semi 分写的 offsetrange-单独 radius 规则与
+     selected-start∪offsetrange-start 合并规则收作一条等价写法，RTL 同样合并镜像）。 */
+  :global(.cd-rtl) :global(.cd-datepicker-day-selected-start .cd-datepicker-day-main),
+  :global(.cd-rtl) :global(.cd-datepicker-day-offsetrange-start .cd-datepicker-day-main) {
+    margin-right: 2px;
+    margin-left: 0;
+    border-radius: 0 var(--cd-radius-date-picker-day-main, 3px)
+      var(--cd-radius-date-picker-day-main, 3px) 0;
+  }
+  :global(.cd-rtl) :global(.cd-datepicker-day-selected-end .cd-datepicker-day-main),
+  :global(.cd-rtl) :global(.cd-datepicker-day-offsetrange-end .cd-datepicker-day-main) {
+    margin-left: 2px;
+    margin-right: 0;
+    border-radius: var(--cd-radius-date-picker-day-main, 3px) 0 0
+      var(--cd-radius-date-picker-day-main, 3px);
+  }
+  /* compact 下的镜像同样由上面通用 RTL 规则 + token 覆写自动跟随，无需重复。 */
 </style>

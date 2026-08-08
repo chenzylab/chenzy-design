@@ -106,3 +106,13 @@
     {#snippet icon()}<IconDoubleChevronRight aria-hidden="true" size={iconBtnSize} />{/snippet}
   </IconButton>
 </div>
+
+<style>
+  /* —— RTL（对齐 Semi datePicker/rtl.scss &-navigation：方向箭头水平翻转）—— */
+  :global(.cd-rtl) :global(.cd-datepicker-navigation .cd-icon-chevron_left),
+  :global(.cd-rtl) :global(.cd-datepicker-navigation .cd-icon-chevron_right),
+  :global(.cd-rtl) :global(.cd-datepicker-navigation .cd-icon-double_chevron_left),
+  :global(.cd-rtl) :global(.cd-datepicker-navigation .cd-icon-double_chevron_right) {
+    transform: scaleX(-1);
+  }
+</style>

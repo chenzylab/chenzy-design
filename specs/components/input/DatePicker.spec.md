@@ -394,3 +394,23 @@ i18n keys：
 
 修前重开会出现「两面板同月 + 各 19 格被禁 + 点哪都无效」，修后实测重开
 禁用数 0、面板月份 `2026-07`/`2026-08` 正确。
+
+## 14. 文件结构 / 物理属性 / 具名图标 / RTL 镜像 全量摘底与补齐（2026-08-08）
+
+按用户「物理属性对齐 Semi、多文件拆分对齐 Semi、具名图标对齐 Semi、逐 demo 真机验证」的要求做的一轮系统摘底，结论与改动：
+
+**文件结构**：本库 DateInput/MonthsGrid/Month/YearAndMonth/QuickControl/Footer/InsetInput/Navigation/Switch 已与 Semi 逐文件对齐，双 range 面板渲染正确落在 `MonthsGrid.svelte`。唯一真实缺口——`index.ts` 缺 Semi `index.tsx` 的两段 props 归一化，已修：
+- `format` 不含 `[Hhms]` 时 `dateTime`/`dateTimeRange` 静默降级为 `date`/`dateRange`（`DatePicker.svelte` 新增 `type` 派生遮蔽 `typeProp`）；
+- 自定义 `rangeSeparator` 自动补两端空格（新增 `effectiveRangeSeparator` 派生，替换所有原始 `rangeSeparator` 消费点，含 `InsetInput`/placeholder 拼接）。
+
+**物理属性**：方向性属性（left/right 系）本库已与 Semi 一致，无需改。真正缺口是 RTL 镜像样式集合此前完全空白（0 处 `.cd-rtl`），已参照 538600d9（TimePicker/ScrollList）模式补齐 Footer/Month(day)/Switch/Navigation/YearAndMonth/DateInput(range-input)/MonthsGrid(month-grid-left+switch-text)/InsetInput(separator) 共 8 文件的镜像规则，新增 `DatePicker.rtl.kbd.test.ts` + `DatePickerRtlFixture.svelte` 真机测试。
+
+**已知限制**：面板默认 `use:floating` 挂载到 `document.body`（未传 `getPopupContainer` 时），脱离 `ConfigProvider` 的 `.cd-rtl` 包裹层，故 Month/Switch/Navigation/YearAndMonth/Footer/MonthsGrid/InsetInput 里的面板内 RTL 镜像默认场景下不生效——与 Semi 自身 `.semi-portal-rtl` 从未被真正赋值是同一已知遗留现状（TimePicker RTL 处理同此）。触发器可达范围（根节点 direction、DateInput range-input 的 prefix/suffix/clearbtn）不受此限制，真机测试已覆盖并通过。传入 `getPopupContainer` 把面板挂载到 `.cd-rtl` 作用域内时镜像生效。
+
+**顺带修复的关联缺口**（补 RTL 时发现的真实 LTR 缺口，一并修）：
+- range-input prefix/suffix/clearbtn padding 此前写死对称 `0 8px`，实测 Semi 是非对称（prefix 左12右8、suffix/clearbtn 左8右12），已按 Semi 精确值改；
+- compact 模式 switch-date 缺日期/时间分隔竖线、switch-text 缺 `padding-left:0`（去 icon 后不需要），已补；
+- compact 模式 dateRange/dateTimeRange 缺左右面板分隔线（`.month-grid-left { border-right }`），已补；
+- compact 模式 insetInput 分隔符应退化为居中竖线（`border-left` + `translateX(50%)`）而非文字，此前模板已置空文字但缺配套边框样式；同时发现 `density` prop 根本没有从 `DatePicker.svelte` 传给 `InsetInput.svelte`（真实断链，已补 `{density}`）。
+
+**排除的伪缺口**：compact 模式日期端点格圆角/margin 曾怀疑需要独立于 default 的专属规则（Semi 源码字面量 4px/2px），实测（真机 Semi 官方文档 compact range 演示）证实本库现有的 CSS 变量覆写机制（`.cd-datepicker-compact` 覆写 `--cd-radius-date-picker-day-main`/`--cd-width-date-picker-day`）已让通用规则在 compact 下自动产出正确值（26px 端点宽，与 Semi 实测一致），无需重复选择器，已撤销误加的冗余代码。

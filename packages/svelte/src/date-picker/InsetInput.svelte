@@ -147,4 +147,20 @@
     padding: 0 var(--cd-spacing-date-picker-inset-input-separator-padding-x, 4px);
     color: var(--cd-color-text-3);
   }
+  /* compact：分隔符退化为居中竖线（对齐 Semi datePicker.scss:1717-1721），
+     文字内容已在模板层置空（density='compact' 不渲染 '-'）。 */
+  :global(.cd-datepicker-compact .cd-datepicker-inset-input-separator) {
+    border-left: var(--cd-width-date-picker-border, 1px) solid
+      var(--cd-color-date-picker-border-bg-default);
+    transform: translateX(50%);
+    height: auto;
+  }
+
+  /* —— RTL（对齐 Semi datePicker/rtl.scss compact &-inset-input-separator，185-191 行）—— */
+  :global(.cd-rtl) :global(.cd-datepicker-compact .cd-datepicker-inset-input-separator) {
+    border-left: 0;
+    border-right: var(--cd-width-date-picker-border, 1px) solid
+      var(--cd-color-date-picker-border-bg-default);
+    transform: translateX(-50%);
+  }
 </style>
