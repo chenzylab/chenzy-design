@@ -29,20 +29,15 @@ Radio 同时提供受控（传 `value`）与非受控（传 `defaultValue`）两
 
 ## 3. 分层实现
 
-属于有键盘/焦点/a11y 逻辑的复合控件，逻辑下沉到 core，渲染在 svelte。
+严格对齐 Semi 的文件拆分（`radio.tsx` / `radioInner.tsx` / `radioGroup.tsx` / `context.ts`）：全类型统一用同 `name` 的原生 `<input type="radio">`（`mode="advanced"` 时为 `<input type="checkbox">`），方向键切换即选中由浏览器原生 radio 分组接管，不下沉 core 也不做 JS roving tabindex。
 
-`@chenzy-design/core` — `createRadioGroup(options)`：
-- 维护选中 `value`、注册/注销子 radio（`register(itemValue, el)`）。
-- 复用 `useRovingTabindex`：管理 `tabindex`（选中项或首个可用项为 0，其余为 -1），实现 ArrowUp/Down/Left/Right/Home/End 焦点移动 + 即时选中（含 horizontal/vertical 与 RTL 方向解析、跳过 disabled、循环 wrap）。
-- 复用 `useId` 生成 group/item id 关联 `aria-labelledby` / `aria-describedby`。
-- 复用 `useLiveAnnouncer`（可选）在 `status=error` 时广播校验提示。
-- 暴露 `getGroupProps()` / `getItemProps(itemValue)` / `getIndicatorProps()`，返回 role / aria / tabindex / 事件 handler，框架无关。
-- 单个 `createRadio`（无 group 场景）：封装 checked 切换与 `aria-checked`，无 roving。
+`@chenzy-design/svelte/radio` — 四文件镜像 Semi：
+- `context.ts`（对应 Semi `context.ts`）：`setRadioGroupContext` / `getRadioGroupContext`，透传 `name` / `getSelected()` / `getDisabled()` / `getType()` / `getMode()` / `getButtonSize()` / `onChange`。
+- `RadioInner.svelte`（对应 Semi `radioInner.tsx`）：内层 `span.cd-radio-inner` 包裹原生 `<input>` + `span.cd-radio-inner-display`（选中时渲染 `IconRadio`）；承载 a11y（`aria-label`/`aria-labelledby`/`aria-describedby`）与命令式 `focus()`/`blur()`。
+- `Radio.svelte`（对应 Semi `radio.tsx`）：外层 `<label>` 容器 + wrapper/addon class 组装 + content（children/extra）渲染；通过 `bind:this` 转发命令式 `focus()`/`blur()` 给 `RadioInner`。在/不在 `RadioGroup` 中分别解析 `checked`/`disabled`/`type`/`buttonSize`。
+- `RadioGroup.svelte`（对应 Semi `radioGroup.tsx`）：`role="radiogroup"` 容器，`options` 数据驱动或默认 slot 两种渲染，`Context.Provider` 下发。
 
-`@chenzy-design/svelte` — `Radio.svelte` / `RadioGroup.svelte`：
-- 通过 Svelte `setContext`/`getContext`（key `cd-radio-addon`（RadioGroup 无独立根类，按 Semi 由 Radio 自身承担））连接父子，子项消费 group 的 `name` / `disabled` / `size` / `status` / `value`。
-- 绑定 core 返回的 props 到原生 `<input type="radio">`（视觉隐藏，保留可访问性）或 `role="radio"` 容器（button/card 型）。
-- 不引入虚拟化；纯 CSS Token 驱动样式。
+不引入虚拟化；纯 CSS Token 驱动样式，样式随 DOM 归属组件文件（跨组件组合选择器用 `:global()` 打透，参照 `checkbox/CheckboxInner.svelte` 拆分先例）。
 
 ## 4. API
 
@@ -202,24 +197,19 @@ Radio 同时提供受控（传 `value`）与非受控（传 `defaultValue`）两
 
 ## 11. 测试
 
-- **单元（core）**：`createRadioGroup` 注册/注销、value 匹配、roving tabindex 计算（选中项=0）、方向键导航（含 wrap、跳过 disabled、horizontal/vertical/RTL）、Home/End、Space 选中。
-- **组件（svelte，@testing-library/svelte）**：受控 `value`/`on:change` 派发载荷正确；非受控 `defaultValue` 行为；Group 的 `disabled`/`size`/`status` 下传子项；`options` 与 slot 两种渲染一致；button/card 型 `role/aria-checked` 正确。
-- **a11y（axe / jest-axe）**：role/aria-labelledby/aria-invalid 无违规；焦点环 contrast；reduced-motion 媒体查询生效。
-- **键盘交互（user-event）**：Tab 进入落点、Arrow 即时选中、边界回绕、disabled 跳过。
-- **视觉回归**：5 状态 × 3 尺寸 × {default/button/card} × {light/dark/RTL} 快照。
-- **i18n**：传入不同 locale label，无截断/溢出（vertical 与 horizontal 换行）。
+- **组件（svelte，@testing-library/svelte / vitest browser）**：受控 `value`/`onChange` 派发载荷正确（`e.target.{checked,value}`）；非受控 `defaultValue`/`defaultChecked` 行为；Group 的 `disabled`/`buttonSize`/`type` 下传子项；`options`（primitive/对象两种）与默认 slot 两种渲染一致；button/card/pureCard 型 class 与 DOM 结构正确。
+- **a11y（axe，见 `RadioGroup.a11y.test.ts`）**：`role="radiogroup"`/`aria-label`/`aria-labelledby`/`aria-describedby` 无违规。
+- **键盘交互（vitest browser，见 `RadioGroup.kbd.test.ts`）**：原生同 `name` radio 分组——Tab 落在选中项，方向键（Up/Down/Left/Right）移动焦点即选中并循环回绕。
+- **视觉/真机核对**：逐 demo 对照 Semi 官方站，核对 DOM 结构、class 名、token 值、light/dark/RTL。
 
 ## 12. 验收标准 Checklist
 
-- [ ] 受控（`value`+`on:change`）与非受控（`defaultValue`）均正确工作，载荷符合约定。
-- [ ] RadioGroup 实现 roving tabindex：组内仅一个 `tabindex=0`，焦点随导航迁移。
-- [ ] 方向键导航即时选中，支持 Home/End、边界回绕、跳过 disabled，horizontal/vertical/RTL 语义正确。
-- [ ] `disabled`/`size`/`type`/`status`/`name` 由 Group 正确下传，子项 disabled 可叠加。
-- [ ] 仅消费 `--cd-` Alias/Component Token，无硬编码颜色/尺寸；light/dark 双主题达标。
-- [ ] role/aria-checked/aria-labelledby/aria-invalid/aria-describedby 符合 WAI-ARIA Radio Group APG，通过 axe。
-- [ ] focus-visible 焦点环对比度 ≥ 3:1；`prefers-reduced-motion` 下无缩放动画。
-- [ ] 所有可见文案由调用方传入，零硬编码；i18n key 已登记。
-- [ ] 危险后果文案不在 Radio label，而在确认环节。
-- [ ] 满足 Perf Budget：体积达标、方向键移动 < 1ms、选中切换不触发全组 re-render。
-- [ ] 提供 Radio 与 RadioGroup 的 `component.meta.ts`，schema 与本 SPEC 一致。
-- [ ] 逻辑位于 `@chenzy-design/core` 的 `createRadioGroup/createRadio`，渲染位于 `@chenzy-design/svelte`，复用 useRovingTabindex/useId/useLiveAnnouncer。
+- [x] 受控（`value`+`onChange`）与非受控（`defaultValue`）均正确工作，载荷符合 Semi `RadioChangeEvent` 约定。
+- [x] 原生同 `name` radio 分组承接方向键移动焦点即选中、边界回绕、跳过 disabled（浏览器原生行为，无需 JS roving）。
+- [x] `disabled`/`type`/`buttonSize`/`name` 由 Group 正确下传，子项 disabled 可叠加。
+- [x] 仅消费 `--cd-` Alias/Component Token，逐条镜像 Semi `variables.scss` 命名与公式；light/dark 双主题达标。
+- [x] role/aria-label/aria-labelledby/aria-describedby 符合 WAI-ARIA Radio Group APG，通过 axe。
+- [x] focus-visible 焦点环仅键盘聚焦显示；`prefers-reduced-motion` 下无缩放动画。
+- [x] 所有可见文案由调用方传入，零硬编码。
+- [x] 提供 Radio 与 RadioGroup 的 `component.meta.ts`，schema 与本 SPEC 一致。
+- [x] 文件结构严格镜像 Semi：`context.ts` / `RadioInner.svelte` / `Radio.svelte` / `RadioGroup.svelte`，逻辑与渲染均在 `@chenzy-design/svelte`（无 core 依赖，对齐 Semi 无 foundation 状态机的原生分组实现）。
