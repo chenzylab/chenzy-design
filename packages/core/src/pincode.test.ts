@@ -97,6 +97,12 @@ describe('completeSingleInput (advance + onComplete gate)', () => {
   it('overwriting an existing cell keeps others', () => {
     const r = completeSingleInput(['1', '2', '3', '4'], 4, 1, '9');
     expect(r.list).toEqual(['1', '9', '3', '4']);
+    expect(r.completed).toBe(false); // mirrors Semi: gate is on the written index, not on other cells
+  });
+
+  it('writing the last index completes even if earlier cells are still empty (mirrors Semi)', () => {
+    const r = completeSingleInput(['', '', '', ''], 4, 3, '9');
+    expect(r.list).toEqual(['', '', '', '9']);
     expect(r.completed).toBe(true);
   });
 
@@ -122,9 +128,9 @@ describe('handleKeyDown (arrows / backspace / delete boundaries)', () => {
     expect(handleKeyDown('Delete', 3, 4)).toEqual({ type: 'clear', index: 3, nextIndex: 3 });
   });
 
-  it('Home / End jump to boundaries', () => {
-    expect(handleKeyDown('Home', 2, 4)).toEqual({ type: 'focus', index: 0 });
-    expect(handleKeyDown('End', 1, 4)).toEqual({ type: 'focus', index: 3 });
+  it('Home / End are not handled (mirrors Semi: no Home/End support)', () => {
+    expect(handleKeyDown('Home', 2, 4)).toEqual({ type: 'none' });
+    expect(handleKeyDown('End', 1, 4)).toEqual({ type: 'none' });
   });
 
   it('RTL mirrors ArrowLeft / ArrowRight', () => {
@@ -167,6 +173,13 @@ describe('distributePaste (stops at illegal char + count truncation)', () => {
     expect(r.list).toEqual(['9', '2', '3', '4']);
     expect(r.nextIndex).toBe(3);
     expect(r.completed).toBe(true);
+  });
+
+  it('completed is false when paste stops before the last cell', () => {
+    // Mirrors Semi: completion gates on this write reaching count-1, not on "all non-empty".
+    const r = distributePaste(['', '', ''], 3, 0, '12', 'number');
+    expect(r.list).toEqual(['1', '2', '']);
+    expect(r.completed).toBe(false);
   });
 
   it('respects mixed / RegExp / function formats', () => {

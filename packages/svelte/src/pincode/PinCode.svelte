@@ -2,9 +2,11 @@
   PinCode — see specs/components/input/PinCode.spec.md
   分格验证码 / OTP：N 个受控单字符输入格的编排器。跨格键盘（←→/Backspace/Delete）、
   自动跳格、整串粘贴分发（遇非法字符停止）、受控/非受控、组合态过滤，全部委托
-  @chenzy-design/core 的纯函数。单格复用 Input 家族的填充式外观 token（--cd-color-input-*）。
+  @chenzy-design/core 的纯函数。单格严格复用本库 Input 组件渲染（对齐 Semi renderSingleInput
+  直接 <Input>，而非另起原生 <input> 手写一套边框/背景/聚焦态）；pincode 层仅覆盖
+  padding=0/text-align=center 与格宽/间距（对齐 Semi pincode.scss 只覆盖这两处）。
   a11y 增强（超越 Semi）：root role=group + aria-label；每格 aria-label 位次「第 N 位，共 M 位」、
-  autoComplete="one-time-code"、inputMode 随 format、maxlength=1。
+  autoComplete="one-time-code"、inputMode 随 format、maxLength=1。
 -->
 <script lang="ts">
   import { useId, resolveDefault } from '@chenzy-design/core';
@@ -13,13 +15,13 @@
     inputModeForFormat,
     toValueList,
     fromValueList,
-    isComplete,
     completeSingleInput,
     pinCodeHandleKeyDown,
     distributePaste,
     type PinCodeFormat,
   } from '@chenzy-design/core';
   import { useLocale } from '../locale-provider/index.js';
+  import Input from '../input/Input.svelte';
 
   type Size = 'small' | 'default' | 'large';
   type Status = 'default' | 'warning' | 'error';
@@ -50,6 +52,12 @@
     'aria-label'?: string;
     /** 外部可视 label 的 id，关联为分组名（优先于 ariaLabel）。 */
     ariaLabelledby?: string;
+    /** 外部描述性文本 id（Form.Field 透传，超越 Semi）。 */
+    ariaDescribedby?: string;
+    /** 外部错误信息 id（Form.Field 透传，超越 Semi）。 */
+    ariaErrormessage?: string;
+    /** 必填语义（Form.Field required 透传，超越 Semi）。 */
+    ariaRequired?: boolean;
     /** 校验态，透传各格边框语义。 */
     status?: Status;
     /** 根容器类名。 */
@@ -74,6 +82,9 @@
     id,
     'aria-label': ariaLabel,
     ariaLabelledby,
+    ariaDescribedby,
+    ariaErrormessage,
+    ariaRequired,
     status = 'default',
     className,
     style,
@@ -93,11 +104,10 @@
   const isControlled = $derived(value !== undefined);
   // 非受控内部值以整串字符串承载（受控时不写此 state，依赖外部回写）。
   // 仅捕获挂载时的 defaultValue 初值（对齐 Input/Rating 的非受控范式）。
-  let inner = $state(getInitialValue());
-
   function getInitialValue(): string {
     return defaultValue;
   }
+  let inner = $state(getInitialValue());
   const currentStr = $derived(isControlled ? (value ?? '') : inner);
   const cells = $derived(toValueList(currentStr, count));
 
@@ -105,14 +115,12 @@
   const rtl = $derived(loc().direction === 'rtl');
   const resolvedAriaLabel = $derived(ariaLabel ?? loc().t('PinCode.ariaLabel'));
 
-  const cls = $derived(
-    ['cd-pincode', `cd-pincode-${size}`, `cd-pincode-${status}`, disabled && 'cd-pincode-disabled', className]
-      .filter(Boolean)
-      .join(' '),
-  );
+  const cls = $derived(['cd-pincode-wrapper', className].filter(Boolean).join(' '));
 
-  // 各格 DOM 引用（供 focus / blur / 跳格）。普通数组簿记（非 $state，避免 effect 自循环）。
-  const inputEls: (HTMLInputElement | undefined)[] = [];
+  // 各格 Input 组件实例（供 focus / blur / 跳格 —— 经 getInputElement() 拿原生 DOM）。
+  // 用 $state 数组承载：bind:this={cellRefs[i]} 要求绑定目标是响应式属性，
+  // 否则 Svelte 5 运行时告警 binding_property_non_reactive。
+  let cellRefs = $state<(ReturnType<typeof Input> | undefined)[]>([]);
 
   function setCells(next: string[]) {
     const str = fromValueList(next);
@@ -120,26 +128,24 @@
     onChange?.(str);
   }
 
-  function focusCell(index: number, selectEnd = true) {
-    const el = inputEls[Math.max(0, Math.min(count - 1, index))];
+  function focusCell(index: number): void {
+    const ref = cellRefs[Math.max(0, Math.min(count - 1, index))];
+    const el = ref?.getInputElement();
     if (!el) return;
     el.focus();
-    if (selectEnd) {
-      // 将光标置于字符后（若有）。
-      const len = el.value.length;
-      try {
-        el.setSelectionRange(len, len);
-      } catch {
-        // number/email 类型不支持 setSelectionRange；text 恒支持，忽略即可。
-      }
+    // 对齐 Semi focus()：光标固定置于 (1,1)，非按当前内容长度动态计算。
+    try {
+      el.setSelectionRange(1, 1);
+    } catch {
+      // number/email 类型不支持 setSelectionRange；本组件恒为 text，忽略即可。
     }
   }
 
-  function blurCell(index: number) {
-    inputEls[Math.max(0, Math.min(count - 1, index))]?.blur();
+  function blurCell(index: number): void {
+    cellRefs[Math.max(0, Math.min(count - 1, index))]?.getInputElement()?.blur();
   }
 
-  // —— 实例方法（供 bind:this 暴露）——
+  // —— 实例方法（供 bind:this 暴露，对齐 Semi ref.focus(index) / ref.blur(index)）——
   export function focus(index = 0): void {
     focusCell(index);
   }
@@ -150,27 +156,31 @@
   // 组合态：中文候选期间不写入。逐格独立追踪。
   let composingIndex = $state<number | null>(null);
 
-  function handleInput(index: number, e: Event & { currentTarget: HTMLInputElement }) {
-    const el = e.currentTarget;
-    if (composingIndex === index) return; // 组合中，等 compositionend
-    // 取本次输入的最后一个合法字符（处理粘贴/快速输入落到 input 事件的情况由 onpaste 兜底）。
-    const raw = el.value;
-    const chars = [...raw];
-    const char = chars[chars.length - 1] ?? '';
-    if (!char || !validateChar(char, format)) {
-      // 非法字符：回滚显示为当前格既有值。
-      el.value = cells[index] ?? '';
-      return;
-    }
-    const r = completeSingleInput(cells, count, index, char);
+  function afterWrite(r: { list: string[]; nextIndex: number; completed: boolean }) {
     setCells(r.list);
     if (r.completed) {
-      // 填满：blur 末格并触发 onComplete。
+      // 填满：blur 末格并触发 onComplete（对齐 Semi：仅当写入的是末格索引时触发）。
       blurCell(count - 1);
       onComplete?.(fromValueList(r.list));
     } else {
       focusCell(r.nextIndex);
     }
+  }
+
+  function handleCellChange(index: number, v: string) {
+    if (composingIndex === index) return; // 组合中，等 compositionend
+    // 取本次输入的最后一个字符（对齐 Semi `v[v.length - 1]`）。
+    const char = v[v.length - 1] ?? '';
+    if (!char || !validateChar(char, format)) {
+      // 非法字符：不写入受控状态。Semi 靠 React 受控回写把 DOM 拉回原值；
+      // 本库 Input 只在响应式 current 变化时才回写 DOM，这里状态未变不会触发，
+      // 需显式把 DOM 值拉回既有格值，保持同等的“非法输入不留痕”效果。
+      const el = cellRefs[index]?.getInputElement();
+      if (el) el.value = cells[index] ?? '';
+      return;
+    }
+    const r = completeSingleInput(cells, count, index, char);
+    afterWrite(r);
   }
 
   function handleKeydown(index: number, e: KeyboardEvent) {
@@ -190,43 +200,24 @@
   }
 
   function handlePaste(index: number, e: ClipboardEvent) {
+    // 立即阻止默认粘贴行为（对齐 Semi 注释：Firefox 中需在函数开始时即 preventDefault，
+    // 否则可能在 preventDefault 生效前已执行默认粘贴，导致双重写入）。
+    e.preventDefault();
     const text = e.clipboardData?.getData('text') ?? '';
-    if (!text) return;
-    e.preventDefault(); // 防双写
     const r = distributePaste(cells, count, index, text, format);
     if (r.written === 0) return;
-    setCells(r.list);
-    if (r.completed) {
-      blurCell(count - 1);
-      onComplete?.(fromValueList(r.list));
-    } else {
-      focusCell(r.nextIndex);
-    }
+    afterWrite(r);
   }
 
   function handleCompositionStart(index: number) {
     composingIndex = index;
   }
 
-  function handleCompositionEnd(index: number, e: Event & { currentTarget: HTMLInputElement }) {
+  function handleCompositionEnd(index: number, e: CompositionEvent) {
     composingIndex = null;
-    // 组合结束后按 input 逻辑重新处理最后落定的字符。
-    handleInput(index, e as Event & { currentTarget: HTMLInputElement });
+    // 组合结束后按 change 逻辑重新处理最后落定的字符。
+    handleCellChange(index, (e.currentTarget as HTMLInputElement).value);
   }
-
-  function handleFocus(e: FocusEvent & { currentTarget: HTMLInputElement }) {
-    // 聚焦时全选，便于覆盖输入。
-    e.currentTarget.select();
-  }
-
-  // autoFocus：命令式聚焦第一格一次（红线 #3，SSR 安全，延后到下一帧）。
-  $effect(() => {
-    if (!autoFocus || disabled) return;
-    const el = inputEls[0];
-    if (!el) return;
-    const raf = requestAnimationFrame(() => el.focus());
-    return () => cancelAnimationFrame(raf);
-  });
 
   function cellLabel(index: number): string {
     return loc().t('PinCode.cellAriaLabel', {
@@ -250,104 +241,61 @@
   {#if name}<input type="hidden" {name} value={aggregateValue} />{/if}
 
   {#each cells as cell, i (i)}
-    <input
-      bind:this={inputEls[i]}
+    <Input
+      bind:this={cellRefs[i]}
       class="cd-pincode-cell"
-      class:cd-pincode-cell-warning={status === 'warning'}
-      class:cd-pincode-cell-error={status === 'error'}
-      type="text"
+      autoFocus={autoFocus && i === 0}
       inputmode={inputMode}
       autocomplete="one-time-code"
-      maxlength="1"
+      maxLength={1}
       value={cell}
+      {size}
       {disabled}
+      validateStatus={status}
       aria-label={cellLabel(i)}
-      aria-invalid={status === 'error' || undefined}
-      oninput={(e) => handleInput(i, e)}
-      onkeydown={(e) => handleKeydown(i, e)}
-      onpaste={(e) => handlePaste(i, e)}
-      onfocus={handleFocus}
-      oncompositionstart={() => handleCompositionStart(i)}
-      oncompositionend={(e) => handleCompositionEnd(i, e)}
+      {...(i === 0 && ariaDescribedby !== undefined ? { ariaDescribedby } : {})}
+      {...(i === 0 && ariaErrormessage !== undefined ? { ariaErrormessage } : {})}
+      {...(i === 0 && ariaRequired !== undefined ? { ariaRequired } : {})}
+      onKeyDown={(e) => handleKeydown(i, e)}
+      onCompositionStart={() => handleCompositionStart(i)}
+      onCompositionEnd={(e) => handleCompositionEnd(i, e)}
+      onChange={(v) => handleCellChange(i, v)}
+      onpaste={(e: ClipboardEvent) => handlePaste(i, e)}
     />
   {/each}
 </div>
 
 <style>
-  .cd-pincode {
-    display: inline-flex;
-    align-items: center;
-    gap: var(--cd-pincode-gap-default);
+  /* wrapper 严格对齐 Semi pincode.scss：flex 排列，间距用 margin-inline-end（非 gap），
+     最后一格 margin 归零。 */
+  .cd-pincode-wrapper {
+    display: flex;
   }
-  .cd-pincode-small {
-    gap: var(--cd-pincode-gap-small);
+  /* 单格：覆盖 Input 内部 padding/text-align（对齐 Semi `.semi-input-wrapper input { padding: 0; text-align: center }`），
+     格宽 / 格间距按 size 逐档取固定 token 值（对齐 Semi variables.scss 的独立常量，非派生）。 */
+  :global(.cd-pincode-wrapper .cd-pincode-cell) {
+    margin-inline-end: var(--cd-pincode-gap-default);
   }
-  .cd-pincode-large {
-    gap: var(--cd-pincode-gap-large);
+  :global(.cd-pincode-wrapper .cd-pincode-cell:last-child) {
+    margin-inline-end: 0;
   }
-  /* 单格：复用 Input 家族填充式外观 token（边框 / 背景 / 聚焦 / 校验态），正方形居中。 */
-  .cd-pincode-cell {
-    box-sizing: border-box;
+  :global(.cd-pincode-wrapper .cd-input-wrapper-small.cd-pincode-cell) {
+    inline-size: var(--cd-pincode-cell-width-small);
+  }
+  :global(.cd-pincode-wrapper .cd-input-wrapper-default.cd-pincode-cell) {
     inline-size: var(--cd-pincode-cell-width-default);
-    block-size: var(--cd-height-input-wrapper-default);
-    margin: 0;
+  }
+  :global(.cd-pincode-wrapper .cd-input-wrapper-large.cd-pincode-cell) {
+    inline-size: var(--cd-pincode-cell-width-large);
+  }
+  :global(.cd-pincode-wrapper .cd-input-wrapper-small.cd-pincode-cell) {
+    margin-inline-end: var(--cd-pincode-gap-small);
+  }
+  :global(.cd-pincode-wrapper .cd-input-wrapper-large.cd-pincode-cell) {
+    margin-inline-end: var(--cd-pincode-gap-large);
+  }
+  :global(.cd-pincode-cell .cd-input) {
     padding: 0;
     text-align: var(--cd-pincode-cell-text-align);
-    font-size: var(--cd-pincode-cell-font-size);
-    color: var(--cd-color-input-default-text-default);
-    background: var(--cd-color-input-default-bg-default);
-    border: var(--cd-width-input-wrapper-border) solid var(--cd-color-input-default-border-default);
-    border-radius: var(--cd-radius-input-wrapper);
-    outline: none;
-    transition:
-      background-color var(--cd-transition-duration-input-bg)
-        var(--cd-transition-function-input-bg) var(--cd-transition-delay-input-bg),
-      border var(--cd-transition-duration-input-border)
-        var(--cd-transition-function-input-border) var(--cd-transition-delay-input-border);
-  }
-  .cd-pincode-small .cd-pincode-cell {
-    inline-size: var(--cd-pincode-cell-width-small);
-    block-size: var(--cd-height-input-wrapper-small);
-  }
-  .cd-pincode-large .cd-pincode-cell {
-    inline-size: var(--cd-pincode-cell-width-large);
-    block-size: var(--cd-height-input-wrapper-large);
-  }
-  .cd-pincode-cell:hover:not(:disabled):not(:focus) {
-    background: var(--cd-color-input-default-bg-hover);
-    border-color: var(--cd-color-input-default-border-hover);
-  }
-  .cd-pincode-cell:focus {
-    background: var(--cd-color-input-default-bg-focus);
-    border-color: var(--cd-color-input-default-border-focus);
-  }
-  /* warning / error —— 对齐 Input：浅色状态底 + 同色描边 */
-  .cd-pincode-cell-warning {
-    background: var(--cd-color-input-warning-bg-default);
-    border-color: var(--cd-color-input-warning-border-default);
-  }
-  .cd-pincode-cell-warning:focus {
-    background: var(--cd-color-input-warning-bg-focus);
-    border-color: var(--cd-color-input-warning-border-focus);
-  }
-  .cd-pincode-cell-error {
-    background: var(--cd-color-input-danger-bg-default);
-    border-color: var(--cd-color-input-danger-border-default);
-  }
-  .cd-pincode-cell-error:focus {
-    background: var(--cd-color-input-danger-bg-focus);
-    border-color: var(--cd-color-input-danger-border-focus);
-  }
-  .cd-pincode-disabled .cd-pincode-cell,
-  .cd-pincode-cell:disabled {
-    background: var(--cd-color-input-disabled-bg-default);
-    color: var(--cd-color-input-disabled-text-default);
-    -webkit-text-fill-color: var(--cd-color-input-disabled-text-default);
-    cursor: not-allowed;
-  }
-  @media (prefers-reduced-motion: reduce) {
-    .cd-pincode-cell {
-      transition: none;
-    }
   }
 </style>

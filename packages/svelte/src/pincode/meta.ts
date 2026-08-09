@@ -31,6 +31,9 @@ export const meta = {
     { name: 'id', type: 'string', default: '自动生成', desc: '根容器 id（超越 Semi：本库 a11y 分组约定）' },
     { name: 'aria-label', type: 'string', default: 'i18n 默认', desc: '无可视标签时分组辅助名（超越 Semi：Semi root 无 aria）' },
     { name: 'ariaLabelledby', type: 'string', default: 'undefined', desc: '外部 label id，优先于 aria-label（超越 Semi：Semi root 无 aria）' },
+    { name: 'ariaDescribedby', type: 'string', default: 'undefined', desc: '外部描述性文本 id，挂在首格（超越 Semi：Form.Field 透传）' },
+    { name: 'ariaErrormessage', type: 'string', default: 'undefined', desc: '外部错误信息 id，挂在首格（超越 Semi：Form.Field 透传）' },
+    { name: 'ariaRequired', type: 'boolean', default: 'undefined', desc: '必填语义，挂在首格（超越 Semi：Form.Field required 透传）' },
     { name: 'status', type: "'default' | 'warning' | 'error'", default: 'default', desc: '校验态（超越 Semi：Semi 单格外观固定，无校验态）' },
     { name: 'className', type: 'string', default: 'undefined', desc: '根容器类名' },
     { name: 'style', type: 'string', default: 'undefined', desc: '根容器内联样式' },
@@ -49,14 +52,15 @@ export const meta = {
   a11yPattern: 'group-of-inputs',
   a11y: {
     role: 'group',
-    keyboard: ['ArrowLeft/ArrowRight', 'Backspace', 'Delete', 'Home', 'End', '自动跳格'],
+    keyboard: ['ArrowLeft/ArrowRight', 'Backspace', 'Delete', '自动跳格'],
     notes: [
       'root role=group + aria-label（i18n）或 aria-labelledby',
       '每格 aria-label 位次「第 N 位，共 M 位」',
       "每格 autoComplete=one-time-code（OTP 系统级填充，超越 Semi）",
-      'inputMode 随 format（number→numeric）；maxlength=1',
-      'status=error → 各格 aria-invalid；disabled → aria-disabled + 原生 disabled',
+      'inputMode 随 format（number→numeric）；maxLength=1',
+      'status=error → 各格 aria-invalid（由 Input 组件按 validateStatus 自动下发）；disabled → aria-disabled + 原生 disabled',
       'RTL：←→ 语义镜像；组合态（isComposing）不写入',
+      '无 Home/End 支持（严格对齐 Semi handleKeyDownOnSingleInput，Semi 未实现）',
     ],
     keyboardMap: {
       ArrowLeft: '上一格（首格不越界；RTL 镜像）',

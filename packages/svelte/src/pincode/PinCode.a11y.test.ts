@@ -8,7 +8,7 @@ import { renderWithLocale, expectNoAxeViolations } from '../test-utils/a11y.js';
 import PinCode from './PinCode.svelte';
 
 function cellsOf(container: Element): HTMLInputElement[] {
-  return Array.from(container.querySelectorAll('input.cd-pincode-cell')) as HTMLInputElement[];
+  return Array.from(container.querySelectorAll('.cd-pincode-cell input.cd-input')) as HTMLInputElement[];
 }
 
 /** Non-null cell accessor (tests always render `count` cells). */

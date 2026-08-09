@@ -70,7 +70,9 @@ export interface CompleteSingleResult {
 /**
  * completeSingleInput — write one already-validated char into cell `index`,
  * advance the active index by one (clamped to the last cell), and report whether
- * the whole code is now filled. Pure: returns a fresh list.
+ * `index` was the last cell (mirrors Semi's `i + 1 > count - 1` gate: writing the
+ * last cell fires onComplete regardless of whether earlier cells are still empty).
+ * Pure: returns a fresh list.
  */
 export function completeSingleInput(
   list: readonly string[],
@@ -81,7 +83,7 @@ export function completeSingleInput(
   const next = toValueList(fromValueList(list), count);
   next[index] = char;
   const nextIndex = Math.min(index + 1, count - 1);
-  return { list: next, nextIndex, completed: isComplete(next, count) };
+  return { list: next, nextIndex, completed: index + 1 > count - 1 };
 }
 
 /** Keyboard action derived from a key press on a cell (framework applies it). */
@@ -97,6 +99,7 @@ export type PinCodeKeyAction =
  * - Delete: clear current cell, move focus forward one cell (clamped to count-1).
  * Other keys → `none` (character entry handled separately via input events).
  * `rtl` mirrors ArrowLeft/Right (logical order stays start→end).
+ * Mirrors Semi's `handleKeyDownOnSingleInput` exactly: no Home/End handling.
  */
 export function handleKeyDown(
   key: string,
@@ -115,10 +118,6 @@ export function handleKeyDown(
       return { type: 'clear', index, nextIndex: Math.max(0, index - 1) };
     case 'Delete':
       return { type: 'clear', index, nextIndex: Math.min(count - 1, index + 1) };
-    case 'Home':
-      return { type: 'focus', index: 0 };
-    case 'End':
-      return { type: 'focus', index: count - 1 };
     default:
       return { type: 'none' };
   }
@@ -140,6 +139,8 @@ export interface DistributePasteResult {
  * distributePaste — spread `text` char-by-char into cells from `startIndex`,
  * validating each char against `format`. Stops at the first illegal char or when
  * the last cell is filled (whichever comes first). Pure: returns a fresh list.
+ * `completed` mirrors Semi's per-char `completeSingleInput` loop: true iff the
+ * last cell written reached index `count - 1` (not "are all cells non-empty").
  */
 export function distributePaste(
   list: readonly string[],
@@ -161,5 +162,6 @@ export function distributePaste(
   // Focus lands on the last written cell (or the start cell if nothing written),
   // clamped so it never exceeds the last cell.
   const nextIndex = Math.min(Math.max(startIndex, cursor - 1), count - 1);
-  return { list: next, nextIndex, completed: isComplete(next, count), written };
+  const completed = written > 0 && cursor - 1 >= count - 1;
+  return { list: next, nextIndex, completed, written };
 }

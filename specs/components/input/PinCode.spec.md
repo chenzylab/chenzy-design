@@ -21,7 +21,7 @@ PinCode 用于**分格输入定长验证码 / 一次性密码（OTP）/ 短信�
 
 ## 3. 分层实现
 
-- **headless（core/）**：需要。`packages/core/src/pincode/createPinCode.ts` 承载框架无关逻辑：
+- **headless（core/）**：需要。`packages/core/src/pincode.ts` 承载框架无关逻辑（对齐 Semi：`semi-foundation/pincode/foundation.ts` 也是单文件，非多文件拆分）：
   - 状态：`valueList: string[]`、`activeIndex: number`。
   - `validateChar(char, format)`：按 `format`（number/mixed/RegExp/函数）逐字符校验。
   - `completeSingleInput(index, char)`：写入 → 推进 activeIndex → 判断是否触发 onComplete。
@@ -29,7 +29,7 @@ PinCode 用于**分格输入定长验证码 / 一次性密码（OTP）/ 短信�
   - `distributePaste(startIndex, text)`：从某格起逐字符校验分发，遇非法字符停止。
   - 受控/非受控：传 `value` 时不改内部 valueList，依赖外部回写。
   - 输入法组合态（`isComposing`）过滤。
-- **渲染（svelte/）**：`PinCode.svelte`。渲染 `count` 个复用本库 `Input` 的单格；根容器 `role="group"`；收集各格 DOM 引用供 focus/blur/粘贴分发。
+- **渲染（svelte/）**：`PinCode.svelte`。渲染 `count` 个复用本库 `Input` 组件的单格（对齐 Semi `renderSingleInput` 直接 `<Input>`，非另起原生 `<input>` 手写外观）；根容器 `role="group"`；经 `Input.getInputElement()` 收集各格原生 DOM 引用供 focus/blur/粘贴分发。
 
 ## 4. API
 
@@ -87,18 +87,20 @@ PinCode 用于**分格输入定长验证码 / 一次性密码（OTP）/ 短信�
 
 ## 5. 主题 / Token 表
 
-组件级 Token，全部派生自 Alias，禁止写死值。PinCode 单格复用 Input 的填充式 token，仅补分组布局相关。
+组件级 Token，逐档严格对齐 Semi `semi-foundation/pincode/variables.scss` 的独立常量值（非派生公式，Semi 本身也是字面量），仅补分组布局与单格尺寸；单格边框/背景/聚焦/校验态外观直接由复用的 `Input` 组件承担，不在 PinCode 层重复定义。
 
 | Token | 含义 | 默认引用 |
 | --- | --- | --- |
-| `--cd-pincode-gap` | 相邻格间距 | `--cd-spacing-tight` |
-| `--cd-pincode-cell-width-small` | small 单格宽 | 派生自 Input small 高度 |
-| `--cd-pincode-cell-width-default` | default 单格宽 | 派生自 Input default 高度 |
-| `--cd-pincode-cell-width-large` | large 单格宽 | 派生自 Input large 高度 |
+| `--cd-pincode-gap-small` | small 相邻格间距 | `6px`（对齐 Semi，无全局别名） |
+| `--cd-pincode-gap-default` | default 相邻格间距 | `var(--cd-spacing-tight)`（对齐 Semi 8px） |
+| `--cd-pincode-gap-large` | large 相邻格间距 | `var(--cd-spacing-base-tight)`（对齐 Semi 12px） |
+| `--cd-pincode-cell-width-small` | small 单格宽 | `var(--cd-control-height-small)`（对齐 Semi 24px） |
+| `--cd-pincode-cell-width-default` | default 单格宽 | `var(--cd-control-height-default)`（对齐 Semi 32px） |
+| `--cd-pincode-cell-width-large` | large 单格宽 | `42px`（Semi 独立常量，≠ control-height-large 40px，取字面量） |
 | `--cd-pincode-cell-font-size` | 单格字号 | `--cd-font-size-header-6`（略大于正文，居中显示单字符） |
 | `--cd-pincode-cell-text-align` | 单格文字对齐 | `center` |
 
-单格边框 / 背景 / 聚焦 / 校验态复用 `--cd-color-input-*` 与 `--cd-border-thickness-control-focus`（对齐 Input 家族，见记忆 dsm-p2）。暗色模式随 Input token 自动切换。
+单格高度不设独立 token，直接继承 `Input` 组件 `size` 对应的容器高度（`--cd-height-input-wrapper-*`），故 large 单格为 42×40 非正方形（对齐 Semi）。单格边框/背景/聚焦/校验态复用 `--cd-color-input-*`（对齐 Input 家族，见记忆 dsm-p2）。暗色模式随 Input token 自动切换。
 
 ## 6. 无障碍
 
