@@ -274,7 +274,6 @@ export const zh_CN: Locale = {
   InputNumber: {
     increase: '增加',
     decrease: '减少',
-    clampedAnnounce: '已调整为 {value}',
   },
   Slider: {
     minReachedAnnounce: '已是最小值',

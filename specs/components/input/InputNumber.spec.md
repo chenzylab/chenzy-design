@@ -4,7 +4,7 @@
 
 ## 1. 概述
 
-InputNumber 是受约束的数值输入控件，在原生 `<input>` 之上增加：步进按钮（+/−）、键盘步进（↑/↓、PageUp/PageDown）、精度控制（小数位 round/截断）、范围约束（min/max 软/硬限制）、千分位/货币等格式化与解析、以及鼠标滚轮微调。它解决纯文本输入无法保证「输出始终是合法数值」的问题：组件内部维护「显示字符串」与「数值」两套状态，在 `blur`/`Enter`/step 时归一化（parse → clamp → round → format），输入过程中保持宽松（允许中间态如 `-`、`1.`、`1e`）。
+InputNumber 是受约束的数值输入控件，在原生 `<input>` 之上增加：步进按钮（+/−）、键盘步进（↑/↓、PageUp/PageDown）、精度控制（小数位 round）、范围约束（min/max clamp）、千分位/货币等格式化与解析（对齐 Semi，不含滚轮微调——Semi 无此交互）。它解决纯文本输入无法保证「输出始终是合法数值」的问题：组件内部维护「显示字符串」与「数值」两套状态，在 `blur`/`Enter`/step 时归一化（parse → clamp → round → format），输入过程中保持宽松（允许中间态如 `-`、`1.`、`1e`）。
 
 适用场景：表单数量、价格、百分比、坐标、配额设置等。与 Slider 常配合使用（数值精调 + 拖拽粗调）。
 
@@ -21,25 +21,26 @@ InputNumber 是受约束的数值输入控件，在原生 `<input>` 之上增加
 - **尺寸**：`small`(28px) / `default`(32px) / `large`(40px)，高度、内边距、字号、步进按钮宽度均由 token 派生，与 Input 完全对齐保证表单同行视觉一致。
 - **状态语义**：default / warning / error 对应 `--cd-color-border` / `--cd-color-warning` / `--cd-color-danger`；hover 加深边框，focus 显示 `--cd-color-primary` 边框 + focus ring；disabled 降透明度并禁用全部交互；readonly 保留选中复制但禁步进。
 - **步进按钮态**：当 `value` 达到 `max` 时「+」按钮 disabled，达到 `min` 时「−」disabled，提供到边界的明确反馈。长按按钮触发加速重复步进（首次延迟 → 加速间隔）。
-- **数值语义**：`precision` 决定小数位与 round 策略；`step` 默认 1，`shiftStep`（按住 Shift 时）默认 10；越界采用 `clamp`（默认）或 `strict`（拒绝写入并回滚）。空值区分 `''`（未输入）与归一化后的 `null`。
-- **动效**：按钮按下/hover 背景过渡 120ms；步进时数字本身不做动画（避免读屏与视觉抖动）。所有过渡在 `prefers-reduced-motion: reduce` 下置 0。
+- **数值语义**：`precision` 决定小数位与 round 策略；`step` 默认 1，`shiftStep`（按住 Shift 时）默认 10；越界恒 `clamp`（对齐 Semi，无 strict 模式）。空值区分 `''`（未输入）与归一化后的 `null`。
+- **动效**：按钮按下/hover 背景无内置过渡（对齐 Semi `--semi-transition_duration-none` 恒 0ms，动效接口预留但默认关闭）；步进时数字本身不做动画（避免读屏与视觉抖动）。
 - **RTL**：`sides` 布局下 +/− 视觉位置随方向镜像；数字与负号方向遵循内容方向，金额格式由 `Intl` locale 决定。
 
 ## 3. 分层实现
 
 属于「有交互/键盘/a11y 逻辑」组件，采用 core + svelte 分层。
 
-**@chenzy-design/core · `createInputNumber(config)`（headless，框架无关）**
-- 维护状态机：`{ value: number|null, displayValue: string, focused, disabled, readonly, status, atMin, atMax }`。
-- 纯函数原语（可单测、零 DOM）：`parse(text, opts)`、`clamp(n, min, max, mode)`、`round(n, precision)`、`format(n, formatter)`、`getStepValue(current, step, dir)`（处理浮点误差，内部用整数缩放或 `toFixed` 规避 `0.1+0.2`）。
-- 行为方法：`stepUp(multiplier)` / `stepDown(multiplier)` / `setValue` / `commit()`（blur/Enter 归一化）/ `handleKeydown` / `startSpin(dir)` / `stopSpin()`（长按加速：首延迟 400ms，重复间隔从 120ms 递减到 40ms）。
-- 复用原语：`useId`（input 与 label 关联）、`useLiveAnnouncer`（可选播报当前值或越界提示）。无需 FocusTrap/ScrollLock/Dismiss（非浮层）。RovingTabindex 不需要（步进按钮通常 `tabindex=-1`，靠输入框键盘步进）。
-- 输出 prop-getters：`getInputProps()`、`getIncrementButtonProps()`、`getDecrementButtonProps()`，封装 aria 与事件，供任意框架适配。
+**@chenzy-design/core**（headless 纯函数，框架无关，可单测、零 DOM）
+- `roundToPrecision(n, precision)`：失焦四舍五入到 `precision` 位小数。
+- `addStep(base, delta)`：浮点安全的步进加法（整数缩放规避 `0.1+0.2` 误差）。
+- `decimalsOf(n)`：数字默认字符串形式的小数位数（供 `addStep` 内部换算缩放因子）。
+- `formatWithLocale(n, locale, options)`：基于 `Intl.NumberFormat` 的默认格式化，按 `(locale, options)` 缓存实例。
+- 复用原语：`useId`（input 与 label 关联）。无需 FocusTrap/ScrollLock/Dismiss（非浮层）。RovingTabindex 不需要（步进按钮通常 `tabindex=-1`，靠输入框键盘步进）。
 
 **@chenzy-design/svelte · `<InputNumber>`**
-- 绑定 core 返回的 store 到 DOM，渲染容器/input/按钮/前后缀 slot。
-- 处理 Svelte 特有：`value` 双向语义（受控 `value` + `on:change`，可选 `bind:value`）、`use:` action 挂载 wheel/长按监听、SSR 安全（locale 格式化在 mount 后校正避免 hydration mismatch）。
-- 仅做渲染与事件转发，数值逻辑全部委托 core，保证逻辑可移植与可测。
+- 复用已对齐的 `<Input>` 承载 DOM 与聚焦/校验态样式（对齐 Semi `InputNumber extends InputProps` 且渲染层内部 `<Input role="spinbutton">`）。
+- 组件内维护「显示文本 `editingText`」与「数值 `current`」两套 `$state`：编辑态仅缓存原始文本，parse → round → clamp（`normalize`）延后到失焦/Enter/step 时刻才提交（`commitValue`），避免输入过程中跳光标。
+- 受控 `value`（提供即受控，只回调不回写）/ 非受控 `defaultValue`；`onChange`/`onNumberChange` 双回调，货币/formatter 模式 `onChange` 回显示字符串。
+- 长按连续步进、货币/科学计数法格式化、locale 解析均在组件内实现，委托 core 处理浮点与精度原语，保证数值逻辑可单测。
 
 ## 4. API
 
@@ -164,7 +165,6 @@ InputNumber 是受约束的数值输入控件，在原生 `<input>` 之上增加
 | `--cd-input-number-action-color-hover` | `--cd-color-primary` | 步进图标 hover |
 | `--cd-input-number-action-bg-hover` | `--cd-color-fill-1` | 步进按钮 hover 背景 |
 | `--cd-input-number-action-divider` | `--cd-color-border` | 步进区分隔线 |
-| `--cd-input-number-transition` | `120ms ease` | 过渡（reduced-motion 下 0） |
 
 对比度：默认文本/背景 ≥ 7:1（AAA 文本），placeholder 与 disabled 文本 ≥ 4.5:1（AA）；步进图标 hover 态对比度 ≥ 3:1（非文本图形）。error/warning 边框与背景对比 ≥ 3:1，且不单独依赖颜色（配合 status 图标/aria 提示）。
 
@@ -175,10 +175,9 @@ InputNumber 是受约束的数值输入控件，在原生 `<input>` 之上增加
 - **角色与属性**：`<input>` 使用 `role="spinbutton"`（或保留 `type="text"` + `inputmode="decimal"` 以兼容 `formatter` 含非数字字符；纯数字模式可用 `type="number"`，但因其格式化与 locale 限制，组件默认 `type=text` + spinbutton role）。设置 `aria-valuenow`（当前数值）、`aria-valuemin`、`aria-valuemax`、`aria-valuetext`（当有 formatter 时给出可读文本，如「1,234 元」）。
 - **可访问名**：优先外部 `<label for>`；否则 `aria-label`（`ariaLabel` prop）。前后缀（单位）通过 `aria-describedby` 关联说明而非混入 valuetext。
 - **状态关联**：`status=error/warning` 时 `aria-invalid="true"`，错误描述通过外部 FormField 的 `aria-describedby` 关联（组件本身不渲染错误文案）。`disabled`→ `disabled` 属性；`readonly`→ `aria-readonly` + 原生 readonly。
-- **键盘交互**：↑/↓ = ±step；PageUp/PageDown = ±shiftStep（或 Shift+↑/↓）；Home = min（有限时）；End = max（有限时）；Enter = commit 归一化（不阻止表单提交）；Esc = 撤销本次未提交编辑回到上次值。步进按钮 `tabindex="-1"`、`aria-hidden` 可选（功能由输入框键盘覆盖，避免重复 tab 停留）；按钮含 `aria-label`（i18n）供屏幕阅读器指针用户。
-- **焦点管理**：点击步进按钮不夺取输入框焦点（按钮 `mousedown.preventDefault`），步进后输入框保持聚焦。`selectOnFocus` 可选全选。
-- **越界播报**：触达 min/max 时通过 `useLiveAnnouncer`（`aria-live="polite"`）播报「已达最大值」等（i18n，可关闭以免聒噪）。
-- **reduced-motion**：禁用按钮过渡/长按视觉抖动。**RTL**：`dir` 由文档继承，sides 布局镜像，valuetext 由 locale 决定。**对比度**：见第 5 节。
+- **键盘交互**（对齐 Semi，不含 Home/End/Esc/滚轮——Semi 无此类扩展）：↑/↓ = ±step；PageUp/PageDown 或 Shift+↑/↓ = ±shiftStep；Enter = commit 归一化（不阻止表单提交）。步进按钮 `tabindex="-1"`（功能由输入框键盘覆盖，避免重复 tab 停留）；按钮含 `aria-label`（i18n）供屏幕阅读器指针用户。
+- **焦点管理**：点击步进按钮不夺取输入框焦点（按钮 `mousedown.preventDefault`），步进后输入框保持聚焦（`keepFocus` 时命令式 `.focus()`）。
+**RTL**：`dir` 由文档继承，步进器随方向镜像（`margin-inline-start` 逻辑属性天然适配）。**对比度**：见第 5 节。
 
 ## 7. 国际化
 
@@ -191,30 +190,28 @@ InputNumber 是受约束的数值输入控件，在原生 `<input>` 之上增加
 | --- | --- |
 | `InputNumber.increase` | 增加 |
 | `InputNumber.decrease` | 减少 |
-| `InputNumber.clampedAnnounce` | 已调整为 {value} |
 
 ## 8. 文案
 
-- 遵循 content-guidelines：按钮 aria-label 用动词短语（"Increase value"），简洁、句首大写、无句末标点。播报文案陈述结果（"Maximum value reached"）而非命令。
+- 遵循 content-guidelines：按钮 aria-label 用动词短语（"Increase value"），简洁、句首大写、无句末标点。
 - placeholder 提示期望格式（如 "0.00"、"Enter amount"），不承担校验文案职责（错误由 FormField 表达）。
 - 单位用 `suffix`/`prefix`，不写入 placeholder。
 
-**危险操作文案**：InputNumber 本身无破坏性操作。需单列的边界提醒：当用于「会触发不可逆后果的数量」（如批量删除条数、扣费金额）时，使用方应在 `boundaryHit`/`change` 后于外部展示确认，而非在组件内静默 clamp 导致用户误以为已设较大值——推荐 `boundaryMode="strict"` 并显式提示「最多 {max} 项」。该提示文案归使用方，组件提供 `boundaryHit` 事件钩子。
+**危险操作文案**：InputNumber 本身无破坏性操作。需单列的边界提醒：当用于「会触发不可逆后果的数量」（如批量删除条数、扣费金额）时，使用方应在 `change` 后于外部展示确认，而非误以为组件会阻止越界输入——组件恒 clamp 到 `[min,max]`（对齐 Semi），越界提示文案（如「最多 {max} 项」）归使用方在 `onChange` 里判断后自行展示。
 
 ## 9. 性能
 
 | 指标 | 预算 | 说明 |
 |---|---|---|
-| svelte 组件 gzip | ≤ 4.25 KB | 含模板、样式、action |
-| core `createInputNumber` gzip | ≤ 2 KB | 纯逻辑，可独立 tree-shake |
-| `Intl.NumberFormat` | 懒加载 + 缓存 | 仅启用 formatter 时实例化，按 (locale,options) 缓存，避免每次渲染 new |
-| 键入响应 | < 4ms/次 | input 仅更新 displayValue，commit 才 parse/format |
-| 长按步进帧 | ≤ 1 次状态更新/帧 | rAF 节流，加速间隔不低于 40ms |
-| 滚轮步进 | passive=false + 节流 | 仅聚焦时绑定，blur 解绑 |
+| svelte 组件 gzip | ≤ 5 KB | 含模板、样式（`.size-limit.js` 门禁真源，实测 4.39 KB） |
+| core input-number 原语 gzip | ≤ 2 KB | 纯逻辑，可独立 tree-shake |
+| `Intl.NumberFormat` | 懒加载 + 缓存 | 仅 `locale`/`currency` 启用时实例化，按 (locale,options) 缓存，避免每次渲染 new |
+| 键入响应 | < 4ms/次 | input 仅更新 `editingText`，commit 才 parse/format |
+| 长按步进间隔 | `pressInterval`（默认 250ms） | 对齐 Semi，不做递增加速 |
 
 - 不需要虚拟化/惰性渲染（单一输入，无列表）。无浮层故无 `destroyOnClose`。
-- `formatter`/`parser` 调用频率控制在 commit/step 时刻，输入过程不格式化（避免光标跳动与性能抖动）。
-- 长按定时器与 wheel 监听在卸载/失焦时清理，杜绝泄漏。
+- `formatter`/`parser`/货币/科学计数法格式化仅在 commit/step/失焦时刻调用，输入过程不格式化（避免光标跳动与性能抖动）。
+- 长按定时器在按钮 mouseup/mouseleave/组件卸载时清理，杜绝泄漏。
 
 ## 10. AI 元数据
 
@@ -229,28 +226,25 @@ InputNumber 是受约束的数值输入控件，在原生 `<input>` 之上增加
 
 ## 11. 测试
 
-- **core 单测（vitest）**：`parse`/`round`/`clamp`/`getStepValue` 浮点边界（`0.1+0.2`、`0.3-0.1`、`precision` 截断/四舍五入）；`step`/`shiftStep`/min/max clamp 与 strict 回滚；空值 `''`↔`null`；中间态（`-`、`1.`、`1e3`、`.5`）不被过早归一化。
-- **格式化往返**：`parser(formatter(n)) === n`（多 locale：en-US、de-DE、zh-CN）。
-- **a11y**：axe 无违规；断言 `role=spinbutton`、`aria-valuenow/min/max/text`、`aria-invalid`、按钮 `aria-label`、`aria-readonly`。
-- **键盘交互（@testing-library）**：↑↓/PageUp/Down/Home/End/Enter/Esc 行为；步进后焦点保留输入框；步进按钮不可 tab 进入。
-- **长按加速**：fake timers 验证首延迟 400ms 与加速间隔曲线、卸载清理。
-- **滚轮**：聚焦步进、失焦不响应、解绑。
-- **受控/非受控**：`value` 受控不自更新、`on:change` 派发；`defaultValue` 路径。
-- **SSR/hydration**：locale 格式化无 mismatch 警告。
-- **视觉回归（Playwright/Chromatic）**：三尺寸 × 三状态 × 两按钮布局 × innerButtons × disabled/readonly × RTL × reduced-motion 快照。
+- **core 单测（vitest）**：`roundToPrecision`/`addStep`/`decimalsOf` 浮点边界（`0.1+0.2`、`0.3-0.1`、`precision` 截断/四舍五入）；`formatWithLocale` 多 locale（en-US、de-DE、zh-CN）与缓存。
+- **a11y**：axe 无违规；断言 `role=spinbutton`、`aria-valuenow/min/max/valuetext`、`aria-invalid`、按钮 `aria-label`、`aria-readonly`。
+- **键盘交互（真机 browser project）**：Tab 聚焦、↑↓ ±step、PageUp/PageDown ±shiftStep、钳到 min/max；步进后焦点保留输入框；步进按钮不可 tab 进入。
+- **长按加速**：`pressTimeout`/`pressInterval` 首延迟与重复间隔、卸载清理。
+- **受控/非受控**：`value` 受控不自更新、`onChange` 派发；`defaultValue` 路径；空值 `''`↔`null`。
+- **视觉/真机**：三尺寸 × 三状态 × innerButtons/hideButtons × disabled/readonly × borderless 悬浮显形。
 
 ## 12. 验收标准 checklist
 
 - [ ] 受控 `value` + `on:change` 与非受控 `defaultValue` 均工作；空值正确区分 `''` 与 `null`。
 - [ ] step/shiftStep/precision/min/max 全部生效；浮点步进无 `0.1+0.2` 误差。
-- [ ] `boundaryMode` clamp 与 strict 行为正确，触边派发 `boundaryHit`，按钮在边界 disabled。
+- [ ] min/max clamp 行为正确（对齐 Semi 恒 clamp，无 strict 模式），按钮在边界 disabled。
 - [ ] formatter/parser 多 locale 往返一致，输入过程不格式化、不跳光标；失焦归一化。
-- [ ] 键盘 ↑↓/PageUp·Down/Home/End/Enter/Esc 完整；步进按钮 `tabindex=-1` 不入 tab 序。
+- [ ] 键盘 ↑↓/PageUp·Down/Enter 完整（对齐 Semi，无 Home/End/Esc/滚轮扩展）；步进按钮 `tabindex=-1` 不入 tab 序。
 - [ ] 点击步进按钮不夺焦，步进后输入框保持聚焦。
-- [ ] WCAG 2.1 AA：axe 通过；role/aria-value*/aria-invalid/aria-readonly/aria-label 正确；越界 polite 播报可开关。
-- [ ] 对比度达标（文本 ≥7:1，placeholder/disabled ≥4.5:1，图标/边框 ≥3:1）；reduced-motion 与 RTL 正确。
+- [ ] WCAG 2.1 AA：axe 通过；role/aria-value*/aria-invalid/aria-readonly/aria-label 正确。
+- [ ] 对比度达标（文本 ≥7:1，placeholder/disabled ≥4.5:1，图标/边框 ≥3:1）；RTL 镜像正确。
 - [ ] 所有可见文案走 i18n，数字/分组符由 `Intl` 按 locale 决定，无硬编码。
 - [ ] 仅消费 Alias/Component token，无写死颜色/尺寸；`--cd-input-number-*` 可覆盖。
-- [ ] core 逻辑零 DOM 依赖、可独立单测；svelte 仅渲染转发。
-- [ ] Perf Budget 达标（svelte ≤4.25KB / core ≤2KB gzip）；定时器与 wheel 监听无泄漏。
+- [ ] core 逻辑零 DOM 依赖、可独立单测；svelte 负责 DOM/状态机与渲染转发。
+- [ ] Perf Budget 达标（svelte ≤5KB / core ≤2KB gzip）；长按定时器无泄漏。
 - [ ] 提供 `component.meta.ts`，字段（props/events/slots/i18nKeys/tokens/a11yPattern）完整准确。

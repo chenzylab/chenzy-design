@@ -398,8 +398,6 @@ export interface Locale {
   InputNumber: {
     increase: string;
     decrease: string;
-    /** LiveAnnouncer：越界钳制后实际生效值，uses {value} */
-    clampedAnnounce: string;
   };
   Slider: {
     /** LiveAnnouncer：值到达最小边界 */

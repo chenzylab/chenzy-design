@@ -273,7 +273,6 @@ export const en_US: Locale = {
   InputNumber: {
     increase: 'Increase',
     decrease: 'Decrease',
-    clampedAnnounce: 'Adjusted to {value}',
   },
   Slider: {
     minReachedAnnounce: 'Minimum value reached',
