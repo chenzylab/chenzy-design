@@ -132,7 +132,9 @@ const components = [
   // 删除自造 tabindex prop（Semi Radio 无此 API；Table.svelte rowSelection type='radio' 分支
   // 随之降级，不再支持 grid roving），真实结构对齐带来的组件边界开销，实测 5.03 KB，预算随之上调。
   ['radio', '{ Radio, RadioGroup }', '5.1 KB'],
-  ['rating', '{ Rating }', '4 KB'],
+  // 拆分 RatingItem.svelte（对齐 Semi item.tsx 文件结构，参照 Radio/RadioInner 拆分先例），
+  // 真实结构对齐带来的组件边界开销，实测 4.45 KB，预算按实测校准留少量余量。
+  ['rating', '{ Rating }', '4.5 KB'],
   ['select', '{ Select }', '10 KB'],
   ['slider', '{ Slider }', '5.5 KB'],
   ['switch', '{ Switch }', '2.7 KB'],

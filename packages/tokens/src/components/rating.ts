@@ -43,4 +43,6 @@ export const ratingTokens = {
   'transition-duration-rating-color': { value: 'var(--cd-motion-duration-none)', category: 'animation', label: '填充色过渡时长', usage: '评分-背景色-动画持续时间（Semi transition_duration-none）' },
   'transition-function-rating-color': { value: 'var(--cd-motion-ease-in)', category: 'animation', label: '填充色过渡曲线', usage: '评分-背景色-过渡曲线（Semi transition_function-easeIn）' },
   'transition-delay-rating-color': { value: 'var(--cd-motion-delay-none)', category: 'animation', label: '填充色过渡延迟', usage: '评分-背景色-延迟时间（Semi transition_delay-none）' },
+  // Semi: $transform_scale-rating: var(--semi-transform_scale-none) → scale(1, 1)
+  'transform-scale-rating': { value: 'var(--cd-motion-scale-none)', category: 'animation', label: '评分星放大', usage: '评分-变大（Semi transform_scale-rating）' },
 } satisfies TokenGroup;
