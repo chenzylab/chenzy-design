@@ -1876,7 +1876,10 @@
 {/snippet}
 
 <!-- 行选择输入框（radio/checkbox，含 rowSelection.renderCell 自定义渲染）。
-     gridTab 为 grid 模式下 roving tabindex（非 grid/物料摆放传 undefined）。 -->
+     gridTab 为 grid 模式下 roving tabindex（非 grid/物料摆放传 undefined）；
+     radio 型无此机制——Radio 组件严格对齐 Semi 后不再提供 tabindex prop（Semi Radio 无此 API，
+     Semi Table 的 rowSelection 本身也不支持 radio 型，本库该分支属自造超集，grid 模式下降级为
+     浏览器默认可 tab，不参与单元格级 roving）。 -->
 {#snippet rowSelectionInput(record: T, selected: boolean, rowHalf: boolean, rowDisabled: boolean, gridTab: 0 | -1 | undefined)}
   {#snippet selectionOrigin()}
     {#if rowSelection?.type === 'radio'}
@@ -1885,7 +1888,6 @@
         aria-label={loc().t('Table.selectRow')}
         checked={selected}
         disabled={rowDisabled}
-        tabindex={gridTab}
         onChange={() => onToggleRow(record)}
       />
     {:else}

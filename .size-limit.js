@@ -128,7 +128,10 @@ const components = [
   ['input', '{ Input, InputGroup, TextArea }', '9.2 KB'],
   ['input-number', '{ InputNumber }', '5 KB'],
   ['pincode', '{ PinCode }', '3.5 KB'],
-  ['radio', '{ Radio, RadioGroup }', '4.8 KB'],
+  // 拆分 RadioInner.svelte（对齐 Semi radioInner.tsx 文件结构，参照 CheckboxInner 拆分先例）+
+  // 删除自造 tabindex prop（Semi Radio 无此 API；Table.svelte rowSelection type='radio' 分支
+  // 随之降级，不再支持 grid roving），真实结构对齐带来的组件边界开销，实测 5.03 KB，预算随之上调。
+  ['radio', '{ Radio, RadioGroup }', '5.1 KB'],
   ['rating', '{ Rating }', '4 KB'],
   ['select', '{ Select }', '10 KB'],
   ['slider', '{ Slider }', '5.5 KB'],
