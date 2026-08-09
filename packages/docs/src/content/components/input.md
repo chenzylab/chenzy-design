@@ -147,7 +147,7 @@ import { Input, TextArea, InputGroup } from '@chenzy-design/svelte';
 
 ### 使用 Shift + Enter 换行的多行输入框
 
-TextArea 默认情况下 Enter 回车与 Shift + Enter 均可实现换行。通过设置 `disabledEnterStartNewLine`，可以禁用 Enter 换行，仅 Shift + Enter 才能换行。
+TextArea 默认情况下 Enter 回车与 Shift + Enter 均可实现换行。通过适当的事件监听与禁用默认行为，你可以实现禁用 Enter 换行，仅 Shift + Enter 才能换行。
 
 <DemoBox code={textareaShiftEnterSrc}><TextareaShiftEnter /></DemoBox>
 
@@ -254,7 +254,6 @@ Input 和 TextArea 均支持该属性。
 | count | 自定义计数器渲染（覆盖内建），作用域 `{ count, maxCount, overLimit }` | Snippet | - |
 | defaultValue | 输入框内容默认值 | string | `''` |
 | disabled | 禁用状态 | boolean | false |
-| disabledEnterStartNewLine | 禁用 Enter 换行（Shift + Enter 才换行） | boolean | false |
 | getValueLength | 自定义计算字符串长度 | `(value: string) => number` | - |
 | lineNumberClassName | 行号区域 className | string | - |
 | lineNumberStart | 行号起始值 | number | 1 |

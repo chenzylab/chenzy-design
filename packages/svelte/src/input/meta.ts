@@ -106,7 +106,6 @@ export const meta = {
         { name: 'lineNumberStyle', type: 'string', default: 'undefined', desc: '行号区自定义样式（对齐 Semi）' },
         { name: 'textareaStyle', type: 'string', default: 'undefined', desc: 'textarea 元素样式，可设高度等（对齐 Semi textareaStyle）' },
         { name: 'getValueLength', type: '(value: string) => number', default: 'undefined', desc: '自定义字符计数函数（对齐 Semi getValueLength）' },
-        { name: 'disabledEnterStartNewLine', type: 'boolean', default: 'false', desc: '禁用 Enter 换行（Shift+Enter 才换行，对齐 Semi，Chat 场景用）' },
         { name: 'composition', type: 'boolean', default: 'false', desc: '输入法模式：开启后 IME 未确认期间不触发 onChange，确认后触发一次（对齐 Semi）' },
         { name: 'name', type: 'string', default: 'undefined' },
         { name: 'id', type: 'string', default: 'undefined' },
