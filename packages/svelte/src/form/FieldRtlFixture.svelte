@@ -14,7 +14,7 @@
 <div data-testid="ltr">
   <Form initValues={{ name: '' }} labelPosition="left">
     {#snippet children()}
-      <Form.Input field="name" label="Name" rules={[{ required: true }]} validateStatus="error" />
+      <Form.Input field="name" label="Name" rules={[{ required: true }]} validateStatus="error" helpText="required" />
     {/snippet}
   </Form>
 </div>
@@ -23,7 +23,7 @@
   <div data-testid="rtl">
     <Form initValues={{ name: '' }} labelPosition="left">
       {#snippet children()}
-        <Form.Input field="name" label="Name" rules={[{ required: true }]} validateStatus="error" />
+        <Form.Input field="name" label="Name" rules={[{ required: true }]} validateStatus="error" helpText="required" />
       {/snippet}
     </Form>
   </div>
