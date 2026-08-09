@@ -19,7 +19,8 @@
  * （<script> 顶层或 setup 阶段）调用，与 getContext 约束一致。
  */
 import type { FormApi, FormState } from '@chenzy-design/core';
-import { getFormContext } from './context.js';
+import { pathGet } from '@chenzy-design/core';
+import { getFormContext, getArrayFieldContext, type ArrayFieldContext } from './context.js';
 
 /** 后代组件拿当前 Form 的 FormApi 句柄（对齐 Semi useFormApi）。不在 <Form> 内返回 undefined。 */
 export function useFormApi(): FormApi | undefined {
@@ -33,6 +34,30 @@ export function useFormApi(): FormApi | undefined {
  */
 export function useFormState(): FormState | undefined {
   return getFormContext()?.getFormState();
+}
+
+/** 单字段状态快照（对齐 Semi useFieldState 返回的 { value, error, touched }）。 */
+export interface FieldState {
+  value: unknown;
+  error: string | undefined;
+  touched: boolean;
+}
+
+/**
+ * 后代组件拿单个字段的响应式状态快照（对齐 Semi useFieldState(field)）。
+ * 基于 useFormState() 派生，需在 $derived / 模板中调用以保持响应式。
+ * 不在 <Form> 内使用时抛错（与 getFieldApi 一致）。
+ */
+export function useFieldState(field: string): FieldState {
+  const ctx = getFormContext();
+  if (!ctx) throw new Error('useFieldState() must be used inside <Form>');
+  const state = ctx.getFormState();
+  const error = pathGet(state.errors, field);
+  return {
+    value: pathGet(state.values, field),
+    error: typeof error === 'string' ? error : undefined,
+    touched: pathGet(state.touched, field) === true,
+  };
 }
 
 /** 单字段 API（对齐 Semi useFieldApi 返回的 fieldApi 子集）。 */
@@ -72,4 +97,12 @@ export function getFieldApi(field: string): FieldApi {
     getTouched: () => getFormState().touched[field] === true,
     setTouched: (touched = true) => form.setTouched(field, touched),
   };
+}
+
+/**
+ * 后代组件读取是否处于 <Form.ArrayField> 行内（对齐 Semi useArrayFieldState）。
+ * 不在 ArrayField 内返回 undefined（与 Semi useContext 未命中时的 undefined 语义一致）。
+ */
+export function useArrayFieldState(): ArrayFieldContext | undefined {
+  return getArrayFieldContext();
 }

@@ -23,38 +23,18 @@
   }
 
   const props: Props = $props();
-  const controlKeys = [
-    'min',
-    'max',
-    'step',
-    'range',
-    'marks',
-    'disabled',
-    'vertical',
-    'tooltipVisible',
-    'tipFormatter',
-  ] as const;
   const split = $derived(splitFieldProps(props));
   const fieldProps = $derived(split.fieldProps);
-  const control = $derived(
-    Object.fromEntries(controlKeys.filter((k) => props[k] !== undefined).map((k) => [k, props[k]])),
-  );
+  const rest = $derived(split.rest as Record<string, unknown>);
   const labelForAria = $derived(typeof props.label === 'string' ? props.label : props.label?.text);
 </script>
 
 <Field {...fieldProps}>
   {#snippet children({ value, onChange, disabled: fieldDisabled, describedBy, labelledById })}
     <Slider
+      {...rest}
       {...(value !== undefined ? { value: value as NonNullable<SliderProps['value']> } : {})}
-      {...(control.min !== undefined ? { min: control.min as NonNullable<SliderProps['min']> } : {})}
-      {...(control.max !== undefined ? { max: control.max as NonNullable<SliderProps['max']> } : {})}
-      {...(control.step !== undefined ? { step: control.step as NonNullable<SliderProps['step']> } : {})}
-      {...(control.range !== undefined ? { range: control.range as NonNullable<SliderProps['range']> } : {})}
-      {...(control.marks !== undefined ? { marks: control.marks as NonNullable<SliderProps['marks']> } : {})}
-      disabled={(control.disabled as boolean | undefined) ?? fieldDisabled}
-      {...(control.vertical !== undefined ? { vertical: control.vertical as NonNullable<SliderProps['vertical']> } : {})}
-      {...(control.tooltipVisible !== undefined ? { tooltipVisible: control.tooltipVisible as NonNullable<SliderProps['tooltipVisible']> } : {})}
-      {...(control.tipFormatter !== undefined ? { tipFormatter: control.tipFormatter as NonNullable<SliderProps['tipFormatter']> } : {})}
+      disabled={(rest.disabled as boolean | undefined) ?? fieldDisabled}
       {...(labelledById !== undefined ? { ariaLabelledby: labelledById } : labelForAria !== undefined ? { 'aria-label': labelForAria } : {})}
       {...(describedBy !== undefined ? { ariaDescribedby: describedBy } : {})}
       onChange={(v) => onChange(v)}

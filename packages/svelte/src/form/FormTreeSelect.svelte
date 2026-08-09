@@ -21,26 +21,18 @@
   }
 
   const props: Props = $props();
-  const controlKeys = ['treeData', 'multiple', 'placeholder', 'disabled', 'showClear', 'size', 'maxTagCount'] as const;
   const split = $derived(splitFieldProps(props));
   const fieldProps = $derived(split.fieldProps);
-  const control = $derived(
-    Object.fromEntries(controlKeys.filter((k) => props[k] !== undefined).map((k) => [k, props[k]])),
-  );
+  const rest = $derived(split.rest as Record<string, unknown>);
   const labelForAria = $derived(typeof props.label === 'string' ? props.label : props.label?.text);
 </script>
 
 <Field {...fieldProps}>
   {#snippet children({ value, onChange, status, disabled: fieldDisabled, describedBy, errorMessageId, labelledById, required, insetLabel, insetLabelId })}
     <TreeSelect
+      {...rest}
       {...(value !== undefined ? { value: value as NonNullable<TreeSelectProps['value']> } : {})}
-      {...(control.treeData !== undefined ? { treeData: control.treeData as NonNullable<TreeSelectProps['treeData']> } : {})}
-      {...(control.multiple !== undefined ? { multiple: control.multiple as NonNullable<TreeSelectProps['multiple']> } : {})}
-      {...(control.placeholder !== undefined ? { placeholder: control.placeholder as NonNullable<TreeSelectProps['placeholder']> } : {})}
-      disabled={(control.disabled as boolean | undefined) ?? fieldDisabled}
-      {...(control.showClear !== undefined ? { showClear: control.showClear as NonNullable<TreeSelectProps['showClear']> } : {})}
-      {...(control.size !== undefined ? { size: control.size as NonNullable<TreeSelectProps['size']> } : {})}
-      {...(control.maxTagCount !== undefined ? { maxTagCount: control.maxTagCount as NonNullable<TreeSelectProps['maxTagCount']> } : {})}
+      disabled={(rest.disabled as boolean | undefined) ?? fieldDisabled}
       status={status === 'error' ? 'error' : 'default'}
       {...(insetLabel !== undefined ? { insetLabel } : {})}
       {...(insetLabelId !== undefined ? { insetLabelId } : {})}

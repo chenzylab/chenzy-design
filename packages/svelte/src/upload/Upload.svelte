@@ -1393,12 +1393,6 @@
     color: var(--cd-color-upload-clear-text);
   }
 
-  /* list 卡片纵向堆叠（Semi file-list-main flex-wrap 下逐个换行）。 */
-  .cd-upload-file-list:not(.cd-upload-picture-file-list) .cd-upload-file-list-main {
-    flex-direction: column;
-    gap: var(--cd-spacing-extra-tight);
-  }
-
   /* ============ 拖拽区（对齐 Semi drag-area 段） ============ */
   .cd-upload-drag-area {
     border-radius: var(--cd-radius-upload-drag-area);

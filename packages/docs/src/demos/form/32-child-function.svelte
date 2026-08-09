@@ -5,7 +5,7 @@
 </script>
 
 <Form layout="horizontal" onChange={(v) => console.log(v)}>
-  {#snippet children({ formState })}
+  {#snippet children({ values })}
     <Form.Select
       field="Role"
       label="角色"
@@ -18,6 +18,6 @@
     />
     <Form.Input field="UserName" label="用户名" style="width: 80px" />
     <Form.Input field="Password" label="密码" style="width: 176px" />
-    <code style="margin-top: 24px">{JSON.stringify(formState.values)}</code>
+    <code style="margin-top: 24px">{JSON.stringify(values)}</code>
   {/snippet}
 </Form>

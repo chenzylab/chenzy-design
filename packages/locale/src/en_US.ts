@@ -252,14 +252,13 @@ export const en_US: Locale = {
   },
   Form: {
     required: '{label} is required',
-    optional: 'optional',
+    optional: '(optional)',
     typeError: '{label} has an invalid format',
     minLength: 'Enter at least {min} characters',
     maxLength: 'Enter at most {max} characters',
     min: 'Cannot be less than {min}',
     max: 'Cannot be greater than {max}',
     pattern: '{label} does not match the required format',
-    validating: 'Validating…',
   },
   TreeSelect: {
     clear: 'Clear',

@@ -21,26 +21,18 @@
   }
 
   const props: Props = $props();
-  const controlKeys = ['placeholder', 'disabled', 'size', 'type', 'format', 'disabledDate', 'style'] as const;
   const split = $derived(splitFieldProps(props));
   const fieldProps = $derived(split.fieldProps);
-  const control = $derived(
-    Object.fromEntries(controlKeys.filter((k) => props[k] !== undefined).map((k) => [k, props[k]])),
-  );
+  const rest = $derived(split.rest as Record<string, unknown>);
   const labelForAria = $derived(typeof props.label === 'string' ? props.label : props.label?.text);
 </script>
 
 <Field {...fieldProps}>
   {#snippet children({ value, onChange, onBlur, status, disabled: fieldDisabled, describedBy, errorMessageId, labelledById, required, insetLabel, insetLabelId })}
     <DatePicker
+      {...rest}
       {...(value instanceof Date || value === null ? { value: value as NonNullable<DatePickerProps['value']> } : {})}
-      {...(control.placeholder !== undefined ? { placeholder: control.placeholder as NonNullable<DatePickerProps['placeholder']> } : {})}
-      disabled={(control.disabled as boolean | undefined) ?? fieldDisabled}
-      {...(control.size !== undefined ? { size: control.size as NonNullable<DatePickerProps['size']> } : {})}
-      {...(control.type !== undefined ? { type: control.type as NonNullable<DatePickerProps['type']> } : {})}
-      {...(control.format !== undefined ? { format: control.format as NonNullable<DatePickerProps['format']> } : {})}
-      {...(control.disabledDate !== undefined ? { disabledDate: control.disabledDate as NonNullable<DatePickerProps['disabledDate']> } : {})}
-      {...(control.style !== undefined ? { style: control.style as NonNullable<DatePickerProps['style']> } : {})}
+      disabled={(rest.disabled as boolean | undefined) ?? fieldDisabled}
       validateStatus={status === 'error' ? 'error' : 'default'}
       {...(insetLabel !== undefined ? { insetLabel } : {})}
       {...(insetLabelId !== undefined ? { insetLabelId } : {})}

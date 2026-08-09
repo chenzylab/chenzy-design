@@ -23,9 +23,11 @@
   } from './context.js';
   import { useLocale } from '../locale-provider/index.js';
 
-  /** children-as-function 入参（对齐 Semi FormFCChild：拿到 formState/formApi）。 */
+  /** children-as-function 入参（对齐 Semi FormFCChild：拿到 formState/formApi/values）。 */
   interface FormRenderArgs {
     formState: FormState;
+    /** formState.values 的快捷方式，对齐 Semi FormFCChild.values（同一份数据，非独立拷贝）。 */
+    values: FormState['values'];
     formApi: FormApi;
   }
 
@@ -404,7 +406,7 @@
   onsubmit={handleSubmit}
   onreset={handleReset}
 >
-  {@render (contentSnippet as Snippet<[FormRenderArgs]>)?.({ formState, formApi: formApiWithScroll })}
+  {@render (contentSnippet as Snippet<[FormRenderArgs]>)?.({ formState, values: formState.values, formApi: formApiWithScroll })}
   {#if footer}
     <div class="cd-form-footer">
       {@render footer({ submitting: formState.submitting })}
@@ -447,5 +449,15 @@
   .cd-form-footer {
     display: flex;
     gap: var(--cd-spacing-base-tight);
+  }
+
+  /*
+    RTL 开关，对齐 Semi rtl.scss 里 semi-form 的 direction rtl 声明。
+    cd-rtl 本身不带样式，只是作用域标记（同 Carousel/DatePicker 等组件），每个
+    组件须在自己根节点显式声明 direction，margin-inline / padding-inline 等逻辑
+    属性才会真正镜像——这条规则是全部 Form 逻辑属性生效的前提，不可省略。
+  */
+  :global(.cd-rtl) .cd-form {
+    direction: rtl;
   }
 </style>

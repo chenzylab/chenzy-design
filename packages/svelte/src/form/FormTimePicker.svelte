@@ -19,25 +19,19 @@
   }
 
   const props: Props = $props();
-  const controlKeys = ['placeholder', 'disabled', 'size', 'format', 'use12Hours'] as const;
   const split = $derived(splitFieldProps(props));
   const fieldProps = $derived(split.fieldProps);
-  const control = $derived(
-    Object.fromEntries(controlKeys.filter((k) => props[k] !== undefined).map((k) => [k, props[k]])),
-  );
+  const rest = $derived(split.rest as Record<string, unknown>);
   const labelForAria = $derived(typeof props.label === 'string' ? props.label : props.label?.text);
 </script>
 
 <Field {...fieldProps}>
   {#snippet children({ value, onChange, status, disabled: fieldDisabled, id, describedBy, errorMessageId, labelledById, required, insetLabel, insetLabelId })}
     <TimePicker
+      {...rest}
       {...(value !== undefined && value !== null ? { value: value as NonNullable<TimePickerProps['value']> } : {})}
       validateStatus={status === 'error' ? 'error' : 'default'}
-      disabled={(control.disabled as boolean | undefined) ?? fieldDisabled}
-      {...(control.placeholder !== undefined ? { placeholder: control.placeholder as NonNullable<TimePickerProps['placeholder']> } : {})}
-      {...(control.size !== undefined ? { size: control.size as NonNullable<TimePickerProps['size']> } : {})}
-      {...(control.format !== undefined ? { format: control.format as NonNullable<TimePickerProps['format']> } : {})}
-      {...(control.use12Hours !== undefined ? { use12Hours: control.use12Hours as NonNullable<TimePickerProps['use12Hours']> } : {})}
+      disabled={(rest.disabled as boolean | undefined) ?? fieldDisabled}
       {id}
       {...(insetLabel !== undefined ? { insetLabel } : {})}
       {...(insetLabelId !== undefined ? { insetLabelId } : {})}

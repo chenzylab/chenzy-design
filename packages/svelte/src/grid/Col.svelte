@@ -58,10 +58,11 @@
     children,
   }: Props = $props();
 
+  // Semi 的 Col 组件同样从 RowContext 读 gutters，但实测（semi.design 官网
+  // wrapperCol/labelCol demo）Semi Form 的 withField/slot/group 会裸用 <Col>
+  // （不包 <Row>）且真实渲染无报错——故此处不强制断言 Row 祖先存在，没有 Row
+  // 时 gutters 按 [0,0] 处理（等价于无间距的最简 Col），供 Form 场景独立使用。
   const context = getContext<RowContext>(ROW_CONTEXT_KEY);
-  if (!context) {
-    throw new Error('please make sure <Col> inside <Row>');
-  }
 
   const PREFIX = 'cd-col';
   const SIZES: Breakpoint[] = ['xs', 'sm', 'md', 'lg', 'xl', 'xxl'];
@@ -99,7 +100,7 @@
   // gutter 经 context 施加四向 padding（对齐 Semi Col 从 RowContext.gutters 取 padding）：
   // 水平 g0/2 左右、垂直 g1/2 上下；用户 style 追加在后可覆盖。
   const inlineStyle = $derived.by(() => {
-    const g = context.getGutters();
+    const g = context ? context.getGutters() : ([0, 0] as [number, number]);
     return [
       g[0] > 0 && `padding-left:${g[0] / 2}px;padding-right:${g[0] / 2}px`,
       g[1] > 0 && `padding-top:${g[1] / 2}px;padding-bottom:${g[1] / 2}px`,

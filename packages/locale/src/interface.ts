@@ -382,8 +382,6 @@ export interface Locale {
     max: string;
     /** uses {label} */
     pattern: string;
-    /** announced/shown while a field is running async validation */
-    validating: string;
   };
   TreeSelect: {
     clear: string;

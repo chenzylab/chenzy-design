@@ -1,15 +1,15 @@
 <!--
-  FieldArray (Form.List) — 动态字段数组：增/删/重排子表单项，对齐 Semi ArrayField。
-  子字段名用真下标 `${name}[${index}].${sub}`（非随机 key），提交产物是真数组
+  ArrayField (Form.ArrayField) — 动态字段数组：增/删/重排子表单项，对齐 Semi ArrayField。
+  子字段名用真下标 `${field}[${index}].${sub}`（非随机 key），提交产物是真数组
   `{ users: [{ name, age }] }`（对齐 Semi，非扁平键）。
-  add/remove/move 直接对 core 里 `name` 下的数组值做 splice/reorder，剩余行按新
-  下标重读值 → 下标自动重排。渲染用稳定 key 做 each key（DOM 不闪），name 由位置算。
+  add/remove/move 直接对 core 里 `field` 下的数组值做 splice/reorder，剩余行按新
+  下标重读值 → 下标自动重排。渲染用稳定 key 做 each key（DOM 不闪），field 由位置算。
   红线 #1：不写回 props，行标识本地 $state。
 -->
 <script lang="ts">
   import { untrack, type Snippet } from 'svelte';
   import { useId } from '@chenzy-design/core';
-  import { getFormContext } from './context.js';
+  import { getFormContext, setArrayFieldContext } from './context.js';
 
   interface ArrayItem {
     /** 稳定行标识，仅用于 each key（DOM 稳定）；字段名由位置下标算，不用它 */
@@ -20,19 +20,19 @@
     key: string;
     /** 该行下标 */
     index: number;
-    /** 拼接该行某子字段的完整 field 名：`name[index].sub` */
-    name: (sub: string) => string;
+    /** 拼接该行某子字段的完整 field 名：`field[index].sub`（对齐 Semi arrayFields[i].field） */
+    field: (sub: string) => string;
     /** 删除本行 */
     remove: () => void;
   }
   interface ChildArgs {
-    /** 每行的 { key, index, name, remove }，供 {#each} 渲染 */
+    /** 每行的 { key, index, field, remove }，供 {#each} 渲染（对齐 Semi arrayFields） */
     arrayFields: RowArgs[];
     /** 兼容旧 API：行数组（{ key }[]） */
     items: ArrayItem[];
     /** 兼容旧 API：拼接某行某子字段名（按行对象取下标） */
     name: (item: ArrayItem, sub: string) => string;
-    /** 末尾追加空行；传 index 则在该位置插入 */
+    /** 末尾追加空行；传 index 则在该位置插入（对齐 Semi add(index?)） */
     add: (index?: number) => void;
     /** 用初始行对象追加/插入（对齐 Semi addWithInitValue） */
     addWithInitValue: (rowVal: Record<string, unknown>, index?: number) => void;
@@ -43,23 +43,34 @@
   }
 
   interface Props {
-    /** 数组字段名（子字段前缀） */
-    name: string;
-    /** 初始行数 */
+    /** 数组字段名（子字段前缀，对齐 Semi ArrayFieldProps.field） */
+    field: string;
+    /** 初始行数（本库超集，无 initValue 时按空行数展开）。 */
     initialCount?: number;
+    /** 初始整行数据数组，写入 core 数组值供各行子字段读取（对齐 Semi ArrayFieldProps.initValue）。 */
+    initValue?: unknown[];
     children?: Snippet<[ChildArgs]>;
   }
 
-  let { name, initialCount = 0, children }: Props = $props();
+  let { field: name, initialCount = 0, initValue, children }: Props = $props();
 
   const ctx = getFormContext();
-  if (!ctx) throw new Error('<Form.List> must be used inside <Form>');
+  if (!ctx) throw new Error('<Form.ArrayField> must be used inside <Form>');
   const { form } = ctx;
+  // 对齐 Semi ArrayFieldContext：告知内部 Field 自己在数组行内，路径会随
+  // remove/move 偏移，keepState 语义不再成立（见 Field.svelte inArrayField 分支）。
+  setArrayFieldContext({ inArrayField: true });
 
   function newKey(): string {
     return useId(`${name}-row`);
   }
   function getInitial(): ArrayItem[] {
+    // initValue 优先（对齐 Semi initValueAdapter）：写入 core 数组值供各行子字段读取，
+    // 行数按数组长度展开；未传 initValue 时退回 initialCount 的空行数。
+    if (Array.isArray(initValue)) {
+      form.setValue(name, initValue.map((row) => ({ ...(row as Record<string, unknown>) })));
+      return initValue.map(() => ({ key: newKey() }));
+    }
     return Array.from({ length: Math.max(0, initialCount) }, () => ({ key: newKey() }));
   }
   // 行标识列表：顺序即下标。add/remove/move 同步维护它 + core 里的数组值。
@@ -145,18 +156,18 @@
     return `${name}[${indexOf(item)}].${sub}`;
   }
 
-  // 每行 { key, index, name, remove }，name 用真下标（对齐 Semi arrayFields）。
+  // 每行 { key, index, field, remove }，field 用真下标（对齐 Semi arrayFields）。
   const arrayFields = $derived<RowArgs[]>(
     items.map((it, i) => ({
       key: it.key,
       index: i,
-      name: (sub: string) => `${name}[${i}].${sub}`,
+      field: (sub: string) => `${name}[${i}].${sub}`,
       remove: () => removeAt(i),
     })),
   );
 </script>
 
-<div class="cd-field-array">
+<div class="cd-array-field">
   {@render children?.({
     arrayFields,
     items,

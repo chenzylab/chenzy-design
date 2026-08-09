@@ -13,6 +13,7 @@
   import FormLabel from './FormLabel.svelte';
   import FormErrorMessage from './FormErrorMessage.svelte';
   import InputGroup from '../input/InputGroup.svelte';
+  import Col from '../grid/Col.svelte';
 
   /** 组标签（对齐 Semi LabelProps 子集）。 */
   interface GroupLabelProps {
@@ -92,6 +93,13 @@
       .filter((e): e is string => typeof e === 'string' && e !== ''),
   );
 
+  // 对齐 Semi group.tsx：Form 同时配置 labelCol + wrapperCol 时改走 24 栏 Grid 布局
+  // （appendCol），否则退化为普通两分支（label 块 + body 块）。此分支裸用 <Col>
+  // （不包 <Row>），与 Semi group.tsx 一致，见 Col.svelte 的 gutters 容错说明。
+  const labelCol = $derived(ctx.getLabelCol());
+  const wrapperCol = $derived(ctx.getWrapperCol());
+  const appendCol = $derived(labelCol !== undefined && wrapperCol !== undefined);
+
   // x-label-pos 镜像 Semi group 供样式与 DOM 定位；经 attrs 对象展开，让 svelte-check 接受非标准属性名。
   const rootAttrs = $derived({ 'x-label-pos': labelPosition });
   // size 仅在显式传入时透传（exactOptionalPropertyTypes：不能传 undefined 给必填 union）。
@@ -104,8 +112,9 @@
 <!--
   DOM 对齐 Semi group.tsx：<div class="cd-form-field-group" x-label-pos><Label/>
   <div>{extra middle}<InputGroup>{fields}</InputGroup>{extra bottom}<GroupError/></div></div>。
+  Form 同时配置 labelCol+wrapperCol 时改走 Col 栅格（appendCol，对齐 Semi）。
 -->
-<div class={['cd-form-field-group', className].filter(Boolean).join(' ')} {...rootAttrs} {style}>
+{#snippet labelNode()}
   {#if hasLabel}
     <FormLabel
       text={labelText}
@@ -116,18 +125,47 @@
       {...labelExtra}
     />
   {/if}
-  <div class="cd-form-field-group-body">
-    {#if extraText && extraTextPosition === 'middle'}
-      <div class="cd-form-field-extra cd-form-field-extra-string cd-form-field-extra-middle">{extraText}</div>
+{/snippet}
+
+{#snippet bodyContent()}
+  {#if extraText && extraTextPosition === 'middle'}
+    <div class="cd-form-field-extra cd-form-field-extra-string cd-form-field-extra-middle">{extraText}</div>
+  {/if}
+  <InputGroup {...groupSize} {disabled}>
+    {@render children?.()}
+  </InputGroup>
+  {#if extraText && extraTextPosition === 'bottom'}
+    <div class="cd-form-field-extra cd-form-field-extra-string cd-form-field-extra-bottom">{extraText}</div>
+  {/if}
+  <FormErrorMessage error={groupErrors} {showValidateIcon} isInInputGroup />
+{/snippet}
+
+<div class={['cd-form-field-group', className].filter(Boolean).join(' ')} {...rootAttrs} {style}>
+  {#if appendCol && labelCol && wrapperCol}
+    {#if labelPosition === 'top'}
+      <!-- labelPosition=top 时 label 列需要单独套一层 overflow:hidden，否则会与主体列横排（对齐 Semi）。 -->
+      <div style="overflow: hidden">
+        <Col {...labelCol}>
+          {@render labelNode()}
+        </Col>
+      </div>
+      <Col {...wrapperCol}>
+        {@render bodyContent()}
+      </Col>
+    {:else}
+      <Col {...labelCol}>
+        {@render labelNode()}
+      </Col>
+      <Col {...wrapperCol}>
+        {@render bodyContent()}
+      </Col>
     {/if}
-    <InputGroup {...groupSize} {disabled}>
-      {@render children?.()}
-    </InputGroup>
-    {#if extraText && extraTextPosition === 'bottom'}
-      <div class="cd-form-field-extra cd-form-field-extra-string cd-form-field-extra-bottom">{extraText}</div>
-    {/if}
-    <FormErrorMessage error={groupErrors} {showValidateIcon} isInInputGroup />
-  </div>
+  {:else}
+    {@render labelNode()}
+    <div class="cd-form-field-group-body">
+      {@render bodyContent()}
+    </div>
+  {/if}
 </div>
 
 <style>

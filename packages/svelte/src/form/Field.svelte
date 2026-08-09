@@ -6,11 +6,17 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
   import { useId, pathGet, type Rule, type ValidateTrigger } from '@chenzy-design/core';
-  import { IconAlertCircle, IconAlertTriangle } from '@chenzy-design/icons';
-  import { getFormContext, type FormLabelPosition, type FormLabelAlign } from './context.js';
+  import {
+    getFormContext,
+    getArrayFieldContext,
+    type FormLabelPosition,
+    type FormLabelAlign,
+  } from './context.js';
   import { getFormInputGroupContext } from './input-group-context.js';
   import { useLocale } from '../locale-provider/index.js';
   import FormLabel from './FormLabel.svelte';
+  import FormErrorMessage from './FormErrorMessage.svelte';
+  import Col from '../grid/Col.svelte';
 
   /** Label 对象形态（对齐 Semi LabelProps 子集）。 */
   interface FieldLabelProps {
@@ -113,7 +119,8 @@
      * internally computed status for visuals/aria.
      */
     validateStatus?: 'default' | 'warning' | 'error';
-    extraText?: string;
+    /** 额外提示信息：字符串或 Snippet 自定义节点（对齐 Semi extraText: ReactNode）。 */
+    extraText?: string | Snippet;
     /**
      * register & collect only, render no layout DOM (spec §4.2 L85 / §190). The
      * control snippet is still rendered (so it can bind), but the label / status
@@ -197,8 +204,9 @@
   const labelObj = $derived(
     typeof label === 'object' && label !== null ? (label as FieldLabelProps) : undefined,
   );
+  // 未传 label（或对象形态未传 text）时回退到 field 名（对齐 Semi withField `text={label || field}`）。
   const labelText = $derived(
-    typeof label === 'string' ? label : labelObj?.text,
+    (typeof label === 'string' ? label : labelObj?.text) ?? field,
   );
   const hasLabel = $derived(labelText !== undefined);
   // label 对象可覆盖 required / optional / extra（对齐 Semi label 对象展开）。
@@ -209,6 +217,9 @@
   const ctx = getFormContext();
   if (!ctx) throw new Error('<Form.Field> must be used inside <Form>');
   const { form, getFormState } = ctx;
+
+  // 对齐 Semi ArrayFieldContext：本字段是否嵌套在 <Form.ArrayField> 行内。
+  const inArrayField = getArrayFieldContext()?.inArrayField === true;
 
   // FormInputGroup 内的 Field 自动进入 group 模式（对齐 Semi cloneElement isInInputGroup）：
   // Label/ErrorMessage 上提到 group 级统一渲染，Field 只把值/错误接管数据流。
@@ -221,7 +232,6 @@
 
   const id = useId('cd-field');
   const errorId = `${id}-error`;
-  const warningId = `${id}-warning`;
   const extraId = `${id}-extra`;
   const helpTextId = `${id}-help`;
   const labelId = `${id}-label`;
@@ -230,6 +240,17 @@
   // so this never feeds back into a render-read. Cleanup unregisters.
   $effect(() => {
     const effectiveRules = required ? [{ required: true } as Rule, ...rules] : rules;
+    // keepState is meaningless inside Form.ArrayField: remove()/move() shift
+    // sibling rows' field paths, so "restore by path" no longer identifies the
+    // same logical row (a removed row's state could resurface on a later row).
+    // Force the normal unregister path there regardless of the keepState prop.
+    if (keepState && inArrayField) {
+      console.warn(
+        `[Form.Field] keepState is ignored for field "${field}" inside <Form.ArrayField> — ` +
+          'row paths shift on remove()/move(), so state cannot be restored by path.',
+      );
+    }
+    const effectiveKeepState = keepState && !inArrayField;
     const config: {
       rules: Rule[];
       label?: string;
@@ -237,52 +258,63 @@
       dependencies?: string[];
       trigger?: ValidateTrigger | ValidateTrigger[];
       transform?: (value: unknown, values: Record<string, unknown>) => unknown;
+      keepState?: boolean;
     } = {
       rules: effectiveRules,
+      keepState: effectiveKeepState,
     };
     if (labelText !== undefined) config.label = labelText;
     if (initValue !== undefined) config.initialValue = initValue;
     if (dependencies !== undefined) config.dependencies = dependencies;
     if (trigger !== undefined) config.trigger = trigger;
     if (transform !== undefined) config.transform = transform;
-    const unregister = form.registerField(field, config);
+    const unregister = form.registerField(field, config, lastValue);
     // spec §2 L26: a `mount` trigger validates once right after registration.
     // Imperative one-shot (not a render read) so it cannot loop.
     if (form.getFieldTrigger(field).includes('mount')) void form.validateField(field);
-    // keepState: when false (default), unregister clears field state on destroy.
-    // When true, we skip the cleanup so state persists for future mounts.
-    return keepState ? () => { /* preserve state — do not unregister */ } : unregister;
+    // Core's unregister already honors config.keepState (clears state unless
+    // kept) — always call it so ArrayField-forced non-keepState fields clean up too.
+    return unregister;
   });
 
   // Read-only slices derived from the bridged form state (render-safe getters).
   // `value` is read by nested path (`users[0].name`), aligned with the core's
-  // nested value tree; errors/warnings/touched stay keyed by the field-name string.
+  // nested value tree; errors/touched stay keyed by the field-name string.
   const value = $derived(pathGet(getFormState().values, field));
   const error = $derived(getFormState().errors[field]);
-  const warning = $derived(getFormState().warnings[field]);
-  const validating = $derived(getFormState().validating[field] === true);
   const touched = $derived(getFormState().touched[field]);
+
+  // Non-reactive snapshot of the last-known value, kept in sync via $effect
+  // below. Mirrors Semi withField's local `refValue` (getVal()) — passed into
+  // registerField so a re-register (e.g. an ArrayField row's `field` path
+  // shifting after a sibling removal) writes this component's own value back
+  // into the new path, rather than reading whatever unregister left behind.
+  let lastValue: unknown;
+  $effect(() => {
+    lastValue = value;
+  });
 
   // `validateStatus` is a controlled display override (spec §4.2 L81): it forces
   // the visual status without touching the internal validation engine (red line
   // #1 — never written back). When set, it wins over the computed status.
   const forcedError = $derived(validateStatus === 'error');
   const forcedWarning = $derived(validateStatus === 'warning');
-  const showError = $derived(forcedError || (error !== undefined && error !== ''));
-  // a warning only surfaces when there is no blocking error to show
-  const showWarning = $derived(
-    !showError && (forcedWarning || (warning !== undefined && warning !== '')),
-  );
+  const hasErrorText = $derived(error !== undefined && error !== '');
+  const showError = $derived(forcedError || hasErrorText);
+  // warning is icon-only (validateStatus override) — Semi has a single `error`
+  // text channel; `validateStatus='warning'` swaps the icon but the displayed
+  // text still comes from `error` (if present) or `helpText`.
+  const showWarning = $derived(!showError && forcedWarning);
   const status = $derived<FieldStatus>(showError ? 'error' : showWarning ? 'warning' : 'default');
 
   const showRequiredMark = $derived(ctx.getRequiredMark() && labelRequired);
   // extraText 常显（对齐 Semi：与 error/helpText 并存，位于其后），不受 error/warning 影响。
   const showExtra = $derived(extraText !== undefined && extraText !== '');
-  // helpText: 与 error 同块，无 error/warning 时展示（对齐 Semi helpText）。
-  const showHelpText = $derived(
-    !showError && !showWarning && helpText !== undefined && helpText !== '',
-  );
-  const validatingText = $derived(loc().t('Form.validating'));
+  const isExtraSnippet = $derived(typeof extraText === 'function');
+  // -string 修饰类仅在 extraText 为字符串时加（对齐 Semi typeof extraText === 'string'）。
+  const extraClsSuffix = $derived(isExtraSnippet ? '' : ' cd-form-field-extra-string');
+  // helpText: 与 error 同块，无 error 时展示（对齐 Semi helpText，error 优先）。
+  const showHelpText = $derived(!hasErrorText && helpText !== undefined && helpText !== '');
 
   // resolved validation triggers for this field (own override → form default).
   // Plain getters off the core registry (a non-reactive Map), read inside event
@@ -385,6 +417,13 @@
       .filter(Boolean)
       .join(';') || undefined,
   );
+
+  // 对齐 Semi withField：Form 同时配置 labelCol + wrapperCol 时改走 24 栏 Grid 布局
+  // （withCol），否则退化为普通两分支（label 块 + main 块）。此分支裸用 <Col>
+  // （不包 <Row>），与 Semi withField.tsx 一致，见 Col.svelte 的 gutters 容错说明。
+  const labelCol = $derived(ctx.getLabelCol());
+  const wrapperCol = $derived(ctx.getWrapperCol());
+  const withCol = $derived(labelCol !== undefined && wrapperCol !== undefined);
 </script>
 
 {#if noStyle || pure || inGroup}
@@ -416,13 +455,9 @@
   DOM 严格对齐 Semi withField：wrapper 用 x-label-pos/x-field-id/x-extra-pos 属性驱动，
   label 在 main 外（非 inset 非 noLabel 时经 FormLabel 渲染，inset 走控件 insetLabel），
   控件本体 + error-message + extra 包在 cd-form-field-main 内。data-field 保留供 scrollToError。
+  Form 同时配置 labelCol+wrapperCol 时改走 Col 栅格（withCol，对齐 Semi）。
 -->
-<div
-  class={cls}
-  data-field={field}
-  {...fieldDomAttrs}
-  style={wrapStyle}
->
+{#snippet labelNode()}
   {#if hasLabel && !noLabel && !isInset}
     <FormLabel
       text={labelText}
@@ -435,67 +470,90 @@
       {...labelExtra !== undefined ? { extra: labelExtra } : {}}
     />
   {/if}
+{/snippet}
 
-  <div class="cd-form-field-main">
-    <!-- extraText middle：位于控件之前（对齐 Semi extraPos==='middle'）。 -->
-    {#if !noErrorMessage && showExtra && extraTextPosition === 'middle'}
-      <div id={extraId} class="cd-form-field-extra cd-form-field-extra-string cd-form-field-extra-middle">{extraText}</div>
-    {/if}
+{#snippet mainContent()}
+  <!-- extraText middle：位于控件之前（对齐 Semi extraPos==='middle'）。 -->
+  {#if !noErrorMessage && showExtra && extraTextPosition === 'middle'}
+    <div id={extraId} class={`cd-form-field-extra${extraClsSuffix} cd-form-field-extra-middle`}>
+      {#if isExtraSnippet}{@render (extraText as Snippet)()}{:else}{extraText}{/if}
+    </div>
+  {/if}
 
-    {@render children?.({
-      value,
-      // alias keyed by valuePropName (e.g. `checked`); for the default 'value'
-      // this is the same key and a no-op spread. Pure object construction —
-      // no write-back, satisfies red line #1/#2.
-      [valuePropName]: value,
-      onChange: handleChange,
-      onBlur: handleBlur,
-      status,
-      id,
-      describedBy,
-      errorMessageId,
-      labelledById,
-      disabled: ctx.getDisabled(),
-      required,
-      insetLabel,
-      insetLabelId: insetLabel !== undefined ? labelId : undefined,
-    })}
+  {@render children?.({
+    value,
+    // alias keyed by valuePropName (e.g. `checked`); for the default 'value'
+    // this is the same key and a no-op spread. Pure object construction —
+    // no write-back, satisfies red line #1/#2.
+    [valuePropName]: value,
+    onChange: handleChange,
+    onBlur: handleBlur,
+    status,
+    id,
+    describedBy,
+    errorMessageId,
+    labelledById,
+    disabled: ctx.getDisabled(),
+    required,
+    insetLabel,
+    insetLabelId: insetLabel !== undefined ? labelId : undefined,
+  })}
 
-    {#if validating}
-      <div class="cd-form-field-validating" aria-live="polite">
-        <span class="cd-form-field-spinner" aria-hidden="true"></span>
-        <span>{validatingText}</span>
+  <!--
+    error-message 块，复用 FormErrorMessage（对齐 Semi ErrorMessage）：error 优先，
+    否则 helpText；validateStatus 只决定图标（error→IconAlertCircle,
+    warning→IconAlertTriangle）不产生独立文本源。noErrorMessage 时全省略。
+  -->
+  {#if !noErrorMessage && (showError || showWarning || showHelpText)}
+    <FormErrorMessage
+      {...(error !== undefined ? { error } : {})}
+      {...(helpText !== undefined ? { helpText } : {})}
+      validateStatus={status}
+      {showValidateIcon}
+      errorMessageId={errorId}
+      {helpTextId}
+    />
+  {/if}
+
+  <!-- extraText bottom：位于 error/help 之后（对齐 Semi extraPos==='bottom'，默认）。 -->
+  {#if !noErrorMessage && showExtra && extraTextPosition === 'bottom'}
+    <div id={extraId} class={`cd-form-field-extra${extraClsSuffix} cd-form-field-extra-bottom`}>
+      {#if isExtraSnippet}{@render (extraText as Snippet)()}{:else}{extraText}{/if}
+    </div>
+  {/if}
+{/snippet}
+
+<div
+  class={cls}
+  data-field={field}
+  {...fieldDomAttrs}
+  style={wrapStyle}
+>
+  {#if withCol && labelCol && wrapperCol}
+    {#if labelPosition === 'top'}
+      <!-- labelPosition=top 时 label 列需要单独套一层 overflow:hidden，否则会与主体列横排（对齐 Semi）。 -->
+      <div style="overflow: hidden">
+        <Col {...labelCol}>
+          {@render labelNode()}
+        </Col>
       </div>
+      <Col {...wrapperCol}>
+        {@render mainContent()}
+      </Col>
+    {:else}
+      <Col {...labelCol}>
+        {@render labelNode()}
+      </Col>
+      <Col {...wrapperCol}>
+        {@render mainContent()}
+      </Col>
     {/if}
-
-    <!--
-      error-message 块（对齐 Semi ErrorMessage）：error 与 warning 共用同一容器
-      .cd-form-field-error-message（图标靠 validateStatus 区分：error→IconAlertCircle，
-      warning→IconAlertTriangle）；helpText 用 .cd-form-field-help-text。noErrorMessage 时全省略。
-    -->
-    {#if !noErrorMessage && showError}
-      <div id={errorId} role="alert" class="cd-form-field-error-message">
-        {#if showValidateIcon}
-          <IconAlertCircle class="cd-form-field-validate-status-icon" size="small" aria-hidden="true" />
-        {/if}
-        <span>{error}</span>
-      </div>
-    {:else if !noErrorMessage && showWarning}
-      <div id={warningId} role="alert" class="cd-form-field-error-message cd-form-field-error-message-warning">
-        {#if showValidateIcon}
-          <IconAlertTriangle class="cd-form-field-validate-status-icon" size="small" aria-hidden="true" />
-        {/if}
-        <span>{warning}</span>
-      </div>
-    {:else if !noErrorMessage && showHelpText}
-      <div id={helpTextId} class="cd-form-field-help-text">{helpText}</div>
-    {/if}
-
-    <!-- extraText bottom：位于 error/help 之后（对齐 Semi extraPos==='bottom'，默认）。 -->
-    {#if !noErrorMessage && showExtra && extraTextPosition === 'bottom'}
-      <div id={extraId} class="cd-form-field-extra cd-form-field-extra-string cd-form-field-extra-bottom">{extraText}</div>
-    {/if}
-  </div>
+  {:else}
+    {@render labelNode()}
+    <div class="cd-form-field-main">
+      {@render mainContent()}
+    </div>
+  {/if}
 </div>
 {/if}
 
@@ -585,31 +643,10 @@
     margin-block-start: var(--cd-spacing-form-extra-posbottom-margintop);
   }
 
-  /* 异步校验指示器（本库超集，Semi 无；纯 CSS spin，无 JS 几何）。 */
-  :global(.cd-form-field-validating) {
-    display: inline-flex;
-    align-items: center;
-    gap: var(--cd-spacing-extra-tight);
-    margin-block-start: var(--cd-spacing-form-message-margintop);
-    color: var(--cd-color-form-label-extra-text-default);
-    font-size: var(--cd-font-size-regular);
-  }
-  :global(.cd-form-field-spinner) {
-    inline-size: 0.85em;
-    block-size: 0.85em;
-    border: 2px solid var(--cd-form-spinner-track-color);
-    border-block-start-color: var(--cd-form-spinner-active-color);
-    border-radius: 50%;
-    animation: cd-form-field-spin 0.7s linear infinite;
-  }
-  @keyframes cd-form-field-spin {
-    to {
-      transform: rotate(360deg);
-    }
-  }
-  @media (prefers-reduced-motion: reduce) {
-    :global(.cd-form-field-spinner) {
-      animation-duration: 1.8s;
-    }
+  /* RTL 开关，对齐 Semi rtl.scss 里 semi-form-field 的 direction rtl 声明，见
+     Form.svelte 同名规则的详细说明——没有这条，margin-inline / padding-inline
+     等逻辑属性不会镜像。 */
+  :global(.cd-rtl) .cd-form-field {
+    direction: rtl;
   }
 </style>

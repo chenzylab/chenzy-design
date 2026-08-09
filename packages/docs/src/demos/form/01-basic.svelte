@@ -26,7 +26,7 @@
 </Form>
 
 {#snippet passwordExtra()}
-  <Tooltip content="详情">
+  <Tooltip content="详情" triggerStyle="display: inline-flex; align-items: center; line-height: 0">
     <IconHelpCircle style="color: var(--cd-color-text-2)" />
   </Tooltip>
 {/snippet}

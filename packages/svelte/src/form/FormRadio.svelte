@@ -20,14 +20,15 @@
   }
 
   const props: Props = $props();
-  const controlKeys = ['value', 'disabled', 'type', 'children'] as const;
   const split = $derived(splitFieldProps(props));
   // Radio 是布尔/选中控件，valuePropName 固定 'checked'（未显式传时补默认）。
   const fieldProps = $derived<FieldPassthroughProps>({ valuePropName: 'checked', ...split.fieldProps });
-  const control = $derived(
-    Object.fromEntries(controlKeys.filter((k) => props[k] !== undefined).map((k) => [k, props[k]])),
-  );
-  const radioValue = $derived((control.value ?? '') as NonNullable<RadioProps['value']>);
+  // value 是 Radio 自身业务值（与 Field 状态值 value 同名但含义不同）；children 走单独 {@render}。
+  const rest = $derived.by(() => {
+    const { value, children, ...others } = split.rest as { value?: unknown; children?: Snippet } & Record<string, unknown>;
+    return others;
+  });
+  const radioValue = $derived(((props.value as RadioProps['value'] | undefined) ?? '') as NonNullable<RadioProps['value']>);
   const slotChildren = $derived(props.children);
   // 独立 Form.Radio（非 Group 内）的无障碍名：label 文本优先，回退 field 名。
   const labelForAria = $derived(
@@ -38,10 +39,10 @@
 <Field {...fieldProps}>
   {#snippet children({ value, onChange, disabled: fieldDisabled })}
     <Radio
+      {...rest}
       value={radioValue}
       {...(typeof value === 'boolean' ? { checked: value } : {})}
-      disabled={(control.disabled as boolean | undefined) ?? fieldDisabled}
-      {...(control.type !== undefined ? { type: control.type as NonNullable<RadioProps['type']> } : {})}
+      disabled={(rest.disabled as boolean | undefined) ?? fieldDisabled}
       {...(labelForAria !== undefined ? { 'aria-label': labelForAria } : {})}
       onChange={(e) => onChange(e.target.checked)}
     >

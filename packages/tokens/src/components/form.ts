@@ -4,7 +4,6 @@
  * 值为 var() 引用我们的 alias / global token，或字面量。
  * 分五组：field / label / extra / errormessage / section。
  * 组件直接消费这些 Semi 对齐 token（去中间层：不再插一层短名别名，对齐 Space/Toast）。
- * 末尾仅保留 2 个 spinner 超集 token（Semi 无异步校验指示器）。
  *
  * 映射约定（逐条亲验 Semi variables.scss + 我们的 global/scales.ts + alias/index.ts）：
  * - Semi `var(--semi-color-*)` → 我们 `var(--cd-color-*)`（语义名一一对应）。
@@ -77,9 +76,4 @@ export const formTokens = {
   'spacing-form-section-text-marginbottom': { value: 'var(--cd-spacing-extra-tight)', category: 'spacing', label: '分组标题下外边距', usage: '表单分组标题底部外边距' },
   'spacing-form-section-text-paddingtop': { value: '0px', category: 'spacing', label: '分组标题上内边距', usage: '表单分组标题顶部内边距' },
   'spacing-form-section-text-margintop': { value: '0px', category: 'spacing', label: '分组标题上外边距', usage: '表单分组标题顶部外边距' },
-
-  // —— 异步校验 spinner（Semi 无；chenzy-design 独有的纯 CSS 校验指示器）——
-  // 保留：Semi 无异步 spinner，属本库超集，组件直接消费。
-  'form-spinner-track-color': { value: 'var(--cd-color-fill-2)', category: 'color', label: 'spinner 轨道色', usage: '异步校验指示器圆环轨道颜色（组件消费）' },
-  'form-spinner-active-color': { value: 'var(--cd-color-primary)', category: 'color', label: 'spinner 激活色', usage: '异步校验指示器圆环激活弧颜色（组件消费）' },
 } satisfies TokenGroup;

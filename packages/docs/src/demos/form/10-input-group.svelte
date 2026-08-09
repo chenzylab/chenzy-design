@@ -13,10 +13,10 @@
       rules={[{ required: true }]}
       showClear
       optionList={[
-        { label: '美国 +1', value: '+1' },
-        { label: '香港 +852', value: '+852' },
-        { label: '中国 +86', value: '+86' },
-        { label: '日本 +81', value: '+81' },
+        { label: '美国+1', value: '+1' },
+        { label: '香港+852', value: '+852' },
+        { label: '中国+86', value: '+86' },
+        { label: '日本+81', value: '+81' },
       ]}
     />
     <Form.Input
@@ -27,7 +27,7 @@
       showClear
     />
   </Form.InputGroup>
-  <Form.Input field="name" label="姓名" trigger="blur" initValue="Semi" />
+  <Form.Input field="姓名" trigger="blur" initValue="Semi" />
   {#snippet footer()}
     <Button htmlType="submit">提交</Button>
   {/snippet}

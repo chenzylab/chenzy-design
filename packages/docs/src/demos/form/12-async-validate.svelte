@@ -1,5 +1,5 @@
 <script lang="ts">
-  // 自定义校验（含异步）：rules[].validator 可返回 Promise，异步校验期间显示 validating 提示。
+  // 自定义校验（含异步）：rules[].validator 可返回 Promise，校验完成后展示结果。
   // 对齐 Semi「自定义校验」的异步场景。
   import { Form, Button } from '@chenzy-design/svelte';
 

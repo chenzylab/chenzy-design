@@ -253,14 +253,13 @@ export const zh_CN: Locale = {
   },
   Form: {
     required: '{label}为必填项',
-    optional: '选填',
+    optional: '（可选）',
     typeError: '{label}格式不正确',
     minLength: '至少输入 {min} 个字符',
     maxLength: '最多输入 {max} 个字符',
     min: '不能小于 {min}',
     max: '不能大于 {max}',
     pattern: '{label}格式不符合要求',
-    validating: '校验中…',
   },
   TreeSelect: {
     clear: '清除',

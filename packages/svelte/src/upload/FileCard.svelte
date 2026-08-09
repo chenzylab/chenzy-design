@@ -432,6 +432,23 @@
     font-weight: var(--cd-font-upload-file-card-info-name-fontweight);
     color: var(--cd-color-upload-text);
   }
+  /*
+    showTooltip 场景下 Text 被 Tooltip 包一层 .cd-tooltip-trigger（Svelte 无
+    cloneElement 的结构性代价，见 TypographyBase.svelte 同名注释）。该包裹层是
+    block 非 flex 容器，此时 flex:1 不生效，需要显式 100% 宽度兜底才能撑满。
+    两个坑：
+    1) 选择器必须整体以 :global(...) 开头（不能写成
+       `.cd-upload-file-card-info-main :global(...)` 这种「本地类前缀 + :global
+       后代」混合形式）——混合形式在这个组件里被 svelte-package 的 CSS 未用选择器
+       裁剪判定为「本地类未在模板字面量中出现」而整条丢弃，纯 :global() 开头则
+       不受此判定影响。
+    2) 上面 424 行那条规则因为叠了 scope hash class（`.cd-upload-file-card-info-main
+       .svelte-xxx .cd-upload-file-card-info-name`）特异性是 (0,3,0)，这里用两个类
+       选择器 (0,2,0) 不够盖过，需要重复类名把特异性提到同级再靠这条在后声明生效。
+  */
+  :global(.cd-tooltip-trigger > .cd-upload-file-card-info-name.cd-upload-file-card-info-name) {
+    inline-size: 100%;
+  }
   .cd-upload-file-card-info-size {
     font-size: var(--cd-font-size-small);
     font-weight: var(--cd-font-upload-file-card-info-size-fontweight);

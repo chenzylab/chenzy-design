@@ -25,42 +25,18 @@
   }
 
   const props: Props = $props();
-  const controlKeys = [
-    'optionList',
-    'multiple',
-    'filter',
-    'placeholder',
-    'disabled',
-    'showClear',
-    'size',
-    'maxTagCount',
-    'allowCreate',
-    'virtualize',
-    'style',
-  ] as const;
   const split = $derived(splitFieldProps(props));
   const fieldProps = $derived(split.fieldProps);
-  const control = $derived(
-    Object.fromEntries(controlKeys.filter((k) => props[k] !== undefined).map((k) => [k, props[k]])),
-  );
+  const rest = $derived(split.rest as Record<string, unknown>);
   const labelForAria = $derived(typeof props.label === 'string' ? props.label : props.label?.text);
 </script>
 
 <Field {...fieldProps}>
   {#snippet children({ value, onChange, status, disabled: fieldDisabled, id, describedBy, errorMessageId, labelledById, required, insetLabel, insetLabelId })}
     <Select
+      {...rest}
       {...(value !== undefined ? { value: value as NonNullable<SelectProps['value']> } : {})}
-      {...(control.optionList !== undefined ? { optionList: control.optionList as NonNullable<SelectProps['optionList']> } : {})}
-      {...(control.multiple !== undefined ? { multiple: control.multiple as NonNullable<SelectProps['multiple']> } : {})}
-      {...(control.filter !== undefined ? { filter: control.filter as NonNullable<SelectProps['filter']> } : {})}
-      {...(control.placeholder !== undefined ? { placeholder: control.placeholder as NonNullable<SelectProps['placeholder']> } : {})}
-      disabled={(control.disabled as boolean | undefined) ?? fieldDisabled}
-      {...(control.showClear !== undefined ? { showClear: control.showClear as NonNullable<SelectProps['showClear']> } : {})}
-      {...(control.size !== undefined ? { size: control.size as NonNullable<SelectProps['size']> } : {})}
-      {...(control.maxTagCount !== undefined ? { maxTagCount: control.maxTagCount as NonNullable<SelectProps['maxTagCount']> } : {})}
-      {...(control.allowCreate !== undefined ? { allowCreate: control.allowCreate as NonNullable<SelectProps['allowCreate']> } : {})}
-      {...(control.virtualize !== undefined ? { virtualize: control.virtualize as NonNullable<SelectProps['virtualize']> } : {})}
-      {...(control.style !== undefined ? { style: control.style as NonNullable<SelectProps['style']> } : {})}
+      disabled={(rest.disabled as boolean | undefined) ?? fieldDisabled}
       validateStatus={status === 'error' ? 'error' : 'default'}
       {id}
       {...(insetLabel !== undefined ? { insetLabel } : {})}
