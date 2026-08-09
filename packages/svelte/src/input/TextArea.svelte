@@ -56,8 +56,6 @@
     textareaStyle?: string;
     /** 自定义字符计数函数，替代默认长度（对齐 Semi getValueLength）。 */
     getValueLength?: (value: string) => number;
-    /** 禁用 Enter 换行（Shift+Enter 才换行，对齐 Semi disabledEnterStartNewLine，Chat 场景用）。 */
-    disabledEnterStartNewLine?: boolean;
     /**
      * 输入法模式（对齐 Semi composition）。默认 false：拼音输入过程中每次输入都触发 onChange。
      * true：IME 未确认期间不触发 onChange，确认后补触发一次。
@@ -123,7 +121,6 @@
     lineNumberStyle,
     textareaStyle,
     getValueLength,
-    disabledEnterStartNewLine = false,
     composition = false,
     name,
     id,
@@ -202,10 +199,6 @@
   }
 
   function handleKeydown(e: KeyboardEvent) {
-    // disabledEnterStartNewLine：禁用 Enter 换行（Shift+Enter 仍换行，对齐 Semi Chat 场景）。
-    if (disabledEnterStartNewLine && e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-    }
     if (e.key === 'Enter' && !composing) {
       onEnterPress?.(e);
       onPressEnter?.(e);
