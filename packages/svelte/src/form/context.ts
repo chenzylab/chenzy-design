@@ -42,3 +42,20 @@ export function setFormContext(ctx: FormContext): void {
 export function getFormContext(): FormContext | undefined {
   return getContext<FormContext | undefined>(KEY);
 }
+
+/** Context set by <Form.ArrayField> around its rows (aligns with Semi ArrayFieldContext). */
+export interface ArrayFieldContext {
+  /** true when the current Field is nested inside a <Form.ArrayField> row. */
+  inArrayField: boolean;
+}
+
+const ARRAY_FIELD_KEY = Symbol('cd-array-field');
+
+export function setArrayFieldContext(ctx: ArrayFieldContext): void {
+  setContext(ARRAY_FIELD_KEY, ctx);
+}
+
+/** 后代组件读取是否处于 Form.ArrayField 内（对齐 Semi useArrayFieldState）。不在 ArrayField 内返回 undefined。 */
+export function getArrayFieldContext(): ArrayFieldContext | undefined {
+  return getContext<ArrayFieldContext | undefined>(ARRAY_FIELD_KEY);
+}

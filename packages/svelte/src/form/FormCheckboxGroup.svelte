@@ -20,12 +20,12 @@
   }
 
   const props: Props = $props();
-  const controlKeys = ['options', 'disabled', 'type', 'direction', 'children'] as const;
   const split = $derived(splitFieldProps(props));
   const fieldProps = $derived(split.fieldProps);
-  const control = $derived(
-    Object.fromEntries(controlKeys.filter((k) => props[k] !== undefined).map((k) => [k, props[k]])),
-  );
+  const rest = $derived.by(() => {
+    const { children, ...others } = split.rest as { children?: Snippet } & Record<string, unknown>;
+    return others;
+  });
   const labelForAria = $derived(typeof props.label === 'string' ? props.label : props.label?.text);
   const slotChildren = $derived(props.children);
 </script>
@@ -33,11 +33,9 @@
 <Field {...fieldProps}>
   {#snippet children({ value, onChange, disabled: fieldDisabled, id, labelledById })}
     <CheckboxGroup
+      {...rest}
       {...(Array.isArray(value) ? { value: value as NonNullable<CheckboxGroupProps['value']> } : {})}
-      {...(control.options !== undefined ? { options: control.options as NonNullable<CheckboxGroupProps['options']> } : {})}
-      disabled={(control.disabled as boolean | undefined) ?? fieldDisabled}
-      {...(control.type !== undefined ? { type: control.type as NonNullable<CheckboxGroupProps['type']> } : {})}
-      {...(control.direction !== undefined ? { direction: control.direction as NonNullable<CheckboxGroupProps['direction']> } : {})}
+      disabled={(rest.disabled as boolean | undefined) ?? fieldDisabled}
       {id}
       {...(labelledById !== undefined ? { ariaLabelledby: labelledById } : labelForAria !== undefined ? { 'aria-label': labelForAria } : {})}
       onChange={(v) => onChange(v)}

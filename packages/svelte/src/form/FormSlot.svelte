@@ -10,6 +10,7 @@
   import { getFormContext, type FormLabelPosition, type FormLabelAlign } from './context.js';
   import FormLabel from './FormLabel.svelte';
   import FormErrorMessage from './FormErrorMessage.svelte';
+  import Col from '../grid/Col.svelte';
 
   /** Slot label 对象形态（对齐 Semi LabelProps 子集）。 */
   interface SlotLabelProps {
@@ -65,6 +66,14 @@
   );
   const resolvedLabelWidth = $derived(labelObj?.width ?? ctx?.getLabelWidth());
 
+  // 对齐 Semi slot.tsx：Form 同时配置 labelCol + wrapperCol 时改走 24 栏 Grid 布局
+  // （appendCol），否则退化为普通两分支（有无 label）。此分支裸用 <Col>（不包
+  // <Row>），与 Semi slot.tsx 一致——Col 组件在无 Row 祖先时按 gutters=[0,0]
+  // 容错（见 Col.svelte），不强制要求 Row 包裹。
+  const labelCol = $derived(ctx?.getLabelCol());
+  const wrapperCol = $derived(ctx?.getWrapperCol());
+  const appendCol = $derived(labelCol !== undefined && wrapperCol !== undefined);
+
   const cls = $derived(
     ['cd-form-field', 'cd-form-slot', className].filter(Boolean).join(' '),
   );
@@ -72,21 +81,50 @@
   const domAttrs = $derived({ 'x-label-pos': resolvedLabelPosition });
 </script>
 
-<div class={cls} {...domAttrs} {style}>
-  {#if hasLabel}
-    <FormLabel
-      text={labelText}
-      align={resolvedLabelAlign}
-      {...resolvedLabelWidth !== undefined ? { width: resolvedLabelWidth } : {}}
-      required={labelObj?.required ?? false}
-      optional={labelObj?.optional ?? false}
-      {...labelObj?.extra !== undefined ? { extra: labelObj.extra } : {}}
-    />
+{#snippet labelNode()}
+  <FormLabel
+    text={labelText}
+    align={resolvedLabelAlign}
+    {...resolvedLabelWidth !== undefined ? { width: resolvedLabelWidth } : {}}
+    required={labelObj?.required ?? false}
+    optional={labelObj?.optional ?? false}
+    {...labelObj?.extra !== undefined ? { extra: labelObj.extra } : {}}
+  />
+{/snippet}
+
+{#snippet mainNode()}
+  {@render children?.()}
+  {#if error !== undefined}
+    <FormErrorMessage {error} />
   {/if}
-  <div class="cd-form-field-main cd-form-slot-main">
-    {@render children?.()}
-    {#if error !== undefined}
-      <FormErrorMessage {error} />
+{/snippet}
+
+<div class={cls} {...domAttrs} {style}>
+  {#if appendCol && labelCol && wrapperCol}
+    {#if resolvedLabelPosition === 'top'}
+      <!-- labelPosition=top 时 label 列需要单独套一层 overflow:hidden，否则会与主体列横排（对齐 Semi）。 -->
+      <div style="overflow: hidden">
+        <Col {...labelCol}>
+          {@render labelNode()}
+        </Col>
+      </div>
+      <Col>
+        {@render mainNode()}
+      </Col>
+    {:else}
+      <Col {...labelCol}>
+        {@render labelNode()}
+      </Col>
+      <Col>
+        {@render mainNode()}
+      </Col>
     {/if}
-  </div>
+  {:else}
+    {#if hasLabel}
+      {@render labelNode()}
+    {/if}
+    <div class="cd-form-field-main cd-form-slot-main">
+      {@render mainNode()}
+    </div>
+  {/if}
 </div>

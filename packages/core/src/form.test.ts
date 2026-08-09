@@ -125,52 +125,7 @@ describe('createForm', () => {
     expect(f.getError('confirm')).toBeUndefined();
   });
 
-  it('warningOnly rule produces a warning, not an error, and does not block submit', async () => {
-    const f = createForm();
-    f.registerField('name', {
-      rules: [{ minLength: 5, warningOnly: true, message: 'too short' }],
-    });
-    f.setValue('name', 'ab');
-    const err = await f.validateField('name');
-    // warningOnly never surfaces as a blocking error
-    expect(err).toBeUndefined();
-    expect(f.getError('name')).toBeUndefined();
-    expect(f.getFieldWarning('name')).toBe('too short');
-
-    // submit must still be valid despite the standing warning
-    const r = await f.submitForm();
-    expect(r.valid).toBe(true);
-    expect(f.getFieldWarning('name')).toBe('too short');
-  });
-
-  it('warning clears once the warningOnly rule passes', async () => {
-    const f = createForm();
-    f.registerField('name', { rules: [{ minLength: 5, warningOnly: true, message: 'w' }] });
-    f.setValue('name', 'ab');
-    await f.validateField('name');
-    expect(f.getFieldWarning('name')).toBe('w');
-    f.setValue('name', 'abcdef');
-    await f.validateField('name');
-    expect(f.getFieldWarning('name')).toBeUndefined();
-  });
-
-  it('a blocking rule still wins even when a warningOnly rule also fails', async () => {
-    const f = createForm();
-    f.registerField('name', {
-      rules: [
-        { minLength: 5, warningOnly: true, message: 'warn' },
-        { required: true, message: 'err' },
-      ],
-    });
-    f.setValue('name', '');
-    const err = await f.validateField('name');
-    expect(err).toBe('err');
-    expect(f.getError('name')).toBe('err');
-    const r = await f.submitForm();
-    expect(r.valid).toBe(false);
-  });
-
-  it('validating flag is set during async validation and cleared after', async () => {
+  it('async validator resolves and clears once settled', async () => {
     let resolveV: ((v: string | undefined) => void) | undefined;
     const f = createForm();
     f.registerField('u', {
@@ -178,21 +133,10 @@ describe('createForm', () => {
     });
     f.setValue('u', 'x');
     const p = f.validateField('u');
-    // synchronously after kicking off: the field is marked validating
-    expect(f.getFormState().validating.u).toBe(true);
     resolveV?.(undefined);
-    await p;
-    expect(f.getFormState().validating.u).toBe(false);
-  });
-
-  it('reset clears warnings too', async () => {
-    const f = createForm();
-    f.registerField('name', { rules: [{ minLength: 5, warningOnly: true, message: 'w' }] });
-    f.setValue('name', 'ab');
-    await f.validateField('name');
-    expect(f.getFieldWarning('name')).toBe('w');
-    f.reset();
-    expect(f.getFieldWarning('name')).toBeUndefined();
+    const error = await p;
+    expect(error).toBeUndefined();
+    expect(f.getError('u')).toBeUndefined();
   });
 
   // ---- validateTrigger (spec §4 L65 / L84) ----
@@ -210,8 +154,8 @@ describe('createForm', () => {
 
   it('getFieldTrigger field-level trigger overrides the form default', () => {
     const f = createForm({ validateTrigger: ['blur', 'change'] });
-    f.registerField('a', { trigger: 'submit' });
-    expect(f.getFieldTrigger('a')).toEqual(['submit']);
+    f.registerField('a', { trigger: 'custom' });
+    expect(f.getFieldTrigger('a')).toEqual(['custom']);
   });
 
   it('getFieldTrigger normalizes a single value to an array', () => {
@@ -251,25 +195,6 @@ describe('createForm', () => {
     expect(err).toBe('first');
     // second rule never ran
     expect(calls).toEqual(['r1']);
-  });
-
-  it('stopValidateWithError:false still lets a later warningOnly rule surface a warning', async () => {
-    const f = createForm();
-    f.registerField('x', {
-      rules: [
-        { required: true, message: 'err' },
-        { minLength: 5, warningOnly: true, message: 'warn' },
-      ],
-    });
-    f.setValue('x', '');
-    await f.validateField('x');
-    expect(f.getError('x')).toBe('err');
-    // empty value skips minLength, so no warning here — sanity that error wins
-    f.setValue('x', 'ab');
-    await f.validateField('x');
-    // 'ab' passes required, fails minLength → warning surfaces
-    expect(f.getError('x')).toBeUndefined();
-    expect(f.getFieldWarning('x')).toBe('warn');
   });
 
   // ---- allowEmpty (spec §4 L70) ----
@@ -554,22 +479,6 @@ describe('createForm', () => {
     expect(await f.validateField('n')).toBeUndefined();
   });
 
-  it('warningOnly still layers on top of async-validator (soft warning)', async () => {
-    const f = createForm();
-    f.registerField('bio', {
-      rules: [
-        { required: true, message: 'required' },
-        { minLength: 10, warningOnly: true, message: 'longer is better' },
-      ],
-    });
-    f.setValue('bio', 'short');
-    const err = await f.validateField('bio');
-    // required passes (non-empty); minLength is warningOnly → warning, not error
-    expect(err).toBeUndefined();
-    expect(f.getFieldWarning('bio')).toBe('longer is better');
-    const r = await f.submitForm();
-    expect(r.valid).toBe(true);
-  });
 
   it('getTouched reflects setTouched', () => {
     const f = createForm();
@@ -648,5 +557,27 @@ describe('createForm', () => {
     expect(await f.validate()).toBe(false);
     f.setValue('name', 'x');
     expect(await f.validate()).toBe(true);
+  });
+
+  it('re-register with currentValue writes it back (survives a sibling unregister at the same path)', () => {
+    // Simulates an ArrayField row shifting index after a sibling row is removed:
+    // the surviving row's Field re-registers at a new path, and a sibling's
+    // unregister at that SAME path (because the array was already spliced)
+    // must not erase the surviving row's data — the re-register's currentValue
+    // is the source of truth (mirrors Semi withField register()).
+    const f = createForm();
+    const unregisterRow0 = f.registerField('rows[0].name', {}, 'first');
+    const unregisterRow1 = f.registerField('rows[1].name', {}, 'second');
+    expect(f.getValue('rows[0].name')).toBe('first');
+    expect(f.getValue('rows[1].name')).toBe('second');
+
+    // remove row 0: the array collapses so row1's data now lives at rows[0].
+    f.setValue('rows', ['second']);
+    unregisterRow0(); // clears rows[0].name — which the array collapse just repointed to 'second'
+    // row1's Field re-registers at the shifted path rows[0].name with its own held value.
+    unregisterRow1();
+    f.registerField('rows[0].name', {}, 'second');
+
+    expect(f.getValue('rows[0].name')).toBe('second');
   });
 });

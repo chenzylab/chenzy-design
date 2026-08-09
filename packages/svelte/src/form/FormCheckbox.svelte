@@ -19,13 +19,14 @@
   }
 
   const props: Props = $props();
-  const controlKeys = ['disabled', 'indeterminate', 'type', 'children'] as const;
   const split = $derived(splitFieldProps(props));
   // Checkbox 是布尔控件，valuePropName 固定 'checked'（未显式传时补默认）。
   const fieldProps = $derived<FieldPassthroughProps>({ valuePropName: 'checked', ...split.fieldProps });
-  const control = $derived(
-    Object.fromEntries(controlKeys.filter((k) => props[k] !== undefined).map((k) => [k, props[k]])),
-  );
+  // children 是 snippet 子内容，走单独的 {@render} 而非当作控件 prop 透传。
+  const rest = $derived.by(() => {
+    const { children, ...others } = split.rest as { children?: Snippet } & Record<string, unknown>;
+    return others;
+  });
   const labelForAria = $derived(typeof props.label === 'string' ? props.label : props.label?.text);
   const slotChildren = $derived(props.children);
 </script>
@@ -33,10 +34,9 @@
 <Field {...fieldProps}>
   {#snippet children({ value, onChange, status, disabled: fieldDisabled, id, describedBy, errorMessageId, labelledById, required })}
     <Checkbox
+      {...rest}
       {...(typeof value === 'boolean' ? { checked: value } : {})}
-      disabled={(control.disabled as boolean | undefined) ?? fieldDisabled}
-      {...(control.indeterminate !== undefined ? { indeterminate: control.indeterminate as NonNullable<CheckboxProps['indeterminate']> } : {})}
-      {...(control.type !== undefined ? { type: control.type as NonNullable<CheckboxProps['type']> } : {})}
+      disabled={(rest.disabled as boolean | undefined) ?? fieldDisabled}
       {id}
       {...(labelledById !== undefined ? { ariaLabelledby: labelledById } : labelForAria !== undefined ? { 'aria-label': labelForAria } : {})}
       {...(describedBy !== undefined ? { ariaDescribedby: describedBy } : {})}

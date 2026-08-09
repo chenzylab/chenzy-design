@@ -20,25 +20,18 @@
   }
 
   const props: Props = $props();
-  const controlKeys = ['treeData', 'multiple', 'placeholder', 'disabled', 'size', 'displayProp'] as const;
   const split = $derived(splitFieldProps(props));
   const fieldProps = $derived(split.fieldProps);
-  const control = $derived(
-    Object.fromEntries(controlKeys.filter((k) => props[k] !== undefined).map((k) => [k, props[k]])),
-  );
+  const rest = $derived(split.rest as Record<string, unknown>);
   const labelForAria = $derived(typeof props.label === 'string' ? props.label : props.label?.text);
 </script>
 
 <Field {...fieldProps}>
   {#snippet children({ value, onChange, status, disabled: fieldDisabled, describedBy, errorMessageId, labelledById, required, insetLabel, insetLabelId })}
     <Cascader
+      {...rest}
       {...(value !== undefined ? { value: value as NonNullable<CascaderProps['value']> } : {})}
-      {...(control.treeData !== undefined ? { treeData: control.treeData as NonNullable<CascaderProps['treeData']> } : {})}
-      {...(control.multiple !== undefined ? { multiple: control.multiple as NonNullable<CascaderProps['multiple']> } : {})}
-      {...(control.placeholder !== undefined ? { placeholder: control.placeholder as NonNullable<CascaderProps['placeholder']> } : {})}
-      disabled={(control.disabled as boolean | undefined) ?? fieldDisabled}
-      {...(control.size !== undefined ? { size: control.size as NonNullable<CascaderProps['size']> } : {})}
-      {...(control.displayProp !== undefined ? { displayProp: control.displayProp as NonNullable<CascaderProps['displayProp']> } : {})}
+      disabled={(rest.disabled as boolean | undefined) ?? fieldDisabled}
       validateStatus={status === 'error' ? 'error' : 'default'}
       {...(insetLabel !== undefined ? { insetLabel } : {})}
       {...(insetLabelId !== undefined ? { insetLabelId } : {})}

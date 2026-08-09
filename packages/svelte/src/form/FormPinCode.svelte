@@ -21,32 +21,25 @@
   }
 
   const props: Props = $props();
-  const controlKeys = ['count', 'format', 'size', 'disabled', 'autoFocus', 'onComplete'] as const;
   const split = $derived(splitFieldProps(props));
   const fieldProps = $derived(split.fieldProps);
-  const control = $derived(
-    Object.fromEntries(controlKeys.filter((k) => props[k] !== undefined).map((k) => [k, props[k]])),
-  );
+  const rest = $derived(split.rest as Record<string, unknown>);
   const labelForAria = $derived(typeof props.label === 'string' ? props.label : props.label?.text);
 </script>
 
 <Field {...fieldProps}>
   {#snippet children({ value, onChange, status, disabled: fieldDisabled, id, describedBy, errorMessageId, labelledById, required })}
     <PinCode
+      {...rest}
       value={value === undefined ? '' : String(value)}
       status={status === 'error' ? 'error' : 'default'}
-      disabled={(control.disabled as boolean | undefined) ?? fieldDisabled}
+      disabled={(rest.disabled as boolean | undefined) ?? fieldDisabled}
       {id}
-      {...(control.count !== undefined ? { count: control.count as NonNullable<PinCodeProps['count']> } : {})}
-      {...(control.format !== undefined ? { format: control.format as NonNullable<PinCodeProps['format']> } : {})}
-      {...(control.size !== undefined ? { size: control.size as NonNullable<PinCodeProps['size']> } : {})}
-      {...(control.autoFocus !== undefined ? { autoFocus: control.autoFocus as NonNullable<PinCodeProps['autoFocus']> } : {})}
       {...(labelledById !== undefined ? { ariaLabelledby: labelledById } : labelForAria !== undefined ? { 'aria-label': labelForAria } : {})}
       {...(describedBy !== undefined ? { ariaDescribedby: describedBy } : {})}
       {...(errorMessageId !== undefined ? { ariaErrormessage: errorMessageId } : {})}
       {...(required ? { ariaRequired: true } : {})}
       onChange={(v) => onChange(v)}
-      {...(control.onComplete !== undefined ? { onComplete: control.onComplete as NonNullable<PinCodeProps['onComplete']> } : {})}
     />
   {/snippet}
 </Field>

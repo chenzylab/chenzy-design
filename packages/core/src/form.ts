@@ -4,9 +4,8 @@
  *
  * Scope: nested-path values (`users[0].name` via lodash paths, Semi-aligned) /
  * errors / touched / dirty, field registry, sync + async rules run through
- * async-validator (with a `warningOnly` soft-warning superset layered on top),
- * async race-token discard, validate/reset/submitForm, fine-grained subscribe,
- * dependencies graph.
+ * async-validator, async race-token discard, validate/reset/submitForm,
+ * fine-grained subscribe, dependencies graph.
  */
 import { useId } from './id.js';
 import { pathGet, pathSet, pathHas, pathRemove } from './form-path.js';
@@ -61,20 +60,17 @@ export interface Rule {
   validator?: (value: unknown, values: FormValues) => ValidateResult | Promise<ValidateResult>;
   /** override message for the built-in rule on this entry */
   message?: string;
-  /**
-   * when true, a failure of THIS rule produces a non-blocking warning instead of
-   * an error: it surfaces a (yellow) hint but never fails `submit`. Mirrors AntD.
-   */
-  warningOnly?: boolean;
 }
 
 /**
  * When validation should run. Spec §2 L26 / §4 L65. A single trigger or a list.
  * `mount` runs once at registration; `change`/`blur` run on the matching event;
- * `submit` only runs during submit(). The render layer reads `getFieldTrigger`
- * to decide which DOM events to wire — core stays framework-free.
+ * `custom` means no automatic trigger — validation only runs via an explicit
+ * formApi.validate()/submit() call (aligns with Semi's BasicTriggerType).
+ * The render layer reads `getFieldTrigger` to decide which DOM events to
+ * wire — core stays framework-free.
  */
-export type ValidateTrigger = 'change' | 'blur' | 'submit' | 'mount';
+export type ValidateTrigger = 'change' | 'blur' | 'custom' | 'mount';
 
 export interface FieldConfig {
   rules?: Rule[];
@@ -98,6 +94,12 @@ export interface FieldConfig {
    * `values` keep the raw value; only the collected payload is transformed.
    */
   transform?: (value: unknown, values: FormValues) => unknown;
+  /**
+   * when true, unregistering this field (e.g. conditional unmount) preserves
+   * its value/error/touched state instead of clearing it (Semi keepState).
+   * Default false: unregister clears the field's state.
+   */
+  keepState?: boolean;
 }
 
 export type FieldErrors = Record<string, string | undefined>;
@@ -105,10 +107,7 @@ export type FieldErrors = Record<string, string | undefined>;
 export interface FormState {
   values: FormValues;
   errors: FieldErrors;
-  /** non-blocking warnings (from `warningOnly` rules); never affect submit validity */
-  warnings: FieldErrors;
   touched: Record<string, boolean>;
-  validating: Record<string, boolean>;
   submitting: boolean;
   submitCount: number;
 }
@@ -133,8 +132,8 @@ export interface FormOptions {
   validateTrigger?: ValidateTrigger | ValidateTrigger[];
   /**
    * stop running a field's rules at the first blocking error (spec §4 L68).
-   * Default `false`: every rule runs (so warnings keep accumulating and a later
-   * blocking rule can still win); the first blocking error is the surfaced one.
+   * Default `false`: every rule runs; the first blocking error is the
+   * surfaced one.
    */
   stopValidateWithError?: boolean;
   /**
@@ -167,7 +166,17 @@ export interface FormApi {
   /** the current form state snapshot (Semi getFormState). */
   getFormState(): FormState;
   subscribe(listener: (state: FormState) => void): () => void;
-  registerField(name: string, config?: FieldConfig): () => void;
+  /**
+   * `currentValue` mirrors Semi withField's `fieldState.value` (the field
+   * component's own locally-held value, e.g. an ArrayField row's cached
+   * value): on every register — including a re-register triggered by a path
+   * change (e.g. an ArrayField row shifting index after a sibling removal)
+   * — it is written back into `values[name]`. This is what lets a surviving
+   * row's data "follow" it to its new path even though an unrelated
+   * sibling's unregister already cleared that path underneath it (Semi
+   * `register()` unconditionally does the same, see foundation.ts register()).
+   */
+  registerField(name: string, config?: FieldConfig, currentValue?: unknown): () => void;
   /**
    * resolved validation triggers for a field: its own `trigger` override, else
    * the form default. Always a normalized array (spec §4 L65/L84). The render
@@ -196,8 +205,6 @@ export interface FormApi {
    * (Semi getError(field?)).
    */
   getError(name?: string): string | undefined | FieldErrors;
-  /** the field's non-blocking warning (from a `warningOnly` rule), if any. Headless superset. */
-  getFieldWarning(name: string): string | undefined;
   /** whether a field is currently registered (Semi getFieldExist). */
   getFieldExist(name: string): boolean;
   /**
@@ -218,7 +225,7 @@ export interface FormApi {
    */
   validate(namesOrOptions?: string[] | ValidateOptions): Promise<boolean>;
   /**
-   * reset fields to their initial values and clear errors/warnings/touched.
+   * reset fields to their initial values and clear errors/touched.
    * With `fields` given, only those fields are reset; otherwise the whole form
    * (Semi reset(fields?)).
    */
@@ -271,13 +278,14 @@ export function createForm(options: FormOptions = {}): FormApi {
   // reverse dependency graph: dep field name → set of fields that depend on it.
   // setValue(dep) connects to re-validating the dependents.
   const dependents = new Map<string, Set<string>>();
+  // has this field name EVER registered before (mirrors Semi `this.registered[field]`)
+  // — distinguishes a fresh mount from a keepState remount.
+  const registeredOnce = new Set<string>();
 
   const state: FormState = {
     values: clone(initialTree),
     errors: {},
-    warnings: {},
     touched: {},
-    validating: {},
     submitting: false,
     submitCount: 0,
   };
@@ -339,33 +347,25 @@ export function createForm(options: FormOptions = {}): FormApi {
   }
 
   /**
-   * run a field's rules through the async-validator-backed engine (blocking rules
-   * + a `warningOnly` soft-warning layer). Returns the first blocking error and
-   * the first warning, honoring `stopValidateWithError`.
+   * run a field's rules through the async-validator-backed engine. Returns the
+   * first blocking error, honoring `stopValidateWithError`.
    */
-  async function runRules(
-    name: string,
-    value: unknown,
-  ): Promise<{ error?: string | undefined; warning?: string | undefined }> {
+  async function runRules(name: string, value: unknown): Promise<string | undefined> {
     const cfg = fields.get(name);
-    if (!cfg?.rules || cfg.rules.length === 0) return {};
+    if (!cfg?.rules || cfg.rules.length === 0) return undefined;
     return runFieldRules(name, value, state.values, cfg.rules, labelOf(name), resolve, stopWithError);
   }
 
   async function validateField(name: string): Promise<string | undefined> {
     const token = useId('v');
     tokens.set(name, token);
-    state.validating = { ...state.validating, [name]: true };
-    emit();
 
-    const { error, warning } = await runRules(name, pathGet(state.values, name));
+    const error = await runRules(name, pathGet(state.values, name));
 
     // race guard: a newer validation superseded this one → discard
     if (tokens.get(name) !== token) return state.errors[name];
 
-    state.validating = { ...state.validating, [name]: false };
     state.errors = { ...state.errors, [name]: error };
-    state.warnings = { ...state.warnings, [name]: warning };
     emit();
     return error;
   }
@@ -376,7 +376,9 @@ export function createForm(options: FormOptions = {}): FormApi {
       listeners.add(listener);
       return () => listeners.delete(listener);
     },
-    registerField(name, config = {}) {
+    registerField(name, config = {}, currentValue) {
+      const wasRegistered = registeredOnce.has(name);
+      registeredOnce.add(name);
       fields.set(name, config);
       // wire the reverse dependency graph: each dep gains `name` as a dependent.
       for (const dep of config.dependencies ?? []) {
@@ -389,10 +391,39 @@ export function createForm(options: FormOptions = {}): FormApi {
         initialTree = pathSet(initialTree, name, config.initialValue);
         emit();
       }
+      if (config.keepState && wasRegistered) {
+        // remount with keepState: the saved value (if any) is already sitting
+        // at `values[name]` — untouched since unregister skipped clearing it
+        // (Semi foundation.ts register() keepState branch restores from
+        // formState, which for us just means "leave it alone").
+      } else if (currentValue !== undefined) {
+        // Every (re-)register writes the field component's own held value back
+        // into `values[name]` (Semi register() unconditional `updateStateValue`
+        // in its non-keepState branch). This is what lets a surviving row's
+        // data "follow" it to a new path after a sibling's unregister already
+        // cleared that path underneath it — the component itself is the
+        // source of truth for its value, not whatever happens to be at the
+        // path when it (re-)registers.
+        state.values = pathSet(state.values, name, currentValue);
+        emit();
+      }
       return () => {
         fields.delete(name);
         tokens.delete(name);
         for (const dep of config.dependencies ?? []) dependents.get(dep)?.delete(name);
+        // clear this field's value/error/touched on unregister unless keepState
+        // (Semi withField.unRegister semantics) — a conditionally-unmounted
+        // field's state should not linger after it disappears from the form.
+        if (!config.keepState) {
+          state.values = pathRemove(state.values, name);
+          const errors = { ...state.errors };
+          delete errors[name];
+          state.errors = errors;
+          const touched = { ...state.touched };
+          delete touched[name];
+          state.touched = touched;
+          emit();
+        }
       };
     },
     getFieldTrigger(name) {
@@ -440,7 +471,6 @@ export function createForm(options: FormOptions = {}): FormApi {
     },
     getError: (name) =>
       name === undefined ? { ...state.errors } : state.errors[name],
-    getFieldWarning: (name) => state.warnings[name],
     getFieldExist: (name) => fields.has(name),
     getInitValue: (name) => (name === undefined ? clone(initialTree) : pathGet(initialTree, name)),
     getInitValues: () => clone(initialTree),
@@ -463,7 +493,7 @@ export function createForm(options: FormOptions = {}): FormApi {
           return Object.values(errs).every((e) => !e);
         }
         const results = await Promise.all(
-          targets.map((n) => runRules(n, pathGet(state.values, n)).then((r) => r.error)),
+          targets.map((n) => runRules(n, pathGet(state.values, n))),
         );
         return results.every((e) => !e);
       }
@@ -484,35 +514,27 @@ export function createForm(options: FormOptions = {}): FormApi {
     reset(fields) {
       if (fields && fields.length > 0) {
         // partial reset: only the targeted fields fall back to their initial
-        // value (or drop when there is none) and lose error/warning/touched/
-        // validating state; everything else is left untouched. Values are read/
-        // written by nested path so `users[0].name` resets its leaf, not a flat key.
+        // value (or drop when there is none) and lose error/touched state;
+        // everything else is left untouched. Values are read/written by
+        // nested path so `users[0].name` resets its leaf, not a flat key.
         let values = state.values;
         const errors = { ...state.errors };
-        const warnings = { ...state.warnings };
         const touched = { ...state.touched };
-        const validating = { ...state.validating };
         for (const f of fields) {
           if (pathHas(initialTree, f)) values = pathSet(values, f, pathGet(initialTree, f));
           else values = pathRemove(values, f);
           delete errors[f];
-          delete warnings[f];
           delete touched[f];
-          delete validating[f];
         }
         state.values = values;
         state.errors = errors;
-        state.warnings = warnings;
         state.touched = touched;
-        state.validating = validating;
         emit();
         return;
       }
       state.values = clone(initialTree);
       state.errors = {};
-      state.warnings = {};
       state.touched = {};
-      state.validating = {};
       emit();
     },
     getValues: () => collectValues(),

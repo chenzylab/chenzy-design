@@ -29,6 +29,8 @@ brief: Form 是表单容器组件，负责承载并编排一组输入控件，�
   import layoutSrc from '../../demos/form/04-layout.svelte?raw';
   import LayoutGrid from '../../demos/form/16-layout-grid.svelte';
   import layoutGridSrc from '../../demos/form/16-layout-grid.svelte?raw';
+  import ColLayout from '../../demos/form/30-col-layout.svelte';
+  import colLayoutSrc from '../../demos/form/30-col-layout.svelte?raw';
   import SectionDemo from '../../demos/form/05-section.svelte';
   import sectionSrc from '../../demos/form/05-section.svelte?raw';
   import NoLabel from '../../demos/form/06-no-label.svelte';
@@ -110,7 +112,7 @@ Field 级别组件的 `value`、`onChange` 属性都会被 Form 劫持，所以�
 
 #### 支持的其他写法
 
-当你需要在 Form 结构内部直接获取到 `formState`、`formApi`、`values` 等值时，你还可以使用以下的写法。这三种写法在 Semi（React）里是 render props / child render function / props.component 三个不同入口，在本库（Svelte）中统一用带参 snippet 表达，入参均为 `{ formState, formApi }`。
+当你需要在 Form 结构内部直接获取到 `formState`、`formApi`、`values` 等值时，你还可以使用以下的写法。这三种写法在 Semi（React）里是 render props / child render function / props.component 三个不同入口，在本库（Svelte）中统一用带参 snippet 表达，入参均为 `{ formState, values, formApi }`（对齐 Semi FormFCChild）。
 
 <Notice type="primary" title="注意事项">注意，此处获取的 formState、values 等并没有经过 deepClone。你应该只做读操作，而不应该做写操作，否则可能意外修改 form 内部的状态。所有对 Form 内部状态的更新都应该通过 formApi 去操作。</Notice>
 
@@ -172,6 +174,12 @@ Form 的 children 是一个带参 snippet，return 出所有表单控件。
 - 更复杂的布局：还可以结合 `Row`、`Col`，来对表单进行你想要的排列。
 
 <DemoBox code={layoutGridSrc}><LayoutGrid /></DemoBox>
+
+### wrapperCol / labelCol
+
+需要为 Form 内的所有 Field 设置统一的布局时，可以在 Form 上设置 `wrapperCol`、`labelCol` 快速生成布局，无需手动使用 `Row`、`Col` 摆放。`wrapperCol`、`labelCol` 属性配置参考 [Col 组件](/components/grid#col)。
+
+<DemoBox code={colLayoutSrc}><ColLayout /></DemoBox>
 
 ### 表单分组
 
@@ -283,23 +291,23 @@ Form 的 children 是一个带参 snippet，return 出所有表单控件。
 <Notice type="primary" title="注意事项">
 
 - `keepState` 仅适用于「条件渲染卸载 / 重挂」的场景，并以 field 字段路径作为恢复依据。
-- 在 `Form.List` 内部的 Field 不支持 `keepState`：调用 `remove` 会让后续行的字段路径整体前移，按路径恢复的语义不再匹配，容易出现已被删除的状态被「复活」等问题。
-- 在 `Form.List` 中请通过其自身的 `add`、`remove`、`addWithInitValue` 管理数组项。
+- 在 `Form.ArrayField` 内部的 Field 不支持 `keepState`：调用 `remove` 会让后续行的字段路径整体前移，按路径恢复的语义不再匹配，容易出现已被删除的状态被「复活」等问题。
+- 在 `Form.ArrayField` 中请通过其自身的 `add`、`remove`、`addWithInitValue` 管理数组项。
 
 </Notice>
 
-### 使用 Form.List
+### 使用 Form.ArrayField
 
-针对动态增删的数组类表单项，本库提供了 `Form.List` 作用域来简化 add / remove 的操作。  
-`Form.List` 的 children snippet 暴露 `add`、`remove`、`addWithInitValue`、`arrayFields` 等 API，用来执行新增行、删除行、新增带初始值的行等操作（对齐 Semi ArrayField）。
+针对动态增删的数组类表单项，本库提供了 `Form.ArrayField` 作用域来简化 add / remove 的操作（对齐 Semi ArrayField）。  
+`Form.ArrayField` 的 children snippet 暴露 `add`、`remove`、`addWithInitValue`、`arrayFields` 等 API，用来执行新增行、删除行、新增带初始值的行等操作。
 
 <DemoBox code={arrayFieldSrc}><ArrayFieldDemo /></DemoBox>
 
 ### Hooks 的使用
 
-我们提供了 `useFormApi`、`useFormState`、`getFieldApi`，使你在不需要通过 props 传递的情况下，也能在放置于 Form 结构内部的子组件中访问 Form 内部状态数据，以及调用 Form、Field 的相关 api。
+我们提供了 `useFormApi`、`useFormState`、`useFieldState`、`getFieldApi`、`useArrayFieldState`，使你在不需要通过 props 传递的情况下，也能在放置于 Form 结构内部的子组件中访问 Form 内部状态数据，以及调用 Form、Field 的相关 api。
 
-<Notice title="关于 Svelte 的替代方式">Semi 用 React Hooks（useContext）拿 formApi / formState；Svelte 无 hooks 惯例，本库以 getContext 等价形态提供 `useFormApi()` / `useFormState()` / `getFieldApi(field)`，须在子组件 init 期（&lt;script&gt; 顶层）调用。Semi 的 HOC（withFormApi / withFormState）与 withField 封装自定义控件，在本库对应为「带参 snippet + 这三个函数」的组合，不再单列 HOC。</Notice>
+<Notice title="关于 Svelte 的替代方式">Semi 用 React Hooks（useContext）拿 formApi / formState；Svelte 无 hooks 惯例，本库以 getContext 等价形态提供 `useFormApi()` / `useFormState()` / `useFieldState(field)` / `getFieldApi(field)` / `useArrayFieldState()`，须在子组件 init 期（&lt;script&gt; 顶层）调用。Semi 的 HOC（withFormApi / withFormState）与 withField 封装自定义控件，在本库对应为「带参 snippet + 这些函数」的组合，不再单列 HOC。Semi `Form.useForm()` 靠 Proxy 实现「未挂载即可用」，Svelte 中 `createForm()` 同步返回真实 api，天然无需这层代理，直接把 `const form = createForm()` 传给 Form 的 form prop 即可（见上文 FormApi 小节）。</Notice>
 
 <DemoBox code={hooksSrc}><Hooks /></DemoBox>
 
@@ -313,10 +321,13 @@ Form 的 children 是一个带参 snippet，return 出所有表单控件。
 | autoScrollToError | submit 或 formApi.validate() 校验失败时自动滚动至出错字段，可传 ScrollIntoViewOptions | boolean \| object | false |
 | disabled | 统一应用在每个 Field 的 disabled 属性 | boolean | false |
 | extraTextPosition | 统一应用在每个 Field 的 extraText 位置（middle / bottom） | string | 'bottom' |
+| footer | 带参 snippet，入参为 `{ submitting }`，用于自定义提交区域 | Snippet | |
 | getFormApi | Form 挂载后回调，回传内部 formApi 句柄（含 scrollToField / scrollToError / getFormProps） | (formApi) => void | |
 | form | 外部预建的 formApi 实例（createForm()），用于在 Form 外部控制表单状态 | FormApi | |
+| id | form 元素 id（同时写 x-form-id 供外部 DOM 定位） | string | |
 | initValues | 统一设置表单初始值（仅挂载时消费一次） | object | |
 | labelAlign | 统一配置 label 的 text-align 值 | string | 'left' |
+| labelCol | 统一设置每个 Field 的 label 列（24 栏 Grid），需与 wrapperCol 同传才生效 | `{ span?; offset? }` | |
 | labelPosition | 统一配置 Field 中 label 的位置（top / left / inset） | string | 'top' |
 | labelWidth | 统一配置 label 宽度 | string \| number | |
 | layout | 表单控件间的布局（vertical / horizontal） | string | 'vertical' |
@@ -325,13 +336,16 @@ Form 的 children 是一个带参 snippet，return 出所有表单控件。
 | onReset | 点击 reset 或调用 formApi.reset() 时的回调 | () => void | |
 | onSubmit | 校验成功后的提交回调 | `(r: { valid; values; errors }) => void` | |
 | onSubmitFail | 校验失败后的提交回调（带原生 submit 事件） | (errors, values, e) => void | |
+| onValueChange | 任意字段值变化时触发，入参为最新 values + 变更子集 | (values, changedValues) => void | |
 | showValidateIcon | 校验信息区块是否自动展示状态图标 | boolean | true |
 | stopPropagation | 提交 / 重置时是否阻止事件冒泡（`{ submit?; reset? }`） | object | |
 | stopValidateWithError | 统一应用在每个 Field 的 stopValidateWithError | boolean | false |
-| validateTrigger | 统一应用在每个 Field 的校验时机（change / blur / submit / mount 或其组合） | string \| array | ['blur','change'] |
+| validateTrigger | 统一应用在每个 Field 的校验时机（change / blur / custom / mount 或其组合） | string \| array | ['blur','change'] |
 | validator | Form 级别自定义校验函数（推荐），submit / validate 时调用，返回 `{ field: 错误信息 }`。支持同步 / 异步 | (values) => object | |
 | validateFields | validator 的旧别名（已废弃，仍兼容） | (values) => object | |
+| value | 受控整表单值；变更经 onChange 上报 | object | |
 | requiredMark | 是否显示必填星标 | boolean | true |
+| wrapperCol | 统一设置每个 Field 的控件列（24 栏 Grid），需与 labelCol 同传才生效 | `{ span?; offset? }` | |
 
 ## FormState
 
@@ -342,6 +356,8 @@ FormState 存储了所有 Form 内部的状态值，包括各表单控件的值�
 | values | 表单的值 | `{}` | `{ fieldA: 'str', fieldB: true }` |
 | errors | 表单错误信息集合 | `{}` | `{ fieldA: 'length not valid' }` |
 | touched | 用户点击过的 field 集合 | `{}` | `{ fieldA: true }` |
+| submitting | 是否正在提交中 | `false` | `true` |
+| submitCount | 提交次数 | `0` | `1` |
 
 ### 如何访问 formState
 
@@ -370,6 +386,9 @@ FormApi 允许你使用 getter 和 setter 来获取和操作 formState 的值。
 | setError | 修改某个 field 的 error 信息 | formApi.setError(field, message) |
 | getError | 获取 field 的 error（不传返回整个 errors map） | formApi.getError(field?) |
 | getFieldExist | 获取 Form 中是否存在对应 field | formApi.getFieldExist(field) |
+| getInitValue | 获取 field 的初始值（不传返回全部初始值快照） | formApi.getInitValue(field?) |
+| getInitValues | 获取全部初始值快照 | formApi.getInitValues() |
+| getFieldTrigger | 获取 field 解析后的校验时机（自身覆盖 → 表单默认） | formApi.getFieldTrigger(field) |
 | scrollToField | 滚动至指定 field | formApi.scrollToField(field, opts?) |
 | scrollToError | 滚动至校验错误的 field | formApi.scrollToError(opts?) |
 
@@ -397,9 +416,16 @@ FormApi 允许你使用 getter 和 setter 来获取和操作 formState 的值。
 | initValue | 该控件的初始值（仅 mounted 时消费一次），优先级高于 Form 的 initValues | any | |
 | rules | 校验规则（基于 async-validator），支持 rules[].validator 自定义校验 | array | |
 | validateStatus | 该控件的校验结果状态（仅影响样式）：success / error / warning / default | string | 'default' |
-| trigger | 触发校验的时机：blur / change / custom / mount，或其组合 | string \| array | 'change' |
-| onChange | 值变化时的回调 | (value) => void | |
+| trigger | 触发校验的时机：blur / change / custom / mount，或其组合 | string \| array | 继承容器（['blur','change']） |
+| dependencies | 依赖字段名；其值变化时本字段自动重校验 | string[] | |
+| valuePropName | 控件值属性名；如 Checkbox/Switch 用 'checked'，snippet 参数即多出同名别名映射字段值 | string | 'value' |
+| noStyle | 仅注册收集、不渲染布局 DOM（纯收集） | boolean | false |
+| span | Form.Section 栅格内占列（grid-column: span N） | number | |
+| onChange | 外部值变化回调，数据流接管之后额外调用，不替代内部接管，常用于字段联动 | (value) => void | |
+| onBlur | 外部失焦回调，内部失焦处理之后额外调用 | () => void | |
 | transform | 校验前转换字段值（仅校验时消费，对 formState 无影响） | (value) => value | |
+| convert | 字段值存入 formState 前的转换函数（回写 state，别于 transform 只用于提交不回写） | (value) => value | |
+| allowEmptyString | 是否允许空字符串作为有效值；默认空串当 undefined 处理，不触发 required 通过 | boolean | false |
 | keepState | Field 卸载后是否保留其状态（value / error / touched） | boolean | false |
 | stopValidateWithError | 命中首条不通过的 rule 后不再触发后续 rule | boolean | false |
 | helpText | 自定义提示信息，与校验信息公用同一区块（校验信息优先） | string | |
@@ -407,17 +433,18 @@ FormApi 允许你使用 getter 和 setter 来获取和操作 formState 的值。
 | extraTextPosition | 控制 extraText 显示位置（middle / bottom） | string | 'bottom' |
 | pure | 仅接管数据流，不插入 Label / ErrorMessage / extraText 等模块 | boolean | false |
 
-## Form.List Props
+## Form.ArrayField Props
 
-针对动态增删的数组类表单项，`Form.List` 作用域简化 add / remove 操作。
+针对动态增删的数组类表单项，`Form.ArrayField` 作用域简化 add / remove 操作（对齐 Semi ArrayField）。
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
-| name | 数组字段名（子字段前缀），必填 | string | |
-| initialCount | 初始行数 | number | 0 |
+| field | 数组字段名（子字段前缀），必填 | string | |
+| initValue | 初始整行数据数组，写入各行子字段（对齐 Semi ArrayFieldProps.initValue） | unknown[] | |
+| initialCount | 初始行数（本库超集，无 initValue 时按空行数展开） | number | 0 |
 | children | 带参 snippet，入参为 `{ arrayFields, add, addWithInitValue, remove, move }` | Snippet | |
 
-children snippet 入参：`arrayFields`（每行 `{ key, index, name(sub), remove }`，用于 `{#each}` 渲染）、`add(index?)`（末尾追加 / 指定位置插入空行）、`addWithInitValue(rowVal, index?)`（追加带初始值的行）、`remove(item)`、`move(from, to)`。
+children snippet 入参：`arrayFields`（每行 `{ key, index, field(sub), remove }`，用于 `{#each}` 渲染，对齐 Semi arrayFields[i].field）、`add(index?)`（末尾追加 / 指定位置插入空行）、`addWithInitValue(rowVal, index?)`（追加带初始值的行）、`remove(item)`、`move(from, to)`。
 
 ## 无障碍
 

@@ -19,24 +19,18 @@
   }
 
   const props: Props = $props();
-  const controlKeys = ['placeholder', 'disabled', 'size', 'maxLength', 'allowDuplicates'] as const;
   const split = $derived(splitFieldProps(props));
   const fieldProps = $derived(split.fieldProps);
-  const control = $derived(
-    Object.fromEntries(controlKeys.filter((k) => props[k] !== undefined).map((k) => [k, props[k]])),
-  );
+  const rest = $derived(split.rest as Record<string, unknown>);
   const labelForAria = $derived(typeof props.label === 'string' ? props.label : props.label?.text);
 </script>
 
 <Field {...fieldProps}>
   {#snippet children({ value, onChange, status, disabled: fieldDisabled, describedBy, errorMessageId, labelledById, required, insetLabel, insetLabelId })}
     <TagInput
+      {...rest}
       {...(Array.isArray(value) ? { value: value as string[] } : {})}
-      {...(control.placeholder !== undefined ? { placeholder: control.placeholder as NonNullable<TagInputProps['placeholder']> } : {})}
-      disabled={(control.disabled as boolean | undefined) ?? fieldDisabled}
-      {...(control.size !== undefined ? { size: control.size as NonNullable<TagInputProps['size']> } : {})}
-      {...(control.maxLength !== undefined ? { maxLength: control.maxLength as NonNullable<TagInputProps['maxLength']> } : {})}
-      {...(control.allowDuplicates !== undefined ? { allowDuplicates: control.allowDuplicates as NonNullable<TagInputProps['allowDuplicates']> } : {})}
+      disabled={(rest.disabled as boolean | undefined) ?? fieldDisabled}
       validateStatus={status === 'error' ? 'error' : 'default'}
       {...(insetLabel !== undefined ? { insetLabel } : {})}
       {...(insetLabelId !== undefined ? { insetLabelId } : {})}

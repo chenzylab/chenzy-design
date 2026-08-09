@@ -1,9 +1,6 @@
 /**
  * form-validate — rule engine bridged onto `async-validator` (same library Semi
- * uses). Built-in rules are converted to an async-validator schema and run; the
- * `warningOnly` superset (AntD-style soft warnings, absent from async-validator)
- * is layered on top by running the warning rules through the same engine but
- * routing their failures to the warning channel instead of the error channel.
+ * uses). Built-in rules are converted to an async-validator schema and run.
  *
  * i18n bridge: async-validator's default messages use `%s`/fullField templates.
  * To keep our MessageDescriptor + resolveMessage i18n contract intact, each rule
@@ -158,9 +155,8 @@ function toAvRule(rule: Rule, label: string, values: FormValues, resolve: Resolv
 }
 
 /**
- * Run one field's rules through async-validator (built-ins + custom), splitting
- * `warningOnly` failures into the warning channel. Returns the first blocking
- * error and the first warning, honoring `stopValidateWithError`.
+ * Run one field's rules through async-validator (built-ins + custom). Returns
+ * the first blocking error, honoring `stopValidateWithError`.
  */
 export async function runFieldRules(
   field: string,
@@ -170,18 +166,8 @@ export async function runFieldRules(
   label: string,
   resolve: Resolve,
   stopWithError: boolean,
-): Promise<{ error?: string; warning?: string }> {
-  const blocking = rules.filter((r) => !r.warningOnly);
-  const warns = rules.filter((r) => r.warningOnly);
-
-  const error = await runSchema(field, value, values, blocking, label, resolve, stopWithError);
-  // warnings always accumulate independently (never affect blocking validity).
-  const warning = await runSchema(field, value, values, warns, label, resolve, true);
-
-  const out: { error?: string; warning?: string } = {};
-  if (error !== undefined) out.error = error;
-  if (warning !== undefined) out.warning = warning;
-  return out;
+): Promise<string | undefined> {
+  return runSchema(field, value, values, rules, label, resolve, stopWithError);
 }
 
 async function runSchema(

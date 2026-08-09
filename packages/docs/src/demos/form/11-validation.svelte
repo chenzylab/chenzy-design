@@ -9,20 +9,20 @@
 <Form {initValues} style="width: 400px">
   <Form.Input
     field="name"
-    label="名称"
     trigger="blur"
     rules={[
       { required: true, message: 'required error' },
+      { type: 'string', message: 'type error' },
       { validator: (v) => (v === 'semi' ? undefined : 'should be semi') },
       { validator: (v) => (typeof v === 'string' && v.startsWith('se') ? undefined : 'should startsWith se') },
     ]}
   />
   <Form.Input
     field="shortcut"
-    label="缩写"
     stopValidateWithError
     rules={[
       { required: true, message: 'required error' },
+      { type: 'string', message: 'type error' },
       { validator: (v) => (v === 'semi' ? undefined : 'should be semi') },
       { validator: (v) => (typeof v === 'string' && v.startsWith('se') ? undefined : 'should startsWith se') },
     ]}

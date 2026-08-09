@@ -6,6 +6,6 @@
 </script>
 
 <Form onSubmit={(r) => console.log(r.values)} style="width: 400px">
-  <Form.Input field="name" label="姓名" trigger="blur" noLabel placeholder="请输入姓名（noLabel）" />
-  <Form.Input field="purename" pure placeholder="DOM 结构与普通 Input 完全一致（pure）" />
+  <Form.Input field="name" label="姓名" trigger="blur" noLabel style="width: 250px" placeholder="请输入姓名" />
+  <Form.Input field="purename" pure placeholder="DOM结构与普通 Input 组件完全一致" />
 </Form>

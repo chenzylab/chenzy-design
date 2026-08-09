@@ -19,5 +19,5 @@
       { label: '设计', value: 'ued' },
     ]}
   />
-  <Form.DatePicker field="date" label="开始日期" style="width: 250px" />
+  <Form.DatePicker field="date" label="开始日期" style="width: 250px" initValue={new Date()} />
 </Form>

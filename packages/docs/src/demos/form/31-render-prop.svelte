@@ -1,13 +1,13 @@
 <script lang="ts">
   // 通过 render 属性传入：把声明控件的带参 snippet 传给 Form 的 render prop
-  //（对齐 Semi render props）。入参 { formState, formApi }。
+  //（对齐 Semi render props）。入参 { formState, values, formApi }。
   import { Form } from '@chenzy-design/svelte';
   import type { FormState } from '@chenzy-design/svelte';
 </script>
 
 <Form layout="horizontal" onChange={(v) => console.log(v)} {render} />
 
-{#snippet render({ formState }: { formState: FormState })}
+{#snippet render({ formState, values }: { formState: FormState; values: FormState['values'] })}
   <Form.Select
     field="Role"
     label="角色"
@@ -20,5 +20,5 @@
   />
   <Form.Input field="UserName" label="用户名" style="width: 80px" />
   <Form.Input field="Password" label="密码" style="width: 176px" />
-  <code style="margin-top: 24px">{JSON.stringify(formState.values)}</code>
+  <code style="margin-top: 24px">{JSON.stringify(values)}</code>
 {/snippet}

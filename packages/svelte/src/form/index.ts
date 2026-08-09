@@ -1,6 +1,6 @@
 import Form_ from './Form.svelte';
 import Field from './Field.svelte';
-import FieldArray from './FieldArray.svelte';
+import ArrayField from './ArrayField.svelte';
 import FormInput from './FormInput.svelte';
 import FormSelect from './FormSelect.svelte';
 import FormCheckbox from './FormCheckbox.svelte';
@@ -32,7 +32,7 @@ import FormInputGroup from './FormInputGroup.svelte';
  */
 export const Form: typeof Form_ & {
   Field: typeof Field;
-  List: typeof FieldArray;
+  ArrayField: typeof ArrayField;
   Input: typeof FormInput;
   Select: typeof FormSelect;
   Checkbox: typeof FormCheckbox;
@@ -59,7 +59,7 @@ export const Form: typeof Form_ & {
   InputGroup: typeof FormInputGroup;
 } = Object.assign(Form_, {
   Field,
-  List: FieldArray,
+  ArrayField,
   Input: FormInput,
   Select: FormSelect,
   Checkbox: FormCheckbox,
@@ -88,7 +88,7 @@ export const Form: typeof Form_ & {
 
 export {
   Field as FormField,
-  FieldArray,
+  ArrayField,
   FormInput,
   FormSelect,
   FormCheckbox,
@@ -118,8 +118,11 @@ export { meta as formMeta } from './meta.js';
 export {
   useFormApi,
   useFormState,
+  useFieldState,
+  type FieldState,
   getFieldApi,
   type FieldApi,
+  useArrayFieldState,
 } from './hooks.js';
 // createForm 从 core 透传，供 `const form = createForm()` + <Form {form}> 外部预建用法。
 export { createForm } from '@chenzy-design/core';
@@ -131,4 +134,7 @@ export {
   type FormLayout,
   type FormLabelPosition,
   type FormLabelAlign,
+  getArrayFieldContext,
+  setArrayFieldContext,
+  type ArrayFieldContext,
 } from './context.js';

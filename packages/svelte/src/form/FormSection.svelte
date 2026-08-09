@@ -52,4 +52,10 @@
     margin-block-start: var(--cd-spacing-form-section-text-margintop);
     margin-block-end: var(--cd-spacing-form-section-text-marginbottom);
   }
+
+  /* RTL 开关，对齐 Semi rtl.scss 里 semi-form-section 的 direction rtl 声明，
+     见 Form.svelte 同名规则的详细说明。 */
+  :global(.cd-rtl) .cd-form-section {
+    direction: rtl;
+  }
 </style>

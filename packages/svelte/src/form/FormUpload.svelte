@@ -22,26 +22,21 @@
   }
 
   const props: Props = $props();
-  const controlKeys = ['accept', 'multiple', 'limit', 'disabled', 'listType', 'draggable', 'action', 'children'] as const;
   const split = $derived(splitFieldProps(props));
   const fieldProps = $derived(split.fieldProps);
-  const control = $derived(
-    Object.fromEntries(controlKeys.filter((k) => props[k] !== undefined).map((k) => [k, props[k]])),
-  );
+  const rest = $derived.by(() => {
+    const { children, ...others } = split.rest as { children?: Snippet } & Record<string, unknown>;
+    return others;
+  });
   const slotChildren = $derived(props.children);
 </script>
 
 <Field {...fieldProps}>
   {#snippet children({ value, onChange, status, disabled: fieldDisabled })}
     <Upload
+      {...rest}
       {...(Array.isArray(value) ? { fileList: value as NonNullable<UploadProps['fileList']> } : {})}
-      {...(control.accept !== undefined ? { accept: control.accept as NonNullable<UploadProps['accept']> } : {})}
-      {...(control.multiple !== undefined ? { multiple: control.multiple as NonNullable<UploadProps['multiple']> } : {})}
-      {...(control.limit !== undefined ? { limit: control.limit as NonNullable<UploadProps['limit']> } : {})}
-      disabled={(control.disabled as boolean | undefined) ?? fieldDisabled}
-      {...(control.listType !== undefined ? { listType: control.listType as NonNullable<UploadProps['listType']> } : {})}
-      {...(control.draggable !== undefined ? { draggable: control.draggable as NonNullable<UploadProps['draggable']> } : {})}
-      {...(control.action !== undefined ? { action: control.action as NonNullable<UploadProps['action']> } : {})}
+      disabled={(rest.disabled as boolean | undefined) ?? fieldDisabled}
       validateStatus={status === 'error' ? 'error' : 'default'}
       onChange={({ fileList }) => onChange(fileList)}
     >

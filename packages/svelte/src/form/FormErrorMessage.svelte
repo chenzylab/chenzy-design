@@ -17,8 +17,11 @@
     style?: string;
     /** 是否显示状态图标（默认 true，对齐 Semi showValidateIcon）。 */
     showValidateIcon?: boolean;
-    /** 校验状态，决定状态图标（warning=IconAlertTriangle, error=IconAlertCircle）。 */
-    validateStatus?: 'error' | 'warning';
+    /**
+     * 校验状态，决定状态图标（warning=IconAlertTriangle, error=IconAlertCircle，
+     * 未传/default 不显示图标，对齐 Semi iconMap[validateStatus] 无 default 分支）。
+     */
+    validateStatus?: 'default' | 'error' | 'warning';
     /** 提示文案：无 error 时展示（与 error 同块，error 优先）。 */
     helpText?: string;
     /** InputGroup 内：图标恒为 IconAlertCircle（对齐 Semi）。 */
@@ -34,7 +37,7 @@
     className,
     style,
     showValidateIcon = true,
-    validateStatus = 'error',
+    validateStatus,
     helpText,
     isInInputGroup = false,
     errorMessageId,
@@ -57,14 +60,19 @@
   // 无 error 时展示 helpText。
   const showHelp = $derived(!hasError && helpText !== undefined && helpText !== '');
   const textId = $derived(hasError ? errorMessageId : helpTextId);
-  // InputGroup 内图标恒为 error 图标；否则按 validateStatus 决定。
-  const iconIsWarning = $derived(!isInInputGroup && validateStatus === 'warning');
+  // 图标是否显示：有 error 文本时默认视为 error 态（除非显式传 warning）；仅 helpText
+  // 时唯有显式传 validateStatus（error/warning）才带图标，未传/default 不显示
+  // （对齐 Semi iconMap[validateStatus] 无 default 分支，undefined 时不渲染）。
+  const iconStatus = $derived(hasError ? (validateStatus ?? 'error') : validateStatus);
+  const showIcon = $derived(iconStatus === 'error' || iconStatus === 'warning');
+  // InputGroup 内图标恒为 error 图标；否则按 iconStatus 决定。
+  const iconIsWarning = $derived(!isInInputGroup && iconStatus === 'warning');
 
   const cls = $derived(
     [
       hasError ? 'cd-form-field-error-message' : 'cd-form-field-help-text',
       // warning 态容器补修饰类，图标着警告色（对齐 Semi .semi-icon-alert_triangle 着色）。
-      hasError && iconIsWarning && 'cd-form-field-error-message-warning',
+      showIcon && iconIsWarning && 'cd-form-field-error-message-warning',
       className,
     ]
       .filter(Boolean)
@@ -74,7 +82,7 @@
 
 {#if hasError || showHelp}
   <div class={cls} role={hasError ? 'alert' : undefined} {style}>
-    {#if showValidateIcon && hasError}
+    {#if showValidateIcon && showIcon}
       {#if iconIsWarning}
         <IconAlertTriangle class="cd-form-field-validate-status-icon" size="small" aria-hidden="true" />
       {:else}

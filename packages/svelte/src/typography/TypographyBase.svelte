@@ -238,11 +238,15 @@
         rows: measureRows,
       });
     };
-    measure();
     const schedule = (): void => {
       if (frame) return;
       frame = window.requestAnimationFrame(measure);
     };
+    // 首次测量也走 rAF：onMount 时机下 flex/grid 子元素的最终宽度可能还没
+    // 完成一次真实 layout（同步读 clientWidth 会读到 CSS 声明的初始值，
+    // 如 flex:1 搭配的 inline-size:0），导致首屏文字被错误截断为空。
+    // ResizeObserver 的首次回调同样异步触发，故不能依赖它兜底这一帧。
+    schedule();
     const ro = new ResizeObserver(schedule);
     ro.observe(el);
     return () => {
@@ -435,6 +439,7 @@
         .filter(Boolean)
         .join(';')}
       disabled={!tooltipEnabled}
+      triggerStyle="display:block; inline-size:100%"
     >
       {@render hostNode()}
     </Popover>
@@ -454,6 +459,7 @@
         .filter(Boolean)
         .join(';')}
       disabled={!tooltipEnabled}
+      triggerStyle="display:block; inline-size:100%"
     >
       {@render hostNode()}
     </Tooltip>
@@ -686,6 +692,20 @@
     max-width: 100%;
     vertical-align: top;
   }
+  /*
+    showTooltip 模式下 Text 被 Tooltip/Popover 包裹（Svelte 无 cloneElement，需要真实
+    wrapper span 承载事件，Semi/React 没有这层）。Popover 内部也是复用 Tooltip 渲染同一套
+    .cd-tooltip/.cd-tooltip-trigger 结构，故只需覆盖一套类名。外层 .cd-tooltip 已用
+    triggerStyle 撑满，但 Tooltip 组件未暴露内层 .cd-tooltip-trigger 的等价 prop——它
+    默认 inline-block + width:auto（shrink-to-fit），当 Text 依赖 flex:1 分配宽度时
+    （如 Upload 文件名）会与外层 flex 容器的宽度传导断开，永久塌陷为 0。
+    见 memory: tooltip-trigger-wrapper-shrinks-use-triggerstyle。
+  */
+  :global(.cd-tooltip-trigger:has(> .cd-typography-ellipsis-single-line)) {
+    display: block;
+    inline-size: 100%;
+  }
+
   :global(.cd-typography-ellipsis-expand) {
     display: inline;
     margin-left: var(--cd-spacing-typography-expandtext-marginleft);

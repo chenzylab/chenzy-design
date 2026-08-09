@@ -23,38 +23,20 @@
   }
 
   const props: Props = $props();
-  const controlKeys = [
-    'placeholder',
-    'disabled',
-    'size',
-    'rows',
-    'maxLength',
-    'maxCount',
-    'showCount',
-    'autosize',
-  ] as const;
   const split = $derived(splitFieldProps(props));
   const fieldProps = $derived(split.fieldProps);
-  const control = $derived(
-    Object.fromEntries(controlKeys.filter((k) => props[k] !== undefined).map((k) => [k, props[k]])),
-  );
+  const rest = $derived(split.rest as Record<string, unknown>);
   const labelForAria = $derived(typeof props.label === 'string' ? props.label : props.label?.text);
 </script>
 
 <Field {...fieldProps}>
   {#snippet children({ value, onChange, onBlur, status, disabled: fieldDisabled, id, describedBy, errorMessageId, labelledById, required })}
     <TextArea
+      {...rest}
       value={value === undefined ? '' : String(value)}
       validateStatus={status === 'error' ? 'error' : 'default'}
-      disabled={(control.disabled as boolean | undefined) ?? fieldDisabled}
+      disabled={(rest.disabled as boolean | undefined) ?? fieldDisabled}
       {id}
-      {...(control.placeholder !== undefined ? { placeholder: control.placeholder as NonNullable<TextAreaProps['placeholder']> } : {})}
-      {...(control.size !== undefined ? { size: control.size as NonNullable<TextAreaProps['size']> } : {})}
-      {...(control.rows !== undefined ? { rows: control.rows as NonNullable<TextAreaProps['rows']> } : {})}
-      {...(control.maxLength !== undefined ? { maxLength: control.maxLength as NonNullable<TextAreaProps['maxLength']> } : {})}
-      {...(control.maxCount !== undefined ? { maxCount: control.maxCount as NonNullable<TextAreaProps['maxCount']> } : {})}
-      {...(control.showCount !== undefined ? { showCount: control.showCount as NonNullable<TextAreaProps['showCount']> } : {})}
-      {...(control.autosize !== undefined ? { autosize: control.autosize as NonNullable<TextAreaProps['autosize']> } : {})}
       {...(labelledById !== undefined ? { ariaLabelledby: labelledById } : labelForAria !== undefined ? { 'aria-label': labelForAria } : {})}
       {...(describedBy !== undefined ? { ariaDescribedby: describedBy } : {})}
       {...(errorMessageId !== undefined ? { ariaErrormessage: errorMessageId } : {})}

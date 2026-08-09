@@ -20,25 +20,19 @@
   }
 
   const props: Props = $props();
-  const controlKeys = ['disabled', 'size', 'loading', 'checkedText', 'uncheckedText'] as const;
   const split = $derived(splitFieldProps(props));
   // Switch 是布尔控件，valuePropName 固定 'checked'（未显式传时补默认）。
   const fieldProps = $derived<FieldPassthroughProps>({ valuePropName: 'checked', ...split.fieldProps });
-  const control = $derived(
-    Object.fromEntries(controlKeys.filter((k) => props[k] !== undefined).map((k) => [k, props[k]])),
-  );
+  const rest = $derived(split.rest as Record<string, unknown>);
   const labelForAria = $derived(typeof props.label === 'string' ? props.label : props.label?.text);
 </script>
 
 <Field {...fieldProps}>
   {#snippet children({ value, onChange, status, disabled: fieldDisabled, describedBy, errorMessageId, labelledById, required })}
     <Switch
+      {...rest}
       {...(typeof value === 'boolean' ? { checked: value } : {})}
-      disabled={(control.disabled as boolean | undefined) ?? fieldDisabled}
-      {...(control.size !== undefined ? { size: control.size as NonNullable<SwitchProps['size']> } : {})}
-      {...(control.loading !== undefined ? { loading: control.loading as NonNullable<SwitchProps['loading']> } : {})}
-      {...(control.checkedText !== undefined ? { checkedText: control.checkedText as string | Snippet } : {})}
-      {...(control.uncheckedText !== undefined ? { uncheckedText: control.uncheckedText as string | Snippet } : {})}
+      disabled={(rest.disabled as boolean | undefined) ?? fieldDisabled}
       {...(labelledById !== undefined ? { 'aria-labelledby': labelledById } : labelForAria !== undefined ? { 'aria-label': labelForAria } : {})}
       {...(describedBy !== undefined ? { 'aria-describedby': describedBy } : {})}
       {...(errorMessageId !== undefined ? { 'aria-errormessage': errorMessageId } : {})}

@@ -120,7 +120,7 @@ const components = [
   // 批C-E 引入 async-validator（gzip ~5-6KB 校验引擎）+ lodash-es get/set/toPath（真数组路径）。
   // 破坏性重写严格对齐 Semi（Field 复用 FormLabel、a11y 契约 labelledById/errorMessageId、
   // error/warning 合并、扁平 class）后实测 13.65 KB。预算按实测校准，含少量余量。
-  ['form', '{ FormField, FormInput, FieldArray }', '14 KB'],
+  ['form', '{ FormField, FormInput, ArrayField }', '14 KB'],
   // TextArea 迁入 input/ 目录、与 Input/InputGroup 同为 input 条目导出（对齐 Semi 目录结构，
   // 原独立 textarea 条目随目录迁移移除）。三者共享 input.scss token/locale，合并测量。
   // autosize 测量改用隐藏克隆节点（对齐 Semi calculateNodeHeight.ts，修复原生 rows 属性

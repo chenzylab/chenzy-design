@@ -21,25 +21,18 @@
   }
 
   const props: Props = $props();
-  const controlKeys = ['count', 'allowHalf', 'allowClear', 'disabled', 'size', 'tooltips'] as const;
   const split = $derived(splitFieldProps(props));
   const fieldProps = $derived(split.fieldProps);
-  const control = $derived(
-    Object.fromEntries(controlKeys.filter((k) => props[k] !== undefined).map((k) => [k, props[k]])),
-  );
+  const rest = $derived(split.rest as Record<string, unknown>);
   const labelForAria = $derived(typeof props.label === 'string' ? props.label : props.label?.text);
 </script>
 
 <Field {...fieldProps}>
   {#snippet children({ value, onChange, status, disabled: fieldDisabled, describedBy, errorMessageId, labelledById, required })}
     <Rating
+      {...rest}
       {...(typeof value === 'number' ? { value } : {})}
-      {...(control.count !== undefined ? { count: control.count as NonNullable<RatingProps['count']> } : {})}
-      {...(control.allowHalf !== undefined ? { allowHalf: control.allowHalf as NonNullable<RatingProps['allowHalf']> } : {})}
-      {...(control.allowClear !== undefined ? { allowClear: control.allowClear as NonNullable<RatingProps['allowClear']> } : {})}
-      disabled={(control.disabled as boolean | undefined) ?? fieldDisabled}
-      {...(control.size !== undefined ? { size: control.size as NonNullable<RatingProps['size']> } : {})}
-      {...(control.tooltips !== undefined ? { tooltips: control.tooltips as NonNullable<RatingProps['tooltips']> } : {})}
+      disabled={(rest.disabled as boolean | undefined) ?? fieldDisabled}
       {...(labelledById !== undefined ? { 'aria-labelledby': labelledById } : labelForAria !== undefined ? { 'aria-label': labelForAria } : {})}
       {...(describedBy !== undefined ? { 'aria-describedby': describedBy } : {})}
       {...(errorMessageId !== undefined ? { 'aria-errormessage': errorMessageId } : {})}

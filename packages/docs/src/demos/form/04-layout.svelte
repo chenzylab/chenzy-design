@@ -5,7 +5,7 @@
 
   let labelPosition = $state<'top' | 'left'>('left');
   let labelAlign = $state<'left' | 'right'>('left');
-  const labelWidth = $derived(labelPosition === 'left' ? '120px' : undefined);
+  const labelWidth = $derived(labelPosition === 'left' ? '180px' : undefined);
 </script>
 
 <div style="border-bottom: 1px solid var(--cd-color-border); padding-bottom: 12px; margin-bottom: 12px; display: flex; gap: 24px; align-items: center;">
@@ -52,12 +52,13 @@
         { label: 'kate', value: 'kate' },
       ]} />
     <Form.CheckboxGroup label="角色" field="role" direction="horizontal"
-      optionList={[
+      options={[
         { label: 'admin', value: 'admin' },
         { label: 'user', value: 'user' },
         { label: 'guest', value: 'guest' },
+        { label: 'root', value: 'root' },
       ]} />
-    <Form.RadioGroup field="gender" label="性别">
+    <Form.RadioGroup field="性别">
       <Radio value="1">man</Radio>
       <Radio value="2">woman</Radio>
     </Form.RadioGroup>

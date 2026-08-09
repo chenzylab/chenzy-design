@@ -17,6 +17,7 @@
  *   const { fieldProps, rest } = $derived(splitFieldProps(props));
  *   <Field {...fieldProps}>{#snippet children(...)}<Control {...rest} .../>{/snippet}</Field>
  */
+import type { Snippet } from 'svelte';
 import type { Rule, ValidateTrigger } from '@chenzy-design/core';
 import type { FormLabelPosition, FormLabelAlign } from './context.js';
 
@@ -52,7 +53,7 @@ export interface FieldPassthroughProps {
   initValue?: unknown;
   required?: boolean;
   validateStatus?: 'default' | 'warning' | 'error';
-  extraText?: string;
+  extraText?: string | Snippet;
   noStyle?: boolean;
   span?: number;
   transform?: (value: unknown, values: Record<string, unknown>) => unknown;
