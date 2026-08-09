@@ -1,38 +1,10 @@
 /**
  * createInputNumber helpers — framework-agnostic numeric primitives for InputNumber.
- * Pure functions only (clamp/boundaryMode, precision round, float-safe step,
- * locale-aware default formatting). The svelte layer owns DOM, listeners and
- * the editing-text state machine; it delegates the math here so it stays testable.
+ * Pure functions only (precision round, float-safe step, locale-aware default
+ * formatting). The svelte layer owns DOM, listeners and the editing-text state
+ * machine; it delegates the math here so it stays testable.
  * See specs/components/input/InputNumber.spec.md §3.
  */
-
-/** Boundary handling: 'clamp' pins to [min,max]; 'strict' rejects out-of-range. */
-export type BoundaryMode = 'clamp' | 'strict';
-
-/**
- * clampWithMode — apply min/max according to boundaryMode.
- * - 'clamp': returns the value pinned into [min,max].
- * - 'strict': returns null when `n` lies outside [min,max] (caller rolls back).
- */
-export function clampWithMode(
-  n: number,
-  min: number,
-  max: number,
-  mode: BoundaryMode = 'clamp',
-): number | null {
-  if (mode === 'strict') {
-    if (n < min || n > max) return null;
-    return n;
-  }
-  return Math.min(max, Math.max(min, n));
-}
-
-/** Which boundary (if any) `n` touches/exceeds given [min,max]. */
-export function boundaryHitOf(n: number, min: number, max: number): 'min' | 'max' | null {
-  if (n <= min && Number.isFinite(min)) return 'min';
-  if (n >= max && Number.isFinite(max)) return 'max';
-  return null;
-}
 
 /** round `n` to `precision` decimal places (undefined → unchanged). */
 export function roundToPrecision(n: number, precision?: number): number {

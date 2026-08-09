@@ -13,13 +13,7 @@
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
-  import {
-    useId,
-    roundToPrecision,
-    addNumberStep,
-    formatWithLocale,
-    useLiveAnnouncer,
-  } from '@chenzy-design/core';
+  import { useId, roundToPrecision, addNumberStep, formatWithLocale } from '@chenzy-design/core';
   import { IconChevronUp, IconChevronDown } from '@chenzy-design/icons';
   import { useLocale } from '../locale-provider/index.js';
   import Input from '../input/Input.svelte';
@@ -190,8 +184,6 @@
   const disabled = $derived<boolean>(disabledProp ?? group?.disabled ?? false);
 
   const loc = useLocale();
-  // 单例 live region（polite）：值被 min/max 钳制（越界回弹）时播报实际生效值。
-  const announcer = useLiveAnnouncer();
   // prefix 可传 string 或 Snippet；函数即视为 Snippet，字符串走内置 span 渲染。
   const prefixSnippet = $derived(typeof prefix === 'function' ? (prefix as Snippet) : undefined);
   const prefixText = $derived(typeof prefix === 'string' ? prefix : undefined);
@@ -356,12 +348,7 @@
   // 归一化：round → clamp 到 [min,max]（对齐 Semi：恒 clamp，无 strict 模式）。
   function normalize(n: number): number {
     const rounded = applyPrecision(n);
-    const clamped = Math.min(max, Math.max(min, rounded));
-    // 越界回弹：实际生效值与输入不同 → polite 播报生效值。
-    if (clamped !== rounded && Number.isFinite(clamped)) {
-      announcer.announce(loc().t('InputNumber.clampedAnnounce', { value: formatDisplay(clamped) }));
-    }
-    return clamped;
+    return Math.min(max, Math.max(min, rounded));
   }
 
   // onChange 值：货币/formatter 模式回显示字符串，其余回 number（对齐 Semi onChange 值语义）。
@@ -663,6 +650,13 @@
     color: var(--cd-color-text-2);
     white-space: nowrap;
     user-select: none;
+  }
+
+  /* borderless：非 hover/focus 时步进器透明（对齐 Semi .semi-input-borderless + suffix-btns）。
+     .cd-input-borderless 来自子组件 Input 的 wrapper 根类，Svelte scoped CSS 认不到跨组件类；
+     :global() 只能在选择器序列首尾，故整条选择器转 :global()，class 名仍是本组件专属不会外溢。 */
+  :global(.cd-input-number:not(:focus-within):not(:hover) .cd-input-borderless + .cd-input-number-suffix-btns) {
+    opacity: 0;
   }
 
   /* --- 步进器：对齐 Semi inputNumber-suffix-btns（列布局，外框描边，两按钮各占 50%） --- */

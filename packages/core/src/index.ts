@@ -5,14 +5,11 @@
  */
 export { useId, __resetIdCounter } from './id.js';
 export {
-  clampWithMode,
-  boundaryHitOf,
   roundToPrecision,
   decimalsOf as decimalsOfNumber,
   addStep as addNumberStep,
   formatWithLocale,
   __resetNumberFormatCache,
-  type BoundaryMode,
 } from './input-number.js';
 export { useFocusTrap, type FocusTrap } from './focus-trap.js';
 export {
