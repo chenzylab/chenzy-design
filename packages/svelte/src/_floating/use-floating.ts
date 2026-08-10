@@ -337,12 +337,18 @@ export function floating(node: HTMLElement, params: FloatingActionParams) {
   let lastTrigger = params.trigger;
   let lastPlacement = params.placement;
   let lastPointAtCenter = params.arrowPointAtCenter;
+  let lastOpen = params.open;
+  let reopenFrame = 0;
 
   function start(p: FloatingActionParams) {
     if (!p.trigger) return;
     handle = useFloating(p.trigger, node, p);
   }
   function stop() {
+    if (reopenFrame) {
+      window.cancelAnimationFrame(reopenFrame);
+      reopenFrame = 0;
+    }
     handle?.destroy();
     handle = undefined;
   }
@@ -362,6 +368,7 @@ export function floating(node: HTMLElement, params: FloatingActionParams) {
         lastTrigger = next.trigger;
         lastPlacement = next.placement;
         lastPointAtCenter = next.arrowPointAtCenter;
+        lastOpen = next.open;
         stop();
         start(next);
         return;
@@ -372,7 +379,23 @@ export function floating(node: HTMLElement, params: FloatingActionParams) {
       if (!handle && next.trigger) {
         start(next);
       } else {
-        handle?.update();
+        // open 从 false→true（重新展开）：此刻调用方多半刚把 hidden 属性摘掉，
+        // 但 update() 与该 DOM 变更同批次触发，getComputedStyle(popup).display
+        // 可能还没反映出来——position() 内部据此判断"隐藏跳过"会误判，导致浮层
+        // 沿用关闭前的旧 transform（触发器早已随页面滚动到别处，浮层却停在原地，
+        // 页面未滚动时更是直接对不上）。延后一帧到下一次浏览器渲染后再定位，
+        // 此时 hidden 移除已生效、display 不再是 none。
+        const reopened = next.open && !lastOpen;
+        lastOpen = next.open;
+        if (reopened) {
+          if (reopenFrame) window.cancelAnimationFrame(reopenFrame);
+          reopenFrame = window.requestAnimationFrame(() => {
+            reopenFrame = 0;
+            handle?.update();
+          });
+        } else {
+          handle?.update();
+        }
       }
     },
     destroy: stop,

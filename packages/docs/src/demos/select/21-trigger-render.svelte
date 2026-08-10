@@ -9,6 +9,7 @@
     { value: 'ulikecam', label: '轻颜相机' },
     { value: 'jianying', label: '剪映' },
     { value: 'toutiao', label: '今日头条' },
+    { value: 'xigua', label: '西瓜视频超长应用名称测试文本' },
   ];
 
   // 拖拽排序触发器：复用 TagInput draggable 能力
@@ -81,7 +82,8 @@
     style="width: 240px"
   >
     {#snippet triggerRender({ selectedOptions, onSearch })}
-      <div role="presentation" onkeydown={(e) => e.stopPropagation()}>
+      <!-- svelte-ignore a11y_no_static_element_interactions -->
+      <div onkeydown={(e) => e.stopPropagation()}>
         <TagInput
           draggable
           allowDuplicates={false}

@@ -135,7 +135,25 @@ const components = [
   // 拆分 RatingItem.svelte（对齐 Semi item.tsx 文件结构，参照 Radio/RadioInner 拆分先例），
   // 真实结构对齐带来的组件边界开销，实测 4.45 KB，预算按实测校准留少量余量。
   ['rating', '{ Rating }', '4.5 KB'],
-  ['select', '{ Select }', '10 KB'],
+  // 10→10.8→10.85→10.9 KB：补齐 <Select.Option>/<Select.OptGroup> 组合式子组件 + 清除按钮
+  // hover/展开态门控（isHovering state，对齐 Semi showClear 的 isHovering||isOpen 判断，
+  // 修复清除按钮与箭头并列挤占布局的问题）+ 命名对齐 .cd-select-content→.cd-select-selection
+  // （对齐 Semi ${prefixcls}-selection）+ 补多选 searchPosition='trigger' 展开态自动聚焦
+  // 搜索框的 $effect（对齐 Semi foundation.open() 的 toggle2SearchInput→focusInput 链路，
+  // 修复多选搜索框展开后焦点停留在触发器、光标不可见的问题）+ 多选空值态搜索框绝对定位叠加
+  // + content-wrapper-empty 12px 左边距 token + normalizeSelected 多选非数组值防御（对齐
+  // Semi _updateMultiple 的 propValueIsArray 判断，value='' 不再误判成选中空字符串）
+  // + 选项搜索命中片段高亮（复用 ../highlight/Highlight.svelte，对齐 Semi option.tsx
+  // renderOptionContent；Highlight 走 `../` 属兄弟组件不计入本组件体积，增量是 Select 自身
+  // 接入逻辑 + .cd-select-keyword 覆盖样式）+ renderSelectedItem/renderSelectedTag 拆分
+  // （对齐 Semi renderSelectedItem 的 isRenderInTag true/false 两分支，Svelte snippet 无法
+  // 像 React 函数那样按返回值控制包不包裹，故拆两个 prop）+ Select.Option 补齐 style/
+  // className/showTick/...rest 透传 + optionRow 消费 _content/_style/_className/_showTick
+  // （对齐 Semi Select.Option 组件的完整 props 与 children 自定义渲染能力）+ aria-invalid
+  // 改回纯透传（此前自造成 validateStatus 自动推导，违背有则有无则去）+ onFocus/onBlur 补
+  // 事件参数 + motion 浮层进出场动画（对齐 Semi Select 内部 Popover 实例的 zoomIn，新增
+  // keyframe + token），真实功能对齐带来的体积增长，实测 11.43 KB，预算按实测校准留少量余量。
+  ['select', '{ Select }', '11.5 KB'],
   ['slider', '{ Slider }', '5.5 KB'],
   ['switch', '{ Switch }', '2.7 KB'],
   ['tag-input', '{ TagInput }', '6.25 KB'],

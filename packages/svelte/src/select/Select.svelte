@@ -3,7 +3,8 @@
   单选 / 多选 / 本地过滤 / 键盘导航 / 浮层。Token-driven, a11y-correct.
   下拉 portal 到 body + position:fixed（脱离 overflow:hidden 裁剪），matchWidth 跟随触发器宽度，flip 避让。
   maxTagCount：多选 tag 超出折叠为 +N。allowCreate：filter 无匹配时可创建新选项。
-  分组：optionList 含 { label, options:[] } 时按组渲染组标题；逻辑/键盘/filter 基于扁平序列。
+  分组：仅 <Select.OptGroup> 组合式 children 支持（对齐 Semi，optionList 数组不支持分组）；
+  按组渲染组标题，逻辑/键盘/filter 基于扁平序列。
   remote：remote=true 时输入防抖回调 onSearch(value, event)，由外部更新 optionList；loading 显示 spinner。
   虚拟化：传入 virtualize 对象时下拉只渲染视口内 option（复用 core fixedRange），spacer 撑总高、
   option 绝对定位按索引偏移；scrollTop 由命令式 scroll 回调 + rAF 节流写入本地 $state，可见区间
@@ -17,7 +18,9 @@
   emptyContent snippet：空态自定义内容。
   prefix/suffix/arrowIcon/clearIcon snippet：触发器前后缀与图标。
   innerTopSlot/innerBottomSlot snippet：浮层滚动区内顶/底固定区；outerTopSlot/outerBottomSlot：滚动区外固定区。
-  renderOptionItem snippet：完全自定义候选项渲染；renderSelectedItem snippet：自定义选中值/Tag 渲染。
+  renderOptionItem snippet：完全自定义候选项渲染；renderSelectedTag snippet：自定义选中值内容（仍套 Tag 容器，
+  对齐 Semi renderSelectedItem 返回 isRenderInTag:true 的分支）；renderSelectedItem snippet：多选态完全自定义
+  单个已选 chip（不再套 Tag 容器，需自行处理关闭等交互，对齐 Semi renderSelectedItem 返回 isRenderInTag:false 的分支）。
   onSelect/onDeselect/onClear/onCreate/onFocus/onBlur/onScrollToBottom/onExceed/onChangeWithObject。
   autoClearSearchValue：多选选中后自动清空搜索词（默认 true）。
   多选折叠复用 TagGroup（mode=custom）：可见 tag + 折叠 +N + hover Popover 全由 TagGroup 承担。
@@ -36,22 +39,21 @@
     type Placement,
     resolveDefault,
   } from '@chenzy-design/core';
-  import { IconClear, IconChevronDown, IconTick } from '@chenzy-design/icons';
+  import { IconClear, IconChevronDown, IconTick, IconSearch } from '@chenzy-design/icons';
   import { useLocale } from '../locale-provider/index.js';
   import { floating } from '../_floating/use-floating.js';
   import Tag from '../tag/Tag.svelte';
   import TagGroup from '../tag/TagGroup.svelte';
+  import Input from '../input/Input.svelte';
+  import Highlight from '../highlight/Highlight.svelte';
   import { getInputGroupContext } from '../input/context.js';
+  import { createRootOptionCollector, setRootOptionsContext } from './context.js';
+  import type { OptionValue, OptionData, OptionGroup, OptionOrGroup } from './types.js';
 
-  type OptionValue = string | number;
-  type OptionData = { label: string; value: OptionValue; disabled?: boolean; [key: string]: unknown };
-  /** 选项分组：含 options 即为分组项 */
-  type OptionGroup = { label: string; options: OptionData[] };
-  type OptionOrGroup = OptionData | OptionGroup;
   type Size = 'small' | 'default' | 'large';
   type Status = 'default' | 'warning' | 'error';
   /** 单个多选 Tag 的渲染信息（选项 + 截断后显示文本 + 是否被截断）。 */
-  type TagInfo = { opt: OptionData; display: string; truncated: boolean };
+  type TagInfo = { opt: OptionData; display: string; truncated: boolean; index: number };
 
   function isGroup(o: OptionOrGroup): o is OptionGroup {
     return Array.isArray((o as OptionGroup).options);
@@ -60,8 +62,17 @@
   interface Props {
     value?: OptionValue | OptionValue[];
     defaultValue?: OptionValue | OptionValue[];
-    /** 选项；可含分组项 { label, options: [] }（对齐 Semi optionList） */
-    optionList?: OptionOrGroup[];
+    /**
+     * 选项（对齐 Semi optionList）。不支持分组——Semi optionList 本身即不支持分组对象，
+     * 分组只能通过 `<Select.Option>` / `<Select.OptGroup>` 组合式 children 声明。
+     */
+    optionList?: OptionData[];
+    /**
+     * 组合式候选项声明（对齐 Semi `<Select.Option>` / `<Select.OptGroup>` children），
+     * 与 optionList 并存；optionList 非空时优先生效（同配置式/组合式双写法惯例）。
+     * 分组（`<Select.OptGroup>`）仅此形态支持，对齐 Semi。
+     */
+    children?: Snippet;
     multiple?: boolean;
     /**
      * 是否开启输入过滤（对齐 Semi filter: boolean | function）。
@@ -87,6 +98,12 @@
     ariaErrormessage?: string;
     /** 标记为必填（对齐 Semi withField aria-required 注入） */
     ariaRequired?: boolean;
+    /**
+     * 标记触发器为无效态（对齐 Semi aria-invalid，纯透传，非由 validateStatus 自动推导——
+     * Semi 源码里两者互不关联，此前本库误自造成「validateStatus==='error' 时自动 true」，
+     * 违背用户明确的「有则有、无则去」对齐原则，已改回纯透传）。
+     */
+    ariaInvalid?: boolean;
     /** 绑定到触发器的 id 属性，用于关联外部 <label for="..."> */
     id?: string;
     disabled?: boolean;
@@ -144,6 +161,11 @@
     getPopupContainer?: () => HTMLElement;
     /** 浮层溢出视口时自动翻转到反向 placement（默认 true，对齐 Semi autoAdjustOverflow） */
     autoAdjustOverflow?: boolean;
+    /**
+     * 浮层进出场动画开关（默认 true，对齐 Semi Select 内部 Popover 实例 motion prop）。
+     * false 时浮层展开无过渡效果，瞬时显示（同 Tooltip/Popover 的 motion 惯例）。
+     */
+    motion?: boolean;
     /** 无边框模式：移除触发器边框 */
     borderless?: boolean;
     /** 挂载后自动聚焦触发器 */
@@ -201,7 +223,7 @@
      * 使屏幕阅读器把内嵌标签朗读为触发器可访问名的一部分。仅 insetLabel 存在时生效。
      */
     insetLabelId?: string;
-    onChange?: (v: OptionValue | OptionValue[]) => void;
+    onChange?: (v: OptionValue | OptionValue[] | undefined) => void;
     /** 浮层显隐变化回调（对齐 Semi onDropdownVisibleChange） */
     onDropdownVisibleChange?: (open: boolean) => void;
     /** 选中某项时触发（多选：每次单个 toggle 选中时；单选：选中时） */
@@ -212,10 +234,10 @@
     onClear?: () => void;
     /** allowCreate 创建新项时触发 */
     onCreate?: (value: string) => void;
-    /** 触发器获焦时触发 */
-    onFocus?: () => void;
-    /** 触发器失焦时触发 */
-    onBlur?: () => void;
+    /** 触发器获焦时触发（对齐 Semi onFocus(e: FocusEvent)，携带原生 focus 事件） */
+    onFocus?: (e?: FocusEvent) => void;
+    /** 触发器失焦时触发（对齐 Semi onBlur(e: FocusEvent)，携带原生 blur 事件） */
+    onBlur?: (e?: FocusEvent) => void;
     /** 浮层列表滚动触底时触发 */
     onScrollToBottom?: () => void;
     /** 多选超出 maxTagCount 时触发（携带被隐藏的 option） */
@@ -226,6 +248,11 @@
     prefix?: Snippet | string;
     /** 触发器右侧后缀（覆盖默认箭头区域） */
     suffix?: Snippet | string;
+    /**
+     * prefix/suffix 为 Snippet 时是否按图标变体处理外边距（默认 true，对齐 Semi `isSemiIcon` 判别）。
+     * Snippet 渲染的是非图标节点（如文案 span）时传 false，回落到「既非文案也非图标」的第三态（外边距 0）。
+     */
+    affixIsIcon?: boolean;
     /** 根容器内联样式（对齐 Semi style，可设 width 等） */
     style?: string;
     /** 根容器自定义类名（与内置 cd-select 并存，对齐 Semi className） */
@@ -256,8 +283,20 @@
         },
       ]
     >;
-    /** 自定义已选项标签/回显渲染（对齐 Semi renderSelectedItem，单选返回节点，多选逐个 Tag 内容） */
-    renderSelectedItem?: Snippet<[{ option: OptionData }]>;
+    /**
+     * 自定义已选项内容渲染（单选回显文本 / 多选 Tag 内部内容），仍由 Select 套自身的 Tag 容器
+     * （对齐 Semi renderSelectedItem 返回 `{ isRenderInTag: true, content }` 的分支）。
+     */
+    renderSelectedTag?: Snippet<[{ option: OptionData }]>;
+    /**
+     * 多选态完全自定义单个已选 chip 渲染，提供后 Select 不再套自身的 <Tag> 容器，需自行处理关闭等
+     * 交互（对齐 Semi renderSelectedItem 返回 `{ isRenderInTag: false, content }` 的分支；入参含
+     * index/disabled/onClose，onClose 接回 Select 内部移除该项的逻辑）。仅多选生效，单选自定义走
+     * renderSelectedTag。
+     */
+    renderSelectedItem?: Snippet<
+      [{ option: OptionData; index: number; disabled: boolean; onClose: (e?: Event) => void }]
+    >;
     /** 自定义"创建xxx"项渲染 */
     renderCreateItem?: Snippet<[string]>;
     /**
@@ -293,6 +332,7 @@
     value = $bindable(),
     defaultValue,
     optionList = [],
+    children,
     multiple: multipleProp,
     filter: filterProp,
     open: openProp = $bindable(),
@@ -308,6 +348,7 @@
     ariaDescribedby,
     ariaErrormessage,
     ariaRequired,
+    ariaInvalid,
     id,
     disabled: disabledProp,
     showClear: showClearProp,
@@ -331,6 +372,7 @@
     destroyOnClose = false,
     getPopupContainer,
     autoAdjustOverflow: autoAdjustOverflowProp,
+    motion: motionProp,
     borderless: borderlessProp,
     autoFocus = false,
     autoClearSearchValue: autoClearSearchValueProp,
@@ -361,6 +403,7 @@
     onChangeWithObject,
     prefix,
     suffix,
+    affixIsIcon = true,
     clearIcon,
     arrowIcon,
     emptyContent,
@@ -369,6 +412,7 @@
     outerTopSlot,
     outerBottomSlot,
     renderOptionItem,
+    renderSelectedTag,
     renderSelectedItem,
     renderCreateItem,
     triggerRender,
@@ -389,6 +433,7 @@
   const searchPosition = $derived(resolveDefault(searchPositionProp, 'Select', 'searchPosition', 'trigger'));
   const remote = $derived(resolveDefault(remoteProp, 'Select', 'remote', false));
   const autoAdjustOverflow = $derived(resolveDefault(autoAdjustOverflowProp, 'Select', 'autoAdjustOverflow', true));
+  const motion = $derived(resolveDefault(motionProp, 'Select', 'motion', true));
   const autoClearSearchValue = $derived(resolveDefault(autoClearSearchValueProp, 'Select', 'autoClearSearchValue', true));
   const showRestTagsPopover = $derived(resolveDefault(showRestTagsPopoverProp, 'Select', 'showRestTagsPopover', false));
   const expandRestTagsOnClick = $derived(resolveDefault(expandRestTagsOnClickProp, 'Select', 'expandRestTagsOnClick', false));
@@ -418,10 +463,21 @@
 
   function normalizeSelected(v: OptionValue | OptionValue[] | undefined): OptionValue[] {
     if (v === undefined) return [];
+    if (multiple) {
+      // 对齐 Semi foundation.ts _updateMultiple 的 propValueIsArray 防御：多选态非数组
+      // value（如受控 value 误传字符串 ''）视为无选中，不包装成单元素数组。Semi 源码注释
+      // 明确「Multiple selection is to determine whether it is an array to avoid the
+      // problem of defaultValue/value incoming string error」——整个 selections 填充逻辑
+      // 都挂在 `if (propValueIsArray && ...)` 之下，非数组时 selections 保持空 Map。
+      // 此前无条件 `[v]` 包装会把 value='' 误判成「选中了空字符串」这个不存在的选项，
+      // hasSelection 恒为 true，触发器视觉空但仍走「有选中」渲染分支（真机复现：搜索框
+      // 未获得空值态的 12px 左边距，光标贴边，见 远程搜索 demo 用 value=$state('') 初始化）。
+      return Array.isArray(v) ? v : [];
+    }
     return Array.isArray(v) ? v : [v];
   }
 
-  function setValue(next: OptionValue | OptionValue[]) {
+  function setValue(next: OptionValue | OptionValue[] | undefined) {
     if (!isValueControlled) innerValue = next;
     onChange?.(next);
   }
@@ -458,12 +514,33 @@
 
   // --- 本地过滤搜索 ---
   let query = $state('');
+  // 多选触发器内搜索框宽度：逐字段照抄 Semi renderTriggerInput 的 inline style 计算
+  // （index.tsx:719-725 `style = { width: inputValue ? \`${inputValue.length * 16}px\` : '2px' }`，
+  // 属性名 width 是 Semi 运行时算好写入 style 的物理属性，非本库常规的逻辑属性
+  // inline-size，此处按值逐字复刻，不改写成逻辑属性）。无输入时窄至 2px，紧贴最后
+  // 一个 tag，使 tag 组 + 输入框能在同一行放下（本库原用 flex:1 1 auto +
+  // min-inline-size:2rem 强制至少 32px，导致触发器稍窄时输入框单独换行，
+  // 与 Semi 三个 tag + 搜索仍同一行的效果不符）。
+  const multiSearchWidth = $derived(query ? `${query.length * 16}px` : '2px');
+
+  // --- 组合式 <Select.Option>/<Select.OptGroup> 收集（对齐 Semi children 声明）---
+  // optionList 非空时优先生效（配置式/组合式双写法惯例，同 Table columns/Column）。
+  let optionsVersion = $state(0);
+  const rootOptionCollector = createRootOptionCollector(() => {
+    optionsVersion += 1;
+  });
+  setRootOptionsContext(rootOptionCollector);
+  const collectedOptionList = $derived.by<OptionOrGroup[]>(() => {
+    void optionsVersion;
+    return rootOptionCollector.snapshot();
+  });
+  const effectiveOptionList = $derived<OptionOrGroup[]>(optionList.length > 0 ? optionList : collectedOptionList);
 
   // 是否含分组：决定渲染走分组结构还是扁平。
-  const hasGroups = $derived(optionList.some(isGroup));
+  const hasGroups = $derived(effectiveOptionList.some(isGroup));
   // 扁平选项序列（拍平分组）——逻辑/键盘/filter/回显统一基于它。
   const flatBase = $derived<OptionData[]>(
-    optionList.flatMap((o) => (isGroup(o) ? o.options : [o])),
+    effectiveOptionList.flatMap((o) => (isGroup(o) ? o.options : [o])),
   );
 
   // allowCreate：本地已创建选项，合并进选项集供回显与列表（不写回 optionList prop）。
@@ -495,7 +572,7 @@
     if (!hasGroups) return [];
     const out: { label: string | null; items: { opt: OptionData; flatIndex: number }[] }[] = [];
     const indexOf = (opt: OptionData) => filteredOptions.indexOf(opt);
-    for (const o of optionList) {
+    for (const o of effectiveOptionList) {
       if (isGroup(o)) {
         const items = o.options
           .filter((opt) => filteredOptions.includes(opt))
@@ -597,10 +674,10 @@
   );
   // 全部已选项的显示信息（label 截断态一并算好，供 tag 内容渲染）。
   const allTags = $derived(
-    selectedOptions.map((opt) => {
+    selectedOptions.map((opt, index) => {
       const raw = getOptionLabel(opt);
       const display = truncate(raw, maxTagTextLength);
-      return { opt, display, truncated: display !== raw };
+      return { opt, display, truncated: display !== raw, index };
     }),
   );
   // 折叠时透传给 TagGroup 的 maxTagCount（对齐 Semi：n = length>max ? max : undefined）。
@@ -622,7 +699,9 @@
   );
 
   const hasSelection = $derived(selectedValues.length > 0);
-  const showClearBtn = $derived(showClear && !disabled && hasSelection);
+  // 对齐 Semi `isHovering || isOpen` 门控：清除按钮仅 hover 或展开态显示，非常驻。
+  let isHovering = $state(false);
+  const showClearBtn = $derived(showClear && !disabled && hasSelection && (isHovering || isOpen));
 
   function isSelected(v: OptionValue): boolean {
     return selectedValues.includes(v);
@@ -679,7 +758,7 @@
   function clearAll(e: MouseEvent) {
     e.stopPropagation();
     if (disabled) return;
-    setValue(multiple ? [] : '');
+    setValue(multiple ? [] : undefined);
     onClear?.();
   }
 
@@ -713,7 +792,7 @@
   /** 清空所有已选（复用 clearAll 的值/回调逻辑，无事件） */
   export function deselectAll(): void {
     if (disabled) return;
-    setValue(multiple ? [] : '');
+    setValue(multiple ? [] : undefined);
     onClear?.();
   }
   /** 全选（仅多选生效）：选中全量选项集里所有非禁用项的 value */
@@ -848,8 +927,10 @@
     onSearch?.(q, event);
   }
 
-  function onSearchInput(e: Event & { currentTarget: HTMLInputElement }) {
-    query = e.currentTarget.value;
+  // Input 组件受控回调（对齐 Semi handleInputChange，经 Input 的 onChange(value, e) 接线，
+  // 非裸 input 的 oninput 事件——三处搜索框统一走此入口）。
+  function onSearchInput(value: string, e: Event) {
+    query = value;
     if (!isOpen) setOpen(true);
     activeIndex = -1;
     emitSearch(query, e);
@@ -958,7 +1039,11 @@
       multiple && 'cd-select-multiple',
       borderless && 'cd-select-borderless',
       // ellipsisTrigger：多选 tag 溢出时对可见 tag 文本作单行省略（对齐 Semi）。
-      ellipsisTrigger && multiple && 'cd-select-ellipsis-trigger',
+      // 对齐 Semi `-content-wrapper-one-line` 只在 maxTagCount && !isOpen（即 tagsCollapsed）时生效——
+      // expandRestTagsOnClick 展开态（tagsCollapsed=false）必须让 nowrap 失效，否则展开的多个 tag
+      // 被挤压裁成单行（实测「抖..」「轻..」等近乎不可读）。无 maxTagCount 场景 tagsCollapsed 恒 false，
+      // 也不应有 nowrap（对齐 Semi 折叠态才 nowrap，非折叠恒 wrap）。
+      ellipsisTrigger && multiple && tagsCollapsed && 'cd-select-ellipsis-trigger',
       // 对齐 Semi `.semi-select-with-prefix`：左侧留白改由 prefix / insetLabel 自身的
       // 外边距承担，内容区的 margin-left 归零（否则会叠出双份留白）。
       (prefix !== undefined || insetLabel !== undefined) && 'cd-select-with-prefix',
@@ -984,39 +1069,84 @@
 
   // searchPosition='trigger' 且 filter 时，搜索框内联在触发器上（无需浮层内独立搜索框）。
   const triggerSearch = $derived(filterEnabled && searchPosition === 'trigger');
+  // 单选态搜索 input 仅浮层打开时挂载（对齐 Semi renderSingleSelection 的 showInput state，
+  // 由 toggle2SearchInput 随 open/close 切换）；关闭态回填文本用纯 span，触发器 hover 显示
+  // pointer 而非浏览器 UA 赋给 <input> 的 text 光标。多选态 Semi 不受 isOpen 影响、始终挂载
+  // （见 renderMultipleSelection showTriggerInput 无 isOpen 判断），故只对单选收窄。
+  const singleTriggerInputVisible = $derived(triggerSearch && isOpen);
   // 搜索框占位文本（对齐 Semi searchPlaceholder）：显式 prop 优先，缺省走 locale。
   const searchPlaceholderText = $derived(searchPlaceholder ?? loc().t('Select.searchPlaceholder'));
 
-  // searchPosition='dropdown' 时，打开浮层后自动聚焦浮层内搜索框，便于直接键入过滤。
+  // searchPosition='dropdown' 时，对齐 Semi foundation.open() 的 openMenu 回调：
+  // `if (autoFocus && searchPosition === SEARCH_POSITION_DROPDOWN) focusDropdownInput()`——
+  // 与 trigger 位置（open() 内 toggle2SearchInput(true) 无条件聚焦）不同，dropdown 位置的
+  // 自动聚焦要靠 autoFocus prop 显式开启，默认 false 时点击展开不聚焦（真机核对 semi.design
+  // 官网"搜索框位置"两个 demo：点击展开后 activeElement 是触发器根节点而非搜索 input）。
+  // .cd-select-search-dropdown 挂在 Input 组件的 wrapper div 上（class prop 对齐 Semi
+  // 挂载点，见 Input.svelte），真正可聚焦的原生 <input class="cd-input"> 是其内层子节点，
+  // 故需再往下取一层。
   $effect(() => {
-    if (!isOpen || triggerSearch || !filterEnabled || !dropdownEl) return;
-    const searchEl = dropdownEl.querySelector<HTMLInputElement>('.cd-select-search-dropdown');
+    if (!isOpen || !autoFocus || triggerSearch || !filterEnabled || !dropdownEl) return;
+    const searchEl = dropdownEl.querySelector<HTMLInputElement>('.cd-select-search-dropdown .cd-input');
     searchEl?.focus();
+  });
+
+  // 单选 + searchPosition='trigger' 时，触发器内搜索 input 仅打开态挂载（见
+  // singleTriggerInputVisible），新挂载的 DOM 节点不会自动继承触发器已有的焦点——
+  // 打开后需主动聚焦，否则键入被触发器自身的 onTriggerKeydown 拦截而非落入 input。
+  // 同上，.cd-select-search-single 挂在 Input wrapper 上，实际 <input> 在其内层。
+  $effect(() => {
+    if (!singleTriggerInputVisible || !rootEl) return;
+    const searchEl = rootEl.querySelector<HTMLInputElement>('.cd-select-search-single .cd-input');
+    searchEl?.focus({ preventScroll });
+  });
+
+  // 多选 + searchPosition='trigger' 时，对齐 Semi foundation.open() 的
+  // toggle2SearchInput(true) → focusInput() 链路：多选搜索 input 恒挂载（不随
+  // isOpen 卸载/重挂），故不能靠"新节点挂载后聚焦"，需在 isOpen 转为 true 时
+  // 主动 focus，否则焦点停留在触发器根节点，用户看不到光标、无法直接键入过滤。
+  $effect(() => {
+    if (!isOpen || !triggerSearch || !multiple || !rootEl) return;
+    const searchEl = rootEl.querySelector<HTMLInputElement>('.cd-select-search-multiple .cd-input');
+    searchEl?.focus({ preventScroll });
   });
 </script>
 
 <div class={cls} {style} bind:this={rootEl}>
-  {#if triggerRender}
-    {@render triggerRender({
-      value: currentValue,
-      selectedOptions,
-      placeholder: placeholder ?? '',
-      open: isOpen,
-      disabled,
-      toggle: toggleOpen,
-      onTriggerKeydown,
-      onSearch: search,
-      onRemove: (option) => removeTag(option.value),
-      onClear: () => {
-        setValue(multiple ? [] : '');
-        onClear?.();
-      },
-    })}
-  {:else}
+  {#if children}
+    <!-- 组合式 <Select.Option>/<Select.OptGroup> 收集宿主：display:none 不产生可见/占位 DOM
+         也不进 a11y 树，但仍挂载子组件、跑其 init/effect（注册选项元数据）。 -->
+    <div class="cd-select-option-collector" aria-hidden="true" style="display:none">
+      {@render children()}
+    </div>
+  {/if}
+  <!--
+    对齐 Semi handleClick：挂在整个触发器根节点，点击触发器内任意位置（含内联搜索框）
+    都应展开浮层——故触发器内联搜索框（下方 -search-single/-search-multiple）的 click
+    不再 stopPropagation，让事件冒泡到此处触发 toggleOpen。toggleOpen 已对展开态做了
+    防护（isOpen && !clickToHide 时直接 return），故点击已展开的搜索框不会误触收起。
+
+    {style} 与外层 .cd-select（rootEl）重复绑定：Semi 的 `role=combobox` div 就是唯一的
+    视觉盒子，`style` prop 直接挂在它身上，内联样式特异性天然压过 `.semi-select { height:
+    32px }` 的 class 规则（自定义 height 生效）。本库拆成 外层 .cd-select（承担定位锚点/
+    floating trigger 引用）+ 内层 .cd-select-trigger（真正可见盒子，固定 block-size token）
+    两层，若只把 style 绑在外层，外层拿到自定义高度但只是透明容器，内层看不到、仍固定
+    32px——头像/内容贴边无呼吸感（真机对比 Semi 截图发现）。挂两处后内层的内联 height
+    才能真正压过其 class 里的 block-size 声明，视觉盒子随之变高，对齐 Semi 单元素行为；
+    未传自定义 style 时两处都是空字符串，不影响默认 token 高度。
+
+    对齐 Semi useCustomTrigger 分支：`triggerRender` 只替换 role=combobox div **内部**的
+    inner 内容（prefix/selection/suffix/clear-arrow 四段），外层这个带 onClick/aria/tabIndex
+    的 combobox 容器本身始终存在、不被 triggerRender 取代（Semi index.tsx 1487-1515 行的
+    outer div 在 useCustomTrigger 为 true/false 时是同一个，只是 children 换成 <Trigger>）。
+    此前 triggerRender 整体替换掉了这层容器，自定义内容裸渲染、无点击展开/无 aria/无键盘——
+    真机复现「自定义触发器点击没反应」正因于此。
+  -->
   <div
-    class="cd-select-trigger"
+    class={triggerRender ? 'cd-select-trigger-custom' : 'cd-select-trigger'}
     role="combobox"
     {id}
+    {style}
     aria-label={triggerAriaLabel}
     aria-labelledby={resolvedLabelledby}
     aria-describedby={ariaDescribedby}
@@ -1027,18 +1157,47 @@
     aria-controls={listId}
     aria-activedescendant={activeOptionId}
     aria-disabled={disabled || undefined}
-    aria-invalid={validateStatus === 'error' || undefined}
+    aria-invalid={ariaInvalid}
     tabindex={disabled ? -1 : 0}
     onclick={toggleOpen}
     onkeydown={onTriggerKeydown}
-    onfocus={() => onFocus?.()}
-    onblur={() => onBlur?.()}
-    onmouseenter={(e) => onMouseEnter?.(e)}
-    onmouseleave={(e) => onMouseLeave?.(e)}
+    onfocus={(e) => onFocus?.(e)}
+    onblur={(e) => onBlur?.(e)}
+    onmouseenter={(e) => {
+      isHovering = true;
+      onMouseEnter?.(e);
+    }}
+    onmouseleave={(e) => {
+      isHovering = false;
+      onMouseLeave?.(e);
+    }}
   >
+    {#if triggerRender}
+      {@render triggerRender({
+        value: currentValue,
+        selectedOptions,
+        placeholder: placeholder ?? '',
+        open: isOpen,
+        disabled,
+        toggle: toggleOpen,
+        onTriggerKeydown,
+        onSearch: search,
+        onRemove: (option) => removeTag(option.value),
+        onClear: () => {
+          setValue(multiple ? [] : undefined);
+          onClear?.();
+        },
+      })}
+    {:else}
     {#if prefix}
-      <!-- prefix 支持 string | Snippet（对齐 Semi ReactNode；与 insetLabel 同款分派）。 -->
-      <span class="cd-select-prefix">
+      <!-- prefix 支持 string | Snippet（对齐 Semi ReactNode）。三态外边距变体（对齐 Semi
+           isString→text 12px+bold、isSemiIcon→icon 8px、其余→0，Svelte 无法内省 Snippet
+           故按 string=text、Snippet+affixIsIcon=icon、Snippet 非图标=0 近似）。 -->
+      <span
+        class="cd-select-prefix"
+        class:cd-select-prefix-text={typeof prefix === 'string'}
+        class:cd-select-prefix-icon={typeof prefix !== 'string' && affixIsIcon}
+      >
         {#if typeof prefix === 'string'}{prefix}{:else}{@render prefix()}{/if}
       </span>
     {/if}
@@ -1053,44 +1212,75 @@
       </span>
     {/if}
 
-    <div class="cd-select-content">
-      {#if multiple && selectedOptions.length > 0}
-        {#if tagsCollapsed}
-          <!--
-            折叠态：复用 TagGroup（mode=custom）承担「可见 tag + 折叠 +N + hover Popover」。
-            - tagList：全部已选项的 custom tag 节点（TagGroup 内部按 maxTagCount 切可见/剩余）；
-            - maxTagCount/restCount：对齐 Semi renderOneLineTags 传参；
-            - showPopover 接 showRestTagsPopover；popoverProps 接 restTagsPopoverProps。
-            expandRestTagsOnClick 展开由浮层打开态驱动（见 tagsCollapsed 派生），无需 +N 单独点击。
-          -->
-          <TagGroup
-            class="cd-select-tag-group"
-            mode="custom"
-            tagList={allTags.map((tag) => ({ tagKey: tag.opt.value, tagInfo: tag }))}
-            maxTagCount={tagGroupMaxCount}
-            restCount={tagGroupRestCount}
-            size="small"
-            showPopover={showRestTagsPopover}
-            popoverProps={restTagsPopoverProps}
-            renderTagItem={customTagItem}
-          />
+    <div
+      class="cd-select-selection"
+      class:cd-select-selection-wrap={multiple && selectedOptions.length > 0 && !tagsCollapsed}
+      class:cd-select-selection-empty={multiple && !hasSelection}
+    >
+      {#if multiple}
+        <!--
+          对齐 Semi renderMultipleSelection：走多选渲染只看 multiple，不看是否有选中值
+          （Semi `multiple ? renderMultipleSelection() : renderSingleSelection()`，判断
+          与 selections.size 无关）。原实现按 `multiple && selectedOptions.length > 0`
+          判断，无选中值时会整体退化到单选分支渲染（.cd-select-search-single 绝对定位
+          铺满 + 叠字淡出），而非多选态该有的内联宽度动态搜索框（.cd-select-search-multiple），
+          真机对比 Semi 空态多选触发器出现双层边框视觉即因于此。
+        -->
+        {#if hasSelection}
+          {#if tagsCollapsed}
+            <!--
+              折叠态：复用 TagGroup（mode=custom）承担「可见 tag + 折叠 +N + hover Popover」。
+              - tagList：全部已选项的 custom tag 节点（TagGroup 内部按 maxTagCount 切可见/剩余）；
+              - maxTagCount/restCount：对齐 Semi renderOneLineTags 传参；
+              - showPopover 接 showRestTagsPopover；popoverProps 接 restTagsPopoverProps。
+              expandRestTagsOnClick 展开由浮层打开态驱动（见 tagsCollapsed 派生），无需 +N 单独点击。
+            -->
+            <TagGroup
+              class="cd-select-tag-group"
+              mode="custom"
+              tagList={allTags.map((tag) => ({ tagKey: tag.opt.value, tagInfo: tag }))}
+              maxTagCount={tagGroupMaxCount}
+              restCount={tagGroupRestCount}
+              size="small"
+              showPopover={showRestTagsPopover}
+              popoverProps={restTagsPopoverProps}
+              renderTagItem={customTagItem}
+            />
+          {:else}
+            <!-- 展开态（无 maxTagCount，或 expandRestTagsOnClick 已展开）：直接逐个渲染全部 tag（对齐 Semi NotOneLine 分支） -->
+            {#each allTags as tag (tag.opt.value)}
+              {@render selectTag(tag)}
+            {/each}
+          {/if}
         {:else}
-          <!-- 展开态（无 maxTagCount，或 expandRestTagsOnClick 已展开）：直接逐个渲染全部 tag（对齐 Semi NotOneLine 分支） -->
-          {#each allTags as tag (tag.opt.value)}
-            {@render selectTag(tag)}
-          {/each}
+          <!--
+            对齐 Semi renderMultipleSelection：`placeholderText = placeholder && !inputValue
+            ? <span className={spanCls}>{placeholder}</span> : null`——多选态无选中值时显示
+            占位符，且有输入时不显示（非单选态的三态叠字淡出机制，这里更简单：直接不渲染）。
+          -->
+          {#if placeholder && !query}
+            <span class="cd-select-placeholder">{placeholder}</span>
+          {/if}
         {/if}
         {#if triggerSearch}
-          <input
+          <!--
+            对齐 Semi renderTriggerInput 多选分支：复用 Input 组件（非裸 input），无条件
+            渲染（不随 hasSelection 变化）。style（width:multiSearchWidth）对齐 Semi
+            selectInputProps.style，挂在 Input 的 wrapper div 上（Semi Input 源码 style
+            prop 即挂 .semi-input-wrapper，非内层裸 <input>，见 Input.svelte wrapper 上的
+            {style} 绑定）。
+          -->
+          <Input
             {...inputProps}
             class="cd-select-search cd-select-search-multiple"
-            type="text"
+            borderless
+            {size}
+            {disabled}
             value={query}
-            placeholder={searchPlaceholderText}
             aria-label={searchPlaceholderText}
-            oninput={onSearchInput}
-            onkeydown={onTriggerKeydown}
-            onclick={(e) => e.stopPropagation()}
+            style="width:{multiSearchWidth}"
+            onChange={onSearchInput}
+            onKeyDown={onTriggerKeydown}
           />
         {/if}
       {:else}
@@ -1100,21 +1290,22 @@
             有输入 → -text-hide（隐藏原文本，只见输入）
             无输入 → -text-inactive（原文本 opacity 0.4 垫在输入框下方）
             非搜索 → 正常显示
-          本库原实现把原文本塞进 input 的 placeholder 二选一渲染，拿不到叠字淡出效果。
+          input 仅打开态挂载（singleTriggerInputVisible），故三态判断也以它为准——
+          关闭态下 input 不存在，恒走「正常显示」分支。
         -->
-        {#if hasSelection && renderSelectedItem}
+        {#if hasSelection && renderSelectedTag}
           <span
             class="cd-select-value"
-            class:cd-select-value-hide={triggerSearch && !!query}
-            class:cd-select-value-inactive={triggerSearch && !query}
+            class:cd-select-value-hide={singleTriggerInputVisible && !!query}
+            class:cd-select-value-inactive={singleTriggerInputVisible && !query}
           >
-            {@render renderSelectedItem({ option: selectedOptions[0]! })}
+            {@render renderSelectedTag({ option: selectedOptions[0]! })}
           </span>
         {:else if hasSelection}
           <span
             class="cd-select-value"
-            class:cd-select-value-hide={triggerSearch && !!query}
-            class:cd-select-value-inactive={triggerSearch && !query}
+            class:cd-select-value-hide={singleTriggerInputVisible && !!query}
+            class:cd-select-value-inactive={singleTriggerInputVisible && !query}
           >{singleLabel}</span>
         {:else}
           <!--
@@ -1126,25 +1317,46 @@
           -->
           <span
             class="cd-select-placeholder"
-            class:cd-select-value-hide={triggerSearch && !!query}
-            class:cd-select-value-inactive={triggerSearch && !query}
+            class:cd-select-value-hide={singleTriggerInputVisible && !!query}
+            class:cd-select-value-inactive={singleTriggerInputVisible && !query}
           >{placeholder ?? ''}</span>
         {/if}
-        {#if triggerSearch}
-          <input
+        {#if singleTriggerInputVisible}
+          <!--
+            对齐 Semi renderTriggerInput 单选分支：同一 Input 组件，无 multiple 专属 width
+            style。叠字淡出定位（绝对定位铺满原文本上方）本库自有，靠 wrapper 上的
+            cd-select-search-single 修饰类承担（见下方样式，挂在 Input 组件根 class 上）。
+          -->
+          <Input
             {...inputProps}
             class="cd-select-search cd-select-search-single"
-            type="text"
+            borderless
+            {size}
+            {disabled}
             value={query}
             aria-label={searchPlaceholderText}
-            oninput={onSearchInput}
-            onkeydown={onTriggerKeydown}
-            onclick={(e) => e.stopPropagation()}
+            onChange={onSearchInput}
+            onKeyDown={onTriggerKeydown}
           />
         {/if}
       {/if}
     </div>
 
+    {#if suffix}
+      <span
+        class="cd-select-suffix"
+        class:cd-select-suffix-text={typeof suffix === 'string'}
+        class:cd-select-suffix-icon={typeof suffix !== 'string' && affixIsIcon}
+      >
+        {#if typeof suffix === 'string'}{suffix}{:else}{@render suffix()}{/if}
+      </span>
+    {/if}
+
+    <!--
+      对齐 Semi `{showClear ? clearDiv : arrowContent}`：清除按钮与箭头是**同一位置的互斥
+      替换**，非并列——hover/展开态有值时清除按钮顶替箭头，而非额外插到箭头旁边挤占空间
+      （原实现两者各自独立 {#if}，会同时渲染、把触发器撑宽，且清除按钮紧贴箭头易误触）。
+    -->
     {#if showClearBtn}
       <button
         type="button"
@@ -1158,12 +1370,6 @@
           <IconClear aria-hidden="true" />
         {/if}
       </button>
-    {/if}
-
-    {#if suffix}
-      <span class="cd-select-suffix">
-        {#if typeof suffix === 'string'}{suffix}{:else}{@render suffix()}{/if}
-      </span>
     {:else if showArrow}
       <span class="cd-select-arrow" aria-hidden="true">
         {#if arrowIcon}
@@ -1172,9 +1378,12 @@
           <IconChevronDown aria-hidden="true" />
         {/if}
       </span>
+    {:else}
+      <!-- 对齐 Semi `&-arrow-empty { width: 12px }`：不显示箭头时右侧仍留出空白，非塌陷为 0。 -->
+      <span class="cd-select-arrow-empty" aria-hidden="true"></span>
+    {/if}
     {/if}
   </div>
-  {/if}
 
   {#if isOpen || !destroyOnClose}
     <!--
@@ -1184,8 +1393,9 @@
     -->
     <div
       class={dropdownCls}
+      class:cd-select-dropdown-motion={motion}
       bind:this={dropdownRootEl}
-      use:floating={{ trigger: rootEl, placement: position, autoAdjust: autoAdjustOverflow, offset: dropdownOffset, matchWidth: dropdownMatchSelectWidth, getContainer: getPopupContainer, rePosKey: reposKey }}
+      use:floating={{ trigger: rootEl, placement: position, autoAdjust: autoAdjustOverflow, offset: dropdownOffset, matchWidth: dropdownMatchSelectWidth, getContainer: getPopupContainer, rePosKey: reposKey, open: isOpen }}
       style={dropdownRootInlineStyle}
       hidden={!isOpen || undefined}
     >
@@ -1202,29 +1412,41 @@
         style={dropdownListInlineStyle}
       >
       {#if filterEnabled && !triggerSearch}
-        <!-- searchPosition='dropdown'：搜索框在浮层顶部 -->
-        <div class="cd-select-dropdown-search">
-          <input
+        <!--
+          searchPosition='dropdown'：搜索框在浮层顶部（对齐 Semi renderDropdownInput）。
+          外层 wrapperCls（`${prefixcls}-dropdown-search-wrapper`）对齐 Semi 结构；内部复用
+          Input 组件，prefix 传 IconSearch snippet（对齐 Semi `prefix={<IconSearch/>}`），
+          showClear 恒 true（对齐 Semi selectInputProps.showClear = true，未走 inputProps
+          覆盖时的默认值）。清除按钮不必单接 onClear——Input.clear() 内部已在清空后追加调用
+          onChange('', e)（同一条链路），经 onSearchInput 同步 query/重算 filteredOptions，
+          对齐 Semi Input 的 clear 行为（无独立 onClear 分支，统一走 handleInputChange）。
+        -->
+        <div class="cd-select-dropdown-search-wrapper">
+          <Input
             {...inputProps}
             class="cd-select-search cd-select-search-dropdown"
-            type="text"
+            {disabled}
             value={query}
             placeholder={searchPlaceholderText}
             aria-label={searchPlaceholderText}
             aria-controls={listId}
-            oninput={onSearchInput}
-            onkeydown={onTriggerKeydown}
-            onclick={(e) => e.stopPropagation()}
-          />
+            showClear={true}
+            onChange={onSearchInput}
+            onKeyDown={onTriggerKeydown}
+          >
+            {#snippet prefix()}
+              <IconSearch aria-hidden="true" />
+            {/snippet}
+          </Input>
         </div>
       {/if}
       {#if innerTopSlot}
         <div class="cd-select-dropdown-header">{@render innerTopSlot()}</div>
       {/if}
       {#if loading}
-        <div class="cd-select-loading">
+        <!-- 对齐 Semi renderLoading：仅指示器，无文案（Spin 裸用，无 tip）。 -->
+        <div class="cd-select-loading" role="status" aria-label={loc().t('Select.loading')}>
           <span class="cd-select-spinner" aria-hidden="true"></span>
-          <span>{loc().t('Select.loading')}</span>
         </div>
       {/if}
       {#if canCreate}
@@ -1261,7 +1483,7 @@
       {:else if hasGroups}
         {#each groupedView as group, gi (group.label ?? `g-${gi}`)}
           {#if group.label !== null}
-            <div class="cd-select-group-label" role="presentation">{group.label}</div>
+            <div class="cd-select-group" role="presentation">{group.label}</div>
           {/if}
           {#each group.items as it (it.opt.value)}
             {@render optionRow(it.opt, it.flatIndex)}
@@ -1294,11 +1516,11 @@
   {/if}
 </div>
 
-{#snippet optionRow(opt: OptionData, i: number, style?: string)}
+{#snippet optionRow(opt: OptionData, i: number, vStyle?: string)}
   <!-- 选项通过 combobox 的 roving + aria-activedescendant 键盘操作，无需自身键事件 -->
   <!-- svelte-ignore a11y_click_events_have_key_events -->
   <div
-    class="cd-select-option"
+    class={['cd-select-option', opt._className].filter(Boolean).join(' ')}
     class:cd-select-option-active={i === activeIndex}
     class:cd-select-option-selected={isSelected(opt.value)}
     id={`${listId}-opt-${i}`}
@@ -1306,12 +1528,22 @@
     aria-selected={isSelected(opt.value)}
     aria-disabled={opt.disabled || undefined}
     tabindex="-1"
-    {style}
+    style={[vStyle, opt._style].filter(Boolean).join('; ')}
     onpointerenter={() => {
       if (!opt.disabled) activeIndex = i;
     }}
-    onclick={() => selectOption(opt)}
+    onclick={renderOptionItem ? undefined : () => selectOption(opt)}
   >
+    <!--
+      对齐 Semi option.tsx render()：`if (typeof renderOptionItem === 'function') return
+      renderOptionItem({...})`——custom 渲染是完全替换返回值，与默认分支（外层 div 自带
+      onClick）互斥，Semi 从未让两者叠加。本库外层这个 div 此前无条件挂 onclick=
+      selectOption，renderOptionItem 场景下自定义内容仍嵌在同一个 div 里，点击既触发
+      demo 里透传的 onClick（内层 wrapper 自己绑的），又冒泡到这层再触发一次——多选态
+      表现为「选中又立刻被取消」（连续调用两次 selectOption 等于 toggle 两次，净效果
+      为空，真机复现「自定义候选项渲染」多选 demo 点击无反应）。renderOptionItem 存在时
+      这层不再兜底绑定，选中职责完全交给 demo 自己接住的 onClick 入参。
+    -->
     {#if renderOptionItem}
       {@render renderOptionItem({
         option: opt,
@@ -1322,15 +1554,45 @@
         },
         onClick: () => selectOption(opt),
       })}
-    {:else}
-      {#if multiple}
-        <span class="cd-select-check" aria-hidden="true">
-          {#if isSelected(opt.value)}
-            <IconTick aria-hidden="true" />
-          {/if}
+    {:else if opt._content}
+      <!--
+        对齐 Semi Select.Option children 自定义渲染：单个选项自带的 _content（组合式
+        <Select.Option> 声明的 children，见 Option.svelte）替代默认纯文本 label——tick
+        占位是否渲染独立由 _showTick 控制（对齐 Semi Option 组件自身 showTick prop，与
+        children 是否自定义无关；未显式传时不显示，同 Semi Option 组件自身无默认值）。
+      -->
+      {#if opt._showTick}
+        <span class="cd-select-check" class:cd-select-check-active={isSelected(opt.value)} aria-hidden="true">
+          <IconTick aria-hidden="true" />
         </span>
       {/if}
-      <span class="cd-select-option-label">{getOptionLabel(opt)}</span>
+      {@render (opt._content as Snippet)()}
+    {:else}
+      <!--
+        对齐 Semi option.tsx：showTick 恒为 true（单选/多选皆然），对勾占位容器
+        始终渲染（默认 color: transparent 不可见，选中态才变实色），而非按 multiple
+        切换容器存在与否——否则单选选项无占位、文字紧贴 padding-left(12px)，
+        与分组标题 padding-left(12+16+8=36px，为对勾占位预留) 左边缘对不齐。
+      -->
+      <span class="cd-select-check" class:cd-select-check-active={isSelected(opt.value)} aria-hidden="true">
+        <IconTick aria-hidden="true" />
+      </span>
+      <!--
+        对齐 Semi option.tsx renderOptionContent：label 为字符串且 inputValue（当前搜索词）
+        非空时，用 Highlight 包裹高亮命中片段（Semi 复用自己的 Highlight 组件，本库同理复用
+        ../highlight/Highlight.svelte）；无搜索词时纯文本，避免空 searchWords 时仍多一层
+        <mark> 判断的无谓开销。highlightClassName 对齐 Semi `${prefixCls}-keyword`——线上
+        CSS 对其有专属覆盖（color 走主色、background 透明，非 Highlight 组件默认的黄底黑字，
+        见下方 :global(.cd-highlight-tag.cd-select-keyword) 规则；本地 checkout 的
+        select.scss 缺这条规则，属版本落后于线上，真机核对 semi.design 实测值为准）。
+      -->
+      <span class="cd-select-option-label">
+        {#if query}
+          <Highlight sourceString={getOptionLabel(opt)} searchWords={[query]} highlightClassName="cd-select-keyword" />
+        {:else}
+          {getOptionLabel(opt)}
+        {/if}
+      </span>
     {/if}
   </div>
 {/snippet}
@@ -1338,28 +1600,45 @@
 <!--
   单个多选 Tag（对齐 Semi renderTag：color=white、closable+onClose 删除该项）。
   可见 tag（展开态）与折叠态经 TagGroup custom 渲染的可见/剩余 tag 均复用此 snippet。
+
+  对齐 Semi renderTag 的 isRenderInTag 分支：renderSelectedItem 提供时（isRenderInTag:false
+  等效）整个 chip 由该 snippet 输出，不再套本组件的 <Tag>，需自行处理关闭等交互（入参 onClose
+  已接回 removeTag，用法同 Semi demo 里自定义 <Tag avatarSrc closable onClose /> 的写法）；
+  否则走 renderSelectedTag（isRenderInTag:true 等效，内容套本组件 Tag）或默认纯文本。
 -->
 {#snippet selectTag(tag: TagInfo)}
-  <Tag
-    class="cd-select-tag"
-    size="small"
-    color="white"
-    closable={!disabled}
-    aria-label={loc().t('Select.removeItem', { label: getOptionLabel(tag.opt) })}
-    onClose={(_c, e) => {
-      (e as Event)?.stopPropagation?.();
-      removeTag(tag.opt.value);
-    }}
-  >
-    {#if renderSelectedItem}
-      {@render renderSelectedItem({ option: tag.opt })}
-    {:else}
-      <span
-        class="cd-select-tag-label"
-        title={tag.truncated ? getOptionLabel(tag.opt) : undefined}
-      >{tag.display}</span>
-    {/if}
-  </Tag>
+  {#if renderSelectedItem}
+    {@render renderSelectedItem({
+      option: tag.opt,
+      index: tag.index,
+      disabled,
+      onClose: (e) => {
+        (e as Event)?.stopPropagation?.();
+        removeTag(tag.opt.value);
+      },
+    })}
+  {:else}
+    <Tag
+      class="cd-select-tag"
+      size="small"
+      color="white"
+      closable={!disabled}
+      aria-label={loc().t('Select.removeItem', { label: getOptionLabel(tag.opt) })}
+      onClose={(_c, e) => {
+        (e as Event)?.stopPropagation?.();
+        removeTag(tag.opt.value);
+      }}
+    >
+      {#if renderSelectedTag}
+        {@render renderSelectedTag({ option: tag.opt })}
+      {:else}
+        <span
+          class="cd-select-tag-label"
+          title={tag.truncated ? getOptionLabel(tag.opt) : undefined}
+        >{tag.display}</span>
+      {/if}
+    </Tag>
+  {/if}
 {/snippet}
 
 <!-- TagGroup mode=custom 的每项渲染入口：从 tagList 项取回 tagInfo，委托 selectTag。 -->
@@ -1395,7 +1674,7 @@
     max-block-size: var(--cd-select-max-height);
     overflow-y: auto;
     /*
-     * 对齐 Semi：触发器**本身无水平内边距、无 gap**——左侧留白由 .cd-select-content 的
+     * 对齐 Semi：触发器**本身无水平内边距、无 gap**——左侧留白由 .cd-select-selection 的
      * margin-left（12px）承担，右侧由固定 32px 宽的箭头盒承担（图标 16px 在其中居中）。
      * 原先写 padding 0 12px + gap 8px，右侧被 12+8+16=36px 吃掉，80px 宽的格式选择器
      * 只剩 30px 放文本，"rgba" 被截成 "rg…"（Semi 同宽下文本区有 34px）。
@@ -1414,9 +1693,21 @@
     transform: var(--cd-transform-scale-select);
   }
   /*
+   * 对齐 Semi useCustomTrigger 分支：`selectionCls = cls(className)`——完全不带 prefixcls，
+   * 真机核对 select.scss 第 13 行 `.semi-select {...}` 整块规则（box-sizing/border-radius/
+   * border/height/background/display:inline-flex/cursor:pointer/position:relative/
+   * transition/transform/max-height/overflow-y）全部限定在 `.semi-select` 类选择器下——
+   * 不挂这个类，这些属性一个都不会生效，纯粹由消费方自己的 style/内容决定布局与外观。
+   * 此前 triggerRender 场景仍套用完整的 .cd-select-trigger（含 background/border/
+   * border-radius/固定 block-size），custom 内容背后多出一层灰底描边盒子；第二次修复时
+   * 自己又加了 display:flex/cursor:pointer 等——这些同样是 Semi 没有的自造属性，一并删除。
+   * .cd-select-trigger-custom 因此不声明任何视觉/布局属性，仅作为选择器标记本身存在
+   * （模板里仍需要一个 class 名承载 role=combobox 语义，但不附带任何 CSS 规则）。
+   */
+  /*
    * 尺寸对齐 Semi select.scss：`&-small { height }` 是**固定 height 不是 min-height**，
    * `&-large { min-height }` 才是 min。真正让小尺寸从 26.5px 收回 24px 的是
-   * content 的 line-height（见下方 .cd-select-content）——docs 正文 24.5px 的继承行高
+   * content 的 line-height（见下方 .cd-select-selection）——docs 正文 24.5px 的继承行高
    * 撑开内容后，只有 min-block-size 拦不住。此处固定 height 是照抄 Semi 的写法。
    */
   .cd-select-small .cd-select-trigger {
@@ -1428,9 +1719,33 @@
     block-size: auto;
     min-block-size: var(--cd-select-height-large);
   }
-  /* 对齐 Semi 填充式：悬浮加深底色（非展开/禁用态） */
-  .cd-select:not(.cd-select-open):not(.cd-select-disabled) .cd-select-trigger:hover {
+  /*
+   * 多选对齐 Semi `&-multiple { height: auto }`：源码顺序在 &-small/&-large 之后，
+   * 无条件覆盖三档尺寸的固定/最小高度（多选换行时触发器随内容撑高，不裁剪 tag）。
+   */
+  .cd-select-multiple .cd-select-trigger {
+    block-size: auto;
+    min-block-size: var(--cd-select-height-default);
+  }
+  .cd-select-multiple.cd-select-small .cd-select-trigger {
+    min-block-size: var(--cd-select-height-small);
+  }
+  .cd-select-multiple.cd-select-large .cd-select-trigger {
+    min-block-size: var(--cd-select-height-large);
+  }
+  /*
+   * 对齐 Semi 填充式：悬浮加深底色（非展开/禁用/校验态）。必须排除 -warning/-error，
+   * 否则这条规则（3 类选择器）特异性高于 warning/error 各自的 hover 规则（2 类），
+   * 会覆盖掉警示色的 hover 加深，hover 时错误地退回默认灰底。
+   */
+  .cd-select:not(.cd-select-open):not(.cd-select-disabled):not(.cd-select-warning):not(.cd-select-error)
+    .cd-select-trigger:hover {
     background: var(--cd-select-bg-hover);
+  }
+  /* 对齐 Semi `&:active { background: bg-active }`：按下态（非展开时）再加深一档底色，同排除警示态。 */
+  .cd-select:not(.cd-select-open):not(.cd-select-disabled):not(.cd-select-warning):not(.cd-select-error)
+    .cd-select-trigger:active {
+    background: var(--cd-select-bg-active);
   }
   .cd-select-trigger:focus-visible {
     outline: none;
@@ -1442,7 +1757,13 @@
     background: var(--cd-select-bg);
     border-color: var(--cd-select-border-active);
   }
-  /* 校验态 warning（对齐 Semi &-warning：背景 + 描边 light 变体，聚焦时描边加深） */
+  /* 对齐 Semi `&-open, &-focus { &:active { background: bg-active; border-color: border-active } }`：
+     展开态下点击触发器（获焦态被按下）时背景再加深一档。 */
+  .cd-select-open .cd-select-trigger:active {
+    background: var(--cd-select-bg-active);
+    border-color: var(--cd-select-border-active);
+  }
+  /* 校验态 warning（对齐 Semi &-warning：背景 + 描边 light 变体，聚焦/按下时加深） */
   .cd-select-warning .cd-select-trigger {
     background: var(--cd-color-select-warning-bg);
     border-color: var(--cd-color-select-warning-border);
@@ -1450,17 +1771,25 @@
   .cd-select-warning:not(.cd-select-disabled) .cd-select-trigger:hover {
     background: var(--cd-color-select-warning-bg-hover);
   }
+  .cd-select-warning:not(.cd-select-disabled) .cd-select-trigger:active {
+    background: var(--cd-color-select-warning-bg-active);
+    border-color: var(--cd-color-select-warning-border-active);
+  }
   .cd-select-warning .cd-select-trigger:focus-visible,
   .cd-select-warning.cd-select-open .cd-select-trigger {
     border-color: var(--cd-color-select-warning-border-focus);
   }
-  /* 校验态 error（对齐 Semi &-error：danger light 背景 + 描边，聚焦时描边加深） */
+  /* 校验态 error（对齐 Semi &-error：danger light 背景 + 描边，聚焦/按下时加深） */
   .cd-select-error .cd-select-trigger {
     background: var(--cd-color-select-danger-bg);
     border-color: var(--cd-color-select-danger-border);
   }
   .cd-select-error:not(.cd-select-disabled) .cd-select-trigger:hover {
     background: var(--cd-color-select-danger-bg-hover);
+  }
+  .cd-select-error:not(.cd-select-disabled) .cd-select-trigger:active {
+    background: var(--cd-color-select-danger-bg-active);
+    border-color: var(--cd-color-select-danger-border-active);
   }
   .cd-select-error .cd-select-trigger:focus-visible,
   .cd-select-error.cd-select-open .cd-select-trigger {
@@ -1471,12 +1800,41 @@
     color: var(--cd-color-select-input-disabled-text);
     cursor: not-allowed;
   }
-  .cd-select-content {
+  .cd-select-disabled .cd-select-trigger:hover {
+    background: var(--cd-color-select-input-disabled-bg-hover);
+  }
+  /* 对齐 Semi：禁用态聚焦不应有强调边框，描边透明。 */
+  .cd-select-disabled .cd-select-trigger:focus-visible {
+    border-color: var(--cd-color-select-input-disabled-border-focus);
+    background: var(--cd-color-select-input-disabled-bg);
+    box-shadow: none;
+  }
+  /*
+   * 对齐 Semi `.arrow, .prefix, .suffix { color: disabled-text }` +
+   * `.selection, .selection-placeholder { color: disabled-text }`：显式覆盖，
+   * 不能只靠 .cd-select-trigger 的 color 继承——这些元素各自设了自己的 color
+   * （.cd-select-value/.cd-select-placeholder 的回填文本色最容易漏，继承链断在此）。
+   */
+  .cd-select-disabled .cd-select-arrow,
+  .cd-select-disabled .cd-select-prefix,
+  .cd-select-disabled .cd-select-suffix,
+  .cd-select-disabled .cd-select-value,
+  .cd-select-disabled .cd-select-placeholder {
+    color: var(--cd-color-select-input-disabled-text);
+  }
+  /* 对齐 Semi `.semi-tag { color: disabled-text; background-color: transparent }`：
+     禁用态多选 tag 文字变灰、背景透明（Tag 组件本身不知晓 Select 的 disabled，靠父级覆盖）。 */
+  .cd-select-disabled :global(.cd-select-tag) {
+    color: var(--cd-color-select-input-disabled-text);
+    background: transparent;
+  }
+  .cd-select-selection {
     display: flex;
     flex: 1 1 auto;
-    /* 对齐 Semi `.semi-select-selection { flex-wrap: nowrap }`（单选/多选皆然，
-       只有多选内层的 content-wrapper 才 wrap）：原先无条件 wrap，触发器窄时
-       占位文本会折行，再被固定高度裁掉半行（实测「请选择业务 / 线」）。 */
+    /* 对齐 Semi `.semi-select-selection { flex-wrap: nowrap }`（单选/多选折叠态皆然）：
+       原先无条件 wrap，触发器窄时占位文本会折行，再被固定高度裁掉半行
+       （实测「请选择业务 / 线」）。多选展开态（tagsCollapsed=false，见 .cd-select-selection-wrap）
+       对齐 Semi `.semi-select-content-wrapper` 默认 wrap，覆盖此 nowrap。 */
     flex-wrap: nowrap;
     align-items: center;
     gap: var(--cd-spacing-extra-tight);
@@ -1484,7 +1842,7 @@
     /*
      * 行高对齐 Semi：`.semi-select-selection` 用 `@include font-size-regular`，
      * 该 mixin 的 line-height 恒为 20px（semi-theme-default/scss/_font.scss），
-     * 对应本库 --cd-line-height-regular。必须写在 content（内层）而非 trigger——
+     * 对应本库 --cd-line-height-regular。必须写在 selection（内层）而非 trigger——
      * 挂到 trigger 会让行高等于容器高，把 Semi 留的 1px 边框内缩吃掉（实测 gap 1→0）。
      */
     line-height: var(--cd-line-height-regular);
@@ -1494,13 +1852,30 @@
     block-size: 100%;
     margin-inline-start: var(--cd-spacing-select-selection-marginleft);
     overflow: hidden;
+    /* 对齐 Semi `.semi-select-content-wrapper { position: relative }`（恒定，非按需）：
+       本库把 Semi 的外层 selection + 内层 content-wrapper 拍平成了一层 .cd-select-selection，
+       故由它兼任「多选空值态搜索框绝对定位」的包含块（见下方 .cd-select-selection-empty
+       .cd-select-search-multiple 规则）。 */
+    position: relative;
   }
   /* 对齐 Semi `.semi-select-multiple .semi-select-selection { margin-left: 4px }`：多选左距更小 */
-  .cd-select-multiple .cd-select-content {
+  .cd-select-multiple .cd-select-selection {
     margin-inline-start: var(--cd-spacing-select-multiple-selection-marginleft);
   }
+  /* 对齐 Semi `.semi-select-content-wrapper-empty { margin-left: $spacing-tight }`（8px）：
+     多选无选中值时，Semi 在外层 selection 的 4px 基础上、内层 content-wrapper 再加 8px，
+     合计 12px——与单选态的 12px 视觉对齐。本库无独立 content-wrapper 层，故在 -empty 态
+     直接把 .cd-select-selection 自身的 margin-inline-start 覆盖为 12px（4+8 的合计值，
+     而非在 4px 基础上"再加 8px"——CSS margin 同属性后写覆盖不叠加）。
+     此前只有基础 4px，实测 placeholder 比单选态更贴边框（"placeholder 太靠左"）。 */
+  .cd-select-multiple .cd-select-selection-empty {
+    margin-inline-start: calc(
+      var(--cd-spacing-select-multiple-selection-marginleft) +
+        var(--cd-spacing-select-multiple-content-wrapper-empty-marginleft)
+    );
+  }
   /* 对齐 Semi `.semi-select-with-prefix .semi-select-selection { margin-left: 0 }` */
-  .cd-select-with-prefix .cd-select-content {
+  .cd-select-with-prefix .cd-select-selection {
     margin-inline-start: 0;
   }
   /* 对齐 Semi `.semi-select-selection-text { width:100%; overflow:hidden; text-overflow:ellipsis }`：
@@ -1513,30 +1888,27 @@
     color: var(--cd-color-select-input-placeholder-text);
   }
   /* 内嵌标签：常驻触发器左侧的标签文本 */
+  /* 对齐 Semi `&-inset-label`：同 -prefix-text 变体的 margin(12px)/字重(bold)/色，不靠基类继承。 */
   .cd-select-inset-label {
     display: inline-flex;
     align-items: center;
     flex: 0 0 auto;
-    margin-inline-end: var(--cd-spacing-extra-tight);
+    margin-inline: var(--cd-spacing-base-tight);
     color: var(--cd-color-select-prefix-suffix-text-default);
+    font-weight: var(--cd-font-weight-bold);
+    white-space: nowrap;
     user-select: none;
   }
-  /* searchPosition='dropdown'：浮层顶部搜索框容器 */
-  .cd-select-dropdown-search {
-    padding: var(--cd-spacing-extra-tight) var(--cd-select-option-padding, var(--cd-spacing-tight));
-  }
-  .cd-select-search-dropdown {
-    inline-size: 100%;
-    box-sizing: border-box;
-    min-block-size: var(--cd-select-height-small);
-    padding-inline: var(--cd-select-padding-x);
-    border: 1px solid var(--cd-select-border);
-    border-radius: var(--cd-select-radius);
-    background: var(--cd-select-bg);
-  }
-  .cd-select-search-dropdown:focus-visible {
-    border-color: var(--cd-select-border-active);
-    box-shadow: var(--cd-focus-ring);
+  /*
+   * searchPosition='dropdown'：浮层顶部搜索框容器（对齐 Semi `.semi-select-dropdown-search-wrapper`：
+   * padding 8px/12px + 底部描边分隔选项列表；描边色对齐 Semi $color-select_dropdown_input-border
+   * = $color-select-border-default = transparent，默认不可见，主题可覆盖显现）。
+   * 内部搜索框复用 Input 组件（对齐 Semi renderDropdownInput：完整 Input + IconSearch 前缀 +
+   * 自身边框/圆角/背景，本库不再手绘图标 span / 边框，全部交给 Input 组件承担）。
+   */
+  .cd-select-dropdown-search-wrapper {
+    padding: var(--cd-spacing-tight) var(--cd-spacing-base-tight);
+    border-block-end: 1px solid var(--cd-select-border);
   }
   .cd-select-value {
     overflow: hidden;
@@ -1544,35 +1916,86 @@
     white-space: nowrap;
     text-overflow: ellipsis;
   }
-  .cd-select-search {
-    flex: 1 1 auto;
-    min-inline-size: 2rem;
-    margin: 0;
+  /*
+   * 多选：对齐 Semi renderTriggerInput 的精确字符宽度（inline style 算出的
+   * multiSearchWidth 生效，挂在 Input 组件 wrapper 上），borderless + 透明背景
+   * 让输入框在触发器内呈内联态（无独立边框/底色，视觉上与 tag 组连成一片）。
+   * flex 不参与伸缩/收缩，避免 wrap 容器里被当成 "至少 32px" 的块而挤出当前行
+   * （对齐 Semi 三个 tag + 空搜索框仍同一行）。单选态是绝对定位铺满
+   * （见下方 .cd-select-search-single 规则），不受此基类缺省 flex 影响。
+   */
+  /*
+   * 对齐 Semi `.semi-multiple.semi-filterable .semi-input-wrapper { border:none;
+   * background-color:transparent }` + `.semi-input-wrapper-focus { border:none }`：
+   * 无条件覆盖含聚焦态。
+   *
+   * 整条选择器必须包进 :global()，不能只包最内层的 .cd-input：这个 class 是通过 Input
+   * 组件的 `class` prop 传入、渲染在 **Input.svelte 内部模板**的 wrapper div 上，并非
+   * Select.svelte 模板里直接出现的标签。Svelte 编译器按源码文本静态判断要不要给选择器
+   * 加 scope hash，看不到这层跨组件传递，会把 `.cd-select-search-multiple` 也当成本组件
+   * 元素编译成 `.cd-select-search-multiple.svelte-1e7kwym`（Select 自己的 scope 类）——
+   * 但该 div 实际持有的 scope 类是 `svelte-f7muf0`（Input 组件的），两者对不上，规则整条
+   * 静默失效（真机 document.styleSheets 遍历验证：该规则完全不出现在 matches() 命中列表
+   * 里，此前只是巧合命中了 Input 自身 `:not(:focus-within)` 的 borderless 规则才看似正常，
+   * 真正 focus 后蓝色实边框重新露出）。:global() 内的 :not(#neverExistElement) 权重技巧
+   * （Semi datePicker.scss 同款）确保就算日后 Input 内部规则改动也压得过。
+   */
+  :global(.cd-select-search-multiple:not(#neverExistElement)) {
+    flex: 0 0 auto;
     padding: 0;
+    background: transparent;
+    border: none;
+  }
+  :global(.cd-select-search-multiple:focus-within:not(#neverExistElement)) {
     border: none;
     background: transparent;
-    color: inherit;
-    font: inherit;
-    outline: none;
   }
-  .cd-select-search::placeholder {
-    color: var(--cd-color-select-input-placeholder-text);
+  :global(.cd-select-search-multiple .cd-input) {
+    padding-inline: 0;
   }
   /*
-   * 单选 + 触发器内搜索（对齐 Semi `.semi-select-single.semi-select-filterable`）：
-   * content 作定位上下文，输入框绝对定位铺满，与原回填文本**叠在一起**——
-   * 无输入时原文本以 0.4 透明度垫在下方（-inactive），有输入时隐藏（-hide）。
-   * 修饰符 --single / --multiple 对齐 Semi 的 `-input-single` / `-input-multiple`。
+   * 多选 + 无选中值（对齐 Semi `.semi-select-multiple.semi-select-filterable
+   * .semi-select-content-wrapper-empty .semi-input-wrapper { position:absolute; top:0;
+   * left:0; height:100% }`，源码注释明确 `width` 留白不设——由 JS 算好的 inline style
+   * （multiSearchWidth，2px/无输入 或 len*16px/有输入）接管，故此处不写 inline-size）：
+   * 无选中值时占位 span 与搜索 input **叠在同一起点**，而非 flex 并排跟在占位文字后面——
+   * 后者会把 2px 宽的搜索框推到占位文字末尾（实测出现在占位文字右侧 260px 处），
+   * 使聚焦态光标视觉上与 placeholder 完全脱节（"光标跑右边了"）。仅无选中值时叠加，
+   * 有 tag 时搜索框仍在 tag 后正常 flex 续行（Semi `:not(-empty)` 分支不设 absolute）。
    */
-  .cd-select-content:has(.cd-select-search-single) {
-    position: relative;
+  :global(.cd-select-selection-empty .cd-select-search-multiple:not(#neverExistElement)) {
+    position: absolute;
+    inset-block-start: 0;
+    inset-inline-start: 0;
+    block-size: 100%;
   }
-  .cd-select-search-single {
+  /*
+   * 单选 + 触发器内搜索（对齐 Semi `.semi-select-single.semi-select-filterable`
+   * `.semi-input-wrapper { position:absolute; inset:0; border:none; background:transparent }`
+   * + `.semi-input-wrapper-focus { border:none }`——无条件覆盖，含聚焦态）：
+   * content 作定位上下文，Input 组件的 wrapper 绝对定位铺满，与原回填文本**叠在一起**——
+   * 无输入时原文本以 0.4 透明度垫在下方（-inactive），有输入时隐藏（-hide）。
+   *
+   * 同上，整条选择器必须 :global()（跨组件传递的 class，见多选态同款注释）。
+   * :not(#neverExistElement) 是 Semi 原样的权重技巧，纯粹用永不存在的 id 选择器
+   * 抬 (+1,0,0) 特异性压过 Input 自身的聚焦边框/背景规则。
+   */
+  :global(.cd-select-search-single:not(#neverExistElement)) {
     position: absolute;
     inset-block-start: 0;
     inset-inline-start: 0;
     inline-size: 100%;
     block-size: 100%;
+    padding: 0;
+    background: transparent;
+    border: none;
+  }
+  :global(.cd-select-search-single:focus-within:not(#neverExistElement)) {
+    border: none;
+    background: transparent;
+  }
+  :global(.cd-select-search-single .cd-input) {
+    padding-inline: 0;
   }
   /* 对齐 Semi `-selection-text-inactive`（opacity 0.4）与 `-selection-text-hide`（隐藏）。 */
   .cd-select-value-inactive {
@@ -1580,6 +2003,19 @@
   }
   .cd-select-value-hide {
     display: none;
+  }
+  /*
+   * 对齐 Semi `.semi-select-option-keyword { color: var(--semi-color-primary);
+   * background-color: inherit; font-weight: 600 }`：选项高亮命中片段渲染在 Highlight
+   * 组件内部（<mark class="cd-highlight-tag cd-select-keyword">），跨组件传递的 class，
+   * 同上必须 :global()。用 .cd-highlight-tag.cd-select-keyword 复合选择器（(0,2,0)）
+   * 而非单独 .cd-select-keyword（(0,1,0)），确保特异性稳定压过 Highlight 自身
+   * .cd-highlight-tag 的默认黄底黑字规则，不依赖两个组件样式表的加载顺序。
+   */
+  :global(.cd-highlight-tag.cd-select-keyword) {
+    color: var(--cd-color-select-option-keyword);
+    background-color: inherit;
+    font-weight: var(--cd-font-weight-bold);
   }
   /* 折叠态 TagGroup 实例：在触发器 flex 内联排布（与 search input 并排），随内容换行 */
   /* 对应 Semi `.semi-select-content-wrapper`：撑满高度 + 多选态换行 + 溢出裁切
@@ -1592,8 +2028,21 @@
     block-size: 100%;
     overflow: hidden;
   }
-  /* ellipsisTrigger：多选 tag 溢出时，对可见 tag 文本做单行省略（完整文本经 title 查看） */
-  .cd-select-ellipsis-trigger .cd-select-content {
+  /*
+   * 展开态（tagsCollapsed=false）：全部 tag 直接渲染进 selection，无 TagGroup 包裹层承担 wrap。
+   * 对齐 Semi `.semi-select-content-wrapper` 默认 flex-wrap:wrap（仅折叠态 -one-line 才 nowrap，
+   * 见 renderMultipleSelection contentWrapperCls）——覆盖 .cd-select-selection 的默认 nowrap，
+   * 否则展开的多个 tag 被挤压裁成一行（实测「抖..」「轻..」等近乎不可读）。block-size 也需放开
+   * 为 auto，让触发器随多行 tag 撑高（对齐本轮 multiple height:auto）。
+   */
+  .cd-select-selection-wrap {
+    flex-wrap: wrap;
+    block-size: auto;
+    min-block-size: 100%;
+  }
+  /* ellipsisTrigger：多选 tag 溢出时，对可见 tag 文本做单行省略（完整文本经 title 查看）；
+     仅折叠态生效（class 上已由 tagsCollapsed 门控，见模板），展开态不应再单行省略。 */
+  .cd-select-ellipsis-trigger .cd-select-selection {
     flex-wrap: nowrap;
     overflow: hidden;
   }
@@ -1630,6 +2079,12 @@
   .cd-select-clear:hover {
     color: var(--cd-color-select-clearbtn-text-hover);
   }
+  /* 对齐 Semi `&-arrow-empty { width: 12px }`：不显示箭头时右侧留白宽度（非 32px 箭头盒）。 */
+  .cd-select-arrow-empty {
+    display: inline-flex;
+    flex: 0 0 auto;
+    inline-size: 12px;
+  }
   .cd-select-arrow {
     transform: var(--cd-transform-rotate-select-arrow);
     transition: transform var(--cd-transition-duration-select-border)
@@ -1653,17 +2108,50 @@
   .cd-select-dropdown[hidden] {
     display: none;
   }
+  /*
+   * motion：进出场 zoomIn（对齐 Semi Select 内部 Popover 实例的 zoomIn，非 Tooltip 自己那份——
+   * 两者 SCSS 变量命名空间不同但取值一致，见 tokens/select.ts 顶部注释）。用独立 scale 属性
+   * （非 transform）做缩放：use:floating 用 transform: translate() 定位，动画走 transform
+   * 会覆盖定位把浮层拉到 (0,0)；scale 属性与 transform 正交，二者叠加互不覆盖（同 Tooltip 解法）。
+   * [hidden] 属性每次 open 都会移除再添加（浏览器据此重启 animation），故不需要额外 key 控制重播。
+   */
+  .cd-select-dropdown-motion {
+    animation: cd-select-dropdown-zoom-in var(--cd-animation-duration-select-dropdown-in)
+      var(--cd-animation-function-select-dropdown-in) both;
+  }
+  @keyframes cd-select-dropdown-zoom-in {
+    from {
+      opacity: var(--cd-select-dropdown-motion-zoom-opacity-from);
+      scale: var(--cd-select-dropdown-motion-zoom-scale-from);
+    }
+    50% {
+      opacity: var(--cd-select-dropdown-motion-zoom-opacity-to);
+    }
+    to {
+      opacity: var(--cd-select-dropdown-motion-zoom-opacity-to);
+      scale: 1;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .cd-select-dropdown-motion {
+      animation: none;
+    }
+  }
   /* 内层滚动列表：optionList + inner header/footer + 浮层搜索框，超出 maxHeight 时纵向滚动 */
   .cd-select-list {
     max-block-size: 16rem;
     overflow-y: auto;
     padding-block: var(--cd-spacing-extra-tight);
   }
-  /* outer slot：与滚动列表平级、位于滚动区之外，始终固定展现 */
+  /*
+   * outer slot：与滚动列表平级、位于滚动区之外，始终固定展现。对齐 Semi：
+   * select.scss 里 `-option-list-outer-top-slot`/`-outer-bottom-slot` 无任何样式规则，
+   * 纯包裹层不叠加 padding——内容外观完全由调用方自己的 outerTopSlot/outerBottomSlot
+   * 传入内容决定（原实现误加了内边距，导致自定义节点背景色缩进、铺不满宽度）。
+   */
   .cd-select-outer-top,
   .cd-select-outer-bottom {
     flex: 0 0 auto;
-    padding: var(--cd-spacing-extra-tight) var(--cd-select-option-padding, var(--cd-spacing-tight));
   }
   /* 虚拟化：spacer 撑出未渲染选项的总高，可见 option 绝对定位于其内 */
   .cd-select-spacer {
@@ -1675,12 +2163,28 @@
     box-sizing: border-box;
     overflow: hidden;
   }
-  .cd-select-group-label {
-    padding: var(--cd-spacing-extra-tight) var(--cd-select-option-padding, var(--cd-spacing-tight));
+  /*
+   * 对齐 Semi `.semi-select-group`：padding-top(base-tight=12px 由 margin-top(4px)+padding-top(8px)
+   * 复合)/padding-bottom(4px)/padding-left(base-tight+tick宽+tick间距)/padding-right(base=16px)，
+   * font-size-small mixin **不含 font-weight**（原自造 500 已删，随浏览器默认继承）。
+   * 分隔线：非首个渲染的组才有顶部描边（`&:not(:nth-of-type(1))`，CSS 结构选择器天然处理
+   * 过滤后首组变化，无需模板判断）。
+   */
+  .cd-select-group {
+    padding-block-start: var(--cd-spacing-base-tight);
+    padding-block-end: var(--cd-spacing-extra-tight);
+    /* 12px(base-tight) + 16px(tick 图标宽，同 .cd-select-check) + 8px(tick 右间距) */
+    padding-inline-start: calc(var(--cd-spacing-base-tight) + 1rem + var(--cd-spacing-tight));
+    padding-inline-end: var(--cd-spacing-base);
+    margin-block-start: var(--cd-spacing-extra-tight);
     color: var(--cd-color-select-group-text);
     font-size: var(--cd-font-size-small);
-    font-weight: var(--cd-font-weight-medium, 500);
+    line-height: var(--cd-line-height-small);
+    cursor: default;
     user-select: none;
+  }
+  .cd-select-group:not(:first-child) {
+    border-block-start: 1px solid var(--cd-color-select-option-border-default);
   }
   .cd-select-option {
     display: flex;
@@ -1694,20 +2198,32 @@
   .cd-select-option-active {
     background: var(--cd-select-option-bg-hover);
   }
+  /* 对齐 Semi option.scss `&:active { background: bg-active }`：鼠标按下瞬时再加深一档。 */
+  .cd-select-option:active {
+    background: var(--cd-select-option-bg-active);
+  }
+  /* 对齐 Semi `&-selected { font-weight: bold; background: transparent }`：
+     选中态只加粗 + 透明背景，不靠色块区分（色块留给 hover/active 的 -active 类）。 */
   .cd-select-option-selected {
     color: var(--cd-select-option-color-selected);
     background: var(--cd-select-option-bg-selected);
+    font-weight: var(--cd-font-weight-bold);
   }
   .cd-select-option[aria-disabled='true'] {
     color: var(--cd-color-select-option-disabled-text);
     cursor: not-allowed;
   }
+  /* 对齐 Semi `&-icon { color: option-icon-default(transparent) }`：占位恒渲染，
+     颜色默认透明不可见，选中态（-active）才切到实色，对勾 DOM 不随选中态增删。 */
   .cd-select-check {
     display: inline-flex;
     align-items: center;
     justify-content: center;
     inline-size: 1rem;
     flex: 0 0 auto;
+    color: transparent;
+  }
+  .cd-select-check-active {
     color: var(--cd-select-option-check-color);
   }
   .cd-select-empty {
@@ -1715,12 +2231,16 @@
     color: var(--cd-color-text-3);
     text-align: center;
   }
+  /* 对齐 Semi `.semi-select-loading-wrapper`：padding 8px/16px（非 option 的 8px/12px）+
+     固定 20px 高（content-box，撑开而不挤压 padding）+ cursor not-allowed。 */
   .cd-select-loading {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: var(--cd-spacing-tight);
-    padding: var(--cd-select-option-padding);
+    padding: var(--cd-spacing-tight) var(--cd-spacing-base);
+    block-size: 20px;
+    box-sizing: content-box;
+    cursor: not-allowed;
     color: var(--cd-color-text-3);
   }
   .cd-select-spinner {
@@ -1745,40 +2265,34 @@
     border-color: transparent;
     box-shadow: var(--cd-focus-ring);
   }
-  /* 前缀 / 后缀插槽 */
+  /*
+   * 前缀 / 后缀插槽（对齐 Semi `&-prefix, &-suffix { all-center }`：基类只做居中，
+   * 不出外边距；外边距/字重按 -text(12px+bold)/-icon(8px) 两套变体，触发器无 padding
+   * 后左右留白全靠这两个变体自持——第三态（既非 text 也非 icon）外边距为 0）。
+   */
   .cd-select-prefix,
   .cd-select-suffix {
     display: inline-flex;
     align-items: center;
     flex: 0 0 auto;
+  }
+  .cd-select-prefix-text,
+  .cd-select-suffix-text {
+    margin-inline: var(--cd-spacing-base-tight);
     color: var(--cd-color-select-prefix-suffix-text-default);
+    font-weight: var(--cd-font-weight-bold);
+  }
+  .cd-select-prefix-icon,
+  .cd-select-suffix-icon {
+    margin-inline: var(--cd-spacing-tight);
+    color: var(--cd-color-select-icon-default);
   }
   /*
-   * 触发器无 padding 后，prefix/suffix 的左右留白必须自持（对齐 Semi：其 prefix/suffix
-   * 靠自身 margin 撑开，触发器不出内边距）。
-   * 注：Semi 还按 text(12px) / icon(8px) 拆两套外边距变体，本库 Select 尚未拆，
-   * 统一用 8px（同 icon 档）——待 Select 整体对齐时一并处理。
+   * 浮层顶/底固定区（inner slot）：对齐 Semi——select.scss 里
+   * `-option-list-inner-top-slot`/`-inner-bottom-slot` 无任何样式规则，纯包裹层
+   * 不叠加 padding/边框（原实现自造了内边距 + 分隔线，Semi 官方 demo 需要边框时
+   * 是调用方自己在传入内容的内联样式里写 border-top，非组件内置）。
    */
-  .cd-select-prefix {
-    margin-inline: var(--cd-spacing-tight);
-  }
-  .cd-select-suffix {
-    margin-inline: var(--cd-spacing-tight);
-  }
-  /* 浮层顶/底固定区 */
-  .cd-select-dropdown-header,
-  .cd-select-dropdown-footer {
-    padding: var(--cd-spacing-extra-tight) var(--cd-select-option-padding, var(--cd-spacing-tight));
-    border-block-color: var(--cd-color-select-option-border-default);
-  }
-  .cd-select-dropdown-header {
-    border-block-end-width: 1px;
-    border-block-end-style: solid;
-  }
-  .cd-select-dropdown-footer {
-    border-block-start-width: 1px;
-    border-block-start-style: solid;
-  }
   @media (prefers-reduced-motion: reduce) {
     .cd-select-spinner {
       animation: none;

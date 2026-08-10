@@ -23,6 +23,8 @@
   import { getSplitedArray } from './split.js';
   import Popover from '../popover/Popover.svelte';
   import Tag from '../tag/Tag.svelte';
+  import Paragraph from '../typography/Paragraph.svelte';
+  import type { EllipsisConfig } from '../typography/types.js';
 
   type Size = 'small' | 'default' | 'large';
   type ValidateStatus = 'default' | 'warning' | 'error';
@@ -178,11 +180,16 @@
     onInputChange?.(next);
   }
 
-  // showContentTooltip 归一：boolean → 是否显示；对象 → 显示 + Popover 配置。
-  const tooltipEnabled = $derived(showContentTooltip !== false);
-  const tooltipProps = $derived(
-    typeof showContentTooltip === 'object' ? (showContentTooltip.opts ?? {}) : {},
-  );
+  // 对齐 Semi index.tsx renderTag：`<Paragraph ellipsis={{ showTooltip: showContentTooltip,
+  // rows: 1 }}>{value}</Paragraph>`——tag 文字用 Typography 的 ellipsis+showTooltip 机制，
+  // 而非无条件用 Popover 包裹。Paragraph 内部（TypographyBase）用 ResizeObserver 实测
+  // scrollWidth vs clientWidth 判定是否真的发生了单行省略截断，只有真截断时才渲染 tooltip
+  // 包裹层——短文本（如「抖音」）永远不截断，hover 不显示任何提示（真机核对 semi.design
+  // TagInput/Select 拖拽排序 demo 逐一 hover 验证：无论文字长短均无 tooltip 弹出，因为
+  // 320px 宽的 tag 容器足够容纳；只有当文字长到真正被单行省略号截断时才触发）。此前用
+  // `{#if tooltipEnabled}<Popover trigger="hover">` 无条件包裹，只要 showContentTooltip
+  // 不为 false 就恒定显示 tooltip，与文字是否截断无关，是本库自造的过度触发行为。
+  const tagEllipsis = $derived<EllipsisConfig>({ rows: 1, showTooltip: showContentTooltip });
 
   // 拖拽态（在 collapsed 派生前声明）。命令式事件处理见下方拖拽块。
   let dragIndex = $state<number | null>(null);
@@ -271,8 +278,19 @@
     if (removed !== undefined) onRemove?.(removed, index);
   }
 
+  // focusing 提前声明（原声明在下方 inputEl 附近）。
+  let focusing = $state(false);
+
   // --- 拖拽排序：HTML5 DnD（draggable + drag 事件）---
-  const canDrag = $derived(draggable && !disabled);
+  // 对齐 Semi tagInput/index.tsx renderTags：`if (active && draggable && sortableListItems.length
+  // > 0) return <Sortable ...>`——排序能力（含拖拽手柄图标 showIconHandler = active && draggable）
+  // 整体由 active 门控。active 语义是「点击容器后到点击容器外部前」（foundation.ts
+  // handleClick→setActive(true)，registerClickOutsideHandler 监听 document click，命中
+  // 容器外才 clickOutsideCallBack→setActive(false)），与原生 blur 无关、非组件常驻能力。
+  // active/rootEl/handleContainerClick 定义见下方（click-outside 实现）；此处仅前置声明
+  // canDrag 依赖的 active 供本行引用。
+  let active = $state(false);
+  const canDrag = $derived(draggable && !disabled && active);
 
   function resetDrag() {
     dragIndex = null;
@@ -365,7 +383,6 @@
 
   let inputEl = $state<HTMLInputElement | null>(null);
   let mirrorEl = $state<HTMLSpanElement | null>(null);
-  let focusing = $state(false);
   let hovering = $state(false);
 
   // --- inputMirror 量宽：有输入时 input 宽度贴合文本（撑开换行），无输入时 flex-grow 占满 ---
@@ -410,6 +427,40 @@
     inputEl?.focus();
   }
 
+  // 对齐 Semi foundation.ts handleClick/registerClickOutsideHandler：active 由「点击容器」
+  // 置 true，仅「点击容器外部」才置回 false——与 blur 无关。此前误用原生 focusing（input
+  // 聚焦态）近似 active，但拖拽开始时浏览器会原生 blur 掉输入框（focusin 移出/mousedown
+  // 抢占），focusing 瞬间变 false，canDrag 随之为 false，刚拖起就被打断退出排序态
+  // （真机复现：鼠标刚拖动就消失）。改用 click-outside 监听，拖拽全程点击目标都在容器内，
+  // active 不会被清空。active 已在上方 canDrag 旁前置声明，此处只补 rootEl/监听器。
+  let rootEl = $state<HTMLDivElement | null>(null);
+  let clickOutsideHandler: ((e: MouseEvent) => void) | null = null;
+
+  function handleContainerClick() {
+    focusInput();
+    if (disabled) return;
+    if (clickOutsideHandler) return;
+    active = true;
+    clickOutsideHandler = (e: MouseEvent) => {
+      const target = e.target as Node | null;
+      if (rootEl && target && !rootEl.contains(target)) {
+        active = false;
+        document.removeEventListener('click', clickOutsideHandler!, false);
+        clickOutsideHandler = null;
+      }
+    };
+    document.addEventListener('click', clickOutsideHandler, false);
+  }
+
+  $effect(() => {
+    return () => {
+      if (clickOutsideHandler) {
+        document.removeEventListener('click', clickOutsideHandler, false);
+        clickOutsideHandler = null;
+      }
+    };
+  });
+
   /** 命令式聚焦输入框（尊重 preventScroll，对齐 Semi focus()）。 */
   export function focus(): void {
     inputEl?.focus({ preventScroll });
@@ -442,18 +493,24 @@
   );
 
   const tagSize = $derived(size === 'small' ? 'small' : 'large');
-  const hasClear = $derived(showClear && !disabled && (current.length > 0 || currentInput !== ''));
+  // 对齐 Semi index.tsx renderClearBtn：`invisible: !hovering || (inputValue==='' &&
+  // tagsArray.length===0) || disabled`——清空按钮独立由 hovering 门控（非 active/focusing），
+  // 未 hover 时即便有内容也不显示。此前遗漏 hovering 条件，默认（未 hover）态就已显示。
+  const hasClear = $derived(
+    showClear && !disabled && hovering && (current.length > 0 || currentInput !== ''),
+  );
 </script>
 
 <!-- 点击容器聚焦输入框；容器本身非交互控件，仅做转发 -->
 <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_noninteractive_element_interactions -->
 <div
+  bind:this={rootEl}
   class={cls}
   {style}
   role="group"
   aria-label={ariaLabel}
   aria-disabled={disabled || undefined}
-  onclick={focusInput}
+  onclick={handleContainerClick}
   onmouseenter={() => (hovering = true)}
   onmouseleave={() => (hovering = false)}
 >
@@ -492,13 +549,7 @@
         {#if canDrag}
           <span class="cd-tag-input-drag-handler"><IconHandle size="small" /></span>
         {/if}
-        {#if tooltipEnabled}
-          <Popover content={tag} trigger="hover" position="top" {...tooltipProps}>
-            <span class="cd-tag-input-wrapper-typo">{tag}</span>
-          </Popover>
-        {:else}
-          <span class="cd-tag-input-wrapper-typo">{tag}</span>
-        {/if}
+        <Paragraph class="cd-tag-input-wrapper-typo" ellipsis={tagEllipsis}>{tag}</Paragraph>
       </Tag>
     {/if}
   {/snippet}

@@ -71,8 +71,10 @@ describe('Select a11y', () => {
       props: { optionList: options, defaultOpen: true, filter: true, allowCreate: true },
     });
     // searchPosition 默认 'trigger'（对齐 Semi），搜索框内联在触发器上；
-    // 用共享类 .cd-select-search 定位，不假定 trigger/dropdown 位置。
-    const search = document.querySelector('.cd-select-search') as HTMLInputElement;
+    // 用共享类 .cd-select-search 定位其外层 Input 组件 wrapper，不假定 trigger/dropdown 位置；
+    // 真正可写值/派发原生事件的是内层 <input class="cd-input">（Select 复用 Input 组件后，
+    // .cd-select-search 挂在 Input 的 wrapper div 上，非裸 <input> 本身，见 Input.svelte）。
+    const search = document.querySelector('.cd-select-search .cd-input') as HTMLInputElement;
     expect(search).not.toBeNull();
     search.value = 'Durian';
     search.dispatchEvent(new Event('input', { bubbles: true }));

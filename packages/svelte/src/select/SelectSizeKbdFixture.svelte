@@ -6,7 +6,7 @@
   夹具刻意复刻 docs 站的两个环境条件，缺一就测不出历史 bug：
     ① 全局 `*{box-sizing:border-box}` reset —— 否则量到的是 content-box 高度；
     ② 正文继承下来的 `line-height: 24.5px` —— 它撑开 content，把只写 min-block-size
-       的小尺寸顶穿成 26.5px（真正的修复是给 .cd-select-content 定死 20px 行高）。
+       的小尺寸顶穿成 26.5px（真正的修复是给 .cd-select-selection 定死 20px 行高）。
   browser project 没有 setupFiles，token 变量不会自动注入，故在此内联所需的三个高度 token
   （值取自 tokens.css 的 --cd-control-height-*；直接 import tokens.css 缺类型声明会断 typecheck）。
 -->

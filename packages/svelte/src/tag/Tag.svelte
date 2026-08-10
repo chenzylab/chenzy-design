@@ -343,13 +343,9 @@
       var(--cd-tag-closable-padding-bottom) var(--cd-tag-closable-padding-left);
   }
 
-  /* —— 头像标签（对齐 Semi &-avatar-square / -circle）—— */
-  .cd-tag-avatar-square,
-  .cd-tag-avatar-circle {
-    background-color: var(--cd-tag-avatar-bg);
-    border: var(--cd-tag-border-width) solid var(--cd-tag-avatar-border);
-    color: var(--cd-tag-avatar-text);
-  }
+  /* —— 头像标签（对齐 Semi &-avatar-square / -circle）——
+     背景/边框/文字色单独在文件末尾（17色×3type 之后）声明，见下方注释：
+     同特异性下 Semi 靠源码顺序让头像覆盖色相关规则获胜，此处非布局属性故先跳过。 */
   .cd-tag-avatar-square :global(.cd-avatar),
   .cd-tag-avatar-circle :global(.cd-avatar) {
     margin-right: var(--cd-tag-avatar-margin-right);
@@ -461,6 +457,22 @@
     border: var(--cd-tag-border-width) solid var(--cd-tag-white-border);
     color: var(--cd-tag-white-text);
   }
+  /*
+    —— 头像标签背景/边框/文字色（对齐 Semi tag.scss 325-329 行 `.semi-tag-avatar-square,
+    .semi-tag-avatar-circle {...}`）——
+    刻意放在 17 色×3type + white 色块之后：三者选择器特异性相同（单类名，0-1-0），
+    CSS 级联同特异性下源码顺序在后者赢；Semi 自己也是这么排的（avatar 覆盖规则写在
+    @each 色板循环与 white 块之后），并非巧合。此前误放在色板块之前，被 .cd-tag-grey-light
+    等同特异性规则盖掉，avatarSrc 头像 tag 背景显示成灰色而非 Semi 实测的纯白
+    （$color-tag_avatar-bg-default = var(--semi-color-bg-4) = 亮色下纯白）。
+  */
+  .cd-tag-avatar-square,
+  .cd-tag-avatar-circle {
+    background-color: var(--cd-tag-avatar-bg);
+    border: var(--cd-tag-border-width) solid var(--cd-tag-avatar-border);
+    color: var(--cd-tag-avatar-text);
+  }
+
   .cd-tag-white-light .cd-tag-close,
   .cd-tag-white-solid .cd-tag-close,
   .cd-tag-white-ghost .cd-tag-close {
