@@ -10,6 +10,9 @@
  *  - Semi 手柄常态 border:none，仅 focus outline / disabled 1px border；无常态 primary 描边。
  *  - Semi $width-slider_dot: 4px（点直径 4px，非本库旧值 8px）。
  *  - Semi $color-slider_dot-*: var(--semi-color-white) 系。
+ *  - Semi $transition_duration-slider_handle-bg: none（手柄背景色变化无过渡动画，非本库曾用的 duration-fast）。
+ *  - Semi 垂直 marks 还有 marginTop:-30px / marginLeft:29px（reverse 时 -26px），真机实测发现本库此前只落地了
+ *    marginLeft 正向分支、完全漏了 marginTop 与 reverse 分支。
  */
 import type { TokenGroup } from './token-def.js';
 
@@ -49,10 +52,18 @@ export const sliderTokens = {
   'spacing-slider-rail-top': { value: '14px', category: 'spacing', label: '轨道顶部距离', usage: '滑动条未填充轨道顶部距离' },
   'spacing-slider-marks-top': { value: '23px', category: 'spacing', label: '刻度标签顶部距离', usage: '滑动条刻度标签顶部距离' },
   'spacing-slider-boundary-top': { value: '30px', category: 'spacing', label: '边界值顶部距离', usage: '边界值标签顶部距离' },
+  'spacing-slider-vertical-marks-margintop': { value: '-30px', category: 'spacing', label: '垂直刻度标签顶部外边距', usage: '垂直滑动条刻度标签顶部外边距' },
+  'spacing-slider-vertical-marks-marginleft': { value: '29px', category: 'spacing', label: '垂直刻度标签左侧外边距', usage: '垂直滑动条刻度标签左侧外边距' },
+  'spacing-slider-vertical-marks-marginleft-reverse': { value: '-26px', category: 'spacing', label: '垂直刻度标签左侧外边距（反向）', usage: '垂直滑动条刻度标签左侧外边距（标签在左侧时）' },
 
   // —— Font（对齐 Semi variables.scss Font 段）——
   'font-slider-marks-fontsize': { value: '14px', category: 'font', label: '刻度标签字号', usage: '滚动条刻度标签字号' },
 
   // —— Shadow（对齐 Semi @mixin shadow-knob，手柄常态阴影）——
   'shadow-slider-knob': { value: '0 4px 6px rgba(0, 0, 0, 0.1), 0 0 1px rgba(0, 0, 0, 0.3)', category: 'other', label: '手柄阴影', usage: '滑动条圆形按钮阴影（对齐 Semi shadow-knob）' },
+
+  // —— Animation（对齐 Semi slider/animation.scss：手柄背景色过渡，duration 为 none 即无动画）——
+  'transition-duration-slider-handle-bg': { value: 'var(--cd-motion-duration-none)', category: 'animation', label: '手柄背景过渡时长', usage: '滑动条圆形按钮-背景色-动画持续时间' },
+  'transition-function-slider-handle-bg': { value: 'var(--cd-motion-ease-in)', category: 'animation', label: '手柄背景过渡曲线', usage: '滑动条圆形按钮-背景色-过渡曲线' },
+  'transition-delay-slider-handle-bg': { value: 'var(--cd-motion-duration-none)', category: 'animation', label: '手柄背景过渡延迟', usage: '滑动条圆形按钮-背景色-延迟时间' },
 } satisfies TokenGroup;

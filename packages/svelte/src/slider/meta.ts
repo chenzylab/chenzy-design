@@ -80,7 +80,13 @@ export const meta = {
     '--cd-spacing-slider-rail-top',
     '--cd-spacing-slider-marks-top',
     '--cd-spacing-slider-boundary-top',
+    '--cd-spacing-slider-vertical-marks-margintop',
+    '--cd-spacing-slider-vertical-marks-marginleft',
+    '--cd-spacing-slider-vertical-marks-marginleft-reverse',
     '--cd-font-slider-marks-fontsize',
     '--cd-shadow-slider-knob',
+    '--cd-transition-duration-slider-handle-bg',
+    '--cd-transition-function-slider-handle-bg',
+    '--cd-transition-delay-slider-handle-bg',
   ],
 } as const;
