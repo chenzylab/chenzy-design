@@ -525,7 +525,7 @@
     </div>
 
     {#if showMarkLabel && markKeys.length > 0}
-      <div class="cd-slider-marks">
+      <div class="cd-slider-marks {vertical && verticalReverse ? 'cd-slider-marks-reverse' : ''}">
         {#each markKeys as mk (mk)}
           {#if markActive(mk)}
             {@const pct = valueToPercent(mk)}
@@ -670,7 +670,9 @@
     border-radius: 50%;
     box-shadow: var(--cd-shadow-slider-knob);
     cursor: pointer;
-    transition: background-color var(--cd-motion-duration-fast) var(--cd-motion-ease-standard);
+    transition: background-color var(--cd-transition-duration-slider-handle-bg)
+      var(--cd-transition-function-slider-handle-bg)
+      var(--cd-transition-delay-slider-handle-bg);
     outline: none;
   }
   .cd-slider-handle:hover {
@@ -738,7 +740,11 @@
     block-size: 100%;
     inset-block-start: 0;
     inset-inline-start: 0;
-    margin-inline-start: 29px;
+    margin-block-start: var(--cd-spacing-slider-vertical-marks-margintop);
+    margin-inline-start: var(--cd-spacing-slider-vertical-marks-marginleft);
+  }
+  .cd-slider-vertical-wrapper .cd-slider-marks-reverse {
+    margin-inline-start: var(--cd-spacing-slider-vertical-marks-marginleft-reverse);
   }
   .cd-slider-vertical-wrapper .cd-slider-mark {
     inset-block-start: auto;
