@@ -8,7 +8,7 @@
     { value: 'jianying', label: '剪映', type: 3 },
     { value: 'toutiao', label: '今日头条', type: 4 },
   ]);
-  let value = $state<string | string[]>('');
+  let value = $state<string[]>([]);
 
   let timer: ReturnType<typeof setTimeout> | undefined;
   const handleSearch = (inputValue: string) => {
@@ -42,5 +42,5 @@
   onSearch={handleSearch}
   optionList={list}
   {loading}
-  onChange={(v) => (value = v as string | string[])}
+  onChange={(v) => (value = v as string[])}
 />

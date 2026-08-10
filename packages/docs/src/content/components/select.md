@@ -25,6 +25,8 @@ brief: 用户可以通过 Select 选择器从一个选项集合中去选中一�
   import prefixSuffixSrc from '../../demos/select/07-prefix-suffix.svelte?raw';
   import Slots from '../../demos/select/08-slots.svelte';
   import slotsSrc from '../../demos/select/08-slots.svelte?raw';
+  import OuterTopSlot from '../../demos/select/08b-outer-top-slot.svelte';
+  import outerTopSlotSrc from '../../demos/select/08b-outer-top-slot.svelte?raw';
   import Controlled from '../../demos/select/09-controlled.svelte';
   import controlledSrc from '../../demos/select/09-controlled.svelte?raw';
   import DynamicOptions from '../../demos/select/10-dynamic-options.svelte';
@@ -67,13 +69,7 @@ import { Select } from '@chenzy-design/svelte';
 
 ### 基本使用
 
-每个选项都必须声明 `value` 属性，`label` 将会被渲染至下拉列表中。
-
-<Notice type="primary" title="注意">
-
-本库 Select 通过 `optionList` 数组传入候选项（对齐 Semi 的 `optionList` 用法）。Semi 也支持组合式 `<Select.Option>` / `<Select.OptGroup>` children 声明，本库因 Svelte 无法像 React.Children 遍历 children 收集，统一走数据驱动的 `optionList`。
-
-</Notice>
+每个 `<Select.Option>` 都必须声明 `value` 属性，`label` 将会被渲染至下拉列表中。
 
 <DemoBox code={basicSrc}><Basic /></DemoBox>
 
@@ -101,7 +97,14 @@ import { Select } from '@chenzy-design/svelte';
 
 ### 分组
 
-`optionList` 中含 `{ label, options }` 的对象即渲染为一个分组。
+用 `<Select.OptGroup>` 进行分组（分组功能仅支持通过组合式 children 方式声明，不支持 `optionList` 方式传入）。
+
+<Notice type="primary" title="注意">
+
+1. `<Select.OptGroup>` 必须为 `<Select>` 的直接子元素，不允许有其他元素阻隔。
+2. 若 `<Select>` 的候选项需要动态更新，`{#each}` 的 key 也需要正确设置，否则 Select 无法识别变化。
+
+</Notice>
 
 <DemoBox code={groupSrc}><Group /></DemoBox>
 
@@ -133,6 +136,10 @@ import { Select } from '@chenzy-design/svelte';
 - `outerTopSlot` 和 `outerBottomSlot` 将会被渲染为与 optionList 平级，无论 optionList 是否滚动，都会始终展现。
 
 <DemoBox code={slotsSrc}><Slots /></DemoBox>
+
+通过 `outerTopSlot` 将内容插入顶部插槽。
+
+<DemoBox code={outerTopSlotSrc}><OuterTopSlot /></DemoBox>
 
 ### 受控组件
 
@@ -180,7 +187,7 @@ import { Select } from '@chenzy-design/svelte';
 
 ### 自定义已选项标签渲染
 
-默认情况下，选中选项后会将 option.label 的内容回填到选择框中。但你可以通过 `renderSelectedItem` 自定义选择框中已选项标签的渲染结构。
+默认情况下，选中选项后会将 option.label 的内容回填到选择框中。你可以通过 `renderSelectedTag` 自定义已选项内容渲染，多选态下内容仍会套进选择器自身的 Tag 容器；也可以通过 `renderSelectedItem` 完全自定义单个已选 chip（多选态生效，不再套 Tag 容器，需自行处理关闭等交互）。
 
 <DemoBox code={renderSelectedSrc}><RenderSelected /></DemoBox>
 
@@ -255,20 +262,25 @@ import { Select } from '@chenzy-design/svelte';
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
+| affixIsIcon | prefix/suffix 为 Snippet 时是否按图标变体处理外边距（对齐 Semi isSemiIcon 判别）；渲染非图标节点传 false | boolean | true |
 | allowCreate | 是否允许用户创建新条目，需配合 filter 使用。该项为 true 时不再响应 optionList 的变更 | boolean | false |
+| aria-label | combobox 触发器可访问名 | string | - |
+| ariaLabelledby | 关联外部 label 的 id（优先于 aria-label） | string | - |
 | arrowIcon | 自定义右侧下拉箭头 Icon | Snippet | - |
 | autoAdjustOverflow | 浮层被遮挡时是否自动调整方向 | boolean | true |
 | autoClearSearchValue | 选中选项后，是否自动清空搜索关键字，当 multiple、filter 都开启时生效 | boolean | true |
-| autofocus | 初始渲染时是否自动 focus | boolean | false |
+| autoFocus | 挂载后是否自动 focus | boolean | false |
 | borderless | 无边框模式 | boolean | false |
 | class | 类名 | string | - |
 | clearIcon | 可用于自定义清除按钮，showClear 为 true 时有效 | Snippet | - |
 | clickToHide | 已展开时，点击选择框是否自动收起下拉列表 | boolean | false |
 | defaultValue | 初始选中的值 | `string \| number \| array` | - |
 | defaultOpen | 是否默认展开下拉列表 | boolean | false |
+| destroyOnClose | 关闭时是否销毁浮层 DOM | boolean | false |
 | disabled | 是否禁用 | boolean | false |
 | defaultActiveFirstOption | 是否默认高亮第一个选项（按回车可直接选中） | boolean | true |
 | dropdownClassName | 弹出层的 className | string | - |
+| dropdownMargin | 浮层与触发器间距(px)，映射到 floating offset；object 按 position 主轴取值 | `number \| { top?, bottom?, left?, right? }` | - |
 | dropdownMatchSelectWidth | 下拉菜单最小宽度是否等于 Select | boolean | true |
 | dropdownStyle | 弹出层的样式 | string | - |
 | emptyContent | 无结果时展示的内容 | `string \| Snippet` | - |
@@ -276,18 +288,24 @@ import { Select } from '@chenzy-design/svelte';
 | expandRestTagsOnClick | maxTagCount 存在且多选时，面板打开状态下是否展开多余的 Tag | boolean | false |
 | filter | 是否可搜索。传入 true 采用默认过滤策略；传入函数时接收 `(input, option)` 返回 boolean | `boolean \| ((input: string, option: OptionData) => boolean)` | false |
 | getPopupContainer | 指定父级 DOM，弹层将会渲染至该 DOM 中，自定义需要设置 `position: relative` | `() => HTMLElement` | `() => document.body` |
+| id | 触发器 id，用于关联外部 `<label for="...">` | string | - |
 | innerTopSlot | 渲染在弹出层顶部，在 optionList 内部的自定义 slot | Snippet | - |
 | innerBottomSlot | 渲染在弹出层底部，在 optionList 内部的自定义 slot | Snippet | - |
+| inputProps | 透传给搜索 input 的额外属性（勿传 value/onChange/onFocus 等覆盖内部搜索回调的键） | object | - |
+| insetLabel | 内嵌标签：浮入触发器左侧的常驻标签（纯展示，不影响值/过滤） | `string \| Snippet` | - |
+| insetLabelId | insetLabel 的 id，经 aria-labelledby 关联触发器 combobox（仅 insetLabel 存在时生效） | string | - |
 | loading | 下拉列表是否展示加载动画 | boolean | false |
 | maxTagCount | 多选模式下，已选项超出 maxTagCount 时，后续选项会被渲染成 +N 的形式 | number | - |
+| maxTagTextLength | 单个 Tag 文本最大长度，超出截断为「前缀…」，完整文本经 title 查看 | number | - |
 | max | 最多可选几项，仅在多选模式下生效 | number | - |
 | maxHeight | 下拉菜单中 optionList 的最大高度 | `string \| number` | 270 |
 | multiple | 是否多选 | boolean | false |
+| open | 是否展开下拉列表（受控） | boolean | - |
 | outerTopSlot | 渲染在弹出层顶部，与 optionList 平级的自定义 slot | Snippet | - |
 | outerBottomSlot | 渲染在弹出层底部，与 optionList 平级的自定义 slot | Snippet | - |
-| optionList | 传入候选项数组，每个元素需具备 label、value 属性；含 options 字段的对象即为分组 | `array` | - |
+| optionList | 传入候选项数组，每个元素需具备 label、value 属性；不支持分组（分组仅 `<Select.OptGroup>` 组合式支持） | `array` | - |
 | placeholder | 选择框默认文字 | `string \| Snippet` | - |
-| position | 菜单展开的位置，可选项同 Tooltip position | string | bottomLeft |
+| position | 菜单展开的位置，可选项同 Tooltip position | string | bottomStart |
 | prefix | 选择框的前缀标签 | Snippet | - |
 | preventScroll | 指示浏览器是否应滚动文档以显示新聚焦的元素，作用于组件内的 focus 方法 | boolean | - |
 | renderCreateItem | allowCreate 为 true 时，可自定义创建标签的渲染 | `Snippet<[input]>` | - |
@@ -298,23 +316,27 @@ import { Select } from '@chenzy-design/svelte';
 | searchPosition | filter 开启时，搜索框的位置，可选 `trigger` / `dropdown` | string | trigger |
 | searchPlaceholder | 搜索框的 placeholder | string | - |
 | size | 大小，可选值 `default` / `small` / `large` | string | default |
+| stopPropagation | 浮层点击是否 stopPropagation | boolean | true |
 | style | 样式 | string | - |
 | suffix | 选择框的后缀标签 | Snippet | - |
 | showClear | 是否展示清除按钮 | boolean | false |
 | showArrow | 是否展示下拉箭头 | boolean | true |
 | showRestTagsPopover | 当超过 maxTagCount，hover +N 时，是否通过 Popover 显示剩余内容 | boolean | false |
-| spacing | 浮层与选择器的距离 | number | 4 |
 | triggerRender | 自定义触发器渲染 | Snippet | - |
 | value | 当前选中的值，传入时作为受控组件 | `string \| number \| array` | - |
 | validateStatus | 校验结果，可选 `warning` / `error` / `default`（只影响样式背景色） | string | default |
 | virtualize | 列表虚拟化，由 height、width、itemSize 组成 | `{ itemSize?: number, height?: number, width?: string \| number }` | - |
-| zIndex | 弹层的 zIndex | number | 1030 |
+| zIndex | 弹层的 zIndex；不传由 CSS 层级 token 控制 | number | - |
 | onBlur | 失去焦点时的回调 | `() => void` | - |
 | onChange | 变化时回调函数 | `(value) => void` | - |
 | onChangeWithObject | 携带完整 option 对象的变化回调 | `(option) => void` | - |
 | onCreate | allowCreate 为 true，创建备选项时的回调 | `(value: string) => void` | - |
 | onClear | 清除按钮的回调 | `() => void` | - |
 | onDropdownVisibleChange | 下拉菜单展开/收起时的回调 | `(visible: boolean) => void` | - |
+| onListScroll | 浮层选项列表滚动时触发（携带原生 scroll 事件） | `(e: Event) => void` | - |
+| onMouseEnter | 触发器鼠标进入回调 | `(e: MouseEvent) => void` | - |
+| onMouseLeave | 触发器鼠标离开回调 | `(e: MouseEvent) => void` | - |
+| onScrollToBottom | 浮层列表滚动触底时触发 | `() => void` | - |
 | onSearch | input 输入框内容发生改变时回调函数 | `(input: string) => void` | - |
 | onSelect | 被选中时的回调 | `(value, option) => void` | - |
 | onDeselect | 取消选中时的回调，仅在多选时有效 | `(value, option) => void` | - |
@@ -323,22 +345,21 @@ import { Select } from '@chenzy-design/svelte';
 
 ### Option 属性
 
-`optionList` 数组中每个 Option 对象支持的属性：
+`<Select.Option>` 组合式声明候选项支持的属性（`optionList` 数组中每个对象也需具备 label / value）：
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
 | disabled | 是否禁用 | boolean | false |
-| label | 展示的文本 | `string \| Snippet` | - |
+| label | 展示的文本 | `string` | - |
 | value | 属性值 | `string \| number` | - |
 
 ### OptGroup 属性
 
-`optionList` 数组中含 `options` 字段的对象即为一个分组：
+`<Select.OptGroup>` 组合式分组声明支持的属性（仅组合式支持，`optionList` 数组不支持分组）：
 
 | 属性 | 说明 | 类型 |
 | --- | --- | --- |
 | label | 分组展示的文本 | string |
-| options | 该分组下的 Option 数组 | `OptionData[]` |
 
 ## Methods
 
