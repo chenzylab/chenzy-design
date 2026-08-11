@@ -12,14 +12,18 @@
     默认 separator=','、allowDuplicates=true（对齐 Semi 默认）。
   - inputMirror：隐藏镜像量宽让 input 撑开换行（对齐 Semi updateInputWidth）。
 
-  draggable: HTML5 DnD 拖拽重排为鼠标增强，新顺序经 reorder 纯函数 (红线 #2) 算出后
-  仅经 onChange 回传 (受控不回写 value，红线 #1)；拖拽态存 $state (红线 #3)。
+  draggable: 对齐 Semi `_sortable`（dnd-kit 封装：指针拖拽 + IconHandle 手柄触发，
+  仅 active 态启用）——复用本库通用 `sortable` action（wrap 模式，core `createSortable`
+  的 2D flex-wrap 几何：computeTargetIndexWrap 最近中心命中、computeItemTransformsWrap
+  逐项精确挪位，非单轴等距列表假设），而非自造 HTML5 DnD。新顺序经 `arrayMove` 纯函数
+  算出后仅经 onChange 回传 (受控不回写 value，红线 #1)。
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
   import { IconClear, IconHandle } from '@chenzy-design/icons';
+  import { arrayMove } from '@chenzy-design/core';
   import { useLocale } from '../locale-provider/index.js';
-  import { computeInsertSide, reorder, type InsertSide } from './reorder.js';
+  import { sortable } from '../sortable/index.js';
   import { getSplitedArray } from './split.js';
   import Popover from '../popover/Popover.svelte';
   import Tag from '../tag/Tag.svelte';
@@ -58,6 +62,9 @@
     insetLabelId?: string;
     /** 输入框后缀。 */
     suffix?: string | Snippet;
+    /** prefix/suffix 传 Snippet 时是否按图标间距渲染（对齐 Semi isSemiIcon 判定；Svelte 无法
+     * 内省 Snippet 内容，故显式声明，默认 true，同 Input 组件既定约定）。 */
+    affixIsIcon?: boolean;
     /** 标签最大展示数量，超出部分折叠为 +N。 */
     maxTagCount?: number;
     /** 超出 maxTagCount 后 hover +N 是否用 Popover 展示剩余标签（默认 true）。 */
@@ -128,6 +135,7 @@
     insetLabel,
     insetLabelId,
     suffix,
+    affixIsIcon = true,
     maxTagCount,
     showRestTagsPopover = true,
     restTagsPopoverProps,
@@ -191,10 +199,9 @@
   // 不为 false 就恒定显示 tooltip，与文字是否截断无关，是本库自造的过度触发行为。
   const tagEllipsis = $derived<EllipsisConfig>({ rows: 1, showTooltip: showContentTooltip });
 
-  // 拖拽态（在 collapsed 派生前声明）。命令式事件处理见下方拖拽块。
+  // 拖拽态（在 collapsed 派生前声明）：dragIndex 是当前被拖拽项的索引，供
+  // sortable-item-active 样式与 collapsed 强制展开判定使用（命令式赋值见下方拖拽块）。
   let dragIndex = $state<number | null>(null);
-  let dropIndex = $state<number | null>(null);
-  let dropSide = $state<InsertSide | null>(null);
 
   // maxTagCount 折叠：点击 +N 展开后（expandRestTagsOnClick）本地置 true，展示全部。
   // 拖拽态下强制展开（否则拖到折叠区无意义）。
@@ -281,7 +288,7 @@
   // focusing 提前声明（原声明在下方 inputEl 附近）。
   let focusing = $state(false);
 
-  // --- 拖拽排序：HTML5 DnD（draggable + drag 事件）---
+  // --- 拖拽排序：对齐 Semi `_sortable`（dnd-kit 封装）---
   // 对齐 Semi tagInput/index.tsx renderTags：`if (active && draggable && sortableListItems.length
   // > 0) return <Sortable ...>`——排序能力（含拖拽手柄图标 showIconHandler = active && draggable）
   // 整体由 active 门控。active 语义是「点击容器后到点击容器外部前」（foundation.ts
@@ -292,58 +299,59 @@
   let active = $state(false);
   const canDrag = $derived(draggable && !disabled && active);
 
-  function resetDrag() {
-    dragIndex = null;
-    dropIndex = null;
-    dropSide = null;
+  // 只在拖拽手柄图标（IconHandle）上按下才激活拖拽，对齐 Semi SortableItem.sortableHandle
+  // ——`listeners` 只绑在手柄 span 上，标签主体本身不可拖，故这里用 closest 判定命中手柄。
+  function resolveTagDragIndex(e: PointerEvent, container: HTMLElement): number {
+    if (!canDrag) return -1;
+    const target = e.target as HTMLElement | null;
+    const handle = target?.closest<HTMLElement>('.cd-tag-input-drag-handler');
+    if (!handle) return -1;
+    const item = handle.closest<HTMLElement>('[data-sortable-item]');
+    if (!item) return -1;
+    const items = [...container.querySelectorAll<HTMLElement>('[data-sortable-item]')];
+    return items.indexOf(item);
   }
 
-  function onTagDragStart(e: DragEvent, index: number) {
-    if (!canDrag) {
-      e.preventDefault();
-      return;
-    }
-    dragIndex = index;
-    if (e.dataTransfer) {
-      e.dataTransfer.effectAllowed = 'move';
-      e.dataTransfer.setData('text/plain', String(index));
-    }
+  function handleReorder(from: number, to: number) {
+    const next = arrayMove(current, from, to);
+    setTags(next);
   }
 
-  function onTagDragOver(e: DragEvent, index: number) {
-    if (dragIndex === null) return;
-    e.preventDefault();
-    if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
-    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-    dropIndex = index;
-    dropSide = computeInsertSide(e.clientX - rect.left, rect.width);
+  // 拖拽目标位置指示线（对齐 Semi &-sortable-item-over::before）：sortable action 每帧
+  // 上报 targetIndex（-1 = 未拖拽/已清空），命中项渲染竖线提示将落位到此处。
+  let overIndex = $state(-1);
+
+  // --- DragOverlay（对齐 Semi _sortable useDragOverlay:true 默认态）---
+  // sortable action 只报告坐标；overlay 内容由本组件用真实的 tagContent snippet 再渲染
+  // 一份（而非 cloneNode 克隆 DOM）——克隆会脱离 Paragraph 组件的 ResizeObserver 截断测量
+  // 等响应式/副作用状态，导致内容渲染错乱。overlayTop/Left 用 position:fixed 挂在
+  // document.body 下（避免被 .cd-tag-input-wrapper 的 overflow:hidden 裁剪），
+  // 与列表里半透明的原位置项（-active class）同时存在，构成 dnd-kit 的双层视觉。
+  let overlayIndex = $state<number | null>(null);
+  let overlayTop = $state(0);
+  let overlayLeft = $state(0);
+
+  function handleDragOverlayStart(index: number, rect: DOMRect) {
+    overlayIndex = index;
+    overlayTop = rect.top;
+    overlayLeft = rect.left;
+  }
+  function handleDragOverlayMove(top: number, left: number) {
+    overlayTop = top;
+    overlayLeft = left;
+  }
+  function handleDragOverlayEnd() {
+    overlayIndex = null;
   }
 
-  function onTagDragLeave(e: DragEvent, index: number) {
-    const related = e.relatedTarget as Node | null;
-    const cur = e.currentTarget as HTMLElement;
-    if (related && cur.contains(related)) return;
-    if (dropIndex === index) {
-      dropIndex = null;
-      dropSide = null;
-    }
-  }
-
-  function onTagDrop(e: DragEvent, index: number) {
-    if (dragIndex === null || dropSide === null) {
-      resetDrag();
-      return;
-    }
-    e.preventDefault();
-    const next = reorder(current, dragIndex, index, dropSide);
-    resetDrag();
-    if (next.length === current.length && next.some((t, i) => t !== current[i])) {
-      setTags(next);
-    }
-  }
-
-  function onTagDragEnd() {
-    resetDrag();
+  /** 挂载到 document.body（对齐 Popover/Tooltip 既有 portal 模式：appendChild 迁移真实节点，非克隆）。 */
+  function portalToBody(node: HTMLElement) {
+    document.body.appendChild(node);
+    return {
+      destroy() {
+        node.remove();
+      },
+    };
   }
 
   function handleInput(e: Event & { currentTarget: HTMLInputElement }) {
@@ -515,10 +523,13 @@
   onmouseleave={() => (hovering = false)}
 >
   {#if hasPrefix}
+    <!-- -prefix-text / -prefix-icon 变体（对齐 Semi isString(prefix)→text、isSemiIcon(prefix)→icon）：
+         insetLabel 走自己的 -inset-label 规则（Semi 同样单列），不叠 icon/text 变体类。 -->
     <div
       class="cd-tag-input-prefix"
       class:cd-tag-input-inset-label={insetLabel !== undefined && prefix === undefined}
-      class:cd-tag-input-prefix-text={typeof prefixNode === 'string'}
+      class:cd-tag-input-prefix-text={typeof prefixNode === 'string' && !(insetLabel !== undefined && prefix === undefined)}
+      class:cd-tag-input-prefix-icon={typeof prefixNode !== 'string' && affixIsIcon}
       id={insetLabelId}
     >
       {#if typeof prefixNode === 'string'}{prefixNode}{:else if prefixNode}{@render prefixNode()}{/if}
@@ -534,7 +545,7 @@
       {@render renderTagItem({ value: tag, index: i, onClose: () => removeAt(i) })}
     {:else}
       <Tag
-        class="cd-tag-input-wrapper-tag"
+        class={canDrag ? 'cd-tag-input-wrapper-tag cd-tag-input-wrapper-tag-icon' : 'cd-tag-input-wrapper-tag'}
         color="white"
         type="light"
         size={tagSize}
@@ -554,22 +565,44 @@
     {/if}
   {/snippet}
 
-  <div class="cd-tag-input-wrapper">
+  <!-- 对齐 Semi renderTags：`active && draggable && sortableListItems.length > 0` 时用
+       <Sortable> 渲染；wrap 模式（flex-wrap 多行不定宽）见 core createSortable 的
+       computeTargetIndexWrap/computeItemTransformsWrap，拖拽仅由手柄图标触发
+       （resolveTagDragIndex 限定 .cd-tag-input-drag-handler 命中）。 -->
+  <div
+    class="cd-tag-input-wrapper"
+    use:sortable={{
+      getItemCount: () => visibleTags.length,
+      resolveIndexFromEvent: resolveTagDragIndex,
+      wrap: true,
+      dragOverlay: true,
+      // 严格对齐 Semi tagInput/index.tsx：`<Sortable transition={null} .../>`——直接照搬
+      // 同一个 prop 及其值，而非另造等价开关。_sortable SortableItem 的 wrapperStyle
+      // 就是靠这个值本身门控（`!isNull(transition) ? {transform,transition} : undefined`），
+      // 故拖拽过程中不产生任何 transform（真机实测复核：其他项 rect 拖拽前后逐像素相同）。
+      transition: null,
+      onReorder: handleReorder,
+      onDragStart: (i) => (dragIndex = i),
+      onDragEnd: () => {
+        dragIndex = null;
+        overIndex = -1;
+      },
+      onDragCancel: () => {
+        dragIndex = null;
+        overIndex = -1;
+      },
+      onDragOver: (i) => (overIndex = i),
+      onDragOverlayStart: handleDragOverlayStart,
+      onDragOverlayMove: handleDragOverlayMove,
+      onDragOverlayEnd: handleDragOverlayEnd,
+    }}
+  >
     {#each visibleTags as tag, i (`${i}-${tag}`)}
-      <!-- 拖拽包裹层：HTML5 DnD 为鼠标增强，键盘用户经删除按钮增删 -->
-      <!-- svelte-ignore a11y_no_static_element_interactions -->
       <div
         class="cd-tag-input-sortable-item"
-        class:cd-tag-input-sortable-item-over={dropIndex === i}
-        class:cd-tag-input-sortable-item-over-before={dropIndex === i && dropSide === 'before'}
-        class:cd-tag-input-sortable-item-over-after={dropIndex === i && dropSide === 'after'}
         class:cd-tag-input-sortable-item-active={dragIndex === i}
-        draggable={canDrag}
-        ondragstart={(e) => onTagDragStart(e, i)}
-        ondragover={(e) => onTagDragOver(e, i)}
-        ondragleave={(e) => onTagDragLeave(e, i)}
-        ondrop={(e) => onTagDrop(e, i)}
-        ondragend={onTagDragEnd}
+        class:cd-tag-input-sortable-item-over={dragIndex !== null && overIndex === i}
+        data-sortable-item
       >
         {@render tagContent(tag, i)}
       </div>
@@ -639,6 +672,23 @@
     </div>
   </div>
 
+  {#if overlayIndex !== null}
+    <!-- DragOverlay：真实渲染 tagContent snippet（非克隆 DOM），position:fixed 挂 body，
+         跟随指针（坐标来自 sortable action 的 onDragOverlayMove）。opacity/cursor 对齐
+         Semi dnd-kit DragOverlay 视觉（拖拽副本完全不透明、清晰，与原位置半透明项区分）。
+         不显式设置 width/height——内部 Tag 组件是 inline-flex 自适应内容尺寸，强制外层
+         固定宽高会与其自然尺寸冲突，导致内部手柄图标/文字失去公共高度基准而错位
+         （原始列表项同样不设固定宽高，靠 Tag 自身撑开）。 -->
+    <div
+      use:portalToBody
+      class="cd-tag-input-drag-overlay"
+      style:top="{overlayTop}px"
+      style:left="{overlayLeft}px"
+    >
+      {@render tagContent(visibleTags[overlayIndex] as string, overlayIndex)}
+    </div>
+  {/if}
+
   {#if showClear}
     <div
       role="button"
@@ -663,20 +713,24 @@
   {/if}
 
   {#if suffix !== undefined}
-    <div class="cd-tag-input-suffix" class:cd-tag-input-suffix-text={typeof suffix === 'string'}>
+    <div
+      class="cd-tag-input-suffix"
+      class:cd-tag-input-suffix-text={typeof suffix === 'string'}
+      class:cd-tag-input-suffix-icon={typeof suffix !== 'string' && affixIsIcon}
+    >
       {#if typeof suffix === 'string'}{suffix}{:else}{@render suffix()}{/if}
     </div>
   {/if}
 </div>
 
 <style>
-  /* —— 容器：无边框 fill-0 填充式 inline-flex（对齐 Semi .semi-tagInput）—— */
+  /* —— 容器：无边框 fill-0 填充式 inline-flex（对齐 Semi .semi-tagInput，物理属性）—— */
   .cd-tag-input {
     box-sizing: border-box;
     display: inline-flex;
     align-items: center;
-    inline-size: 100%;
-    min-block-size: var(--cd-tag-input-height-default);
+    width: 100%;
+    min-height: var(--cd-tag-input-height-default);
     background-color: var(--cd-tag-input-default-bg-default);
     border: var(--cd-tag-input-border-width-default) solid var(--cd-tag-input-border-default);
     border-radius: var(--cd-tag-input-radius);
@@ -687,10 +741,10 @@
       border-color var(--cd-motion-duration-fast) var(--cd-motion-ease-standard);
   }
   .cd-tag-input-small {
-    min-block-size: var(--cd-tag-input-height-small);
+    min-height: var(--cd-tag-input-height-small);
   }
   .cd-tag-input-large {
-    min-block-size: var(--cd-tag-input-height-large);
+    min-height: var(--cd-tag-input-height-large);
   }
 
   /* —— 状态：hover / focus（对齐 Semi &-hover / &-focus）—— */
@@ -747,39 +801,54 @@
   .cd-tag-input-disabled .cd-tag-input-wrapper-typo {
     color: var(--cd-tag-input-disabled-text-default);
   }
+  /* 对齐 Semi &-disabled &-wrapper-tag：禁用态标签文字色随容器置灰、背景透明
+     （复用的 Tag 组件默认 color=white 自带浅底，禁用时需要压平为无底色）。 */
+  .cd-tag-input-disabled .cd-tag-input-wrapper :global(.cd-tag-input-wrapper-tag) {
+    color: var(--cd-tag-input-disabled-text-default);
+    background-color: transparent;
+  }
   .cd-tag-input-disabled .cd-tag-input-wrapper-input::placeholder {
     color: var(--cd-tag-input-disabled-text-default);
   }
 
-  /* —— wrapper：flex-wrap 容器（对齐 Semi &-wrapper）—— */
+  /* —— wrapper：flex-wrap 容器（对齐 Semi &-wrapper，物理属性）—— */
   .cd-tag-input-wrapper {
     display: flex;
     flex-wrap: wrap;
     flex-grow: 1;
     align-items: center;
-    padding-inline: var(--cd-spacing-extra-tight);
+    padding-left: var(--cd-spacing-extra-tight);
+    padding-right: var(--cd-spacing-extra-tight);
     overflow: hidden;
     position: relative;
   }
 
-  /* 标签（复用 Tag 组件；此处仅补 Semi &-wrapper-tag 外边距 / 换行）—— */
+  /* 标签（复用 Tag 组件；此处仅补 Semi &-wrapper-tag 外边距 / 换行，物理属性）—— */
   .cd-tag-input-wrapper :global(.cd-tag-input-wrapper-tag) {
-    margin-inline-end: var(--cd-spacing-extra-tight);
+    margin-right: var(--cd-spacing-extra-tight);
     white-space: pre;
-    max-inline-size: 100%;
-    margin-block: var(--cd-tag-input-default-y);
+    max-width: 100%;
+    margin-top: var(--cd-tag-input-default-y);
+    margin-bottom: var(--cd-tag-input-default-y);
   }
   .cd-tag-input-small .cd-tag-input-wrapper :global(.cd-tag-input-wrapper-tag) {
-    margin-block: var(--cd-tag-input-small-y);
+    margin-top: var(--cd-tag-input-small-y);
+    margin-bottom: var(--cd-tag-input-small-y);
   }
   .cd-tag-input-large .cd-tag-input-wrapper :global(.cd-tag-input-wrapper-tag) {
-    margin-block: var(--cd-tag-input-large-y);
+    margin-top: var(--cd-tag-input-large-y);
+    margin-bottom: var(--cd-tag-input-large-y);
+  }
+  /* 对齐 Semi &-wrapper-tag-icon：带拖拽手柄图标时 tag 左内边距（Tag 组件本身无此
+     内边距概念，故用 :global 打洞补在复用的 Tag 根节点上）。 */
+  .cd-tag-input-wrapper :global(.cd-tag-input-wrapper-tag-icon) {
+    padding-left: var(--cd-tag-input-tag-icon-paddingleft);
   }
 
   /* 标签文本（对齐 Semi &-wrapper-typo）—— */
   .cd-tag-input-wrapper-typo {
     display: inline-block;
-    max-inline-size: 100%;
+    max-width: 100%;
     overflow: hidden;
     white-space: nowrap;
     text-overflow: ellipsis;
@@ -800,23 +869,33 @@
     align-items: center;
     min-width: 0;
   }
+  /* 同一份三层居中修正，补给 DragOverlay 挂载点（不在 .cd-tag-input-wrapper 选择器路径下，
+     上面那条规则命中不到，拖拽时浮动副本会重现手柄/文字错位）。 —— */
+  .cd-tag-input-drag-overlay :global(.cd-tag-input-wrapper-tag .cd-tag-content),
+  .cd-tag-input-drag-overlay :global(.cd-tag-input-wrapper-tag .cd-tag-content .cd-tooltip),
+  .cd-tag-input-drag-overlay :global(.cd-tag-input-wrapper-tag .cd-tag-content .cd-tooltip-trigger) {
+    display: flex;
+    align-items: center;
+    min-width: 0;
+  }
 
-  /* 拖拽手柄（对齐 Semi &-drag-handler）—— */
+  /* 拖拽手柄（对齐 Semi &-drag-handler，物理属性）—— */
   .cd-tag-input-drag-handler {
     display: inline-flex;
     align-items: center;
-    margin-inline-end: var(--cd-tag-input-drag-handler-marginright);
+    margin-right: var(--cd-tag-input-drag-handler-marginright);
     color: var(--cd-tag-input-handler-icon-default);
     cursor: move;
   }
 
-  /* +N 折叠计数（对齐 Semi &-wrapper-n）—— */
+  /* +N 折叠计数（对齐 Semi &-wrapper-n，物理属性）—— */
   .cd-tag-input-wrapper-n {
     cursor: pointer;
     font-size: var(--cd-font-size-small);
-    margin-inline-end: var(--cd-spacing-extra-tight);
+    margin-right: var(--cd-spacing-extra-tight);
     color: var(--cd-tag-input-maxtagcount-default);
-    padding-inline: var(--cd-tag-input-wrapper-n-paddingx);
+    padding-left: var(--cd-tag-input-wrapper-n-paddingx);
+    padding-right: var(--cd-tag-input-wrapper-n-paddingx);
   }
   .cd-tag-input-wrapper-n-disabled {
     cursor: not-allowed;
@@ -824,37 +903,54 @@
   }
 
   /* 输入框外层 div（真正参与父级 flex 布局的 item，对齐 Semi Input 组件的 wrapper div：
-     div 元素没有浏览器给 <input> 的默认最小宽度基线，换行判定按此处的 min/max 生效）—— */
+     div 元素没有浏览器给 <input> 的默认最小宽度基线，换行判定按此处的 min/max 生效，
+     物理属性）—— */
   .cd-tag-input-wrapper-input-box {
     flex-grow: 1;
-    inline-size: min-content;
-    min-inline-size: 2px;
-    max-inline-size: 100%;
+    width: min-content;
+    min-width: 2px;
+    max-width: 100%;
   }
-  /* 输入框（对齐 Semi &-wrapper-input）：撑满外层 div，自身不再是 flex item —— */
+  /* 输入框（对齐 Semi &-wrapper-input）：撑满外层 div，自身不再是 flex item。
+     padding-right 对齐 Semi 内部 Input 组件（.semi-input）的默认右内边距
+     （input.scss `$spacing-input-paddingRight`）。padding-left 恒为 0——Semi
+     `&-wrapper-input:not(:first-child) > input { padding-left: 0 }` 判定的是
+     Input 组件 wrapper 是否为 &-wrapper 的首个子元素；Semi DOM 里 input 前面
+     总有一个 inputMirror <span>（`<span inputMirror/><Input/>`，index.tsx:707-708），
+     故 Input wrapper 永远不是 :first-child，这条规则恒定生效、左内边距恒为 0；
+     本库结构同构（mirror span 同样排在 wrapper-input-box 前面），故直接不声明
+     padding-left（不像 Semi 需要靠选择器覆盖默认值，本库这里从未设过默认值）。 —— */
   .cd-tag-input-wrapper-input {
-    inline-size: 100%;
+    width: 100%;
     margin: 0;
     border: none;
     outline: none;
+    padding-right: var(--cd-spacing-input-paddingright);
     background-color: transparent;
     color: inherit;
     font-size: var(--cd-font-size-regular);
   }
+  /* 对齐 Semi &-wrapper-input:hover：hover 时背景保持透明（避免原生 input 的 UA hover 底色）。 */
+  .cd-tag-input-wrapper-input:hover {
+    background-color: transparent;
+  }
   .cd-tag-input-wrapper-input-small {
-    block-size: var(--cd-tag-input-input-small);
+    height: var(--cd-tag-input-input-small);
     line-height: var(--cd-tag-input-input-small);
-    margin-block: var(--cd-tag-input-small-y);
+    margin-top: var(--cd-tag-input-small-y);
+    margin-bottom: var(--cd-tag-input-small-y);
   }
   .cd-tag-input-wrapper-input-default {
-    block-size: var(--cd-tag-input-input-default);
+    height: var(--cd-tag-input-input-default);
     line-height: var(--cd-tag-input-input-default);
-    margin-block: var(--cd-tag-input-default-y);
+    margin-top: var(--cd-tag-input-default-y);
+    margin-bottom: var(--cd-tag-input-default-y);
   }
   .cd-tag-input-wrapper-input-large {
-    block-size: var(--cd-tag-input-input-large);
+    height: var(--cd-tag-input-input-large);
     line-height: var(--cd-tag-input-input-large);
-    margin-block: var(--cd-tag-input-large-y);
+    margin-top: var(--cd-tag-input-large-y);
+    margin-bottom: var(--cd-tag-input-large-y);
   }
   .cd-tag-input-wrapper-input::placeholder {
     color: var(--cd-color-text-2);
@@ -878,33 +974,41 @@
     font-family: inherit;
   }
 
-  /* 拖拽指示线（对齐 Semi &-sortable-item-over::before）—— */
+  /* 拖拽项（对齐 Semi &-sortable-item，物理属性）：max-width:100% 防止长文字标签
+     溢出容器；relative 承载被拖拽项的 z-index/position 提升（sortable action 命令式
+     写入，见 use:sortable applyTransforms）。 —— */
   .cd-tag-input-sortable-item {
     position: relative;
-    display: inline-flex;
-    align-items: center;
-    max-inline-size: 100%;
+    max-width: 100%;
   }
+  /* 对齐 Semi &-sortable-item-active：正在被拖拽的项半透明（dnd-kit DragOverlay
+     接管视觉，原位置项降透明度）。 —— */
   .cd-tag-input-sortable-item-active {
     opacity: 0.5;
   }
+  /* DragOverlay 浮动副本（对齐 Semi &-drag-item-move z-index:2000）：position:fixed
+     挂 body，跟随指针，不透明、不响应事件。 —— */
+  .cd-tag-input-drag-overlay {
+    position: fixed;
+    z-index: 2000;
+    margin: 0;
+    pointer-events: none;
+    box-sizing: border-box;
+  }
+  /* 对齐 Semi &-sortable-item-over::before：拖拽经过的目标项左侧画一条竖线提示落位
+     （物理属性，固定左侧，非 before/after 双侧——Semi 源码只有这一种）。 —— */
   .cd-tag-input-sortable-item-over {
     overflow: visible;
   }
-  .cd-tag-input-sortable-item-over-before::before,
-  .cd-tag-input-sortable-item-over-after::after {
+  .cd-tag-input-sortable-item-over::before {
     content: '';
     display: block;
     position: absolute;
-    inset-block: 0;
-    inline-size: var(--cd-tag-input-sortable-item-over);
+    left: calc(var(--cd-tag-input-sortable-item-over) * -1);
+    top: 0;
+    width: var(--cd-tag-input-sortable-item-over);
+    height: 100%;
     background-color: var(--cd-tag-input-sortable-item-over-bg);
-  }
-  .cd-tag-input-sortable-item-over-before::before {
-    inset-inline-start: calc(var(--cd-tag-input-sortable-item-over) * -1);
-  }
-  .cd-tag-input-sortable-item-over-after::after {
-    inset-inline-end: calc(var(--cd-tag-input-sortable-item-over) * -1);
   }
 
   /* +N 剩余标签浮层列表：对齐 Semi content={restTags}——Popover content 直接是一份
@@ -915,15 +1019,15 @@
     display: flex;
     flex-wrap: wrap;
     gap: var(--cd-spacing-extra-tight);
-    max-inline-size: 240px;
+    max-width: 240px;
   }
 
-  /* 清除按钮（对齐 Semi &-clearBtn）—— */
+  /* 清除按钮（对齐 Semi &-clearBtn，物理属性）—— */
   .cd-tag-input-clearBtn {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    inline-size: var(--cd-tag-input-clear-medium);
+    width: var(--cd-tag-input-clear-medium);
     flex-shrink: 0;
     color: var(--cd-tag-input-icon-default);
     cursor: pointer;
@@ -935,7 +1039,7 @@
     visibility: hidden;
   }
 
-  /* prefix / suffix / insetLabel（对齐 Semi &-prefix / &-suffix / &-inset-label）—— */
+  /* prefix / suffix / insetLabel（对齐 Semi &-prefix / &-suffix / &-inset-label，物理属性）—— */
   .cd-tag-input-prefix,
   .cd-tag-input-suffix {
     display: inline-flex;
@@ -946,15 +1050,24 @@
   }
   .cd-tag-input-prefix-text,
   .cd-tag-input-suffix-text {
-    margin-inline: var(--cd-tag-input-prefix-suffix-marginx);
+    margin-left: var(--cd-tag-input-prefix-suffix-marginx);
+    margin-right: var(--cd-tag-input-prefix-suffix-marginx);
     font-weight: var(--cd-tag-input-prefix-suffix-fontweight);
     white-space: nowrap;
+  }
+  /* prefix/suffix 传图标时的窄间距变体（对齐 Semi &-prefix-icon/&-suffix-icon）—— */
+  .cd-tag-input-prefix-icon,
+  .cd-tag-input-suffix-icon {
+    color: var(--cd-tag-input-icon-default);
+    margin-left: var(--cd-spacing-tight);
+    margin-right: var(--cd-spacing-tight);
   }
   .cd-tag-input-suffix {
     color: var(--cd-tag-input-suffix-default);
   }
   .cd-tag-input-inset-label {
-    margin-inline: var(--cd-tag-input-prefix-suffix-marginx);
+    margin-left: var(--cd-tag-input-prefix-suffix-marginx);
+    margin-right: var(--cd-tag-input-prefix-suffix-marginx);
     font-weight: var(--cd-tag-input-prefix-suffix-fontweight);
     color: var(--cd-tag-input-prefix-default);
     white-space: nowrap;
@@ -964,5 +1077,25 @@
     .cd-tag-input {
       transition: none;
     }
+  }
+
+  /* —— RTL 镜像（对齐 Semi semi-foundation/tagInput/rtl.scss）——
+     本库 RTL 触发机制是 `:global(.cd-rtl) .cd-<comp>`（非 [dir=rtl]/:dir()，
+     见 packages/svelte/scripts/check-rtl-scope.mjs 说明），物理属性正向已用
+     margin-left/right、padding-left/right，故 RTL 只需把左右值互换镜像即可。 */
+  :global(.cd-rtl) .cd-tag-input {
+    direction: rtl;
+  }
+  /* 对齐 Semi &-wrapper &-tag：margin-left 顶替正向 margin-right，margin-right 归零 —— */
+  :global(.cd-rtl) .cd-tag-input-wrapper :global(.cd-tag-input-wrapper-tag) {
+    margin-left: var(--cd-spacing-extra-tight);
+    margin-right: 0;
+  }
+  /* 对齐 Semi &-wrapper-input:not(:first-child) > input { padding-right: 0 }：
+     正向左内边距恒为 0（mirror span 恒排 input 前），RTL 下对称地把右内边距清零，
+     左侧（视觉起始侧）改吃 Semi 的 $spacing-input-paddingRight。 —— */
+  :global(.cd-rtl) .cd-tag-input-wrapper-input {
+    padding-left: var(--cd-spacing-input-paddingright);
+    padding-right: 0;
   }
 </style>

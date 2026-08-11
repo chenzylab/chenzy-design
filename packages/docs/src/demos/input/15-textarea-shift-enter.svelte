@@ -14,7 +14,7 @@
   }
 </script>
 
-<p style="display: flex; align-items: center;">
+<p style="display: flex;">
   使用
   <HotKeys hotKeys={['Shift', 'Enter']} style="margin-bottom: 12px; margin-left: 4px; margin-right: 4px;" />
   换行的 TextArea

@@ -123,9 +123,12 @@ const components = [
   ['form', '{ FormField, FormInput, ArrayField }', '14 KB'],
   // TextArea 迁入 input/ 目录、与 Input/InputGroup 同为 input 条目导出（对齐 Semi 目录结构，
   // 原独立 textarea 条目随目录迁移移除）。三者共享 input.scss token/locale，合并测量。
-  // autosize 测量改用隐藏克隆节点（对齐 Semi calculateNodeHeight.ts，修复原生 rows 属性
-  // 污染 scrollHeight 测量导致 minRows 收缩失效的 bug）后实测 9.06 KB，预算 +微量 buffer 校准。
-  ['input', '{ Input, InputGroup, TextArea }', '9.2 KB'],
+  // Input/InputGroup/TextArea 同 TagInput 一批做严格对齐 Semi 审计：物理属性改造、
+  // prepend/append 多元素独立描边+动态拼接（对齐 Semi 聚焦态 clearbtn/modebtn 联动）、
+  // TextArea maxLength 截断/blur 二次确认(issue #2005)/wrapper 点击聚焦/autosize 改实测
+  // scrollHeight、InputGroup 圆角具名选择器（Select/TreeSelect 圆角合并此前失效的真实
+  // bug）等一批功能性补齐，实测 10.44 KB，预算按实测校准。
+  ['input', '{ Input, InputGroup, TextArea }', '10.6 KB'],
   ['input-number', '{ InputNumber }', '5 KB'],
   ['pincode', '{ PinCode }', '3.5 KB'],
   // 拆分 RadioInner.svelte（对齐 Semi radioInner.tsx 文件结构，参照 CheckboxInner 拆分先例）+

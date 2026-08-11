@@ -131,37 +131,92 @@
     align-content: center;
     flex-wrap: wrap;
   }
-  /* 组内直接子级：中间圆角归零，仅首尾保留；相邻控件用 ::after 画分隔线。 */
-  .cd-input-group > :global(*) {
+  /* 组内子组件：中间圆角归零，仅首尾保留；相邻控件用 ::after 画分隔线。严格对齐 Semi
+     input.scss &-group 两组具名选择器（非通配符）：
+     - 第一组 `.semi-select, .semi-tagInput, .semi-cascader, .semi-tree-select, & > .semi-input-wrapper`
+       ——前四个是**后代选择器**（不限层级，Semi Select 用 Popover 包裹、真正的 .semi-select
+       是原位渲染不额外包 div，故后代=直接子级；本库 Select/TreeSelect 多包了一层
+       .cd-select/.cd-tree-select 根 div、真正圆角在子级 .cd-select-trigger，用后代选择器
+       同样能命中，不受这层结构差异影响），只有 `.semi-input-wrapper` 前缀 `& >`（直接子级）。
+     - 第二组 `.semi-input-number, .semi-datepicker, .semi-timepicker, .semi-autocomplete`
+       （直接子级）圆角画在孙级 `.semi-input-wrapper`/`.semi-datepicker-range-input`，
+       但 ::after/position:relative 画在**自己身上**（直接子级），不下钻。 */
+  :global(.cd-input-group .cd-select-trigger),
+  :global(.cd-input-group .cd-tag-input),
+  :global(.cd-input-group .cd-cascader),
+  :global(.cd-input-group .cd-tree-select-trigger),
+  :global(.cd-input-group > .cd-input-wrapper) {
     border-radius: 0;
   }
-  .cd-input-group > :global(*:first-child) {
-    border-start-start-radius: var(--cd-radius-input-wrapper);
-    border-end-start-radius: var(--cd-radius-input-wrapper);
+  :global(.cd-input-group > :first-child .cd-select-trigger),
+  :global(.cd-input-group > :first-child.cd-tag-input),
+  :global(.cd-input-group > :first-child.cd-cascader),
+  :global(.cd-input-group > :first-child .cd-tree-select-trigger),
+  :global(.cd-input-group > .cd-input-wrapper:first-child) {
+    border-radius: var(--cd-radius-input-wrapper) 0 0 var(--cd-radius-input-wrapper);
   }
-  .cd-input-group > :global(*:last-child) {
-    border-start-end-radius: var(--cd-radius-input-wrapper);
-    border-end-end-radius: var(--cd-radius-input-wrapper);
+  :global(.cd-input-group > :last-child .cd-select-trigger),
+  :global(.cd-input-group > :last-child.cd-tag-input),
+  :global(.cd-input-group > :last-child.cd-cascader),
+  :global(.cd-input-group > :last-child .cd-tree-select-trigger),
+  :global(.cd-input-group > .cd-input-wrapper:last-child) {
+    border-radius: 0 var(--cd-radius-input-wrapper) var(--cd-radius-input-wrapper) 0;
   }
-  .cd-input-group > :global(*:not(:last-child)) {
+  /* 第一组 direct-child 分隔线（Select/TagInput/Cascader/TreeSelect/直接子级 Input）。 */
+  :global(.cd-input-group > :is(.cd-select, .cd-tag-input, .cd-cascader, .cd-tree-select, .cd-input-wrapper):not(:last-child)) {
     position: relative;
   }
-  .cd-input-group > :global(*:not(:last-child))::after {
+  :global(.cd-input-group > :is(.cd-select, .cd-tag-input, .cd-cascader, .cd-tree-select, .cd-input-wrapper):not(:last-child))::after {
     content: '';
     position: absolute;
-    inset-inline-end: -1px;
-    inset-block-start: 1px;
-    inset-block-end: 1px;
-    inline-size: var(--cd-width-input-group-pseudo-border);
+    right: -1px;
+    top: 1px;
+    bottom: 1px;
+    width: var(--cd-width-input-group-pseudo-border);
     background: var(--cd-color-input-group-border-default);
   }
-  /* 聚焦控件抬升层级，使其完整边框覆盖相邻分隔线。 */
+
+  /* 第二组：InputNumber/DatePicker/TimePicker/AutoComplete——圆角在孙级 .cd-input-wrapper /
+     .cd-datepicker-range-input，::after/position:relative 画在自己（直接子级）身上。 */
+  :global(.cd-input-group > .cd-input-number .cd-input-wrapper),
+  :global(.cd-input-group > .cd-datepicker .cd-input-wrapper),
+  :global(.cd-input-group > .cd-datepicker .cd-datepicker-range-input),
+  :global(.cd-input-group > .cd-time-picker .cd-input-wrapper),
+  :global(.cd-input-group > .cd-autocomplete .cd-input-wrapper) {
+    border-radius: 0;
+  }
+  :global(.cd-input-group > :first-child.cd-input-number .cd-input-wrapper),
+  :global(.cd-input-group > :first-child.cd-datepicker .cd-input-wrapper),
+  :global(.cd-input-group > :first-child.cd-datepicker .cd-datepicker-range-input),
+  :global(.cd-input-group > :first-child.cd-time-picker .cd-input-wrapper),
+  :global(.cd-input-group > :first-child.cd-autocomplete .cd-input-wrapper) {
+    border-radius: var(--cd-radius-input-wrapper) 0 0 var(--cd-radius-input-wrapper);
+  }
+  :global(.cd-input-group > :last-child.cd-input-number .cd-input-wrapper),
+  :global(.cd-input-group > :last-child.cd-datepicker .cd-input-wrapper),
+  :global(.cd-input-group > :last-child.cd-datepicker .cd-datepicker-range-input),
+  :global(.cd-input-group > :last-child.cd-time-picker .cd-input-wrapper),
+  :global(.cd-input-group > :last-child.cd-autocomplete .cd-input-wrapper) {
+    border-radius: 0 var(--cd-radius-input-wrapper) var(--cd-radius-input-wrapper) 0;
+  }
+  :global(.cd-input-group
+      > :is(.cd-input-number, .cd-datepicker, .cd-time-picker, .cd-autocomplete):not(:last-child)) {
+    position: relative;
+  }
+  :global(.cd-input-group
+      > :is(.cd-input-number, .cd-datepicker, .cd-time-picker, .cd-autocomplete):not(:last-child))::after {
+    content: '';
+    position: absolute;
+    right: -1px;
+    top: 1px;
+    bottom: 1px;
+    width: var(--cd-width-input-group-pseudo-border);
+    background: var(--cd-color-input-group-border-default);
+  }
+
+  /* 聚焦控件抬升层级，使其完整边框覆盖相邻分隔线（对齐 Semi，通用于全部子组件）。 */
   .cd-input-group > :global(*:focus-within) {
     z-index: 1;
-  }
-  /* 圆角同步到 Input 的实际圆角承载层（.cd-input-wrapper）。 */
-  .cd-input-group > :global(* .cd-input-wrapper) {
-    border-radius: inherit;
   }
 
   /* 带标签容器 —— 对齐 Semi input-group-wrapper。 */
@@ -182,7 +237,13 @@
   }
   .cd-input-group-label-required::before {
     content: '*';
-    margin-inline-end: 4px;
+    margin-right: 4px;
     color: var(--cd-color-danger);
+  }
+
+  /* —— RTL（对齐 Semi input/rtl.scss &-group）—— 分隔线定位左右互换。 */
+  :global(.cd-rtl) .cd-input-group > :global(*:not(:last-child))::after {
+    right: auto;
+    left: -1px;
   }
 </style>

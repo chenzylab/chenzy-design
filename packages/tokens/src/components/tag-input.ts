@@ -62,6 +62,7 @@ export const tagInputTokens = {
   'tag-input-large-y': { value: '3px', category: 'spacing', label: '大尺寸标签上外边距', usage: '大尺寸标签输入框标签顶部外边距' },
   'tag-input-wrapper-n-paddingx': { value: 'var(--cd-spacing-tight)', category: 'spacing', label: '标签容器水平内边距', usage: '标签输入框标签容器水平内边距' },
   'tag-input-drag-handler-marginright': { value: '4px', category: 'spacing', label: '拖拽手柄右外边距', usage: '拖拽 handler icon 的右外边距' },
+  'tag-input-tag-icon-paddingleft': { value: '4px', category: 'spacing', label: '带手柄图标标签左内边距', usage: 'tag 中有 handler icon 时 tag 的左内边距' },
   'tag-input-prefix-suffix-marginx': { value: 'var(--cd-spacing-base-tight)', category: 'spacing', label: 'prefix/suffix 水平外边距', usage: '标签输入框 prefix/suffix 水平外边距' },
 
   // —— height ——

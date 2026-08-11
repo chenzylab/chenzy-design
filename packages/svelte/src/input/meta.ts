@@ -25,6 +25,7 @@ export const meta = {
     { name: 'type', type: 'string', default: "'text'", desc: '原生 input type，透传（对齐 Semi type，可为 number/email/search 等）' },
     { name: 'prefix', type: 'Snippet | string', default: 'undefined', desc: '前缀标签（输入框内左侧）；字符串直接渲染，Snippet 自定义（对齐 Semi）' },
     { name: 'suffix', type: 'Snippet | string', default: 'undefined', desc: '后缀标签（输入框内右侧）；字符串直接渲染，Snippet 自定义（对齐 Semi）' },
+    { name: 'affixIsIcon', type: 'boolean', default: 'true', desc: 'prefix/suffix 传 Snippet 时是否按图标间距渲染（Svelte 无法内省 Snippet 内容，显式声明）' },
     { name: 'insetLabel', type: 'Snippet | string', default: 'undefined', desc: '内嵌标签（与 prefix 同槽，对齐 Semi insetLabel）' },
     { name: 'insetLabelId', type: 'string', default: 'undefined', desc: '内嵌标签容器 id（对齐 Semi insetLabelId）' },
     { name: 'clearIcon', type: 'Snippet', default: 'undefined', desc: '自定义清除图标（showClear 有值时替换默认图标，对齐 Semi）' },
