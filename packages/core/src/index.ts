@@ -330,6 +330,7 @@ export {
 } from './floating.js';
 export {
   computeAutosizeHeight,
+  computeWrappedLineCount,
   countCharacters,
   type AutosizeInput,
   type AutosizeResult,

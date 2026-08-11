@@ -265,8 +265,12 @@
 
   // clear 用 mousedown（对齐 Semi handleClear onMouseDown，fix issue 1203）：
   // 清除按钮仅在 hover/focus 时可见，用 click 会因 blur 先触发按钮消失而丢事件，故用 mousedown。
+  // stopPropagation 对齐 Semi handleClear：Input 嵌在 Popover 内（如 TreeSelect）时，点击清除
+  // 按钮会让该按钮从 DOM 消失，clickOutside 判定（dom.contains(e.target)）因而误判为点击外部，
+  // 导致浮层意外收起；阻止事件冒泡即可避免。
   function clear(e: MouseEvent) {
     e.preventDefault(); // 阻止 mousedown 抢焦点，保持输入框聚焦
+    e.stopPropagation();
     setValue('');
     onClear?.(e);
     onChange?.('', e);
@@ -275,6 +279,26 @@
 
   function toggleReveal() {
     revealed = !revealed;
+  }
+
+  // modebtn mousedown/mouseup 均 preventDefault（对齐 Semi handleMouseDown/handleMouseUp）：
+  // 点击密码显隐按钮时阻止其抢占 input 的焦点/光标位置。
+  function handleModebtnMouseDown(e: MouseEvent) {
+    e.preventDefault();
+  }
+  function handleModebtnMouseUp(e: MouseEvent) {
+    e.preventDefault();
+  }
+
+  // wrapper 点击空白区聚焦 input（对齐 Semi handleClick）：isEventTarget 判定「点击的确实是
+  // wrapper 自身」（e.target === e.currentTarget），避免点击 input/prefix/suffix/clearbtn 等
+  // 子元素时重复处理——那些子元素各自已有聚焦/点击逻辑（或本就是 input 自身）。
+  function handleWrapperClick(e: MouseEvent) {
+    if (disabled || isFocus) return;
+    if (e.target === e.currentTarget) {
+      inputEl?.focus({ preventScroll });
+      isFocus = true;
+    }
   }
 
   function handleFocus(e: FocusEvent) {
@@ -315,6 +339,7 @@
       `cd-input-wrapper-${size}`,
       (prefix != null || insetLabel != null) && 'cd-input-wrapper-with-prefix',
       suffix != null && 'cd-input-wrapper-with-suffix',
+      suffix != null && !!suffixSnippet && affixIsIcon && 'cd-input-wrapper-with-suffix-icon',
       suffixHidden && 'cd-input-wrapper-with-suffix-hidden',
       hasPrepend && 'cd-input-wrapper-with-prepend',
       hasAppend && 'cd-input-wrapper-with-append',
@@ -363,14 +388,16 @@
   });
 </script>
 
-<!-- wrapper 严格对齐 Semi：<div> 无 role，仅承载 mouseenter/leave 追踪 hover（清除按钮显隐用）。 -->
-<!-- svelte-ignore a11y_no_static_element_interactions -->
+<!-- wrapper 严格对齐 Semi：<div> 无 role，承载 mouseenter/leave 追踪 hover（清除按钮显隐用）+
+     点击空白区聚焦 input（对齐 Semi handleClick）。 -->
+<!-- svelte-ignore a11y_no_static_element_interactions, a11y_click_events_have_key_events -->
 <div
   class={wrapperCls}
   {style}
   aria-invalid={isError || undefined}
   onmouseenter={() => (isHovering = true)}
   onmouseleave={() => (isHovering = false)}
+  onclick={handleWrapperClick}
 >
   {#if addonBefore != null}
     <div class="cd-input-prepend">
@@ -454,13 +481,16 @@
   {/if}
 
   {#if showModeBtn}
-    <!-- modebtn 严格对齐 Semi：div role=button + tabindex + aria-label（Show/Hidden password），无 aria-pressed。 -->
+    <!-- modebtn 严格对齐 Semi：div role=button + tabindex + aria-label（Show/Hidden password），无 aria-pressed；
+         mousedown/mouseup 均 preventDefault，避免点击时抢占 input 焦点/光标位置。 -->
     <div
       role="button"
       tabindex="0"
       class="cd-input-modebtn"
       aria-label={revealed ? loc().t('Input.hidePassword') : loc().t('Input.showPassword')}
       onclick={toggleReveal}
+      onmousedown={handleModebtnMouseDown}
+      onmouseup={handleModebtnMouseUp}
       onkeypress={(e) => {
         if (e.key === 'Enter') toggleReveal();
       }}
@@ -487,7 +517,7 @@
     align-items: center;
     position: relative;
     vertical-align: middle;
-    inline-size: 100%;
+    width: 100%;
     box-sizing: border-box;
     background: var(--cd-color-input-default-bg-default);
     color: var(--cd-color-input-default-text-default);
@@ -504,15 +534,15 @@
     transform: var(--cd-transform-scale-input);
   }
   .cd-input-wrapper-default {
-    block-size: var(--cd-height-input-wrapper-default);
+    height: var(--cd-height-input-wrapper-default);
     line-height: var(--cd-height-input-default);
   }
   .cd-input-wrapper-small {
-    block-size: var(--cd-height-input-wrapper-small);
+    height: var(--cd-height-input-wrapper-small);
     line-height: var(--cd-height-input-small);
   }
   .cd-input-wrapper-large {
-    block-size: var(--cd-height-input-wrapper-large);
+    height: var(--cd-height-input-wrapper-large);
     font-size: var(--cd-font-size-header-6);
     line-height: var(--cd-height-input-large);
   }
@@ -585,7 +615,13 @@
   .cd-input-wrapper-disabled .cd-input-modebtn {
     color: var(--cd-color-input-disabled-text-default);
   }
-  /* 前后置标签模式：wrapper 转透明，内部 input 自持填充底（对齐 Semi with-prepend/append）。 */
+  /* —— 前后置标签模式（对齐 Semi with-prepend/append）——
+     Semi 架构：wrapper 恒透明，input/clearbtn/modebtn 各自独立描边（平时透明），
+     hover 时 input 变 hover 底色并联动 clearbtn/modebtn 背景；focus 时 input 描边
+     显现，并联动 clearbtn/modebtn 背景+描边+圆角，同时 input 自身在紧邻 clearbtn/
+     modebtn 时去掉右侧描边（class:cd-input-sibling-clearbtn/-modebtn，避免与其
+     左边框重叠成双线）。本库用 :focus-within/:hover 原生伪类等价 Semi 的
+     JS state class（&-focus/&:hover），机制不同但视觉结果一致。 */
   .cd-input-wrapper-with-prepend,
   .cd-input-wrapper-with-append {
     background: transparent;
@@ -597,23 +633,203 @@
   .cd-input-wrapper-with-prepend:focus-within,
   .cd-input-wrapper-with-append:focus-within {
     background: transparent;
-    border-color: var(--cd-color-input-default-border-default);
+    border: var(--cd-width-input-wrapper-focus-border) solid var(--cd-color-input-default-border-default);
   }
   .cd-input-wrapper-with-prepend .cd-input,
   .cd-input-wrapper-with-append .cd-input {
     background: var(--cd-color-input-default-bg-default);
+    border: var(--cd-width-input-wrapper-focus-border) solid transparent;
+    box-sizing: border-box;
+  }
+  .cd-input-wrapper-with-prepend .cd-input:hover,
+  .cd-input-wrapper-with-append .cd-input:hover {
+    background: var(--cd-color-input-default-bg-hover);
+  }
+  .cd-input-wrapper-with-prepend .cd-input:hover + .cd-input-clearbtn,
+  .cd-input-wrapper-with-prepend .cd-input:hover ~ .cd-input-modebtn,
+  .cd-input-wrapper-with-append .cd-input:hover + .cd-input-clearbtn,
+  .cd-input-wrapper-with-append .cd-input:hover ~ .cd-input-modebtn {
+    background: var(--cd-color-input-default-bg-hover);
+  }
+  .cd-input-wrapper-with-prepend .cd-input:focus,
+  .cd-input-wrapper-with-append .cd-input:focus {
+    background: var(--cd-color-input-default-bg-focus);
+    border-color: var(--cd-color-input-default-border-focus);
+  }
+  .cd-input-wrapper-with-prepend .cd-input.cd-input-sibling-clearbtn:focus,
+  .cd-input-wrapper-with-prepend .cd-input.cd-input-sibling-modebtn:focus,
+  .cd-input-wrapper-with-append .cd-input.cd-input-sibling-clearbtn:focus,
+  .cd-input-wrapper-with-append .cd-input.cd-input-sibling-modebtn:focus {
+    border-right-style: none;
+  }
+  .cd-input-wrapper-with-prepend .cd-input:focus + .cd-input-clearbtn,
+  .cd-input-wrapper-with-prepend .cd-input:focus ~ .cd-input-modebtn,
+  .cd-input-wrapper-with-append .cd-input:focus + .cd-input-clearbtn,
+  .cd-input-wrapper-with-append .cd-input:focus ~ .cd-input-modebtn {
+    box-sizing: border-box;
+    background: var(--cd-color-input-default-bg-focus);
+  }
+  .cd-input-wrapper-with-prepend .cd-input:focus + .cd-input-clearbtn,
+  .cd-input-wrapper-with-append .cd-input:focus + .cd-input-clearbtn {
+    border: var(--cd-width-input-wrapper-focus-border) solid var(--cd-color-input-default-border-focus);
+    border-left-style: none;
+    border-radius: 0 var(--cd-radius-input-wrapper) var(--cd-radius-input-wrapper) 0;
+  }
+  .cd-input-wrapper-with-prepend .cd-input:focus + .cd-input-clearbtn:not(:last-child),
+  .cd-input-wrapper-with-append .cd-input:focus + .cd-input-clearbtn:not(:last-child) {
+    border-radius: 0;
+  }
+  .cd-input-wrapper-with-prepend .cd-input:focus ~ .cd-input-modebtn,
+  .cd-input-wrapper-with-append .cd-input:focus ~ .cd-input-modebtn {
+    border: var(--cd-width-input-wrapper-focus-border) solid var(--cd-color-input-default-border-focus);
+    border-radius: 0 var(--cd-radius-input-wrapper) var(--cd-radius-input-wrapper) 0;
+  }
+  .cd-input-wrapper-with-prepend .cd-input:focus ~ .cd-input-modebtn:not(:last-child),
+  .cd-input-wrapper-with-append .cd-input:focus ~ .cd-input-modebtn:not(:last-child) {
+    border-radius: 0;
+  }
+  /* input 在 prepend/append 模式下仅自身变 active 底色（clearbtn/modebtn 不联动 active）。 */
+  .cd-input-wrapper-with-prepend .cd-input:active,
+  .cd-input-wrapper-with-append .cd-input:active {
+    background: var(--cd-color-input-default-bg-active);
+  }
+  .cd-input-wrapper-with-prepend .cd-input-clearbtn,
+  .cd-input-wrapper-with-prepend .cd-input-modebtn,
+  .cd-input-wrapper-with-append .cd-input-clearbtn,
+  .cd-input-wrapper-with-append .cd-input-modebtn {
+    background: var(--cd-color-input-default-bg-default);
+  }
+  .cd-input-wrapper-with-prepend .cd-input-clearbtn:last-child,
+  .cd-input-wrapper-with-prepend .cd-input-modebtn:last-child,
+  .cd-input-wrapper-with-append .cd-input-clearbtn:last-child,
+  .cd-input-wrapper-with-append .cd-input-modebtn:last-child {
+    border-radius: 0 var(--cd-radius-input-wrapper) var(--cd-radius-input-wrapper) 0;
+  }
+
+  /* error/warning 变体重复整套 hover/focus/active 联动，仅换色（对齐 Semi）。 */
+  .cd-input-wrapper-with-prepend.cd-input-wrapper-error,
+  .cd-input-wrapper-with-append.cd-input-wrapper-error {
+    border-color: transparent;
+  }
+  .cd-input-wrapper-with-prepend.cd-input-wrapper-error .cd-input,
+  .cd-input-wrapper-with-append.cd-input-wrapper-error .cd-input {
+    background: var(--cd-color-input-danger-bg-default);
+    border-color: var(--cd-color-input-danger-border-default);
+  }
+  .cd-input-wrapper-with-prepend.cd-input-wrapper-error .cd-input:hover,
+  .cd-input-wrapper-with-append.cd-input-wrapper-error .cd-input:hover {
+    background: var(--cd-color-input-danger-bg-hover);
+    border-color: var(--cd-color-input-danger-border-hover);
+  }
+  .cd-input-wrapper-with-prepend.cd-input-wrapper-error .cd-input:hover + .cd-input-clearbtn,
+  .cd-input-wrapper-with-prepend.cd-input-wrapper-error .cd-input:hover ~ .cd-input-modebtn,
+  .cd-input-wrapper-with-append.cd-input-wrapper-error .cd-input:hover + .cd-input-clearbtn,
+  .cd-input-wrapper-with-append.cd-input-wrapper-error .cd-input:hover ~ .cd-input-modebtn {
+    background: var(--cd-color-input-danger-bg-hover);
+  }
+  .cd-input-wrapper-with-prepend.cd-input-wrapper-error .cd-input:focus,
+  .cd-input-wrapper-with-append.cd-input-wrapper-error .cd-input:focus {
+    background: var(--cd-color-input-danger-bg-focus);
+    border-color: var(--cd-color-input-danger-border-focus);
+  }
+  .cd-input-wrapper-with-prepend.cd-input-wrapper-error .cd-input:focus + .cd-input-clearbtn,
+  .cd-input-wrapper-with-prepend.cd-input-wrapper-error .cd-input:focus ~ .cd-input-modebtn,
+  .cd-input-wrapper-with-append.cd-input-wrapper-error .cd-input:focus + .cd-input-clearbtn,
+  .cd-input-wrapper-with-append.cd-input-wrapper-error .cd-input:focus ~ .cd-input-modebtn {
+    background: var(--cd-color-input-danger-bg-focus);
+    border-color: var(--cd-color-input-danger-border-focus);
+  }
+  .cd-input-wrapper-with-prepend.cd-input-wrapper-error .cd-input:active,
+  .cd-input-wrapper-with-append.cd-input-wrapper-error .cd-input:active {
+    background: var(--cd-color-input-danger-bg-active);
+  }
+  .cd-input-wrapper-with-prepend.cd-input-wrapper-error .cd-input:active + .cd-input-clearbtn,
+  .cd-input-wrapper-with-prepend.cd-input-wrapper-error .cd-input:active ~ .cd-input-modebtn,
+  .cd-input-wrapper-with-append.cd-input-wrapper-error .cd-input:active + .cd-input-clearbtn,
+  .cd-input-wrapper-with-append.cd-input-wrapper-error .cd-input:active ~ .cd-input-modebtn {
+    background: var(--cd-color-input-danger-bg-active);
+    border-color: var(--cd-color-input-danger-border-focus);
+  }
+  .cd-input-wrapper-with-prepend.cd-input-wrapper-error .cd-input-clearbtn,
+  .cd-input-wrapper-with-prepend.cd-input-wrapper-error .cd-input-modebtn,
+  .cd-input-wrapper-with-append.cd-input-wrapper-error .cd-input-clearbtn,
+  .cd-input-wrapper-with-append.cd-input-wrapper-error .cd-input-modebtn {
+    background: var(--cd-color-input-danger-bg-default);
+  }
+
+  .cd-input-wrapper-with-prepend.cd-input-wrapper-warning,
+  .cd-input-wrapper-with-append.cd-input-wrapper-warning {
+    border-color: transparent;
+  }
+  .cd-input-wrapper-with-prepend.cd-input-wrapper-warning .cd-input,
+  .cd-input-wrapper-with-append.cd-input-wrapper-warning .cd-input {
+    background: var(--cd-color-input-warning-bg-default);
+    border-color: var(--cd-color-input-warning-border-default);
+  }
+  .cd-input-wrapper-with-prepend.cd-input-wrapper-warning .cd-input:hover,
+  .cd-input-wrapper-with-append.cd-input-wrapper-warning .cd-input:hover {
+    background: var(--cd-color-input-warning-bg-hover);
+    border-color: var(--cd-color-input-warning-border-hover);
+  }
+  .cd-input-wrapper-with-prepend.cd-input-wrapper-warning .cd-input:hover + .cd-input-clearbtn,
+  .cd-input-wrapper-with-prepend.cd-input-wrapper-warning .cd-input:hover ~ .cd-input-modebtn,
+  .cd-input-wrapper-with-append.cd-input-wrapper-warning .cd-input:hover + .cd-input-clearbtn,
+  .cd-input-wrapper-with-append.cd-input-wrapper-warning .cd-input:hover ~ .cd-input-modebtn {
+    background: var(--cd-color-input-warning-bg-hover);
+  }
+  .cd-input-wrapper-with-prepend.cd-input-wrapper-warning .cd-input:focus,
+  .cd-input-wrapper-with-append.cd-input-wrapper-warning .cd-input:focus {
+    background: var(--cd-color-input-warning-bg-focus);
+    border-color: var(--cd-color-input-warning-border-focus);
+  }
+  .cd-input-wrapper-with-prepend.cd-input-wrapper-warning .cd-input:focus + .cd-input-clearbtn,
+  .cd-input-wrapper-with-prepend.cd-input-wrapper-warning .cd-input:focus ~ .cd-input-modebtn,
+  .cd-input-wrapper-with-append.cd-input-wrapper-warning .cd-input:focus + .cd-input-clearbtn,
+  .cd-input-wrapper-with-append.cd-input-wrapper-warning .cd-input:focus ~ .cd-input-modebtn {
+    background: var(--cd-color-input-warning-bg-focus);
+    border-color: var(--cd-color-input-warning-border-focus);
+  }
+  .cd-input-wrapper-with-prepend.cd-input-wrapper-warning .cd-input:active,
+  .cd-input-wrapper-with-append.cd-input-wrapper-warning .cd-input:active {
+    background: var(--cd-color-input-warning-bg-active);
+  }
+  .cd-input-wrapper-with-prepend.cd-input-wrapper-warning .cd-input:active + .cd-input-clearbtn,
+  .cd-input-wrapper-with-prepend.cd-input-wrapper-warning .cd-input:active ~ .cd-input-modebtn,
+  .cd-input-wrapper-with-append.cd-input-wrapper-warning .cd-input:active + .cd-input-clearbtn,
+  .cd-input-wrapper-with-append.cd-input-wrapper-warning .cd-input:active ~ .cd-input-modebtn {
+    background: var(--cd-color-input-warning-bg-active);
+    border-color: var(--cd-color-input-warning-border-focus);
+  }
+  .cd-input-wrapper-with-prepend.cd-input-wrapper-warning .cd-input-clearbtn,
+  .cd-input-wrapper-with-prepend.cd-input-wrapper-warning .cd-input-modebtn,
+  .cd-input-wrapper-with-append.cd-input-wrapper-warning .cd-input-clearbtn,
+  .cd-input-wrapper-with-append.cd-input-wrapper-warning .cd-input-modebtn {
+    background: var(--cd-color-input-warning-bg-default);
+  }
+
+  /* suffix 为图标 + clearbtn 同时显示：clearbtn 加宽并右对齐，为二者共存腾出空间
+     （对齐 Semi &__with-suffix-icon.wrapper-clearable）。 */
+  .cd-input-wrapper-with-suffix-icon.cd-input-wrapper-clearable:not(.cd-input-wrapper-with-suffix-hidden)
+    .cd-input-clearbtn {
+    min-width: var(--cd-width-input-icon-clear-before-suffix);
+    justify-content: flex-end;
+  }
+  /* modebtn + clearbtn 同时显示：clearbtn 收窄并居中（对齐 Semi &-modebtn.wrapper-clearable）。 */
+  .cd-input-wrapper-modebtn.cd-input-wrapper-clearable .cd-input-clearbtn {
+    min-width: var(--cd-width-input-icon-clear-before-modebtn);
+    justify-content: center;
   }
 
   /* input 元素 —— 对齐 Semi .semi-input：透明底 + 继承色 + 内边距。 */
   .cd-input {
     /* 对齐 Semi .semi-input：不写 flex，用浏览器默认 `0 1 auto`（可收缩不伸长）。 */
     flex: 0 1 auto;
-    inline-size: 100%;
-    min-inline-size: 0;
-    block-size: 100%;
+    width: 100%;
+    min-width: 0;
+    height: 100%;
     margin: 0;
-    padding-inline-start: var(--cd-spacing-input-paddingleft);
-    padding-inline-end: var(--cd-spacing-input-paddingright);
+    padding-left: var(--cd-spacing-input-paddingleft);
+    padding-right: var(--cd-spacing-input-paddingright);
     border: none;
     background: transparent;
     color: inherit;
@@ -629,10 +845,10 @@
   }
   /* 对齐 Semi with-prefix/suffix：相应侧内边距归零，交给 prefix/suffix 槽。 */
   .cd-input-wrapper-with-prefix .cd-input {
-    padding-inline-start: 0;
+    padding-left: 0;
   }
   .cd-input-wrapper-with-suffix .cd-input {
-    padding-inline-end: 0;
+    padding-right: 0;
   }
   .cd-input::placeholder {
     color: var(--cd-color-input-placeholder-text-default);
@@ -678,6 +894,13 @@
     margin: var(--cd-spacing-input-prefix-icon-marginy) var(--cd-spacing-input-prefix-icon-marginx);
     color: var(--cd-color-input-icon-default);
   }
+  /* clearbtn 紧邻 suffix 出现时，suffix 外边距单侧归零（对齐 Semi &-clearbtn + &-suffix）：
+     clearbtn 自身已提供左侧间距，suffix 不应再叠加一份，否则二者间距翻倍。 */
+  .cd-input-clearbtn + .cd-input-suffix-text,
+  .cd-input-clearbtn + .cd-input-suffix-icon {
+    margin-right: auto;
+    margin-left: 0;
+  }
   /* 内嵌标签（对齐 Semi `&-inset-label`）：自带 margin/色/字重，不依赖 -text 变体。 */
   .cd-input-inset-label {
     margin: 0 var(--cd-spacing-input-prefix-suffix-marginx);
@@ -696,8 +919,8 @@
     align-items: center;
     justify-content: center;
     flex: 0 0 auto;
-    block-size: 100%;
-    min-inline-size: var(--cd-width-input-icon);
+    height: 100%;
+    min-width: var(--cd-width-input-icon);
     padding: 0;
     border: none;
     background: transparent;
@@ -726,15 +949,17 @@
     outline: var(--cd-width-input-icon-outline) solid var(--cd-color-input-icon-outline);
     outline-offset: var(--cd-width-input-icon-outlineoffset);
   }
-  /* 前后置标签 —— 对齐 Semi input-prepend/append：灰底 + text-2 + 分隔描边。 */
+  /* 前后置标签 —— 对齐 Semi input-prepend/append：灰底 + text-2 + 分隔描边，物理属性。 */
   .cd-input-prepend,
   .cd-input-append {
     display: inline-flex;
     align-items: center;
     flex: 0 0 auto;
-    block-size: 100%;
-    padding-block: var(--cd-spacing-input-prepend-paddingy);
-    padding-inline: var(--cd-spacing-input-prepend-paddingx);
+    height: 100%;
+    padding-top: var(--cd-spacing-input-prepend-paddingy);
+    padding-bottom: var(--cd-spacing-input-prepend-paddingy);
+    padding-left: var(--cd-spacing-input-prepend-paddingx);
+    padding-right: var(--cd-spacing-input-prepend-paddingx);
     background: var(--cd-color-input-default-bg-default);
     color: var(--cd-color-input-prefix-text-default);
     font-size: var(--cd-font-size-regular);
@@ -742,40 +967,38 @@
     user-select: none;
   }
   .cd-input-prepend {
-    border-inline-end: var(--cd-width-input-prepend-border) solid
+    border-radius: var(--cd-radius-input-wrapper) 0 0 var(--cd-radius-input-wrapper);
+    border-right: var(--cd-width-input-prepend-border) solid
       var(--cd-color-input-default-border-default);
-    border-start-start-radius: var(--cd-radius-input-wrapper);
-    border-end-start-radius: var(--cd-radius-input-wrapper);
   }
   .cd-input-append {
-    border-inline-start: var(--cd-width-input-append-border) solid
+    border-radius: 0 var(--cd-radius-input-wrapper) var(--cd-radius-input-wrapper) 0;
+    border-left: var(--cd-width-input-append-border) solid
       var(--cd-color-input-default-border-default);
-    border-start-end-radius: var(--cd-radius-input-wrapper);
-    border-end-end-radius: var(--cd-radius-input-wrapper);
   }
   /* 前后置标签模式下 input 侧的圆角调整（对齐 Semi with-prepend-only/append-only）。 */
   .cd-input-wrapper-with-prepend:not(.cd-input-wrapper-with-append) .cd-input {
-    border-start-end-radius: var(--cd-radius-input-wrapper);
-    border-end-end-radius: var(--cd-radius-input-wrapper);
+    border-radius: 0 var(--cd-radius-input-wrapper) var(--cd-radius-input-wrapper) 0;
   }
   .cd-input-wrapper-with-append:not(.cd-input-wrapper-with-prepend) .cd-input {
-    border-start-start-radius: var(--cd-radius-input-wrapper);
-    border-end-start-radius: var(--cd-radius-input-wrapper);
+    border-radius: var(--cd-radius-input-wrapper) 0 0 var(--cd-radius-input-wrapper);
   }
-  /* borderless —— 对齐 Semi：非悬浮/聚焦时全透明；error/warning 保留实色描边。
-     选择器特异性须 ≥ 上面 527/531 行 default 聚焦态规则，否则聚焦（含聚焦时悬浮）
-     会被 default 态的 --cd-color-input-default-bg-focus(-hover) 盖回去，使 borderless
-     输入框冒出一圈非透明底色（如 Cascader 内嵌搜索框）。531 行「聚焦+悬浮」组合
-     比 527 行单聚焦多一个 :hover 伪类和 2 个 :not(.warning/.error)，特异性更高，
-     必须单独补一条同量级选择器覆盖，光靠单聚焦那条覆盖不掉悬浮时的反弹。 */
+  /* input 后面还跟着 clearbtn/modebtn（非末位子元素）时，右侧描边/圆角让位给它们承载，
+     避免两条描边重叠（对齐 Semi &.wrapper__with-append-only .semi-input:not(:last-child)）。 */
+  .cd-input-wrapper-with-append-only .cd-input:not(:last-child) {
+    border-right-style: none;
+    border-radius: 0;
+  }
+  .cd-input-wrapper-with-prepend-only .cd-input:not(:last-child) {
+    border-right-style: none;
+  }
+  /* borderless —— 对齐 Semi：非悬浮/聚焦时全透明；error/warning 保留实色描边（仅这 4 条，
+     与 Semi input.scss 逐条一致，不额外补选择器特异性补丁）。 */
   .cd-input-borderless:not(:focus-within):not(:hover) {
     background: transparent;
     border-color: transparent;
   }
-  .cd-input-borderless:not(.cd-input-wrapper-with-prepend):not(.cd-input-wrapper-with-append):focus-within:not(:active) {
-    background: transparent;
-  }
-  .cd-input-borderless:not(.cd-input-wrapper-with-prepend):not(.cd-input-wrapper-with-append):focus-within:hover:not(.cd-input-wrapper-warning):not(.cd-input-wrapper-error) {
+  .cd-input-borderless:focus-within:not(:active) {
     background: transparent;
   }
   .cd-input-borderless.cd-input-wrapper-error:not(:focus-within) {
@@ -790,11 +1013,34 @@
     }
   }
 
-  /* —— RTL（对齐 Semi input/rtl.scss）——
-     只需声明方向：本库 Input 的内边距、append/prepend 边框**全部已用逻辑属性**
-     （padding-inline / border-inline-start|end），RTL 下自己就翻，
-     不像 Semi 那样需要逐条写 padding-left/right、border-left/right 掰回来。 */
+  /* —— RTL（对齐 Semi input/rtl.scss）—— 物理属性正向已用 left/right，RTL 逐条镜像。 */
   :global(.cd-rtl) .cd-input-wrapper {
     direction: rtl;
+  }
+  :global(.cd-rtl) .cd-input-wrapper-with-prefix .cd-input {
+    padding-right: 0;
+    padding-left: auto;
+  }
+  :global(.cd-rtl) .cd-input-wrapper-with-suffix .cd-input {
+    padding-left: 0;
+    padding-right: auto;
+  }
+  :global(.cd-rtl) .cd-input {
+    padding-left: var(--cd-spacing-input-paddingright);
+    padding-right: var(--cd-spacing-input-paddingleft);
+  }
+  /* clearbtn 紧邻 suffix 时，suffix 外边距单侧归零（对齐 Semi）：LTR 收窄左侧，RTL 收窄右侧。 */
+  :global(.cd-rtl) .cd-input-clearbtn + .cd-input-suffix-text,
+  :global(.cd-rtl) .cd-input-clearbtn + .cd-input-suffix-icon {
+    margin-left: auto;
+    margin-right: 0;
+  }
+  :global(.cd-rtl) .cd-input-append {
+    border-left: 0;
+    border-right: var(--cd-width-input-append-border) solid var(--cd-color-input-default-border-default);
+  }
+  :global(.cd-rtl) .cd-input-prepend {
+    border-right: 0;
+    border-left: var(--cd-width-input-prepend-border) solid var(--cd-color-input-default-border-default);
   }
 </style>

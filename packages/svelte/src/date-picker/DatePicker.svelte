@@ -11,6 +11,7 @@
   import { format as dateFnsFormat } from 'date-fns';
   import { useLocale, LOCALE_CONTEXT_KEY, type LocaleApi, type LocaleContextValue } from '../locale-provider/index.js';
   import { CONFIG_CONTEXT_KEY, type ConfigContextValue } from '../config-provider/context.js';
+  import { getInputGroupContext } from '../input/context.js';
   import Popover from '../popover/Popover.svelte';
   import type { Position } from '../tooltip/index.js';
   import DateInput from './DateInput.svelte';
@@ -193,7 +194,7 @@
     defaultPickerValue,
     open: openProp,
     defaultOpen: defaultOpenProp,
-    disabled = false,
+    disabled: disabledProp,
     placeholder,
     format,
     // 默认 true（对齐 Semi：DatePicker 不在 defaultProps 里设它，透传 undefined 给
@@ -275,6 +276,11 @@
     locale: localeProp,
     localeCode,
   }: Props = $props();
+  // InputGroup 组级 size/disabled 回退（对齐 Semi inputGroup.tsx cloneElement 强制注入）：
+  // 显式传值 > InputGroup context > 组件内置默认，不叠加 cdGlobal（同 Select/Cascader/
+  // TreeSelect/AutoComplete/InputNumber 既定写法，这两个 prop 走 group 独立链路）。
+  const group = getInputGroupContext();
+  const disabled = $derived(disabledProp ?? group?.disabled ?? false);
   // cdGlobal 全局默认 props（对齐 Semi semiGlobal.config.overrideDefaultProps）：
   // 优先级 = 显式传值 > cdGlobal['DatePicker'] > 组件内置默认值。
   const onChangeWithDateFirst = $derived(resolveDefault(onChangeWithDateFirstProp, 'DatePicker', 'onChangeWithDateFirst', true));
@@ -284,7 +290,7 @@
   const motion = $derived(resolveDefault(motionProp, 'DatePicker', 'motion', true));
   const presetPosition = $derived(resolveDefault(presetPositionProp, 'DatePicker', 'presetPosition', 'bottom'));
   const resolvedType = $derived(resolveDefault(typeProp, 'DatePicker', 'type', 'date'));
-  const size = $derived(resolveDefault(sizeProp, 'DatePicker', 'size', 'default'));
+  const size = $derived<PickerSize>(sizeProp ?? group?.size ?? 'default');
   const density = $derived(resolveDefault(densityProp, 'DatePicker', 'density', 'default'));
   const multiple = $derived(resolveDefault(multipleProp, 'DatePicker', 'multiple', false));
   const defaultOpen = $derived(resolveDefault(defaultOpenProp, 'DatePicker', 'defaultOpen', false));

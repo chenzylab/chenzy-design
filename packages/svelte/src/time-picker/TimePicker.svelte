@@ -31,6 +31,7 @@
   import type { Placement } from '@chenzy-design/core';
   import { useLocale } from '../locale-provider/index.js';
   import { floating } from '../_floating/use-floating.js';
+  import { getInputGroupContext } from '../input/context.js';
   import Combobox from './Combobox.svelte';
   import TimeInput from './TimeInput.svelte';
   import { strings } from './constants.js';
@@ -169,9 +170,9 @@
     open,
     defaultOpen = false,
     placeholder,
-    size = 'default',
+    size: sizeProp,
     validateStatus = 'default',
-    disabled = false,
+    disabled: disabledProp,
     hourStep = 1,
     minuteStep = 1,
     secondStep = 1,
@@ -228,6 +229,13 @@
 
   const loc = useLocale();
   const baseId = useId('cd-time-picker-panel');
+
+  // InputGroup 组级 size/disabled 回退（对齐 Semi inputGroup.tsx cloneElement 强制注入，
+  // 与 Select/Cascader/TreeSelect/AutoComplete/InputNumber 既定写法一致）：
+  // 显式传值 > InputGroup context > 组件内置默认。
+  const group = getInputGroupContext();
+  const size = $derived<Size>(sizeProp ?? group?.size ?? 'default');
+  const disabled = $derived(disabledProp ?? group?.disabled ?? false);
 
   // --- 有效时区（对齐 Semi 值层时区转换）：自身 timeZone 优先，未传回退 ConfigProvider ---
   // 必须声明在 createTimePickerState 之前——foundation 的 props getter 在初始化期就会读它，

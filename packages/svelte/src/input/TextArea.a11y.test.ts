@@ -133,3 +133,88 @@ describe('TextArea autosize 宽度感知（ResizeObserver）', () => {
     expect(MockRO.instances.length).toBe(0);
   });
 });
+
+// 按可见字符（Array.from 处理代理对/emoji）计算长度，对齐 demo 里 getValueLength 的常见用法。
+const getValueLength = (v: string) => [...v].length;
+
+describe('TextArea maxLength + getValueLength（对齐 Semi getNextValue/handleVisibleMaxLength）', () => {
+  it('oninput 时按可见长度截断超出 maxLength 的输入', async () => {
+    const { container } = renderWithLocale(TextArea, {
+      props: { maxLength: 3, getValueLength, 'aria-label': 'ta' },
+    });
+    const ta = container.querySelector('textarea') as HTMLTextAreaElement;
+    ta.value = 'abcdef';
+    await fireEvent.input(ta);
+    expect(ta.value).toBe('abc');
+  });
+
+  it('未提供 getValueLength 时不做 JS 截断（对齐 Semi：仅原生 maxlength 生效）', () => {
+    const { container } = renderWithLocale(TextArea, {
+      props: { maxLength: 3, 'aria-label': 'ta' },
+    });
+    const ta = container.querySelector('textarea') as HTMLTextAreaElement;
+    expect(ta.getAttribute('maxlength')).toBe('3');
+  });
+
+  it('blur 时二次确认截断（issue #2005：IME 输入过程中点击外部触发 blur，内容未被实时截断）', async () => {
+    const onChange = vi.fn();
+    const { container } = renderWithLocale(TextArea, {
+      props: { maxLength: 3, getValueLength, onChange, 'aria-label': 'ta' },
+    });
+    const ta = container.querySelector('textarea') as HTMLTextAreaElement;
+    // 模拟 IME 组合中途被打断：value 已经超限，但从未经过 handleInput 截断（组合期间跳过截断）。
+    ta.value = 'abcdef';
+    await fireEvent.blur(ta);
+    expect(ta.value).toBe('abc');
+    expect(onChange).toHaveBeenCalledWith('abc', expect.anything());
+  });
+});
+
+describe('TextArea clear 行为（对齐 Semi handleClear）', () => {
+  it('聚焦态下点击清除：触发 onBlur 而非重新聚焦', async () => {
+    const onBlur = vi.fn();
+    const onChange = vi.fn();
+    const { container } = renderWithLocale(TextArea, {
+      props: { defaultValue: 'hello', showClear: true, onBlur, onChange, 'aria-label': 'ta' },
+    });
+    const ta = container.querySelector('textarea') as HTMLTextAreaElement;
+    await fireEvent.focus(ta);
+    const clearbtn = container.querySelector('.cd-input-clearbtn') as HTMLElement;
+    await fireEvent.click(clearbtn);
+    expect(onBlur).toHaveBeenCalledTimes(1);
+    expect(onChange).toHaveBeenCalledWith('', expect.anything());
+  });
+
+  it('非聚焦态下点击清除：不触发 onBlur（本来就不是聚焦态）', async () => {
+    const onBlur = vi.fn();
+    const { container } = renderWithLocale(TextArea, {
+      props: { defaultValue: 'hello', showClear: true, onBlur, 'aria-label': 'ta' },
+    });
+    const clearbtn = container.querySelector('.cd-input-clearbtn') as HTMLElement;
+    await fireEvent.click(clearbtn);
+    expect(onBlur).not.toHaveBeenCalled();
+  });
+});
+
+describe('TextArea wrapper/counter 点击聚焦（对齐 Semi handleClick/handleCounterClick）', () => {
+  it('点击 wrapper 空白区（非 textarea 本身）聚焦到 textarea', async () => {
+    const { container } = renderWithLocale(TextArea, {
+      props: { 'aria-label': 'ta' },
+    });
+    const wrapper = container.querySelector('.cd-input-textarea-wrapper') as HTMLElement;
+    const ta = container.querySelector('textarea') as HTMLTextAreaElement;
+    // fireEvent.click 默认 target 就是 wrapper 本身（e.target === e.currentTarget）。
+    await fireEvent.click(wrapper);
+    expect(document.activeElement).toBe(ta);
+  });
+
+  it('点击 counter 聚焦到 textarea', async () => {
+    const { container } = renderWithLocale(TextArea, {
+      props: { showCount: true, 'aria-label': 'ta' },
+    });
+    const counter = container.querySelector('.cd-input-textarea-counter') as HTMLElement;
+    const ta = container.querySelector('textarea') as HTMLTextAreaElement;
+    await fireEvent.click(counter);
+    expect(document.activeElement).toBe(ta);
+  });
+});

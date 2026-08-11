@@ -135,7 +135,7 @@ import { Tabs, TabPane } from '@chenzy-design/svelte';
 
 通过 `renderTabBar` 自绘标签栏结合拖拽能力可以实现标签栏的拖拽排序。
 
-> Semi 结合第三方库 [@dnd-kit](https://docs.dndkit.com/) 实现；本库无对应依赖，改用 `renderTabBar` + 原生 HTML5 `draggable` 零依赖自建拖拽重排。
+> Semi 结合第三方库 [@dnd-kit](https://docs.dndkit.com/) 实现；本库无对应依赖，改用 `renderTabBar` + 自建的 `sortable` action（零依赖复刻 dnd-kit 的指针拖拽 + 几何位移思路：拖拽经过 activation distance 后开始，逐帧计算目标位置并对其余标签施加 transform 位移，松手时才一次性提交新顺序）。
 
 <DemoBox code={dragSortSrc}><DragSort /></DemoBox>
 

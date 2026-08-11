@@ -3,6 +3,8 @@ import {
   arrayMove,
   computeTargetIndex,
   computeItemTransforms,
+  computeTargetIndexWrap,
+  computeItemTransformsWrap,
   createSortable,
   type SortableRect,
 } from './sortable.js';
@@ -124,6 +126,108 @@ describe('computeItemTransforms', () => {
 
   it('out-of-range active index returns all zeros', () => {
     expect(computeItemTransforms(9, 0, 5, r)).toEqual([0, 0, 0, 0]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Wrap-mode geometry (2D — flex-wrap multi-row, variable-width items)
+// ---------------------------------------------------------------------------
+
+describe('computeTargetIndexWrap', () => {
+  // Two rows of 3 items each, each item 40 wide x 24 tall, row gap 8.
+  // Row 0: [0,0]-[40,24], [40,0]-[80,24], [80,0]-[120,24]
+  // Row 1: [0,32]-[40,56], [40,32]-[80,56], [80,32]-[120,56]
+  const tworows: SortableRect[] = [
+    { left: 0, top: 0, width: 40, height: 24 },
+    { left: 40, top: 0, width: 40, height: 24 },
+    { left: 80, top: 0, width: 40, height: 24 },
+    { left: 0, top: 32, width: 40, height: 24 },
+    { left: 40, top: 32, width: 40, height: 24 },
+    { left: 80, top: 32, width: 40, height: 24 },
+  ];
+
+  it('picks the item whose center is nearest the pointer, same row', () => {
+    expect(computeTargetIndexWrap(20, 12, tworows)).toBe(0);
+    expect(computeTargetIndexWrap(60, 12, tworows)).toBe(1);
+    expect(computeTargetIndexWrap(100, 12, tworows)).toBe(2);
+  });
+
+  it('picks the correct item across rows (row-aware, unlike 1D midline scan)', () => {
+    expect(computeTargetIndexWrap(20, 44, tworows)).toBe(3);
+    expect(computeTargetIndexWrap(100, 44, tworows)).toBe(5);
+  });
+
+  it('handles variable-width items (uneven columns)', () => {
+    const uneven: SortableRect[] = [
+      { left: 0, top: 0, width: 20, height: 24 }, // center x=10
+      { left: 20, top: 0, width: 100, height: 24 }, // center x=70
+      { left: 120, top: 0, width: 30, height: 24 }, // center x=135
+    ];
+    expect(computeTargetIndexWrap(10, 12, uneven)).toBe(0);
+    expect(computeTargetIndexWrap(70, 12, uneven)).toBe(1);
+    expect(computeTargetIndexWrap(135, 12, uneven)).toBe(2);
+  });
+
+  it('empty rects returns 0', () => {
+    expect(computeTargetIndexWrap(10, 10, [])).toBe(0);
+  });
+});
+
+describe('computeItemTransformsWrap', () => {
+  // Uneven widths: item 0 is narrow (30), item 1 wide (80), item 2 narrow (30).
+  const uneven: SortableRect[] = [
+    { left: 0, top: 0, width: 30, height: 24 },
+    { left: 30, top: 0, width: 80, height: 24 },
+    { left: 110, top: 0, width: 30, height: 24 },
+  ];
+
+  it('dragged item follows the pointer delta on both axes', () => {
+    const out = computeItemTransformsWrap(0, 0, 17, 5, uneven);
+    expect(out[0]).toEqual({ x: 17, y: 5 });
+  });
+
+  it('forward move: each shifted item takes its EXACT predecessor slot (not a uniform shift)', () => {
+    // Item 0 (width 30) moves past item 1 (width 80) to land at index 1.
+    // Item 1 must slide back to item 0's slot: delta = rect[0].left - rect[1].left = -30.
+    const out = computeItemTransformsWrap(0, 1, 100, 0, uneven);
+    expect(out[1]).toEqual({ x: -30, y: 0 });
+  });
+
+  it('backward move: each shifted item takes its EXACT successor slot', () => {
+    // Item 2 moves back past item 1 to land at index 1.
+    // Item 1 must slide forward to item 2's slot: delta = rect[2].left - rect[1].left = 80.
+    const out = computeItemTransformsWrap(2, 1, -100, 0, uneven);
+    expect(out[1]).toEqual({ x: 80, y: 0 });
+  });
+
+  it('unaffected items stay at zero', () => {
+    const out = computeItemTransformsWrap(0, 1, 100, 0, uneven);
+    expect(out[2]).toEqual({ x: 0, y: 0 });
+  });
+
+  it('always returns one entry per item', () => {
+    expect(computeItemTransformsWrap(0, 2, 5, 5, uneven)).toHaveLength(3);
+  });
+
+  it('out-of-range active index returns all zeros', () => {
+    expect(computeItemTransformsWrap(9, 0, 5, 5, uneven)).toEqual([
+      { x: 0, y: 0 },
+      { x: 0, y: 0 },
+      { x: 0, y: 0 },
+    ]);
+  });
+
+  it('cross-row move: item moves down a row, transform accounts for both axes', () => {
+    const rows: SortableRect[] = [
+      { left: 0, top: 0, width: 40, height: 24 },
+      { left: 40, top: 0, width: 40, height: 24 },
+      { left: 0, top: 32, width: 40, height: 24 },
+    ];
+    // Item 0 dragged down to index 2 (wraps to row 1). Item 1 and item 2 each
+    // slide back one slot: item1 -> rect[0]'s box, item2 -> rect[1]'s box.
+    const out = computeItemTransformsWrap(0, 2, 0, 32, rows);
+    expect(out[1]).toEqual({ x: rows[0]!.left! - rows[1]!.left!, y: rows[0]!.top - rows[1]!.top });
+    expect(out[2]).toEqual({ x: rows[1]!.left! - rows[2]!.left!, y: rows[1]!.top - rows[2]!.top });
   });
 });
 

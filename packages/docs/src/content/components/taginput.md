@@ -155,13 +155,22 @@ import { TagInput } from '@chenzy-design/svelte';
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
 | addOnBlur | 是否在 blur 事件触发时，将当前 input 的值自动创建成 tag | boolean | false |
+| affixIsIcon | prefix/suffix 传节点时是否按图标间距渲染 | boolean | true |
 | allowDuplicates | 是否允许添加相同 tag | boolean | true |
+| aria-label | 表示该 TagInput 作用 | string | - |
+| ariaDescribedby | 关联 helpText / extraText 节点 id | string | - |
+| ariaErrormessage | error 态关联错误信息容器 id | string | - |
+| ariaLabelledby | 关联外部 label 元素 id | string | - |
+| ariaRequired | 必填语义 | boolean | - |
 | autoFocus | 初始渲染时是否自动 focus | boolean | false |
 | class | 样式类名 | string | - |
+| clearIcon | 自定义清除图标 | `Snippet` | - |
 | defaultValue | 初始标签 | `string[]` | - |
 | disabled | 是否禁用 | boolean | false |
 | draggable | 设置是否可拖拽 | boolean | false |
 | expandRestTagsOnClick | 在不可拖拽的情况下，TagInput 被点击后是否展开多余的 Tag | boolean | true |
+| insetLabel | 内嵌 label（前缀位） | `string \| Snippet` | - |
+| insetLabelId | 内嵌 label 的 id（关联输入） | string | - |
 | inputValue | 当前输入框内容，配合 onInputChange 实现受控 | string | - |
 | max | 允许标签的最大数量 | number | - |
 | maxLength | 单个标签的最大长度 | number | - |

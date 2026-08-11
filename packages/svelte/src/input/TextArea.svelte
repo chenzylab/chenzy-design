@@ -7,7 +7,12 @@
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
-  import { computeAutosizeHeight, createResizeObserver } from '@chenzy-design/core';
+  import {
+    computeAutosizeHeight,
+    computeWrappedLineCount,
+    createResizeObserver,
+    truncateValueByLength,
+  } from '@chenzy-design/core';
   import { IconClear } from '@chenzy-design/icons';
   import { useLocale } from '../locale-provider/index.js';
 
@@ -178,7 +183,15 @@
   }
 
   function handleInput(e: Event & { currentTarget: HTMLTextAreaElement }) {
-    const next = e.currentTarget.value;
+    const raw = e.currentTarget.value;
+    // 自定义 getValueLength + maxLength：原生 maxlength 按 UTF-16 计不适用，JS 层按可见长度
+    // 截断超长输入（对齐 Semi getNextValue/handleVisibleMaxLength：仅 getValueLength 存在时生效）。
+    // IME 组合期间不截断（避免打断拼音输入），compositionend 时再收尾。
+    const next =
+      getValueLength && maxLength != null && !(composition && composing)
+        ? truncateValueByLength({ value: raw, maxLength, getValueLength })
+        : raw;
+    if (next !== raw && e.currentTarget.value !== next) e.currentTarget.value = next;
     setValue(next);
     onInput?.(next, e);
     if (!(composition && composing)) onChange?.(next, e);
@@ -191,7 +204,13 @@
   function handleCompositionEnd(e: CompositionEvent & { currentTarget: HTMLTextAreaElement }) {
     composing = false;
     if (composition) {
-      const next = e.currentTarget.value;
+      const raw = e.currentTarget.value;
+      // IME 确认后按可见长度收尾截断（对齐 Semi handleCompositionEnd）。
+      const next =
+        getValueLength && maxLength != null
+          ? truncateValueByLength({ value: raw, maxLength, getValueLength })
+          : raw;
+      if (next !== raw && e.currentTarget.value !== next) e.currentTarget.value = next;
       setValue(next);
       onChange?.(next, e);
     }
@@ -207,11 +226,29 @@
   }
 
   // clear 用 onclick（对齐 Semi textarea handleClear onClick）：textarea clearbtn 始终渲染、
-  // 用 hidden 类控制显隐，click 时按钮仍在 DOM 不丢事件。
+  // 用 hidden 类控制显隐，click 时按钮仍在 DOM 不丢事件。对齐 Semi handleClear：若清除前处于
+  // 聚焦态，先触发一次 onBlur('')（Semi 语义是"清除按钮抢走了焦点，通知父组件当前已失焦"），
+  // 而非本库此前反过来把焦点拉回 textarea——两种是不同的产品选择，此处对齐 Semi 官方行为。
   function clear(e: MouseEvent) {
+    const wasFocus = isFocus;
     setValue('');
-    onClear?.(e);
+    if (wasFocus) {
+      isFocus = false;
+      onBlur?.(e as unknown as FocusEvent);
+    }
     onChange?.('', e);
+    onClear?.(e);
+  }
+
+  // wrapper/counter 点击空白区聚焦 textarea（对齐 Semi handleClick/handleCounterClick）：
+  // disabled/readonly/已聚焦时跳过；wrapper 用 isEventTarget 判定「点击的确实是 wrapper 自身」
+  // （e.target === e.currentTarget），避免点击子元素（textarea/clearbtn/counter）时重复处理。
+  function handleWrapperClick(e: MouseEvent) {
+    if (disabled || readonly || isFocus) return;
+    if (e.target === e.currentTarget) taEl?.focus();
+  }
+  function handleCounterClick() {
+    if (disabled || readonly || isFocus) return;
     taEl?.focus();
   }
 
@@ -219,7 +256,20 @@
     isFocus = true;
     onFocus?.(e);
   }
-  function handleBlur(e: FocusEvent) {
+  function handleBlur(e: FocusEvent & { currentTarget: HTMLTextAreaElement }) {
+    // 对齐 Semi handleBlur：maxLength+getValueLength 时 blur 二次确认截断，修复 IME 输入过程中
+    // 点击外部触发 blur、拼音字符全部回显但未被实时截断的问题（issue #2005）。读 DOM 真实值
+    // （e.currentTarget.value）而非响应式镜像 current——IME 组合期间 DOM 值可能领先于 current
+    // 更新（handleInput 里组合期间跳过截断），这正是该 issue 想覆盖的场景本身。
+    if (getValueLength && maxLength != null) {
+      const raw = e.currentTarget.value;
+      const next = truncateValueByLength({ value: raw, maxLength, getValueLength });
+      if (next !== raw) {
+        if (e.currentTarget.value !== next) e.currentTarget.value = next;
+        setValue(next);
+        onChange?.(next, e);
+      }
+    }
     isFocus = false;
     onBlur?.(e);
   }
@@ -300,16 +350,32 @@
   }
 
   // 命令式测量并设定 autosize 高度（不写 $state，不参与 effect 依赖）。
+  // lineHeight 对齐 Semi calculateNodeHeight.ts：不读 CSS line-height 声明值估算
+  // （line-height:normal 等场景下声明值可能与实际渲染不符），而是用隐藏 textarea 塞入
+  // 单字符 'x' 实测 scrollHeight 反推单行内容高度——与 Semi 完全同构的测量路径。
   function measureAutosize(el: HTMLTextAreaElement): number {
     const cs = getComputedStyle(el);
-    const lineHeight = parseFloat(cs.lineHeight) || parseFloat(cs.fontSize) * 1.5;
     const verticalPadding = parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom);
     const verticalBorder = parseFloat(cs.borderTopWidth) + parseFloat(cs.borderBottomWidth);
+    const isBorderBox = cs.boxSizing === 'border-box';
 
     const hidden = getHiddenTextarea();
     for (const key of SIZING_STYLE_KEYS) hidden.style[key] = cs[key];
+
+    // 完整外部高度：border-box 下 scrollHeight 已含 padding，补回 border 即完整外高；
+    // content-box 下 scrollHeight 是纯内容高度，补回 padding+border 才是完整外高
+    // （对齐 Semi getContentHeight，其反向语义——border-box 减 padding 得纯内容高——
+    // 这里统一成「始终返回外部高度」，与 computeAutosizeHeight 的 scrollHeight 参数
+    // 期望的量纲一致：外部高度 vs minHeight/maxHeight 直接可比）。
+    const outerHeight = (raw: number) =>
+      isBorderBox ? raw + verticalBorder : raw + verticalPadding + verticalBorder;
+
     hidden.value = el.value;
-    const scrollHeight = hidden.scrollHeight + verticalBorder;
+    const scrollHeight = outerHeight(hidden.scrollHeight);
+
+    // 单行内容高度：塞入单字符实测外部高度，再扣除 padding/border 得纯行高（对齐 Semi rowHeight）。
+    hidden.value = 'x';
+    const lineHeight = outerHeight(hidden.scrollHeight) - verticalPadding - verticalBorder;
 
     const result = computeAutosizeHeight({
       scrollHeight,
@@ -394,16 +460,59 @@
   // --- 行号：随内容 / 尺寸变化重算（对齐 Semi renderLineNumbers）---
   const lines = $derived(showLineNumber ? (current ? current.split('\n') : ['']) : []);
   let textareaHeight = $state(0);
+  // 软换行会撑高对应文本行的视觉高度，行号面板需要按同样倍数撑高对应行号 item
+  // 才能保持逐行对齐（对齐 Semi calculateWrappedLines：canvas 实测文字宽度 /
+  // textarea 可用宽度，Math.ceil 得该行占用的视觉行数）。textareaWidth 变化
+  // （resize/autosize）会改变可用宽度，从而改变每行的换行数，需要重新计算。
+  let textareaWidth = $state(0);
 
-  // 行号面板高度约束到 textarea 视口，滚动同步。
+  // 单例复用的测量用 canvas（对齐 Semi：避免每次渲染反复创建/销毁 canvas 元素）。
+  let measureCanvas: HTMLCanvasElement | undefined;
+  function getMeasureCtx(): CanvasRenderingContext2D | null {
+    if (!measureCanvas) measureCanvas = document.createElement('canvas');
+    return measureCanvas.getContext('2d');
+  }
+
+  // 每行占用的视觉行数（软换行）；showLineNumber 关闭或 taEl 未挂载时返回全 1。
+  const wrappedLineCounts = $derived.by(() => {
+    if (!showLineNumber || !taEl) return lines.map(() => 1);
+    const el = taEl;
+    void textareaWidth; // 建立依赖：宽度变化需要重新测量换行数
+    const cs = getComputedStyle(el);
+    const paddingLeft = parseFloat(cs.paddingLeft) || 0;
+    const paddingRight = parseFloat(cs.paddingRight) || 0;
+    const availableWidth = el.clientWidth - paddingLeft - paddingRight;
+    const ctx = getMeasureCtx();
+    if (!ctx) return lines.map(() => 1);
+    ctx.font = `${cs.fontSize} ${cs.fontFamily}`;
+    return lines.map((line) => {
+      if (!line) return 1;
+      const textWidth = ctx.measureText(line).width;
+      return computeWrappedLineCount(textWidth, availableWidth);
+    });
+  });
+
+  const lineHeightPx = $derived.by(() => {
+    if (!taEl) return 21;
+    const cs = getComputedStyle(taEl);
+    const parsed = parseFloat(cs.lineHeight);
+    if (cs.lineHeight && cs.lineHeight !== 'normal' && Number.isFinite(parsed) && parsed > 0) {
+      return parsed;
+    }
+    return (parseFloat(cs.fontSize) || 14) * 1.5;
+  });
+
+  // 行号面板高度约束到 textarea 视口，滚动同步；宽度变化驱动 wrappedLineCounts 重算。
   $effect(() => {
     if (!showLineNumber || !taEl) return;
     const el = taEl;
     textareaHeight = el.clientHeight;
+    textareaWidth = el.clientWidth;
     const ro = createResizeObserver({
       box: 'content-box',
       onResize: () => {
         textareaHeight = el.clientHeight;
+        textareaWidth = el.clientWidth;
       },
     });
     ro.observe(el);
@@ -464,14 +573,16 @@
   );
 </script>
 
-<!-- wrapper 严格对齐 Semi：<div> 无 role，仅承载 mouseenter/leave 追踪 hover（清除按钮显隐用）。 -->
-<!-- svelte-ignore a11y_no_static_element_interactions -->
+<!-- wrapper 严格对齐 Semi：<div> 无 role，承载 mouseenter/leave 追踪 hover（清除按钮显隐用）+
+     点击空白区聚焦 textarea（对齐 Semi handleClick）。 -->
+<!-- svelte-ignore a11y_no_static_element_interactions, a11y_click_events_have_key_events -->
 <div
   class={wrapperCls}
   {style}
   aria-invalid={isError || undefined}
   onmouseenter={() => (isHovering = true)}
   onmouseleave={() => (isHovering = false)}
+  onclick={handleWrapperClick}
 >
   {#if showLineNumber}
     <div
@@ -480,7 +591,10 @@
       style={lineNumberPanelStyle}
     >
       {#each lines as _line, i (i)}
-        <div class="cd-input-textarea-lineNumber-item">{lineNumberStart + i}</div>
+        <div
+          class="cd-input-textarea-lineNumber-item"
+          style="min-height:{(wrappedLineCounts[i] ?? 1) * lineHeightPx}px;line-height:{lineHeightPx}px"
+        >{lineNumberStart + i}</div>
       {/each}
     </div>
     <div class="cd-input-textarea-content">
@@ -568,9 +682,11 @@
     {#if countSnippet}
       {@render countSnippet({ count, maxCount, overLimit })}
     {:else}
+      <!-- svelte-ignore a11y_no_static_element_interactions, a11y_click_events_have_key_events -->
       <div
         class="cd-input-textarea-counter"
         class:cd-input-textarea-counter-exceed={overLimit}
+        onclick={handleCounterClick}
       >
         {#if maxCount !== undefined}
           {loc().t('Textarea.countFormat', {
@@ -599,7 +715,7 @@
     box-sizing: border-box;
     display: inline-block;
     position: relative;
-    inline-size: 100%;
+    width: 100%;
     vertical-align: bottom;
     background: var(--cd-color-input-default-bg-default);
     border: var(--cd-width-input-wrapper-border) solid var(--cd-color-input-default-border-default);
@@ -679,8 +795,8 @@
   .cd-input-textarea {
     position: relative;
     display: block;
-    inline-size: 100%;
-    min-inline-size: 0;
+    width: 100%;
+    min-width: 0;
     box-sizing: border-box;
     margin: 0;
     padding: var(--cd-spacing-textarea-paddingy) var(--cd-spacing-textarea-paddingx);
@@ -708,7 +824,7 @@
     color: var(--cd-color-input-placeholder-text-default);
   }
   .cd-input-textarea-showClear {
-    padding-inline-end: var(--cd-spacing-textarea-withshowclear-paddingright);
+    padding-right: var(--cd-spacing-textarea-withshowclear-paddingright);
   }
   .cd-input-textarea-autosize {
     overflow: hidden;
@@ -727,16 +843,19 @@
     color: var(--cd-color-input-disabled-text-default);
   }
 
-  /* clear 按钮 —— 对齐 Semi textarea clearbtn：绝对定位右上。 */
+  /* clear 按钮 —— 对齐 Semi textarea clearbtn：绝对定位右上，物理属性 `right`（非逻辑属性）
+     ——Semi rtl.scss 的 textarea 段未镜像这个 right，RTL 下 clearbtn 固定停留在屏幕右侧，
+     不随书写方向翻转（与 Input 内联 clearbtn 靠 flex 流自然镜像不同，此处是绝对定位，
+     必须显式钉死物理右侧才能复现 Semi 的 RTL 实际表现）。 */
   .cd-input-clearbtn {
     position: absolute;
-    inset-block-start: 0;
-    inset-inline-end: var(--cd-spacing-textarea-icon-right);
+    top: 0;
+    right: var(--cd-spacing-textarea-icon-right);
     display: flex;
     align-items: center;
     justify-content: center;
-    min-inline-size: var(--cd-width-textarea-icon);
-    block-size: var(--cd-height-textarea-default);
+    min-width: var(--cd-width-textarea-icon);
+    height: var(--cd-height-textarea-default);
     padding: 0;
     border: none;
     background: transparent;
@@ -761,7 +880,7 @@
     display: flex;
     flex-direction: column;
     justify-content: center;
-    min-block-size: var(--cd-height-textarea-counter);
+    min-height: var(--cd-height-textarea-counter);
     padding: var(--cd-spacing-textarea-counter-paddingtop) var(--cd-spacing-textarea-counter-paddingright)
       var(--cd-spacing-textarea-counter-paddingbottom) var(--cd-spacing-textarea-counter-paddingleft);
     text-align: right;
@@ -783,7 +902,7 @@
     flex-shrink: 0;
     padding: var(--cd-spacing-textarea-paddingy) var(--cd-spacing-textarea-paddingx);
     background: var(--cd-color-fill-1);
-    border-inline-end: 1px solid var(--cd-color-border);
+    border-right: 1px solid var(--cd-color-border);
     color: var(--cd-color-text-2);
     font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono',
       'Courier New', monospace;
@@ -791,9 +910,8 @@
     line-height: 1.5;
     text-align: right;
     user-select: none;
-    min-inline-size: 36px;
-    border-start-start-radius: var(--cd-radius-input-wrapper);
-    border-end-start-radius: var(--cd-radius-input-wrapper);
+    min-width: 36px;
+    border-radius: var(--cd-radius-input-wrapper) 0 0 var(--cd-radius-input-wrapper);
     overflow-y: auto;
     overflow-x: hidden;
     scrollbar-width: none;
@@ -804,7 +922,7 @@
   .cd-input-textarea-content {
     display: flex;
     flex: 1;
-    min-inline-size: 0;
+    min-width: 0;
   }
   .cd-input-textarea-lineNumber-item {
     display: flex;
@@ -813,16 +931,15 @@
     box-sizing: border-box;
   }
   .cd-input-textarea-wrapper-withLineNumber .cd-input-textarea {
-    border-start-end-radius: var(--cd-radius-input-wrapper);
-    border-end-end-radius: var(--cd-radius-input-wrapper);
+    border-radius: 0 var(--cd-radius-input-wrapper) var(--cd-radius-input-wrapper) 0;
     line-height: 1.5;
     flex: 1;
   }
 
   .cd-sr-only {
     position: absolute;
-    inline-size: 1px;
-    block-size: 1px;
+    width: 1px;
+    height: 1px;
     padding: 0;
     margin: -1px;
     overflow: hidden;

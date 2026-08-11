@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { computeAutosizeHeight, countCharacters } from './textarea.js';
+import { computeAutosizeHeight, computeWrappedLineCount, countCharacters } from './textarea.js';
 
 // row metrics: line 20px, padding 8px (4+4), border 2px (1+1).
 // 1 row = 20 + 8 + 2 = 30; 3 rows = 60 + 10 = 70; 5 rows = 100 + 10 = 110.
@@ -42,6 +42,28 @@ describe('computeAutosizeHeight', () => {
   it('respects minRows even with default (Infinity) maxRows', () => {
     const r = computeAutosizeHeight({ ...metrics, scrollHeight: 20, minRows: 3 });
     expect(r.height).toBe(70); // 3 rows
+  });
+});
+
+describe('computeWrappedLineCount', () => {
+  it('single visual row when text fits within available width', () => {
+    expect(computeWrappedLineCount(100, 200)).toBe(1);
+    expect(computeWrappedLineCount(200, 200)).toBe(1); // exact fit
+  });
+
+  it('rounds up to the next visual row when text overflows (对齐 Semi Math.ceil)', () => {
+    expect(computeWrappedLineCount(201, 200)).toBe(2);
+    expect(computeWrappedLineCount(400, 200)).toBe(2);
+    expect(computeWrappedLineCount(401, 200)).toBe(3);
+  });
+
+  it('empty text still occupies at least 1 row', () => {
+    expect(computeWrappedLineCount(0, 200)).toBe(1);
+  });
+
+  it('non-positive available width clamps to 1 row (avoid divide-by-zero blowup)', () => {
+    expect(computeWrappedLineCount(500, 0)).toBe(1);
+    expect(computeWrappedLineCount(500, -10)).toBe(1);
   });
 });
 

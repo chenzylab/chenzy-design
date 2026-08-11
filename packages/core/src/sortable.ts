@@ -25,16 +25,31 @@
  * The row box of one item along the main axis, relative to the container's
  * main-axis origin. For axis 'y' these are the CSS top/height; for axis 'x'
  * they carry left/width (the field names stay top/height for back-compat).
+ *
+ * `left`/`width` are OPTIONAL cross-axis fields, populated only when `wrap:
+ * true` (flex-wrap multi-row layouts — e.g. TagInput's variable-width tags).
+ * Single-axis callers (Table rows, Tabs bar) never set them and the original
+ * 1D geometry (`computeTargetIndex` / `computeItemTransforms`) is untouched.
  */
 export interface SortableRect {
   top: number;
   height: number;
+  /** Cross-axis start (px, relative to container). Wrap mode only. */
+  left?: number;
+  /** Cross-axis size (px). Wrap mode only. */
+  width?: number;
 }
 
-/** A per-item transform result for one drag frame. */
+/**
+ * A per-item transform result for one drag frame. `translateX` is populated
+ * only in wrap mode (flex-wrap multi-row layouts need both axes); single-axis
+ * callers (Table/Tabs) only ever see `translateY` (or read it as the main-axis
+ * offset when `axis:'x'`, per the existing back-compat field naming).
+ */
 export interface SortableTransform {
   index: number;
   translateY: number;
+  translateX?: number;
 }
 
 // ---------------------------------------------------------------------------
@@ -117,6 +132,84 @@ export function computeItemTransforms(
   return result;
 }
 
+/**
+ * Wrap-mode target index: for flex-wrap multi-row layouts (variable-width
+ * items, e.g. TagInput tags) a single-axis midline scan can't tell rows apart
+ * — item widths differ, so "pointer past this row's midline" is ambiguous
+ * across rows. Instead find the rect whose CENTER is closest to the pointer
+ * (Euclidean distance), mirroring dnd-kit's `closestCenter` collision
+ * strategy (used by Semi's `_sortable` — the component TagInput's dnd-kit
+ * drag is ported from). Clamped to `[0, rects.length - 1]`.
+ */
+export function computeTargetIndexWrap(
+  pointerX: number,
+  pointerY: number,
+  rects: readonly SortableRect[],
+): number {
+  const n = rects.length;
+  if (n === 0) return 0;
+  let best = 0;
+  let bestDist = Infinity;
+  for (let i = 0; i < n; i++) {
+    const r = rects[i]!;
+    const cx = (r.left ?? 0) + (r.width ?? 0) / 2;
+    const cy = r.top + r.height / 2;
+    const dx = pointerX - cx;
+    const dy = pointerY - cy;
+    const dist = dx * dx + dy * dy;
+    if (dist < bestDist) {
+      bestDist = dist;
+      best = i;
+    }
+  }
+  return best;
+}
+
+/**
+ * Wrap-mode transforms: items have different widths and may sit on different
+ * rows, so a single uniform `activeHeight` shift (the 1D `computeItemTransforms`
+ * assumption) reads wrong at row boundaries. Instead each shifted item moves to
+ * the EXACT slot vacated by its neighbor — item at index i takes on rect[i-1]'s
+ * (or rect[i+1]'s) box, so the translate is `neighborRect - ownRect` in both
+ * axes. This is still a pure permutation-of-transforms (no DOM reorder): each
+ * item slides to where the reordered array would visually place it, then a
+ * single `onReorder` commits the index change on drop.
+ */
+export function computeItemTransformsWrap(
+  activeIndex: number,
+  targetIndex: number,
+  pointerDeltaX: number,
+  pointerDeltaY: number,
+  rects: readonly SortableRect[],
+): Array<{ x: number; y: number }> {
+  const n = rects.length;
+  const result = Array.from({ length: n }, () => ({ x: 0, y: 0 }));
+  if (n === 0 || activeIndex < 0 || activeIndex >= n) return result;
+
+  result[activeIndex] = { x: pointerDeltaX, y: pointerDeltaY };
+
+  const own = (i: number): SortableRect => rects[i]!;
+  if (targetIndex > activeIndex) {
+    // Dragged item moves forward → each item in (active, target] takes on the
+    // box of the item just before it (i.e. slides back to fill the gap left
+    // behind as the dragged item passes it).
+    for (let i = activeIndex + 1; i <= targetIndex && i < n; i++) {
+      const from = own(i);
+      const to = own(i - 1);
+      result[i] = { x: (to.left ?? 0) - (from.left ?? 0), y: to.top - from.top };
+    }
+  } else if (targetIndex < activeIndex) {
+    // Dragged item moves backward → each item in [target, active) takes on
+    // the box of the item just after it.
+    for (let i = targetIndex; i < activeIndex && i >= 0; i++) {
+      const from = own(i);
+      const to = own(i + 1);
+      result[i] = { x: (to.left ?? 0) - (from.left ?? 0), y: to.top - from.top };
+    }
+  }
+  return result;
+}
+
 // ---------------------------------------------------------------------------
 // createSortable — vertical drag-sort lifecycle primitive
 // ---------------------------------------------------------------------------
@@ -142,11 +235,30 @@ export interface CreateSortableOptions {
    * geometry reads clientY / rect.top / rect.height. `'x'` — horizontal list
    * (horizontal tab bar); geometry reads clientX / rect.left / rect.width and
    * transforms become translateX. Item order/index semantics are identical.
+   * Ignored when `wrap: true` (wrap mode is inherently 2D).
    */
   axis?: 'x' | 'y';
 
-  /** Apply the frame's transforms. Called on every move once dragging. */
-  applyTransforms: (transforms: SortableTransform[], activeIndex: number) => void;
+  /**
+   * Flex-wrap multi-row layout (variable-width items that wrap onto several
+   * rows — e.g. TagInput tags). Switches geometry to the 2D `*Wrap` variants:
+   * target index is nearest-rect-center (not a single-axis midline scan), and
+   * transforms move each shifted item to its exact new (x,y) slot rather than
+   * a uniform single-axis shift. `axis` is ignored when this is true.
+   */
+  wrap?: boolean;
+
+  /**
+   * Apply the frame's transforms. Called on every move once dragging.
+   * `targetIndex` is the slot the dragged item would land on if dropped now
+   * (same value `onReorder`'s `to` will receive) — callers can use it to
+   * render a drop-target indicator (e.g. Semi TagInput's `isOver` insert line).
+   */
+  applyTransforms: (
+    transforms: SortableTransform[],
+    activeIndex: number,
+    targetIndex: number,
+  ) => void;
   /** Clear all transforms/transitions. Called on drop/cancel. */
   clearTransforms: () => void;
 
@@ -180,6 +292,7 @@ export function createSortable(
     options.ownerDocument ??
     (typeof document !== 'undefined' ? document : undefined);
   const activationDistance = options.activationDistance ?? 1;
+  const wrap = options.wrap ?? false;
   const axis = options.axis ?? 'y';
   // Read the main-axis coordinate from a pointer event (clientX for 'x', clientY for 'y').
   const pointerMain = (e: PointerEvent): number => (axis === 'x' ? e.clientX : e.clientY);
@@ -192,8 +305,10 @@ export function createSortable(
   let pending = false; // pointerdown seen, awaiting activation distance
   let activeIndex = -1;
   let targetIndex = -1;
-  let startPos = 0; // main-axis coordinate at pointerdown
+  let startPos = 0; // main-axis coordinate at pointerdown (1D mode) / clientX (wrap mode)
+  let startPosY = 0; // clientY at pointerdown — wrap mode only (needs both axes)
   let containerStart = 0; // container's main-axis origin (left for 'x', top for 'y')
+  let containerStartY = 0; // container's top — wrap mode only
   let rects: SortableRect[] = [];
 
   const resetDragState = (): void => {
@@ -208,18 +323,30 @@ export function createSortable(
     const c = options.getContainer();
     const cRect = c?.getBoundingClientRect();
     containerStart = cRect ? (axis === 'x' ? cRect.left : cRect.top) : 0;
+    containerStartY = cRect ? cRect.top : 0;
+    const containerStartX = cRect ? cRect.left : 0;
     const count = options.getItemCount();
     rects = [];
     for (let i = 0; i < count; i++) {
       const el = options.getItemElement(i);
       if (el) {
         const r = el.getBoundingClientRect();
-        // `top`/`height` carry main-axis start/size regardless of axis.
-        const start = (axis === 'x' ? r.left : r.top) - containerStart;
-        const size = axis === 'x' ? r.width : r.height;
-        rects.push({ top: start, height: size });
+        if (wrap) {
+          // Wrap mode always needs both axes, regardless of `axis`.
+          rects.push({
+            top: r.top - containerStartY,
+            height: r.height,
+            left: r.left - containerStartX,
+            width: r.width,
+          });
+        } else {
+          // `top`/`height` carry main-axis start/size regardless of axis.
+          const start = (axis === 'x' ? r.left : r.top) - containerStart;
+          const size = axis === 'x' ? r.width : r.height;
+          rects.push({ top: start, height: size });
+        }
       } else {
-        rects.push({ top: 0, height: 0 });
+        rects.push({ top: 0, height: 0, ...(wrap ? { left: 0, width: 0 } : {}) });
       }
     }
   };
@@ -232,7 +359,24 @@ export function createSortable(
     options.onDragStart?.(activeIndex);
   };
 
-  const frame = (mainPos: number): void => {
+  const frame = (clientX: number, clientY: number): void => {
+    if (wrap) {
+      const deltaX = clientX - startPos;
+      const deltaY = clientY - startPosY;
+      const activeRect = rects[activeIndex];
+      const pointerX = (activeRect ? (activeRect.left ?? 0) + (activeRect.width ?? 0) / 2 : 0) + deltaX;
+      const pointerY = (activeRect ? activeRect.top + activeRect.height / 2 : 0) + deltaY;
+      targetIndex = computeTargetIndexWrap(pointerX, pointerY, rects);
+      const offsets = computeItemTransformsWrap(activeIndex, targetIndex, deltaX, deltaY, rects);
+      const transforms: SortableTransform[] = offsets.map(({ x, y }, index) => ({
+        index,
+        translateY: y,
+        translateX: x,
+      }));
+      options.applyTransforms(transforms, activeIndex, targetIndex);
+      return;
+    }
+    const mainPos = axis === 'x' ? clientX : clientY;
     const pointerDelta = mainPos - startPos;
     // Dragged row's visual center = its original center + delta.
     const activeRect = rects[activeIndex];
@@ -249,7 +393,7 @@ export function createSortable(
       index,
       translateY,
     }));
-    options.applyTransforms(transforms, activeIndex);
+    options.applyTransforms(transforms, activeIndex, targetIndex);
   };
 
   const detachDocument = (): void => {
@@ -275,13 +419,19 @@ export function createSortable(
 
   function onPointerMove(e: PointerEvent): void {
     if (pending) {
-      if (Math.abs(pointerMain(e) - startPos) < activationDistance) return;
+      // Wrap mode: either axis moving past the threshold activates (tags can
+      // shift within a row (x) or across rows (y)). Single-axis mode only
+      // watches the main axis, as before.
+      const past = wrap
+        ? Math.hypot(e.clientX - startPos, e.clientY - startPosY) >= activationDistance
+        : Math.abs(pointerMain(e) - startPos) >= activationDistance;
+      if (!past) return;
       beginDrag();
     }
     if (!dragging) return;
     // Prevent text selection / native scroll interference during drag.
     e.preventDefault();
-    frame(pointerMain(e));
+    frame(e.clientX, e.clientY);
   }
 
   function onPointerUp(): void {
@@ -306,7 +456,8 @@ export function createSortable(
     const idx = options.resolveIndexFromEvent(e);
     if (idx < 0) return;
     activeIndex = idx;
-    startPos = pointerMain(e);
+    startPos = wrap ? e.clientX : pointerMain(e);
+    startPosY = e.clientY;
     pending = true;
     if (doc) {
       doc.addEventListener('pointermove', onPointerMove);

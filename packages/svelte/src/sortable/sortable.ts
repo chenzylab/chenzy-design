@@ -37,13 +37,72 @@ export interface SortableActionParams {
   /**
    * Drag axis. `'y'` (default) — vertical list (table rows, vertical tab bar).
    * `'x'` — horizontal list (horizontal tab bar); transforms become translateX.
+   * Ignored when `wrap: true`.
    */
   axis?: 'x' | 'y';
-  /** Transition applied to the shifting (non-dragged) rows. Default 'transform 200ms ease'. */
-  transition?: string;
+  /**
+   * Flex-wrap multi-row layout (variable-width items that wrap onto several
+   * rows — e.g. TagInput tags). Switches to 2D geometry: target index is
+   * nearest-rect-center, and each shifted item transforms to its exact new
+   * (x,y) slot instead of a uniform single-axis shift. `axis` is ignored.
+   */
+  wrap?: boolean;
+  /**
+   * CSS transition applied to shifting items during the drag — directly
+   * mirrors Semi `_sortable`'s `<Sortable transition={...} />` prop (passed
+   * straight through to dnd-kit's `useSortable({ transition })`). In Semi,
+   * `SortableItem`'s `wrapperStyle` is computed as
+   * `!isNull(transition) ? { transform, transition } : undefined` — i.e. the
+   * transition value is the SAME switch that gates whether items transform at
+   * all, not a separate concern. This mirrors that exactly:
+   * - a string (default `'transform 200ms ease'`) → items transform/animate
+   *   into their new slots as the pointer moves (dnd-kit's live-shift default,
+   *   used by Table's drag-sort demo).
+   * - `null` → no item receives a transform during the drag (confirmed against
+   *   the live Semi TagInput page: other items' rects are pixel-identical
+   *   before/after pointer moves) — TagInput passes this explicitly
+   *   (`tagInput/index.tsx` `<Sortable transition={null} .../>`), pairing it
+   *   with `dragOverlay: true` so the only moving visual is the overlay + the
+   *   `onDragOver` drop-target indicator; the list re-renders in its new order
+   *   only once `onReorder` fires on drop.
+   */
+  transition?: string | null;
+  /**
+   * dnd-kit-style drag overlay (对齐 Semi `_sortable` `useDragOverlay: true` 默认态，
+   * 本库 TagInput 拖拽移植自此): when true, the dragged item's original element stays
+   * in place (dimmed via host CSS class, e.g. `.cd-tag-input-sortable-item-active`)
+   * and does NOT receive a translate transform — its position/size are reported via
+   * `onDragOverlayStart`/`onDragOverlayMove`/`onDragOverlayEnd` instead, so the HOST
+   * renders the pointer-following visual (a real Svelte component instance, e.g. by
+   * re-invoking the same snippet used for the list item — NOT a DOM clone, which
+   * would detach from the component's reactive/effect state, e.g. Paragraph's
+   * ResizeObserver-based ellipsis measurement, and render garbled). Default false
+   * (existing callers unaffected — they never call the overlay callbacks).
+   */
+  dragOverlay?: boolean;
+  /**
+   * Fires once when a drag-overlay drag starts, with the dragged item's initial
+   * viewport rect (from `getBoundingClientRect()`) and its index. Only called when
+   * `dragOverlay: true`.
+   */
+  onDragOverlayStart?: (index: number, rect: DOMRect) => void;
+  /**
+   * Fires every frame during a drag-overlay drag with the overlay's current
+   * top/left (viewport px, `position:fixed` coordinates — origin rect + this
+   * frame's translate). Only called when `dragOverlay: true`.
+   */
+  onDragOverlayMove?: (top: number, left: number) => void;
+  /** Fires once when a drag-overlay drag ends (drop or cancel). */
+  onDragOverlayEnd?: () => void;
   onDragStart?: (index: number) => void;
   onDragEnd?: (from: number, to: number) => void;
   onDragCancel?: () => void;
+  /**
+   * Called on every drag frame with the slot the dragged item would land on
+   * if dropped now. Lets the host render a drop-target indicator (e.g. Semi
+   * TagInput's `isOver` insert line). Optional — most callers don't need it.
+   */
+  onDragOver?: (targetIndex: number) => void;
 }
 
 const defaultGetRows = (container: HTMLElement): HTMLElement[] => {
@@ -72,33 +131,55 @@ export const sortable: Action<HTMLElement, SortableActionParams> = (
 ) => {
   let current = params;
   let ctrl: SortableController | null = null;
-  const transition = () => current.transition ?? 'transform 200ms ease';
 
   const rows = (): HTMLElement[] =>
     (current.getRows ?? defaultGetRows)(node);
 
+  // --- drag overlay state (only used when dragOverlay: true) ---
+  // Origin is the dragged item's viewport rect at drag start; each frame's
+  // top/left is origin + this frame's translate. No DOM is created/owned here —
+  // the host renders its own overlay node from these coordinates.
+  let overlayOriginX = 0;
+  let overlayOriginY = 0;
+
   const applyTransforms = (
     transforms: SortableTransform[],
     activeIndex: number,
+    targetIndex: number,
   ): void => {
     const els = rows();
+    const isWrap = current.wrap ?? false;
     const isX = (current.axis ?? 'y') === 'x';
-    // `translateY` field carries the main-axis translate regardless of axis.
-    for (const { index, translateY: mainTranslate } of transforms) {
+    const useOverlay = current.dragOverlay ?? false;
+    // Mirrors Semi SortableItem: `wrapperStyle = !isNull(transition) ? {...} : undefined`.
+    // `transition === null` means no item gets a transform this frame, full stop —
+    // not "everyone except the dragged item"; the dragged item's visual motion
+    // comes entirely from the (separately-wired) drag overlay when that's on.
+    const transitionCss = current.transition;
+    const wrapperStyleApplies = transitionCss !== null;
+    for (const { index, translateY, translateX } of transforms) {
+      if (useOverlay && index === activeIndex) {
+        // Dragged item's home element stays put (dimmed via host CSS class);
+        // report the pointer-following coordinates for the host's own overlay.
+        const x = isWrap ? (translateX ?? 0) : isX ? translateY : 0;
+        const y = isWrap ? translateY : isX ? 0 : translateY;
+        current.onDragOverlayMove?.(overlayOriginY + y, overlayOriginX + x);
+        continue;
+      }
+      if (!wrapperStyleApplies) continue;
       const el = els[index];
       if (!el) continue;
-      el.style.transform = mainTranslate
-        ? isX
-          ? `translateX(${mainTranslate}px)`
-          : `translateY(${mainTranslate}px)`
-        : '';
+      const x = isWrap ? (translateX ?? 0) : isX ? translateY : 0;
+      const y = isWrap ? translateY : isX ? 0 : translateY;
+      el.style.transform = x || y ? `translate(${x}px, ${y}px)` : '';
       // The dragged row must follow the pointer with no lag → no transition.
-      el.style.transition = index === activeIndex ? 'none' : transition();
-      if (index === activeIndex && mainTranslate) {
+      el.style.transition = index === activeIndex ? 'none' : (transitionCss ?? 'transform 200ms ease');
+      if (index === activeIndex && (x || y)) {
         el.style.zIndex = '1';
         el.style.position = 'relative';
       }
     }
+    current.onDragOver?.(targetIndex);
   };
 
   const clearTransforms = (): void => {
@@ -108,6 +189,8 @@ export const sortable: Action<HTMLElement, SortableActionParams> = (
       el.style.zIndex = '';
       el.style.position = '';
     }
+    if (current.dragOverlay) current.onDragOverlayEnd?.();
+    current.onDragOver?.(-1);
   };
 
   const build = (): void => {
@@ -122,10 +205,22 @@ export const sortable: Action<HTMLElement, SortableActionParams> = (
         ? { activationDistance: current.activationDistance }
         : {}),
       ...(current.axis !== undefined ? { axis: current.axis } : {}),
+      ...(current.wrap !== undefined ? { wrap: current.wrap } : {}),
       applyTransforms,
       clearTransforms,
       onReorder: (from, to) => current.onReorder(from, to),
-      onDragStart: (i) => current.onDragStart?.(i),
+      onDragStart: (i) => {
+        if (current.dragOverlay) {
+          const source = rows()[i];
+          const rect = source?.getBoundingClientRect();
+          if (rect) {
+            overlayOriginX = rect.left;
+            overlayOriginY = rect.top;
+            current.onDragOverlayStart?.(i, rect);
+          }
+        }
+        current.onDragStart?.(i);
+      },
       onDragEnd: (from, to) => current.onDragEnd?.(from, to),
       onDragCancel: () => current.onDragCancel?.(),
     });
@@ -141,6 +236,8 @@ export const sortable: Action<HTMLElement, SortableActionParams> = (
       // container identity changes (it never does for a mounted action).
     },
     destroy() {
+      // If unmounted mid-drag, tell the host to tear down its overlay node too.
+      if (ctrl?.isDragging() && current.dragOverlay) current.onDragOverlayEnd?.();
       ctrl?.destroy();
       ctrl = null;
     },

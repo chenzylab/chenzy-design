@@ -191,6 +191,7 @@ Input 和 TextArea 均支持该属性。
 | --- | --- | --- | --- |
 | addonAfter | 后置标签 | Snippet \| string | - |
 | addonBefore | 前置标签 | Snippet \| string | - |
+| affixIsIcon | prefix/suffix 传 Snippet 时是否按图标间距渲染（Svelte 无法内省 Snippet 内容，显式声明；传非图标节点时设为 false 落到「两侧均不加外边距」的第三态） | boolean | true |
 | ariaDescribedby | 关联说明 / 错误文本节点 id | string | - |
 | ariaErrormessage | 设置 aria-errormessage 属性 | string | - |
 | aria-label | 设置 aria-label 属性 | string | - |
@@ -209,6 +210,7 @@ Input 和 TextArea 均支持该属性。
 | insetLabelId | 内嵌标签容器 id（关联 aria） | string | - |
 | inputStyle | input 元素内联样式 | string | - |
 | maxLength | 原生 maxlength | number | - |
+| minLength | 最小长度，下发原生 minlength 触发浏览器校验；配合 getValueLength 时按可见长度换算 | number | - |
 | mode | 输入框的模式，可选值 `password` | string | - |
 | prefix | 前缀标签 | Snippet | - |
 | preventScroll | 调用 focus() 时是否阻止滚动文档以显示新聚焦的元素 | boolean | false |

@@ -63,6 +63,19 @@ export function computeAutosizeHeight(input: AutosizeInput): AutosizeResult {
   return { height, overflow };
 }
 
+/**
+ * Number of soft-wrapped visual rows a single line of text occupies (对齐
+ * Semi textarea.tsx `calculateWrappedLines`: `Math.ceil(textWidth / availableWidth)`,
+ * clamped to >= 1). Pure — the caller measures `textWidth` with a canvas 2D
+ * context (`ctx.measureText(line).width`, font set to match the textarea) and
+ * passes it in; this function only does the width-to-row-count math so it's
+ * unit-testable without a DOM/canvas.
+ */
+export function computeWrappedLineCount(textWidth: number, availableWidth: number): number {
+  if (availableWidth <= 0) return 1;
+  return Math.max(1, Math.ceil(textWidth / availableWidth));
+}
+
 // --- character counting -----------------------------------------------------
 
 /**
