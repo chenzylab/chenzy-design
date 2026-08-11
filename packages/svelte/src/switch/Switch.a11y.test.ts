@@ -1,4 +1,4 @@
-// Switch a11y：原生 role="switch" 按钮，受控/非受控。
+// Switch a11y：对齐 Semi DOM 结构，role="switch" 挂在隐藏的 <input type=checkbox> 上。
 // 只断言静态 ARIA（role/aria-checked/aria-disabled）+ axe 0 violations，
 // 不测真实键盘/焦点（jsdom 限制，见 test-utils/a11y.ts 说明）。
 import { describe, it, expect } from 'vitest';
@@ -12,6 +12,7 @@ describe('Switch a11y', () => {
     });
     const sw = container.querySelector('[role="switch"]');
     expect(sw).not.toBeNull();
+    expect(sw?.tagName).toBe('INPUT');
     expect(sw?.getAttribute('aria-checked')).toBe('false');
     expect(sw?.getAttribute('aria-label')).toBe('Dark mode');
     await expectNoAxeViolations(container);
@@ -26,21 +27,23 @@ describe('Switch a11y', () => {
     await expectNoAxeViolations(container);
   });
 
-  it('禁用：disabled，无 axe violations', async () => {
+  it('禁用：disabled，input 原生禁用 + aria-disabled，无 axe violations', async () => {
     const { container } = renderWithLocale(Switch, {
       props: { 'aria-label':'Bluetooth', disabled: true },
     });
-    const sw = container.querySelector('[role="switch"]');
+    const sw = container.querySelector('[role="switch"]') as HTMLInputElement | null;
     expect(sw).not.toBeNull();
+    expect(sw?.disabled).toBe(true);
+    expect(sw?.getAttribute('aria-disabled')).toBe('true');
     await expectNoAxeViolations(container);
   });
 
-  it('loading：aria-busy=true', async () => {
+  it('loading：input 原生禁用（阻断交互，对齐 Semi），无 axe violations', async () => {
     const { container } = renderWithLocale(Switch, {
       props: { 'aria-label':'Sync', loading: true },
     });
-    const sw = container.querySelector('[role="switch"]');
-    expect(sw?.getAttribute('aria-busy')).toBe('true');
+    const sw = container.querySelector('[role="switch"]') as HTMLInputElement | null;
+    expect(sw?.disabled).toBe(true);
     await expectNoAxeViolations(container);
   });
 });
