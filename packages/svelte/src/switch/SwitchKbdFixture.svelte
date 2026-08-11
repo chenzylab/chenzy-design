@@ -1,7 +1,8 @@
 <!--
   仅供 Switch.kbd.test.ts（browser project）使用的键盘 e2e 夹具。
-  Switch 是原生 <button role="switch">，焦点落在按钮本身；Space/Enter 经原生
-  click 触发 toggle，aria-checked 翻转。夹具暴露 onChange 写入 lastValue。
+  Switch 对齐 Semi DOM 结构，role="switch" 挂在隐藏的 <input type=checkbox>，
+  焦点落在该 input；Space 经原生 checkbox 行为触发 toggle，aria-checked 翻转。
+  夹具暴露 onChange 写入 lastValue。
 -->
 <script lang="ts">
   import { LocaleProvider } from '../locale-provider/index.js';

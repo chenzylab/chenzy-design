@@ -4,7 +4,7 @@
  * knob 尺寸/位移在此忠实翻译为字面量 px，与 variables.scss 数值一致）。
  * 无自造中间层：组件 CSS 直接消费下列 --cd-switch-* token。
  *
- * DOM 偏离：本库根为 <button role=switch>（保留 APG pattern），Semi 为 div+隐藏 input；
+ * DOM 结构镜像 Semi：根为 <div class="cd-switch">，内含隐藏 <input type=checkbox role=switch>；
  * knob 用 translateX 位移对齐 Semi（非 inset 定位）。
  *
  * 尺寸/位移映射（对齐 variables.scss）：
@@ -22,7 +22,9 @@ export const switchTokens = {
   'switch-height-default': { value: '24px', category: 'height', label: '开关高度', usage: '开关高度 - 默认' },
   'switch-height-small': { value: '16px', category: 'height', label: '开关高度', usage: '开关高度 - 小尺寸' },
   'switch-height-large': { value: '32px', category: 'height', label: '开关高度', usage: '开关高度 - 大尺寸' },
-  'switch-radius': { value: 'var(--cd-border-radius-full)', category: 'radius', label: '开关圆角', usage: '开关圆角（Semi=height*0.5，pill 等价）' },
+  'switch-radius': { value: 'var(--cd-border-radius-full)', category: 'radius', label: '开关圆角', usage: '开关圆角 - 默认（$radius-switch=height*0.5，pill 等价）' },
+  'switch-radius-large': { value: 'var(--cd-border-radius-full)', category: 'radius', label: '大尺寸开关圆角', usage: '开关圆角 - 大尺寸（$radius-switch_large=height*0.5）' },
+  'switch-radius-small': { value: 'var(--cd-border-radius-full)', category: 'radius', label: '小尺寸开关圆角', usage: '开关圆角 - 小尺寸（$radius-switch_small=height*0.5）' },
   'switch-border-width': { value: '1px', category: 'width', label: '描边宽度', usage: '开关描边宽度（对齐 border-thickness-control）' },
 
   // —— 背景色：关态 / 开态 × 默认 / 悬浮 / 按下 / 禁用（对齐 $color-switch_*-bg-*） ——
@@ -34,10 +36,13 @@ export const switchTokens = {
   'switch-bg-on-active': { value: 'var(--cd-color-success-active)', category: 'color', label: '开态按下背景', usage: '开启态背景 - 按下' },
   'switch-bg-on-disabled': { value: 'var(--cd-color-success-disabled)', category: 'color', label: '禁用开态背景', usage: '禁用开启态背景' },
   'switch-border-off': { value: 'transparent', category: 'color', label: '关态描边', usage: '关闭态描边颜色' },
+  'switch-checked-disabled-border': { value: 'transparent', category: 'color', label: '禁用开态描边', usage: '禁用开启态描边颜色（$color-switch_checked_disabled-border-default）' },
 
   // —— knob（滑块） ——
   'switch-knob-bg': { value: 'var(--cd-color-white)', category: 'color', label: '滑块背景', usage: '开关滑块背景颜色' },
   'switch-knob-shadow': { value: '0 4px 6px rgba(0, 0, 0, 0.1), 0 0 1px rgba(0, 0, 0, 0.3)', category: 'other', label: '滑块阴影', usage: '开关滑块阴影（对齐 shadow-knob mixin）' },
+  'switch-knob-border-color': { value: 'var(--cd-color-border)', category: 'color', label: '禁用态滑块描边色', usage: '禁用态滑块描边颜色（$color-switch_knob-border-default）' },
+  'switch-knob-disabled-border-width': { value: '1px', category: 'width', label: '禁用态滑块描边宽度', usage: '禁用态滑块描边宽度（$width-switch_knob_disabled-border）' },
   'switch-knob-size': { value: '18px', category: 'width', label: '滑块尺寸', usage: '滑块宽高 - 默认（$width-switch_knob_default）' },
   'switch-knob-size-large': { value: '24px', category: 'width', label: '大尺寸滑块尺寸', usage: '滑块宽高 - 大尺寸（$width-switch_knob_large）' },
   'switch-knob-size-small': { value: '12px', category: 'width', label: '小尺寸滑块尺寸', usage: '滑块宽高 - 小尺寸（$width-switch_knob_large_small）' },

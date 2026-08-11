@@ -1,12 +1,16 @@
 <!--
-  Switch — 严格对齐 Semi Design（semi-ui/switch）。
+  Switch — 严格对齐 Semi Design（semi-ui/switch/index.tsx + semi-foundation/switch）。
 
-  DOM 偏离说明（保守决策，见返回报告）：
-    Semi 根为 <div class="semi-switch"> + 隐藏 <input type=checkbox role=switch>；
-    本库保留 <button role="switch">（APG Switch Pattern，role 载体在按钮本身），
-    a11y 更优且已有键盘/焦点测试覆盖，故不照搬 input 结构；仅将 class 命名
-    连字符化对齐 Semi（cd-switch / cd-switch-checked / cd-switch-knob …）、
-    token 名值对齐 Semi variables.scss。
+  DOM 结构镜像 Semi：
+    <div class="cd-switch ...">
+      <Spin> 或 <span class="cd-switch-knob">   ← loading 时用 Spin 替换 knob
+      <span class="cd-switch-checked-text">     ← 仅 checkedText && checked && size!=small
+      <span class="cd-switch-unchecked-text">   ← 仅 uncheckedText && !checked && size!=small
+      <input type="checkbox" class="cd-switch-native-control" role="switch" ...>
+    </div>
+
+  role=switch 挂在隐藏 input 上（非根节点），事件（change/focus/blur）也绑在 input 上，
+  根 div 只接 onMouseEnter/onMouseLeave（对齐 Semi render()）。
 
   死循环红线：
     - 受控（checked=）：父持有 checked，仅经 onChange 上抛，绝不回写 prop。
@@ -44,7 +48,6 @@
     'aria-describedby'?: string;
     'aria-errormessage'?: string;
     'aria-invalid'?: boolean;
-    'aria-required'?: boolean;
   }
 
   let {
@@ -66,7 +69,6 @@
     'aria-describedby': ariaDescribedby,
     'aria-errormessage': ariaErrormessage,
     'aria-invalid': ariaInvalid,
-    'aria-required': ariaRequired,
   }: Props = $props();
 
   const isControlled = $derived(checked !== undefined);
@@ -78,61 +80,46 @@
     return defaultChecked;
   }
 
-  const interactable = $derived(!disabled && !loading);
+  // 对齐 Semi handleFocusVisible：仅键盘聚焦（:focus-visible）才显示 focus 轮廓。
+  let focusVisible = $state(false);
+  function handleFocusVisible(e: FocusEvent) {
+    const target = e.target as HTMLElement | null;
+    if (target?.matches(':focus-visible')) focusVisible = true;
+  }
+  function handleBlur() {
+    focusVisible = false;
+  }
 
-  function toggle(event: Event) {
-    if (!interactable) return;
-    const next = !on;
+  function handleChange(e: Event & { currentTarget: HTMLInputElement }) {
+    const next = e.currentTarget.checked;
     // 受控：父持有 checked，仅 onChange 上抛；非受控：同步内部态。
     if (!isControlled) inner = next;
-    onChange?.(next, event);
+    onChange?.(next, e);
   }
 
   // 内嵌文字在最小尺寸下不渲染（对齐 Semi：small 放不下文本）。
-  const activeText = $derived<string | Snippet | undefined>(
-    size === 'small' ? undefined : on ? checkedText : uncheckedText,
-  );
+  const showCheckedText = $derived(!!checkedText && on && size !== 'small');
+  const showUncheckedText = $derived(!!uncheckedText && !on && size !== 'small');
   const isSnippet = (c: string | Snippet | undefined): c is Snippet => typeof c === 'function';
 
   const cls = $derived(
     [
       'cd-switch',
-      size === 'large' && 'cd-switch-large',
-      size === 'small' && 'cd-switch-small',
+      className,
       on && 'cd-switch-checked',
       disabled && 'cd-switch-disabled',
+      size === 'large' && 'cd-switch-large',
+      size === 'small' && 'cd-switch-small',
       loading && 'cd-switch-loading',
-      className,
+      focusVisible && 'cd-switch-focus',
     ]
       .filter(Boolean)
       .join(' '),
   );
 </script>
 
-<button
-  {id}
-  type="button"
-  role="switch"
-  class={cls}
-  {style}
-  aria-checked={on}
-  aria-labelledby={ariaLabelledby}
-  aria-label={ariaLabelledby ? undefined : ariaLabel}
-  aria-describedby={ariaDescribedby}
-  aria-errormessage={ariaErrormessage}
-  aria-invalid={ariaInvalid || undefined}
-  aria-required={ariaRequired || undefined}
-  aria-busy={loading || undefined}
-  disabled={disabled || loading}
-  onclick={toggle}
-  onmouseenter={onMouseEnter}
-  onmouseleave={onMouseLeave}
->
-  {#if activeText !== undefined}
-    <span class={on ? 'cd-switch-checked-text' : 'cd-switch-unchecked-text'}>
-      {#if isSnippet(activeText)}{@render activeText()}{:else}{activeText}{/if}
-    </span>
-  {/if}
+<!-- svelte-ignore a11y_no_static_element_interactions -->
+<div class={cls} {style} onmouseenter={onMouseEnter} onmouseleave={onMouseLeave}>
   {#if loading}
     <!-- 对齐 Semi：loading 复用 <Spin>（渐变弧 SVG），非自绘 border 圈。
          SVG 尺寸/位移由 .cd-switch-loading-spin 作用域 CSS 控制。 -->
@@ -140,100 +127,122 @@
   {:else}
     <span class="cd-switch-knob" aria-hidden="true"></span>
   {/if}
-</button>
+  {#if showCheckedText}
+    <span class="cd-switch-checked-text">
+      {#if isSnippet(checkedText)}{@render checkedText()}{:else}{checkedText}{/if}
+    </span>
+  {/if}
+  {#if showUncheckedText}
+    <span class="cd-switch-unchecked-text">
+      {#if isSnippet(uncheckedText)}{@render uncheckedText()}{:else}{uncheckedText}{/if}
+    </span>
+  {/if}
+  <input
+    type="checkbox"
+    class="cd-switch-native-control"
+    {id}
+    role="switch"
+    checked={on}
+    disabled={disabled || loading}
+    aria-checked={on}
+    aria-invalid={ariaInvalid || undefined}
+    aria-errormessage={ariaErrormessage}
+    aria-label={ariaLabel}
+    aria-labelledby={ariaLabelledby}
+    aria-describedby={ariaDescribedby}
+    aria-disabled={disabled || undefined}
+    onchange={handleChange}
+    onfocus={handleFocusVisible}
+    onblur={handleBlur}
+  />
+</div>
 
 <style>
   .cd-switch {
-    position: relative;
-    display: inline-block;
     box-sizing: border-box;
+    display: inline-block;
+    position: relative;
+    cursor: pointer;
+    border-radius: var(--cd-switch-radius);
+    border: var(--cd-switch-border-width) solid var(--cd-switch-border-off);
+    background-color: var(--cd-switch-bg-off);
+    transition: background-color var(--cd-switch-transition-duration) var(--cd-switch-transition-easing);
     inline-size: var(--cd-switch-width-default);
     block-size: var(--cd-switch-height-default);
-    padding: 0;
-    border: var(--cd-switch-border-width) solid var(--cd-switch-border-off);
-    border-radius: var(--cd-switch-radius);
-    background: var(--cd-switch-bg-off);
-    cursor: pointer;
-    transition: background-color var(--cd-switch-transition-duration) var(--cd-switch-transition-easing);
   }
   .cd-switch:hover {
-    background: var(--cd-switch-bg-off-hover);
+    background-color: var(--cd-switch-bg-off-hover);
   }
   .cd-switch:active {
-    background: var(--cd-switch-bg-off-active);
+    border-color: var(--cd-switch-bg-off-active);
   }
-  .cd-switch-small {
-    inline-size: var(--cd-switch-width-small);
-    block-size: var(--cd-switch-height-small);
-  }
-  .cd-switch-large {
-    inline-size: var(--cd-switch-width-large);
-    block-size: var(--cd-switch-height-large);
+  .cd-switch-focus {
+    outline: var(--cd-switch-outline-width) solid var(--cd-switch-outline-focus);
   }
   .cd-switch-checked {
-    background: var(--cd-switch-bg-on);
+    background-color: var(--cd-switch-bg-on);
   }
   .cd-switch-checked:hover {
-    background: var(--cd-switch-bg-on-hover);
-  }
-  .cd-switch-checked:active {
-    background: var(--cd-switch-bg-on-active);
-  }
-  .cd-switch:focus-visible {
-    outline: var(--cd-switch-outline-width) solid var(--cd-switch-outline-focus);
-    outline-offset: 0;
+    background-color: var(--cd-switch-bg-on-hover);
   }
   .cd-switch-disabled {
     cursor: not-allowed;
-    background: var(--cd-switch-bg-off);
-    opacity: 0.5;
+    background-color: var(--cd-switch-bg-off);
+    border-color: var(--cd-switch-border-off);
+  }
+  .cd-switch-disabled:hover {
+    background-color: var(--cd-switch-bg-off);
+  }
+  .cd-switch-disabled .cd-switch-knob {
+    cursor: not-allowed;
+    box-shadow: none;
+    border: var(--cd-switch-knob-disabled-border-width) solid var(--cd-switch-knob-border-color);
+  }
+  .cd-switch-disabled .cd-switch-native-control {
+    pointer-events: none;
+    cursor: not-allowed;
   }
   .cd-switch-disabled.cd-switch-checked {
-    background: var(--cd-switch-bg-on-disabled);
-    opacity: 1;
+    border-color: var(--cd-switch-checked-disabled-border);
+    background-color: var(--cd-switch-bg-on-disabled);
   }
-  .cd-switch-disabled:hover,
-  .cd-switch-disabled:active {
-    background: var(--cd-switch-bg-off);
-  }
-  .cd-switch-disabled.cd-switch-checked:hover,
-  .cd-switch-disabled.cd-switch-checked:active {
-    background: var(--cd-switch-bg-on-disabled);
+  .cd-switch-disabled.cd-switch-checked .cd-switch-knob {
+    box-shadow: none;
+    border: none;
   }
 
   /* knob：绝对定位 + translateX 位移，对齐 Semi。 */
   .cd-switch-knob {
+    box-shadow: var(--cd-switch-knob-shadow);
+    cursor: pointer;
+    box-sizing: border-box;
     position: absolute;
     inset-block-start: var(--cd-switch-knob-padding);
     inset-inline-start: 0;
     inline-size: var(--cd-switch-knob-size);
     block-size: var(--cd-switch-knob-size);
     border-radius: 50%;
-    background: var(--cd-switch-knob-bg);
-    box-shadow: var(--cd-switch-knob-shadow);
+    background-color: var(--cd-switch-knob-bg);
     transform: translateX(var(--cd-switch-knob-tx-off));
-    transition: transform var(--cd-switch-transition-duration) var(--cd-switch-transition-easing);
+    transition:
+      transform var(--cd-switch-transition-duration) var(--cd-switch-transition-easing),
+      inline-size var(--cd-switch-transition-duration) var(--cd-switch-transition-easing);
   }
   .cd-switch-checked .cd-switch-knob {
     transform: translateX(var(--cd-switch-knob-tx-on));
   }
-  .cd-switch-large .cd-switch-knob {
-    inset-block-start: var(--cd-switch-knob-padding-large);
-    inline-size: var(--cd-switch-knob-size-large);
-    block-size: var(--cd-switch-knob-size-large);
-    transform: translateX(var(--cd-switch-knob-tx-off-large));
-  }
-  .cd-switch-large.cd-switch-checked .cd-switch-knob {
-    transform: translateX(var(--cd-switch-knob-tx-on-large));
-  }
-  .cd-switch-small .cd-switch-knob {
-    inset-block-start: var(--cd-switch-knob-padding-small);
-    inline-size: var(--cd-switch-knob-size-small);
-    block-size: var(--cd-switch-knob-size-small);
-    transform: translateX(var(--cd-switch-knob-tx-off-small));
-  }
-  .cd-switch-small.cd-switch-checked .cd-switch-knob {
-    transform: translateX(var(--cd-switch-knob-tx-on-small));
+
+  /* native control：铺满、透明、承担交互与 a11y（对齐 Semi native-control）。 */
+  .cd-switch-native-control {
+    inline-size: 100%;
+    block-size: 100%;
+    opacity: 0;
+    cursor: inherit;
+    pointer-events: auto;
+    margin: 0;
+    position: absolute;
+    inset-block-start: 0;
+    inset-inline-start: 0;
   }
 
   /* 内嵌文案：绝对定位、宽 20px、居中，对齐 Semi。 */
@@ -247,30 +256,25 @@
     inline-size: var(--cd-switch-text-width);
     block-size: 100%;
     font-size: var(--cd-switch-text-font-size);
-    line-height: 1;
   }
   .cd-switch-checked-text {
-    inset-inline-start: 0;
     color: var(--cd-switch-checked-text-color);
   }
   .cd-switch-unchecked-text {
-    inset-inline-end: 0;
     color: var(--cd-switch-unchecked-text-color);
-  }
-  .cd-switch-large .cd-switch-checked-text,
-  .cd-switch-large .cd-switch-unchecked-text {
-    inline-size: var(--cd-switch-text-width-large);
-    font-size: var(--cd-switch-text-font-size-large);
+    inset-inline-end: 0;
   }
 
   /* loading：复用 <Spin>（渐变弧 SVG），对齐 Semi 的 <Spin wrapperClassName>。
      背景切浅灰/浅绿；Spin 根 .cd-switch-loading-spin 绝对定位到 knob 位置、
      translateX 位移；SVG 恒白、尺寸对齐 Semi spin 宽度。 */
   .cd-switch-loading {
-    background: var(--cd-switch-bg-spin-off);
+    display: inline-flex;
+    align-items: center;
+    background-color: var(--cd-switch-bg-spin-off);
   }
-  .cd-switch-loading.cd-switch-checked {
-    background: var(--cd-switch-bg-spin-on);
+  .cd-switch-disabled.cd-switch-loading:not(.cd-switch-checked):hover {
+    background-color: var(--cd-switch-bg-spin-off);
   }
   /* :global —— Spin 根节点由子组件渲染，作用域选择器不覆盖，故用 :global 精确限定在 .cd-switch 内。
      Spin 根盒子取消默认尺寸约束（收缩到内容），改由 SVG 尺寸决定；绝对定位到 knob 位置。 */
@@ -299,6 +303,33 @@
     inline-size: var(--cd-switch-spin-size);
     block-size: var(--cd-switch-spin-size);
   }
+  .cd-switch-loading.cd-switch-checked {
+    background-color: var(--cd-switch-bg-spin-on);
+  }
+  .cd-switch-disabled.cd-switch-checked {
+    background-color: var(--cd-switch-bg-on-disabled);
+  }
+
+  /* ============ large ============ */
+  .cd-switch-large {
+    inline-size: var(--cd-switch-width-large);
+    block-size: var(--cd-switch-height-large);
+    border-radius: var(--cd-switch-radius-large);
+  }
+  .cd-switch-large .cd-switch-knob {
+    inline-size: var(--cd-switch-knob-size-large);
+    block-size: var(--cd-switch-knob-size-large);
+    inset-block-start: var(--cd-switch-knob-padding-large);
+    transform: translateX(var(--cd-switch-knob-tx-off-large));
+  }
+  .cd-switch-large.cd-switch-checked .cd-switch-knob {
+    transform: translateX(var(--cd-switch-knob-tx-on-large));
+  }
+  .cd-switch-large .cd-switch-checked-text,
+  .cd-switch-large .cd-switch-unchecked-text {
+    inline-size: var(--cd-switch-text-width-large);
+    font-size: var(--cd-switch-text-font-size-large);
+  }
   .cd-switch-large :global(.cd-switch-loading-spin) {
     transform: translate(var(--cd-switch-spin-tx-off-large), -50%);
   }
@@ -308,6 +339,22 @@
   .cd-switch-large :global(.cd-switch-loading-spin svg) {
     inline-size: var(--cd-switch-spin-size-large);
     block-size: var(--cd-switch-spin-size-large);
+  }
+
+  /* ============ small ============ */
+  .cd-switch-small {
+    inline-size: var(--cd-switch-width-small);
+    block-size: var(--cd-switch-height-small);
+    border-radius: var(--cd-switch-radius-small);
+  }
+  .cd-switch-small .cd-switch-knob {
+    inline-size: var(--cd-switch-knob-size-small);
+    block-size: var(--cd-switch-knob-size-small);
+    inset-block-start: var(--cd-switch-knob-padding-small);
+    transform: translateX(var(--cd-switch-knob-tx-off-small));
+  }
+  .cd-switch-small.cd-switch-checked .cd-switch-knob {
+    transform: translateX(var(--cd-switch-knob-tx-on-small));
   }
   .cd-switch-small :global(.cd-switch-loading-spin) {
     transform: translate(var(--cd-switch-spin-tx-off-small), -50%);
@@ -339,16 +386,29 @@
      真机实测（RTL，40px 轨道 / 18px knob）：
        仅取负        → off fromLeft=-1、on fromLeft=-17（knob 跑到轨道外，错）
        钉右 + 取负   → off fromRight=3、on fromLeft=3（正确镜像 LTR） */
+  :global(.cd-rtl) .cd-switch {
+    direction: rtl;
+  }
   :global(.cd-rtl) .cd-switch-knob {
     inset-inline-start: auto;
     right: 0;
     left: auto;
-  }
-  :global(.cd-rtl) .cd-switch-knob {
     transform: translateX(calc(-1 * var(--cd-switch-knob-tx-off)));
   }
   :global(.cd-rtl) .cd-switch-checked .cd-switch-knob {
     transform: translateX(calc(-1 * var(--cd-switch-knob-tx-on)));
+  }
+  :global(.cd-rtl) .cd-switch-native-control {
+    inset-inline-end: 0;
+  }
+  :global(.cd-rtl) .cd-switch-unchecked-text {
+    inset-inline-start: 0;
+  }
+  :global(.cd-rtl) .cd-switch :global(.cd-switch-loading-spin) {
+    transform: translate(calc(-1 * var(--cd-switch-spin-tx-off)), -50%);
+  }
+  :global(.cd-rtl) .cd-switch.cd-switch-checked :global(.cd-switch-loading-spin) {
+    transform: translate(calc(-1 * var(--cd-switch-spin-tx-on)), -50%);
   }
   :global(.cd-rtl) .cd-switch-large .cd-switch-knob {
     transform: translateX(calc(-1 * var(--cd-switch-knob-tx-off-large)));
@@ -361,5 +421,17 @@
   }
   :global(.cd-rtl) .cd-switch-small.cd-switch-checked .cd-switch-knob {
     transform: translateX(calc(-1 * var(--cd-switch-knob-tx-on-small)));
+  }
+  :global(.cd-rtl) .cd-switch-large :global(.cd-switch-loading-spin) {
+    transform: translate(calc(-1 * var(--cd-switch-spin-tx-off-large)), -50%);
+  }
+  :global(.cd-rtl) .cd-switch-large.cd-switch-checked :global(.cd-switch-loading-spin) {
+    transform: translate(calc(-1 * var(--cd-switch-spin-tx-on-large)), -50%);
+  }
+  :global(.cd-rtl) .cd-switch-small :global(.cd-switch-loading-spin) {
+    transform: translate(calc(-1 * var(--cd-switch-spin-tx-off-small)), -50%);
+  }
+  :global(.cd-rtl) .cd-switch-small.cd-switch-checked :global(.cd-switch-loading-spin) {
+    transform: translate(calc(-1 * var(--cd-switch-spin-tx-on-small)), -50%);
   }
 </style>

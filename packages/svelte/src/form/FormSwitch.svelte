@@ -28,7 +28,7 @@
 </script>
 
 <Field {...fieldProps}>
-  {#snippet children({ value, onChange, status, disabled: fieldDisabled, describedBy, errorMessageId, labelledById, required })}
+  {#snippet children({ value, onChange, status, disabled: fieldDisabled, describedBy, errorMessageId, labelledById })}
     <Switch
       {...rest}
       {...(typeof value === 'boolean' ? { checked: value } : {})}
@@ -36,7 +36,6 @@
       {...(labelledById !== undefined ? { 'aria-labelledby': labelledById } : labelForAria !== undefined ? { 'aria-label': labelForAria } : {})}
       {...(describedBy !== undefined ? { 'aria-describedby': describedBy } : {})}
       {...(errorMessageId !== undefined ? { 'aria-errormessage': errorMessageId } : {})}
-      {...(required ? { 'aria-required': true } : {})}
       {...(status === 'error' ? { 'aria-invalid': true } : {})}
       onChange={(v) => onChange(v)}
     />
