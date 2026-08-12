@@ -1,27 +1,64 @@
 <script lang="ts">
   import { Tree } from '@chenzy-design/svelte';
+  import { IconChevronDown, IconMinus, IconPlus } from '@chenzy-design/icons';
   import type { TreeNodeData } from '@chenzy-design/core';
 
   const treeData: TreeNodeData[] = [
     {
       label: '亚洲',
-      key: 'asia',
+      key: 'yazhou',
       children: [
-        { label: '中国', key: 'china' },
-        { label: '日本', key: 'japan' },
+        {
+          label: '中国',
+          key: 'zhongguo',
+          children: [
+            {
+              label: '北京',
+              key: 'beijing',
+            },
+            {
+              label: '上海',
+              key: 'shanghai',
+            },
+          ],
+        },
+        {
+          label: '日本',
+          key: 'riben',
+        },
       ],
     },
-    { label: '北美洲', key: 'na', children: [{ label: '美国', key: 'us' }] },
+    {
+      label: '北美洲',
+      key: 'beimeizhou',
+    },
   ];
 </script>
 
-<div style="width:260px">
-  <!-- expandIcon snippet：自定义展开/收起箭头（这里用 +/− 号） -->
-  <Tree style="width: 260px; height: 420px; border: 1px solid var(--cd-color-border); border-radius: 6px; box-sizing: border-box" {treeData} defaultExpandAll aria-label="自定义展开图标树">
-    {#snippet expandIcon({ expanded, loading })}
-      <span style="font-weight:600; width:1em; text-align:center">
-        {loading ? '…' : expanded ? '−' : '+'}
-      </span>
-    {/snippet}
-  </Tree>
-</div>
+<p>expandIcon 是 Snippet</p>
+<Tree
+  multiple
+  defaultExpandedKeys={['yazhou']}
+  {treeData}
+  style="width: 260px; height: 200px; border: 1px solid var(--cd-color-border)"
+>
+  {#snippet expandIcon()}
+    <IconChevronDown size="small" />
+  {/snippet}
+</Tree>
+<br />
+<p>expandIcon 根据展开态返回不同图标</p>
+<Tree
+  multiple
+  defaultExpandedKeys={['yazhou']}
+  {treeData}
+  style="width: 260px; height: 200px; border: 1px solid var(--cd-color-border)"
+>
+  {#snippet expandIcon({ expanded })}
+    {#if expanded}
+      <IconMinus size="small" />
+    {:else}
+      <IconPlus size="small" />
+    {/if}
+  {/snippet}
+</Tree>

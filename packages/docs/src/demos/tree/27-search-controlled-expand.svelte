@@ -1,37 +1,52 @@
 <script lang="ts">
   import { Tree } from '@chenzy-design/svelte';
-  import type { TreeNodeData } from '@chenzy-design/core';
+  import type { TreeNodeData, TreeKey } from '@chenzy-design/core';
 
   const treeData: TreeNodeData[] = [
     {
       label: '亚洲',
+      value: 'Asia',
       key: '0',
       children: [
         {
           label: '中国',
+          value: 'China',
           key: '0-0',
           children: [
-            { label: '北京', key: '0-0-0' },
-            { label: '上海', key: '0-0-1' },
+            {
+              label: '北京',
+              value: 'Beijing',
+              key: '0-0-0',
+            },
+            {
+              label: '上海',
+              value: 'Shanghai',
+              key: '0-0-1',
+            },
           ],
         },
-        { label: '日本', key: '0-1' },
+        {
+          label: '日本',
+          value: 'Japan',
+          key: '0-1',
+        },
       ],
     },
-    { label: '北美洲', key: '1' },
+    {
+      label: '北美洲',
+      value: 'North America',
+      key: '1',
+    },
   ];
 
-  // 展开受控：传入 expandedKeys 后节点展开完全由 expandedKeys 驱动，
-  // 搜索时不再自动展开命中祖先；利用 onSearch 的 filteredKeys 手动回写展开集。
-  let expandedKeys = $state<(string | number)[]>([]);
+  let expandedKeys = $state<TreeKey[]>([]);
 </script>
 
 <Tree
   style="width: 300px"
   {treeData}
   filterTreeNode
-  expandedKeys={expandedKeys}
+  {expandedKeys}
   onExpand={(keys) => (expandedKeys = keys)}
   onSearch={(_value, filteredExpandedKeys) => (expandedKeys = [...filteredExpandedKeys])}
-  aria-label="展开受控可搜索树"
 />

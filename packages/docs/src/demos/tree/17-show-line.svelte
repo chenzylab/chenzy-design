@@ -1,28 +1,47 @@
 <script lang="ts">
-  import { Tree } from '@chenzy-design/svelte';
+  import { Tree, Switch } from '@chenzy-design/svelte';
   import type { TreeNodeData } from '@chenzy-design/core';
 
   const treeData: TreeNodeData[] = [
     {
-      label: '亚洲',
-      key: 'asia',
+      label: 'parent-0',
+      key: 'parent-0',
       children: [
         {
-          label: '中国',
-          key: 'china',
+          label: 'leaf-0-0',
+          key: 'leaf-0-0',
           children: [
-            { label: '北京', key: 'beijing' },
-            { label: '上海', key: 'shanghai' },
+            {
+              label: 'leaf-0-0-0',
+              key: 'leaf-0-0-0',
+            },
+            {
+              label: 'leaf-0-0-1',
+              key: 'leaf-0-0-1',
+            },
+            {
+              label: 'leaf-0-0-2',
+              key: 'leaf-0-0-2',
+            },
           ],
         },
-        { label: '日本', key: 'japan', children: [{ label: '大阪', key: 'osaka' }] },
+        {
+          label: 'leaf-0-1',
+          key: 'leaf-0-1',
+        },
       ],
     },
-    { label: '北美洲', key: 'na', children: [{ label: '美国', key: 'us' }] },
+    {
+      label: 'parent-1',
+      key: 'parent-1',
+    },
   ];
+
+  let show = $state(true);
 </script>
 
-<div style="width:260px">
-  <!-- showLine：节点之间的层级连接线（├ / └ / 竖线） -->
-  <Tree style="width: 260px; height: 420px; border: 1px solid var(--cd-color-border); border-radius: 6px; box-sizing: border-box" {treeData} showLine defaultExpandAll aria-label="连接线树" />
+<div style="display: flex; align-items: center; column-gap: 5px; margin-bottom: 5px">
+  <strong>showLine</strong>
+  <Switch checked={show} onChange={(v) => (show = v)} />
 </div>
+<Tree showLine={show} defaultExpandAll {treeData} style="width: 260px; height: 420px; border: 1px solid var(--cd-color-border)" />

@@ -1,31 +1,48 @@
 <script lang="ts">
-  import { Tree, Text } from '@chenzy-design/svelte';
-  import type { TreeNodeData } from '@chenzy-design/core';
+  import { Tree } from '@chenzy-design/svelte';
+  import type { TreeNodeData, TreeKey } from '@chenzy-design/core';
 
   const treeData: TreeNodeData[] = [
     {
       label: '亚洲',
-      key: 'asia',
+      value: 'Asia',
+      key: '0',
       children: [
-        { label: '中国', key: 'china', children: [{ label: '北京', key: 'beijing' }] },
+        {
+          label: '中国',
+          value: 'China',
+          key: '0-0',
+          children: [
+            {
+              label: '北京',
+              value: 'Beijing',
+              key: '0-0-0',
+            },
+            {
+              label: '上海',
+              value: 'Shanghai',
+              key: '0-0-1',
+            },
+          ],
+        },
       ],
     },
-    { label: '北美洲', key: 'na', children: [{ label: '美国', key: 'us' }] },
+    {
+      label: '北美洲',
+      value: 'North America',
+      key: '1',
+    },
   ];
 
-  // 受控展开集，autoExpandParent 开启（对齐 Semi）：需先收起「中国」才能收起「亚洲」——
-  // 因为中国仍展开时，亚洲作为其父被保持展开。受控需 onExpand 回填。
-  let expanded = $state<(string | number)[]>(['asia', 'china']);
+  let expandedKeys = $state<TreeKey[]>(['0', '0-0']);
 </script>
 
-<div style="width:260px">
-  <Text type="tertiary" size="small">autoExpandParent：需先收起「中国」才能收起「亚洲」</Text>
-  <Tree
-    style="width: 260px; height: 420px; border: 1px solid var(--cd-color-border); border-radius: 6px; box-sizing: border-box"
-    {treeData}
-    expandedKeys={expanded}
-    autoExpandParent
-    onExpand={(keys) => (expanded = keys)}
-    aria-label="自动展开父节点树"
-  />
-</div>
+<div>需要先将"中国"节点收起后，才能够收起"亚洲"节点</div>
+<br />
+<Tree
+  autoExpandParent
+  {treeData}
+  onExpand={(v) => (expandedKeys = v)}
+  {expandedKeys}
+  style="width: 260px; height: 420px; border: 1px solid var(--cd-color-border)"
+/>
