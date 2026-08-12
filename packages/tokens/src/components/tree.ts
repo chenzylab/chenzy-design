@@ -44,6 +44,8 @@ export const treeTokens = {
   // ============================================================
   'spacing-tree-search-wrapper-padding-x': { value: 'var(--cd-spacing-base-tight)', category: 'spacing', label: '搜索框水平内边距', usage: '搜索框容器水平 padding 12px（$spacing-tree_search_wrapper-paddingX）' },
   'spacing-tree-search-wrapper-padding-y': { value: 'var(--cd-spacing-tight)', category: 'spacing', label: '搜索框垂直内边距', usage: '搜索框容器垂直 padding 8px（$spacing-tree_search_wrapper-paddingY）' },
+  'spacing-tree-option-padding-top': { value: 'var(--cd-spacing-extra-tight)', category: 'spacing', label: '选项顶部内边距', usage: '树选项顶部 padding 4px（$spacing-tree_option-paddingTop）' },
+  'spacing-tree-option-padding-bottom': { value: 'var(--cd-spacing-extra-tight)', category: 'spacing', label: '选项底部内边距', usage: '树选项底部 padding 4px（$spacing-tree_option-paddingBottom）' },
   'spacing-tree-option-level-padding-left': { value: 'var(--cd-spacing-base-loose)', category: 'spacing', label: '层级缩进增量', usage: '每层缩进增量 20px（$spacing-tree_option_level-paddingLeft）' },
   'spacing-tree-option-level1-padding-left': { value: 'var(--cd-spacing-tight)', category: 'spacing', label: '首层左内边距', usage: '选项最上层左侧内边距 8px（$spacing-tree_option_level1-paddingLeft）' },
   'spacing-tree-option-list-padding-x': { value: 'var(--cd-spacing-none)', category: 'spacing', label: '选项列表水平内边距', usage: '选项列表水平 padding 0（$spacing-tree_optionList-paddingX）' },
