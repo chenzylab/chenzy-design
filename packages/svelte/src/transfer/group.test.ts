@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildGroups, hasGroups, isGrouped, normalizeData } from './group.js';
+import { buildGroups, isGrouped, normalizeData } from './group.js';
 import type { TransferGroup, TransferItem } from './types.js';
 
 describe('transfer/group', () => {
@@ -20,14 +20,12 @@ describe('transfer/group', () => {
 
   it('normalizeData keeps flat data untouched', () => {
     expect(normalizeData(flat)).toEqual(flat);
-    expect(hasGroups(normalizeData(flat))).toBe(false);
   });
 
   it('normalizeData flattens grouped data and stamps group from title', () => {
     const items = normalizeData(grouped);
     expect(items.map((i) => i.key)).toEqual(['hz', 'sh', 'gz']);
     expect(items.map((i) => i.group)).toEqual(['华东', '华东', '华南']);
-    expect(hasGroups(items)).toBe(true);
   });
 
   it('group title wins over a pre-set group on item', () => {

@@ -46,7 +46,7 @@ import { Transfer } from '@chenzy-design/svelte';
 
 ### 基本使用
 
-数据项需传入 value、label、key。
+数据项需传入 value、label、key。勾选左侧条目即立即迁移到右侧已选列表（左侧条目会一直保留展示，仅勾选态变化），无需额外的移动按钮。
 
 <DemoBox code={basicSrc}><Basic /></DemoBox>
 
@@ -58,7 +58,7 @@ import { Transfer } from '@chenzy-design/svelte';
 
 ### 自定义筛选逻辑，自定义选项数据渲染
 
-使用 `filter` 自定义搜索逻辑，返回 true 时表示当前项符合筛选规则，保留当前项在列表中的显示，返回 false 则表示不符合，当前项会被隐藏。使用 `renderSourceItem`，你可以自定义左侧每一条源数据的渲染结构。使用 `renderSelectedItem` 你可以自定义右侧每一条已选项的渲染结构。
+使用 `filter` 自定义搜索逻辑，返回 true 时表示当前项符合筛选规则，保留当前项在列表中的显示，返回 false 则表示不符合，当前项会被隐藏。当 type 为 `treeList` 时，如需自定义搜索逻辑，需设置 `filter` 为 true，并通过 `treeProps` 的 `filterTreeNode` 设置自定义的搜索函数。使用 `renderSourceItem`，你可以自定义左侧每一条源数据的渲染结构，例如结合 Highlight 组件高亮搜索匹配文本。使用 `renderSelectedItem` 你可以自定义右侧每一条已选项的渲染结构。
 
 <DemoBox code={customFilterRenderSrc}><CustomFilterRender /></DemoBox>
 
@@ -86,7 +86,7 @@ import { Transfer } from '@chenzy-design/svelte';
 
 ### 拖拽 + 自定义已选项渲染
 
-将 `draggable` 设为 true 开启拖拽排序功能；使用 `renderSelectedItem` 自定义右侧已选项渲染。你可以将拖拽触发器定义为任意节点，并添加样式。
+将 `draggable` 设为 true 开启拖拽排序功能；使用 `renderSelectedItem` 自定义右侧已选项渲染。你可以将拖拽触发器定义为任意节点并添加样式，将该节点用 `sortableHandle()` 返回的 attachment 挂载（`{@attach sortableHandle()}`）即可。
 
 <DemoBox code={draggableCustomItemSrc}><DraggableCustomItem /></DemoBox>
 
@@ -104,7 +104,7 @@ import { Transfer } from '@chenzy-design/svelte';
 
 ### 完全自定义渲染 + 拖拽排序
 
-在完全自定义渲染的场景下，由于拖拽区的渲染也已由你完全接管，你需要自行实现拖拽逻辑，并在拖拽排序结束后将 oldIndex、newIndex 作为入参调用 `onSortEnd`。
+在完全自定义渲染的场景下，由于拖拽区的渲染也已由你完全接管，你需要自行实现拖拽逻辑，并在拖拽排序结束后将 `{ oldIndex, newIndex }` 作为入参调用 `onSortEnd`。你可以直接复用本库内置 draggable 所用的 `sortable` action 快速实现。
 
 <DemoBox code={fullyCustomDraggableSrc}><FullyCustomDraggable /></DemoBox>
 
@@ -132,15 +132,15 @@ import { Transfer } from '@chenzy-design/svelte';
 | disabled | 是否禁用 | boolean | false |
 | draggable | 是否开启拖拽排序 | boolean | false |
 | emptyContent | 自定义空状态提示文本，search 为无搜索结果、left 为左侧无源数据、right 为无勾选数据时的文本 | `{ left, right, search }` | - |
-| filter | 自定义筛选逻辑，为 false 时不展示搜索框，传函数可自定义搜索逻辑 | `boolean \| ((input: string, item: Item) => boolean)` | true |
+| filter | 自定义筛选逻辑，为 false 时不展示搜索框，传函数可自定义搜索逻辑。当 type 为 treeList 时，如需自定义搜索逻辑，请通过 treeProps 的 filterTreeNode 设置 | `boolean \| ((input: string, item: Item) => boolean)` | true |
 | inputProps | 自定义搜索框 Input 的额外配置 | object | - |
 | loading | 是否正在加载左侧选项 | boolean | - |
 | pagination | 左侧面板分页配置，仅对 list 和 groupList 类型生效 | PaginationProps | - |
 | renderSelectedHeader | 自定义右侧面板头部信息的渲染 | `Snippet<[SelectedHeaderProps]>` | - |
-| renderSelectedItem | 自定义右侧单个已选项的渲染 | `Snippet<[{ onRemove, sortableHandle } & Item]>` | - |
+| renderSelectedItem | 自定义右侧单个已选项的渲染；当 type=treeList 且 showPath 为 true 时，可通过入参 fullPath 获取完整路径 | `Snippet<[{ item: Item, onRemove, sortableHandle, fullPath }]>` | - |
 | renderSelectedPanel | 自定义右侧已选面板的渲染 | `Snippet<[SelectedPanelProps]>` | - |
 | renderSourceHeader | 自定义左侧面板头部信息的渲染 | `Snippet<[SourceHeaderProps]>` | - |
-| renderSourceItem | 自定义左侧单个候选项的渲染 | `Snippet<[{ onChange, checked } & Item]>` | - |
+| renderSourceItem | 自定义左侧单个候选项的渲染 | `Snippet<[{ item: Item, onChange, checked }]>` | - |
 | renderSourcePanel | 自定义左侧候选面板的渲染 | `Snippet<[SourcePanelProps]>` | - |
 | showPath | 当 type 为 treeList 时，控制右侧选中项是否显示选择路径 | boolean | false |
 | style | 内联样式 | string | - |
@@ -161,9 +161,10 @@ import { Transfer } from '@chenzy-design/svelte';
 | disabled | 是否禁用 | boolean | false |
 | key | 必填，每个选项的唯一标识，不允许重复 | `string \| number` | - |
 | label | 选项展示内容 | `string \| Snippet` | - |
+| group | 所属分组名（非分组数据源可省略，由 groupList 的 title 自动填充） | string | - |
 | fullPath | type=treeList 且 showPath 为 true 时，返回当前节点从根到自身的完整路径节点数组 | `Item[]` | - |
 | style | 内联样式 | string | - |
-| value | 选项代表的值 | `string \| number` | - |
+| value | 选项代表的值，onChange 回传的 values 即为该字段的集合；未传时缺省等同 key | `string \| number` | - |
 
 ### GroupItem
 
@@ -198,6 +199,61 @@ TreeItem 继承 Item 的所有属性：
 | defaultCurrentPage | 默认当前页码（非受控模式） | number | 1 |
 | pageSize | 每页显示条数 | number | 10 |
 | onPageChange | 页码变化时的回调 | `(currentPage: number) => void` | - |
+
+### SourceHeaderProps
+
+`renderSourceHeader` snippet 的入参：
+
+| 属性 | 说明 | 类型 |
+| --- | --- | --- |
+| num | 数据总数或筛选结果数目 | number |
+| showButton | 是否展示全选/取消全选按钮 | boolean |
+| allChecked | 当前数据是否已全选 | boolean |
+| onAllClick | 点击全选/取消全选按钮后应调用的函数 | `() => void` |
+| leafOnlyNum | 仅在 type 为 treeList 时有效，表示叶子节点数量 | number |
+
+### SelectedHeaderProps
+
+`renderSelectedHeader` snippet 的入参：
+
+| 属性 | 说明 | 类型 |
+| --- | --- | --- |
+| num | 已选中数据总数 | number |
+| showButton | 是否展示清空按钮 | boolean |
+| onClear | 点击清空按钮后应调用的函数 | `() => void` |
+
+### SourcePanelProps
+
+`renderSourcePanel` snippet 的入参：
+
+| 属性 | 说明 | 类型 |
+| --- | --- | --- |
+| value | 所有选中项的 key | `Array<string \| number>` |
+| loading | 是否加载中 | boolean |
+| noMatch | 是否没有符合当前搜索值匹配的项 | boolean |
+| filterData | 匹配当前搜索值的项 | `Item[]` |
+| sourceData | 所有项 | `Item[]` |
+| propsDataSource | 原始 dataSource（Svelte snippet 无法像 React 组件那样隐式访问外部 props，故显式透传） | `Item[] \| GroupItem[] \| TreeItem[]` |
+| allChecked | 是否全部选中 | boolean |
+| showNumber | 筛选结果数量 | number |
+| inputValue | 搜索框的值 | string |
+| onSearch | 搜索框变化时应调用的函数，入参为搜索值 | `(searchString: string) => void` |
+| onAllClick | 左侧全部按钮点击时应调用的函数 | `() => void` |
+| onSelectOrRemove | 选择、删除单个选项时应调用的函数，入参应为当前操作 item | `(item: Item) => void` |
+| onSelect | 受控批量选中 key | `(value: Array<string \| number>) => void` |
+| selectedItems | 所有已选项的集合 | `Map<string \| number, Item>` |
+
+### SelectedPanelProps
+
+`renderSelectedPanel` snippet 的入参：
+
+| 属性 | 说明 | 类型 |
+| --- | --- | --- |
+| length | 已选项的数量 | number |
+| selectedData | 所有已选项集合 | `Item[]` |
+| onClear | 点击清空时应调用的回调函数 | `() => void` |
+| onRemove | 删除单个选项时应调用的函数 | `(item: Item) => void` |
+| onSortEnd | 对结果重新排序时应调用的函数 | `({ oldIndex, newIndex }) => void` |
 
 ## Methods
 

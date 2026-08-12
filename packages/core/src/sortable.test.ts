@@ -237,6 +237,9 @@ describe('computeItemTransformsWrap', () => {
 
 function makeFakeDoc() {
   const listeners = new Map<string, Set<(e: unknown) => void>>();
+  // 对齐 dnd-kit AbstractPointerSensor.removeTextSelection：createSortable 在拖拽激活时调用
+  // doc.getSelection()?.removeAllRanges()，fake document 需提供最小可用实现供测试断言调用次数。
+  const removeAllRanges = vi.fn();
   return {
     addEventListener(type: string, fn: (e: unknown) => void) {
       if (!listeners.has(type)) listeners.set(type, new Set());
@@ -251,6 +254,10 @@ function makeFakeDoc() {
     count(type: string) {
       return listeners.get(type)?.size ?? 0;
     },
+    getSelection() {
+      return { removeAllRanges };
+    },
+    removeAllRanges,
   };
 }
 
@@ -346,6 +353,27 @@ describe('createSortable lifecycle', () => {
     expect(t.onDragStart).toHaveBeenCalledWith(0);
     expect(t.applyTransforms).toHaveBeenCalled();
     expect(t.ctrl.isDragging()).toBe(true);
+  });
+
+  // 对齐 dnd-kit AbstractPointerSensor.removeTextSelection：真机实测 Semi 官方 Transfer
+  // 自定义渲染拖拽 demo 证实——即使内容 computed user-select 是 auto（自定义渲染场景下用户
+  // 内容不带 user-select:none），拖拽全程也不会出现可见文字选中，机制是「拖拽激活瞬间清空
+  // 一次选区 + 全程监听 selectionchange 持续清空」，而非仅靠 CSS 提前拦截。
+  it('拖拽激活时清空一次文字选区，并在拖拽期间持续监听 selectionchange 清空', () => {
+    const t = setup();
+    t.setResolveIdx(0);
+    t.container.fire('pointerdown', pe(100));
+    expect(t.doc.removeAllRanges).not.toHaveBeenCalled(); // 激活前（pending）不清空。
+    t.doc.fire('pointermove', pe(110)); // 越过激活阈值 → beginDrag。
+    expect(t.doc.removeAllRanges).toHaveBeenCalledTimes(1);
+    expect(t.doc.count('selectionchange')).toBe(1); // 已挂上持续清空监听。
+
+    // 拖拽期间浏览器产生了选区变化事件 → 立即再次清空。
+    t.doc.fire('selectionchange', {});
+    expect(t.doc.removeAllRanges).toHaveBeenCalledTimes(2);
+
+    t.doc.fire('pointerup', pe(110));
+    expect(t.doc.count('selectionchange')).toBe(0); // 拖拽结束后监听已移除。
   });
 
   it('ignores pointerdown when resolveIndexFromEvent returns -1', () => {

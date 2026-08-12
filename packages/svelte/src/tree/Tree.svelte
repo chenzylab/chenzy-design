@@ -534,6 +534,23 @@
     return findNode(mergedData, key);
   }
 
+  /**
+   * value → key 反查表（对齐 Semi getValueOrKey：值通道优先用节点 value 字段标识，
+   * 缺失时才 fallback key）。仅收录声明了 value 字段的节点；未声明的节点本就该继续
+   * 走 key，无需出现在这张表里。
+   */
+  const keyByNodeValue = $derived.by(() => {
+    const map = new Map<TreeKey, TreeKey>();
+    function walk(nodes: TreeNodeData[]): void {
+      for (const n of nodes) {
+        if (n.value !== undefined) map.set(n.value, n.key);
+        if (n.children) walk(n.children);
+      }
+    }
+    walk(mergedData);
+    return map;
+  });
+
   // --- 异步加载：本地缓存子节点 + loading/loaded 标记（不写回受控 treeData，红线 #1）---
   const loadedChildren = new SvelteMap<TreeKey, TreeNodeData[]>();
   const loadingKeys = new SvelteSet<TreeKey>();
@@ -586,8 +603,11 @@
   // 收发对象时用下面的 helper 在「对象 ↔ key」间转换。对象标识优先取 value 字段，缺省回退 key。
   type ValueEntry = TreeKey | TreeNodeData;
   /**
-   * 从一个 value 项（原始 key 或对象）提取内部节点标识 key。
-   * 本库节点身份为 key：对象优先取 `key`，缺省回退 `value`（对齐 Semi 对象含 value 键的约定）。
+   * 从一个 value 项（原始标量或对象）提取内部节点标识 key（对齐 Semi getValueOrKey：
+   * 节点声明了 value 字段时值通道走 value，否则回退 key）。
+   * 对象形态（onChangeWithObject）：优先取 `key`，缺省回退 `value`。
+   * 标量形态：先按 value 反查表命中节点 value，未命中（该值不对应任何节点声明的 value，
+   * 或树里节点本就没有 value 字段）则原样当 key 使用。
    */
   function entryToKey(entry: ValueEntry): TreeKey | null {
     if (entry !== null && typeof entry === 'object') {
@@ -595,13 +615,17 @@
       const id = (obj.key ?? obj.value) as TreeKey | undefined;
       return id ?? null;
     }
-    return entry as TreeKey;
+    return keyByNodeValue.get(entry) ?? entry;
   }
-  /** 把内部 key 转成回调/受控所需的输出形态：onChangeWithObject 时回原始节点对象，否则回 key。 */
+  /** 把内部 key 转成回调/受控所需的输出形态：onChangeWithObject 时回原始节点对象；
+   * 否则优先回节点声明的 value 字段，缺省回退 key（对齐 Semi getValueOrKey）。 */
   function keyToOutput(key: TreeKey): TreeKey | TreeNodeData {
-    if (!onChangeWithObject) return key;
+    if (onChangeWithObject) {
+      const node = findMerged(key);
+      return node ? toOrig(node) : key;
+    }
     const node = findMerged(key);
-    return node ? toOrig(node) : key;
+    return node?.value ?? key;
   }
   function initValue(): TreeKey | TreeKey[] | null {
     const dv = defaultValue as ValueEntry | ValueEntry[] | null;

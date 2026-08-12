@@ -41,4 +41,4 @@
   let value = $state<(string | number)[]>(['Shanghai']);
 </script>
 
-<Transfer type="treeList" dataSource={treeData} {value} onChange={(keys) => (value = keys)} />
+<Transfer type="treeList" dataSource={treeData} {value} onChange={(values) => (value = values)} />

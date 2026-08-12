@@ -161,8 +161,13 @@ export const sortable: Action<HTMLElement, SortableActionParams> = (
       if (useOverlay && index === activeIndex) {
         // Dragged item's home element stays put (dimmed via host CSS class);
         // report the pointer-following coordinates for the host's own overlay.
-        const x = isWrap ? (translateX ?? 0) : isX ? translateY : 0;
-        const y = isWrap ? translateY : isX ? 0 : translateY;
+        // The overlay always follows the pointer on BOTH axes (dnd-kit DragOverlay
+        // behavior) — even in single-axis mode where the OTHER rows only shift
+        // along the main axis. core now reports the active item's cross-axis
+        // pointer offset via translateX in single-axis mode too (see core
+        // frame()'s per-frame transforms), so this no longer collapses to 0.
+        const x = isWrap ? (translateX ?? 0) : isX ? translateY : (translateX ?? 0);
+        const y = isWrap ? translateY : isX ? (translateX ?? 0) : translateY;
         current.onDragOverlayMove?.(overlayOriginY + y, overlayOriginX + x);
         continue;
       }

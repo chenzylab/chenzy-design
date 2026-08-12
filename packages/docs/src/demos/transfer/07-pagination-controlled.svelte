@@ -1,26 +1,28 @@
 <script lang="ts">
-  import { Transfer, Button, Space, Text } from '@chenzy-design/svelte';
+  import { Transfer, ButtonGroup, Button } from '@chenzy-design/svelte';
+
+  let currentPage = $state(1);
 
   const data = Array.from({ length: 100 }, (_, i) => ({
-    key: `${i}`,
-    label: `选项 ${i}`,
+    label: `选项名称 ${i}`,
+    value: i,
+    disabled: false,
+    key: `key-${i}`,
   }));
-
-  let value = $state<(string | number)[]>([]);
-  // 受控页码：由外部 state 驱动 pagination.currentPage。
-  let page = $state(1);
 </script>
 
-<Space vertical align="start">
-  <Space>
-    <Button size="small" disabled={page <= 1} onclick={() => (page -= 1)}>上一页</Button>
-    <Text>第 {page} 页</Text>
-    <Button size="small" onclick={() => (page += 1)}>下一页</Button>
-  </Space>
+<div>
+  <ButtonGroup style="margin-bottom: 12px">
+    <Button onclick={() => (currentPage = 1)}>第1页</Button>
+    <Button onclick={() => (currentPage = 2)}>第2页</Button>
+    <Button onclick={() => (currentPage = 5)}>第5页</Button>
+    <Button onclick={() => (currentPage = 10)}>第10页</Button>
+  </ButtonGroup>
+  <div>当前页码: {currentPage}</div>
   <Transfer
+    style="width: 568px; height: 416px"
     dataSource={data}
-    {value}
-    pagination={{ pageSize: 10, currentPage: page, onPageChange: (p) => (page = p) }}
-    onChange={(keys) => (value = keys)}
+    pagination={{ pageSize: 10, currentPage, onPageChange: (page) => (currentPage = page) }}
+    onChange={(values, items) => console.log(values, items)}
   />
-</Space>
+</div>

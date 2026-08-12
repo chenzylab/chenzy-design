@@ -1,11 +1,12 @@
 <!--
-  Transfer 穿梭框 — 严格对齐 Semi Design（semi-ui/transfer）。
-  双栏（左 source / 右 selected）间迁移条目；type='list'|'groupList'|'treeList'。
-  - list/groupList：左侧 Checkbox 列表（groupList 带分组标题），右侧已选列表带删除按钮。
-  - treeList：左侧内嵌复用本库 Tree 组件（multiple + leafOnly + disableStrictly），
-    仅叶子迁移到平铺右侧；已选叶子在源树 disabled 置灰。showPath 时右侧显示完整路径。
-  受控 value：父拥有值，组件只经 onChange(values, items) 通知，绝不回写 value（红线 #1）。
-  draggable：右侧已选列可鼠标拖拽重排（HTML5 DnD），新顺序仅经 onChange 通知（reorder 纯函数）。
+  Transfer 穿梭框 — 严格对齐 Semi Design（semi-ui/transfer/index.tsx，单文件结构）。
+  单态模型：无中间“移动”按钮，左侧勾选=立即迁移到右侧（对齐 Semi handleSelectOrRemove，
+  selectedItems 是 Map<key, item>，其迭代顺序即右侧展示顺序）。
+  受控 value：父拥有 value（回传/接收的是 item.value，非 key），组件只经 onChange(values, items)
+  通知，绝不回写 value（红线 #1）。
+  draggable：右侧已选列可鼠标拖拽重排；新顺序仅经 onChange 通知（复用本库通用 sortable action，
+  基于真实 pointer 事件 + DragOverlay，对齐 Semi @dnd-kit 的交互模型；Svelte5 事件委托会忽略
+  HTML5 DnD 合成事件，故未采用原生 draggable API）。
   virtualize={height,width,itemSize}：仅右侧已选列虚拟化（对齐 Semi，复用 core fixedRange）。
   onSearch(input)：提供后切远程模式，本地不再过滤，由父按 input 更新 dataSource，loading 显示 Spin。
 -->
@@ -16,19 +17,15 @@
   import Button from '../button/Button.svelte';
   import Tree from '../tree/Tree.svelte';
   import Pagination from '../pagination/Pagination.svelte';
+  import Spin from '../spin/Spin.svelte';
   import { useLocale } from '../locale-provider/index.js';
-  import { fixedRange, useId, type TreeNodeData } from '@chenzy-design/core';
+  import { fixedRange, type TreeNodeData } from '@chenzy-design/core';
   import type { Snippet } from 'svelte';
   import type { Attachment } from 'svelte/attachments';
-  import type {
-    TransferGroup,
-    TransferItem,
-    TransferRenderGroup,
-    TransferTreeNode,
-  } from './types.js';
-  import { buildGroups, hasGroups, normalizeData } from './group.js';
-  import { isTreeData, flattenLeaves } from './tree.js';
-  import { computeInsertSide, reorder, type InsertSide } from './reorder.js';
+  import type { TransferGroup, TransferItem, TransferTreeNode } from './types.js';
+  import { buildGroups, normalizeData } from './group.js';
+  import { flattenLeaves } from './tree.js';
+  import { sortable, arrayMove } from '../sortable/index.js';
 
   type TransferKey = string | number;
   type TransferType = 'list' | 'groupList' | 'treeList';
@@ -52,12 +49,12 @@
 
   /** virtualize config，仅作用于右侧已选列（对齐 Semi VirtualizeProps）。 */
   interface VirtualizeProps {
-    height?: number;
+    height?: number | string;
     width?: number | string;
     itemSize: number;
   }
 
-  /** Source panel header render args（对齐 Semi renderSourceHeader）。 */
+  /** Source panel header render args（对齐 Semi SourceHeaderProps）。 */
   interface SourceHeaderProps {
     num: number;
     showButton: boolean;
@@ -66,26 +63,29 @@
     leafOnlyNum?: number | undefined;
   }
 
-  /** Selected panel header render args（对齐 Semi renderSelectedHeader）。 */
+  /** Selected panel header render args（对齐 Semi SelectedHeaderProps）。 */
   interface SelectedHeaderProps {
     num: number;
     showButton: boolean;
     onClear: () => void;
   }
 
-  /** renderSourcePanel args（对齐 Semi SourcePanelProps 常用子集）。 */
+  /** renderSourcePanel args（对齐 Semi SourcePanelProps 全量字段）。 */
   interface SourcePanelProps {
     value: TransferKey[];
     loading: boolean;
     noMatch: boolean;
     filterData: TransferItem[];
     sourceData: TransferItem[];
+    propsDataSource: TransferItem[] | TransferGroup[] | TransferTreeNode[];
     allChecked: boolean;
     showNumber: number;
     inputValue: string;
     onSearch: (v: string) => void;
     onAllClick: () => void;
+    selectedItems: Map<TransferKey, TransferItem>;
     onSelectOrRemove: (item: TransferItem) => void;
+    onSelect: (value: TransferKey[]) => void;
   }
 
   /** renderSelectedPanel args（对齐 Semi SelectedPanelProps）。 */
@@ -94,7 +94,8 @@
     selectedData: TransferItem[];
     onClear: () => void;
     onRemove: (item: TransferItem) => void;
-    onSortEnd: (keys: TransferKey[]) => void;
+    /** 拖拽排序结束后调用（对齐 Semi onSortEnd({oldIndex,newIndex})）。 */
+    onSortEnd: (args: { oldIndex: number; newIndex: number }) => void;
   }
 
   interface Props {
@@ -109,7 +110,7 @@
     filter?: boolean | ((input: string, item: TransferItem) => boolean);
     disabled?: boolean;
     /**
-     * 右侧已选列可鼠标拖拽重排（HTML5 DnD）。新顺序经 reorder 纯函数算出仅经 onChange
+     * 右侧已选列可鼠标拖拽重排（sortable action + DragOverlay）。新顺序仅经 onChange
      * 通知，受控 value 不回写（红线 #1）。
      */
     draggable?: boolean;
@@ -117,9 +118,9 @@
     virtualize?: VirtualizeProps;
     /** 远程搜索：提供后切远程模式，本地不再过滤，由父更新 dataSource（对齐 Semi onSearch(input)）。 */
     onSearch?: (input: string) => void;
-    /** 远程加载中：源面板显示 Spin（此处为轻量 spinner 行）。 */
+    /** 远程加载中：源面板显示 Spin（对齐 Semi <Spin />）。 */
     loading?: boolean;
-    /** 选中变更（对齐 Semi）：回传 (values, items)。 */
+    /** 选中变更（对齐 Semi）：回传 (values, items)，values 为 item.value 集合。 */
     onChange?: (values: TransferKey[], items: TransferItem[]) => void;
     emptyContent?: EmptyContent;
     /** 透传给搜索框 Input 的额外参数（对齐 Semi inputProps）。 */
@@ -134,9 +135,19 @@
     onDeselect?: (item: TransferItem) => void;
     /** 自定义左侧条目渲染（对齐 Semi renderSourceItem）。 */
     renderSourceItem?: Snippet<[{ item: TransferItem; onChange: () => void; checked: boolean }]>;
-    /** 自定义右侧条目渲染（对齐 Semi renderSelectedItem，含 sortableHandle / fullPath）。 */
+    /** 自定义右侧条目渲染（对齐 Semi renderSelectedItem，含 sortableHandle / fullPath）。
+     * sortableHandle()：把返回的 attachment 挂到任意自定义节点上（`{@attach sortableHandle()}`），
+     * 该节点即成为拖拽触发区域，对齐 Semi `(WrapperComponent) => WrapperComponent` 高阶包装的
+     * 效果（用 Svelte attachment 而非 React 式组件包装实现同等能力）。 */
     renderSelectedItem?: Snippet<
-      [{ item: TransferItem; onRemove: () => void; sortableHandle?: unknown; fullPath?: TransferItem['fullPath'] }]
+      [
+        {
+          item: TransferItem;
+          onRemove: () => void;
+          sortableHandle: () => Attachment<HTMLElement>;
+          fullPath?: TransferItem['fullPath'];
+        },
+      ]
     >;
     /** 自定义左侧面板头部（对齐 Semi renderSourceHeader）。 */
     renderSourceHeader?: Snippet<[SourceHeaderProps]>;
@@ -178,35 +189,56 @@
   }: Props = $props();
 
   const loc = useLocale();
-  const baseId = useId('cd-transfer');
 
   const isControlled = $derived(value !== undefined);
-  // 用 getter 一次性取初值，避免 state_referenced_locally 反应式捕获告警。
-  function getInitialValue(): TransferKey[] {
-    return [...defaultValue];
-  }
-  let inner = $state<TransferKey[]>(getInitialValue());
-  const current = $derived(isControlled ? (value ?? []) : inner);
 
-  // --- 数据形态判定 -------------------------------------------------------
-  const isTree = $derived(type === 'treeList' || isTreeData(dataSource as readonly unknown[]));
+  // --- 数据形态判定（对齐 Semi _generateDataByType：完全信任 type prop 决定分支，
+  // 不做自动推断——Semi 不传 type='treeList'/'groupList' 时数据永远按 list 处理）------
+  const isTree = $derived(type === 'treeList');
   const treeData = $derived(isTree ? (dataSource as TransferTreeNode[]) : []);
   const treeLeaves = $derived(flattenLeaves(treeData));
   const items = $derived(
     isTree ? treeLeaves : normalizeData(dataSource as TransferItem[] | TransferGroup[]),
   );
-  const grouped = $derived(!isTree && (type === 'groupList' || hasGroups(items)));
+  const grouped = $derived(!isTree && type === 'groupList');
 
-  // key → item 映射（供 onChange 回传 items、右侧渲染）。
+  // key → item 映射（selectedItems 用 key 做 Map 键，对齐 Semi）。
   const itemMap = $derived(new Map<TransferKey, TransferItem>(items.map((i) => [i.key, i])));
+  function itemValue(item: TransferItem): TransferKey {
+    return item.value ?? item.key;
+  }
+  // value → key 映射（受控 value 数组存的是 item.value，对齐 Semi _generateSelectedItems）。
+  const keyByValue = $derived(new Map<TransferKey, TransferKey>(items.map((i) => [itemValue(i), i.key])));
 
-  const leftItems = $derived(items.filter((item) => !current.includes(item.key)));
-  // 右侧已选保持 current（用户迁移/拖拽）的顺序。
-  const rightItems = $derived(
-    current.map((k) => itemMap.get(k)).filter((i): i is TransferItem => i !== undefined),
-  );
+  // --- 单态选中模型：selectedItems 是 Map<key,item>，迭代顺序=右侧展示顺序 -----
+  // （对齐 Semi TransferState.selectedItems；非受控时组件自己维护，受控时每次从 value 重建）。
+  function buildSelectedFromValue(values: TransferKey[]): Map<TransferKey, TransferItem> {
+    const map = new Map<TransferKey, TransferItem>();
+    for (const v of values) {
+      const key = keyByValue.get(v);
+      if (key === undefined) continue;
+      const item = itemMap.get(key);
+      if (item) map.set(key, item);
+    }
+    return map;
+  }
+  function getInitialSelected(): Map<TransferKey, TransferItem> {
+    return buildSelectedFromValue(defaultValue);
+  }
+  let innerSelected = $state<Map<TransferKey, TransferItem>>(getInitialSelected());
+  const selectedItems = $derived(isControlled ? buildSelectedFromValue(value ?? []) : innerSelected);
 
-  // --- 搜索 ---------------------------------------------------------------
+  const current = $derived([...selectedItems.keys()]);
+  const rightItems = $derived([...selectedItems.values()]);
+
+  function commit(nextSelected: Map<TransferKey, TransferItem>) {
+    if (!isControlled) innerSelected = nextSelected;
+    const nextItems = [...nextSelected.values()];
+    const nextValues = nextItems.map((i) => itemValue(i));
+    onChange?.(nextValues, nextItems);
+  }
+
+  // --- 搜索（对齐 Semi handleInputChange）-------------------------------------
   const isRemote = $derived(onSearch !== undefined);
   let inputValue = $state('');
 
@@ -215,109 +247,86 @@
     return item.label.toLowerCase().includes(q.trim().toLowerCase());
   }
   const filterEnabled = $derived(filter !== false);
+  const inSearchMode = $derived(inputValue.trim() !== '');
   // 源面板过滤后的可见项（remote 模式下父已更新 dataSource，本地不再过滤）。
   const filterData = $derived(
-    filterEnabled && !isRemote && inputValue.trim()
-      ? leftItems.filter((i) => matchItem(i, inputValue))
-      : leftItems,
+    filterEnabled && !isRemote && inSearchMode ? items.filter((i) => matchItem(i, inputValue)) : items,
   );
-  const inSearchMode = $derived(inputValue.trim() !== '');
   const noMatch = $derived(inSearchMode && filterData.length === 0);
 
-  // --- 左侧勾选态（纯本地 UI，独立于 value）-------------------------------
-  let leftChecked = $state<TransferKey[]>([]);
-
-  function commit(next: TransferKey[]) {
-    if (!isControlled) inner = next;
-    const nextItems = next.map((k) => itemMap.get(k)).filter((i): i is TransferItem => i !== undefined);
-    onChange?.(next, nextItems);
-  }
-
-  /** 单项勾选/取消（左侧 Checkbox 或 renderSourceItem 触发）。 */
-  function toggleChecked(key: TransferKey) {
-    if (disabled) return;
-    const item = itemMap.get(key);
-    const was = leftChecked.includes(key);
-    leftChecked = was ? leftChecked.filter((k) => k !== key) : [...leftChecked, key];
-    if (item) {
-      if (was) onDeselect?.(item);
-      else onSelect?.(item);
-    }
-  }
-
-  // --- 左侧全选 / 取消全选（对齐 Semi handleAll）------------------------
-  // filterData 中非禁用、且不在 current（未迁移）的项。
-  const selectableLeft = $derived(filterData.filter((i) => !i.disabled && !current.includes(i.key)));
+  // --- 全选 / 取消全选（对齐 Semi foundation.handleAll）-----------------------
+  const selectableLeft = $derived(filterData.filter((i) => !i.disabled && !selectedItems.has(i.key)));
   const leftContainsNotSelected = $derived(selectableLeft.length > 0);
   const filterDataAllDisabled = $derived(filterData.filter((i) => !i.disabled).length === 0);
-  const allChecked = $derived(!leftContainsNotSelected && filterData.length > 0);
 
-  function handleAll() {
+  function handleAll(wantAllChecked: boolean) {
     if (disabled) return;
-    if (leftContainsNotSelected) {
-      // 全选：把可选左项直接迁移到右侧（对齐 Semi handleAll(true)）。
-      const keys = selectableLeft.map((i) => i.key);
-      commit([...current, ...keys]);
-      leftChecked = leftChecked.filter((k) => !keys.includes(k));
+    const next = new Map(selectedItems);
+    if (wantAllChecked) {
+      for (const item of filterData) {
+        if (item.disabled) continue;
+        next.set(item.key, item);
+      }
     } else {
-      // 取消全选：把 filterData 中已迁移的项移回左侧。
-      const remove = new Set(filterData.map((i) => i.key));
-      commit(current.filter((k) => !remove.has(k)));
+      for (const item of filterData) {
+        if (item.disabled) continue;
+        next.delete(item.key);
+      }
     }
+    commit(next);
   }
 
-  // --- 迁移 ---------------------------------------------------------------
-  function moveToRight() {
-    if (disabled) return;
-    const movable = leftItems
-      .filter((i) => !i.disabled && leftChecked.includes(i.key))
-      .map((i) => i.key);
-    if (movable.length === 0) return;
-    commit([...current, ...movable]);
-    leftChecked = leftChecked.filter((k) => !movable.includes(k));
-  }
-
-  /** 右侧删除单项（对齐 Semi item-close-icon 的 handleSelectOrRemove）。 */
-  function removeOne(key: TransferKey) {
-    if (disabled) return;
-    commit(current.filter((k) => k !== key));
-  }
-
-  /** 单项 select-or-remove（renderSourcePanel 消费方用；勾选后立即迁移，对齐 Semi）。 */
+  // --- 单项勾选/取消（左侧 Checkbox 或右侧删除，对齐 Semi handleSelectOrRemove）
+  // 唯一的迁移入口：勾选=立即加入 selectedItems，取消/删除=立即移出（无中间态）。
   function onSelectOrRemove(item: TransferItem) {
-    if (disabled) return;
-    if (current.includes(item.key)) removeOne(item.key);
-    else commit([...current, item.key]);
+    if (disabled || item.disabled) return;
+    const next = new Map(selectedItems);
+    if (next.has(item.key)) {
+      next.delete(item.key);
+      onDeselect?.(item);
+    } else {
+      next.set(item.key, item);
+      onSelect?.(item);
+    }
+    commit(next);
   }
 
-  /** 右侧全部清空（对齐 Semi handleClear）。 */
+  /** 右侧全部清空（对齐 Semi handleClear，disabled 项保留）。 */
   function handleClear() {
     if (disabled) return;
-    // 保留 disabled 已选项（对齐 Semi：仅清可清项）。
-    const keep = current.filter((k) => itemMap.get(k)?.disabled);
-    commit(keep);
+    const next = new Map(selectedItems);
+    for (const item of items) {
+      if (!item.disabled) next.delete(item.key);
+    }
+    commit(next);
   }
 
-  // --- 树模式：内嵌复用 Tree 组件 ----------------------------------------
-  // 已迁移叶子在源树 disabled 置灰（不可再勾）。Tree treeData 用 TreeNodeData。
-  const movedSet = $derived(new Set(current));
-  function maskTree(nodes: TransferTreeNode[]): TreeNodeData[] {
-    return nodes.map((n) => {
-      if (n.children && n.children.length > 0) {
-        return { ...n, children: maskTree(n.children) } as unknown as TreeNodeData;
-      }
-      return { ...n, disabled: !!n.disabled || movedSet.has(n.key) } as unknown as TreeNodeData;
-    });
-  }
-  const sourceTreeData = $derived(maskTree(treeData));
-  // Tree value = 当前已选叶子 key（受控给 Tree，但 Transfer 只经 onChange 收 Tree 变更）。
-  const treeValue = $derived(current.filter((k) => treeLeaves.some((l) => l.key === k)));
+  // --- 树模式：内嵌复用 Tree 组件（对齐 Semi renderLeftTree：value 受控传入，
+  // Tree 自行渲染勾选/高亮态；已选叶子不做 disabled 遗罩，仍可再次点击取消，
+  // 与左侧 Checkbox 列表行为一致）。
+  const sourceTreeData = $derived(treeData as unknown as TreeNodeData[]);
+  // Tree 组件值通道对齐 Semi getValueOrKey：节点声明 value 字段时走 value，否则 fallback key
+  // （见 Tree.svelte keyToOutput/entryToKey）。受控 value 传 item.value，与 onChange 回传对称。
+  const treeValue = $derived(rightItems.map((i) => itemValue(i)));
 
+  /** 对齐 Semi foundation.handleSelect 的合并语义：Tree 回传选中 value 数组（对齐 Semi
+   * getValueOrKey），转回 key 后逐项与已选态 diff 合并（disabled 项若已选保留，未选不可新增）。 */
   function onTreeChange(v: unknown) {
     if (disabled) return;
-    const keys = (Array.isArray(v) ? v : v == null ? [] : [v]) as TransferKey[];
-    // Tree 只回传叶子（leafOnly）；直接作为新的 current 中的树部分。
-    commit(keys);
+    const values = (Array.isArray(v) ? v : v == null ? [] : [v]) as TransferKey[];
+    const next = new Map<TransferKey, TransferItem>();
+    for (const val of values) {
+      const key = keyByValue.get(val) ?? val;
+      const item = itemMap.get(key);
+      if (!item) continue;
+      if (selectedItems.has(key)) {
+        next.set(key, item);
+        continue;
+      }
+      if (item.disabled) continue;
+      next.set(key, item);
+    }
+    commit(next);
   }
 
   // treeList：搜索交给内嵌 Tree 自身（filterTreeNode 开启即渲染 Tree 内置搜索框）。
@@ -358,61 +367,80 @@
     return item.label;
   }
 
-  // --- 分组渲染 -----------------------------------------------------------
-  const leftGroups = $derived(buildGroups(filterData, loc().t('Transfer.titleSource')));
-
-  // --- 右侧拖拽重排（HTML5 DnD）------------------------------------------
+  // --- 右侧拖拽重排（对齐 Semi `_sortable`/@dnd-kit：复用本库通用 sortable action，
+  // 拖拽仅由手柄触发，dragOverlay:true 跟随指针，与 TagInput 同一套机制，
+  // 见 packages/svelte/src/sortable/sortable.ts）--------------------------------------
   const canDrag = $derived(draggable && !disabled);
-  let dragIndex = $state<number | null>(null);
-  let dropIndex = $state<number | null>(null);
-  let dropSide = $state<InsertSide | null>(null);
+  const SORTABLE_HANDLE_ATTR = 'data-cd-transfer-sortable-handle';
 
-  function resetDrag() {
-    dragIndex = null;
-    dropIndex = null;
-    dropSide = null;
+  /** 对齐 Semi sortableHandle：接收任意节点，挂载后该节点即拖拽触发区域（renderSelectedItem
+   * 自定义渲染场景，替代默认的 IconHandle）。用 attachment 而非 React 式高阶组件包装
+   * ——Svelte 惯用法是把行为挂到用户自己的节点上，不强加一层包装容器。 */
+  function sortableHandle(): Attachment<HTMLElement> {
+    return (node) => {
+      node.setAttribute(SORTABLE_HANDLE_ATTR, '');
+      return () => node.removeAttribute(SORTABLE_HANDLE_ATTR);
+    };
   }
-  function targetIndexOf(key: TransferKey): number {
-    return current.indexOf(key);
+
+  function resolveRightDragIndex(e: PointerEvent, container: HTMLElement): number {
+    if (!canDrag) return -1;
+    const target = e.target as HTMLElement | null;
+    // 默认渲染：固定 IconHandle class；renderSelectedItem 自定义渲染：sortableHandle attachment 标记。
+    const handle = target?.closest<HTMLElement>(
+      `.cd-transfer-right-item-drag-handler, [${SORTABLE_HANDLE_ATTR}]`,
+    );
+    if (!handle) return -1;
+    const item = handle.closest<HTMLElement>('[data-sortable-item]');
+    if (!item) return -1;
+    const items = [...container.querySelectorAll<HTMLElement>('[data-sortable-item]')];
+    return items.indexOf(item);
   }
-  function onRowDragStart(e: DragEvent, key: TransferKey) {
-    if (!canDrag) {
-      e.preventDefault();
-      return;
+
+  /** 对齐 Semi foundation.handleSortEnd：按新顺序重建 selectedItems（Map 迭代顺序即展示顺序）。 */
+  function handleReorder(from: number, to: number) {
+    const nextKeys = arrayMove(current, from, to);
+    const next = new Map<TransferKey, TransferItem>();
+    for (const k of nextKeys) {
+      const item = itemMap.get(k);
+      if (item) next.set(k, item);
     }
-    dragIndex = targetIndexOf(key);
-    if (e.dataTransfer) {
-      e.dataTransfer.effectAllowed = 'move';
-      e.dataTransfer.setData('text/plain', String(dragIndex));
-    }
+    commit(next);
   }
-  function onRowDragOver(e: DragEvent, key: TransferKey) {
-    if (dragIndex === null) return;
-    e.preventDefault();
-    if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
-    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-    dropIndex = targetIndexOf(key);
-    dropSide = computeInsertSide(e.clientY - rect.top, rect.height);
+
+  let dragIndex = $state<number | null>(null);
+
+  // --- DragOverlay（对齐 Semi `_sortable` useDragOverlay:true 默认态）：sortable action
+  // 只报告坐标，overlay 内容由本组件用真实的 rightItem snippet 再渲染一份（非 cloneNode）。
+  let overlayIndex = $state<number | null>(null);
+  let overlayTop = $state(0);
+  let overlayLeft = $state(0);
+  // 行内 .cd-transfer-item 用 width:100% 撑满面板（非 TagInput 那种 inline-flex 自适应内容），
+  // DragOverlay 脱离文档流后失去容器宽度参照，须显式回填源项的真实宽度。
+  let overlayWidth = $state(0);
+
+  function handleDragOverlayStart(index: number, rect: DOMRect) {
+    overlayIndex = index;
+    overlayTop = rect.top;
+    overlayLeft = rect.left;
+    overlayWidth = rect.width;
   }
-  function onRowDragLeave(e: DragEvent, key: TransferKey) {
-    const related = e.relatedTarget as Node | null;
-    const cur = e.currentTarget as HTMLElement;
-    if (related && cur.contains(related)) return;
-    if (dropIndex === targetIndexOf(key)) {
-      dropIndex = null;
-      dropSide = null;
-    }
+  function handleDragOverlayMove(top: number, left: number) {
+    overlayTop = top;
+    overlayLeft = left;
   }
-  function onRowDrop(e: DragEvent, key: TransferKey) {
-    if (dragIndex === null || dropSide === null) {
-      resetDrag();
-      return;
-    }
-    e.preventDefault();
-    const next = reorder(current, dragIndex, targetIndexOf(key), dropSide);
-    const changed = next.length === current.length && next.some((k, i) => k !== current[i]);
-    resetDrag();
-    if (changed) commit(next);
+  function handleDragOverlayEnd() {
+    overlayIndex = null;
+  }
+
+  /** 挂载到 document.body（对齐 Popover/Tooltip/TagInput 既有 portal 模式）。 */
+  function portalToBody(node: HTMLElement) {
+    document.body.appendChild(node);
+    return {
+      destroy() {
+        node.remove();
+      },
+    };
   }
 
   // --- 右侧虚拟化（仅平铺、非拖拽；对齐 Semi）----------------------------
@@ -452,7 +480,7 @@
   const noopAttach: Attachment<HTMLDivElement> = () => {};
   const rightScrollAttach = $derived(rightVirtual ? virtualScroll() : noopAttach);
 
-  // --- 左侧分页（list/groupList 才有）-----------------------------------
+  // --- 左侧分页（list/groupList 才有；对齐 Semi handlePageChange / updateInput）--
   function getInitialPage(): number {
     return pagination?.defaultCurrentPage ?? pagination?.currentPage ?? 1;
   }
@@ -467,7 +495,8 @@
       ? filterData.slice((activePage - 1) * pageSize, activePage * pageSize)
       : filterData,
   );
-  const pagedGroups = $derived(buildGroups(pagedData, loc().t('Transfer.titleSource')));
+  // 无 group 字段的条目落入空标题桶（不渲染分组标题行，非 Semi 契约的容错，见 buildGroups）。
+  const pagedGroups = $derived(buildGroups(pagedData, ''));
   function onPageChange(page: number) {
     if (!isControlledPage) paginationPage = page;
     pagination?.onPageChange?.(page);
@@ -485,17 +514,13 @@
     if (!isControlledPage) paginationPage = 1;
   }
 
-  // --- 计数 / 头部文案 ----------------------------------------------------
-  const showNumber = $derived(inSearchMode ? filterData.length : leftItems.length);
+  // --- 计数 / 头部文案（对齐 Semi renderLeft / renderRight）--------------------
+  const showNumber = $derived(inSearchMode ? filterData.length : items.length);
   // treeList：叶子数（对齐 Semi leafOnlyNum）。
   const leafOnlyNum = $derived(isTree ? filterData.length : undefined);
   const leftShowButton = $derived(!isTree && !filterDataAllDisabled);
   const rightHasValid = $derived(rightItems.some((i) => !i.disabled));
   const rightShowButton = $derived(rightItems.length > 0 && rightHasValid);
-
-  const moveRightDisabled = $derived(
-    disabled || leftItems.filter((i) => !i.disabled && leftChecked.includes(i.key)).length === 0,
-  );
 
   const cls = $derived(
     [
@@ -509,7 +534,7 @@
   );
 </script>
 
-<!-- ============ 搜索框 ============ -->
+<!-- ============ 搜索框（对齐 Semi renderFilter）============ -->
 {#snippet filterBox()}
   {#if filterEnabled}
     <div role="search" aria-label="Transfer filter" class="cd-transfer-filter">
@@ -522,21 +547,21 @@
         onInput={onInputChange}
       >
         {#snippet prefix()}
-          <IconSearch size="small" />
+          <IconSearch />
         {/snippet}
       </Input>
     </div>
   {/if}
 {/snippet}
 
-<!-- ============ 头部（total + 全选/清空按钮）============ -->
+<!-- ============ 头部（total + 全选/清空按钮，对齐 Semi renderHeader）============ -->
 {#snippet header(kind: 'left' | 'right')}
   {#if kind === 'left' && renderSourceHeader}
     {@render renderSourceHeader({
       num: showNumber,
       showButton: leftShowButton,
-      allChecked,
-      onAllClick: handleAll,
+      allChecked: !leftContainsNotSelected,
+      onAllClick: () => handleAll(leftContainsNotSelected),
       leafOnlyNum,
     })}
   {:else if kind === 'right' && renderSelectedHeader}
@@ -561,7 +586,7 @@
           size="small"
           class="cd-transfer-header-all"
           {disabled}
-          onclick={kind === 'left' ? handleAll : handleClear}
+          onclick={kind === 'left' ? () => handleAll(leftContainsNotSelected) : handleClear}
         >
           {#if kind === 'left'}
             {leftContainsNotSelected ? loc().t('Transfer.selectAll') : loc().t('Transfer.clearSelectAll')}
@@ -574,7 +599,7 @@
   {/if}
 {/snippet}
 
-<!-- ============ 空态 ============ -->
+<!-- ============ 空态（对齐 Semi renderEmpty）============ -->
 {#snippet emptyBox(kind: 'left' | 'right', isSearch = false)}
   {@const custom = isSearch ? emptyContent?.search : kind === 'left' ? emptyContent?.left : emptyContent?.right}
   <div
@@ -595,67 +620,66 @@
   </div>
 {/snippet}
 
-<!-- ============ 左侧单项（Checkbox）============ -->
+<!-- ============ 左侧单项（对齐 Semi renderLeftItem：Checkbox 即条目行，无 wrapper）============ -->
 {#snippet leftItem(item: TransferItem)}
-  {@const checked = current.includes(item.key) || leftChecked.includes(item.key)}
+  {@const checked = selectedItems.has(item.key)}
   {#if renderSourceItem}
-    {@render renderSourceItem({ item, onChange: () => toggleChecked(item.key), checked: leftChecked.includes(item.key) })}
+    {@render renderSourceItem({ item, onChange: () => onSelectOrRemove(item), checked })}
   {:else}
-    <div class="cd-transfer-item" class:cd-transfer-item-disabled={item.disabled} role="listitem">
-      <Checkbox
-        checked={leftChecked.includes(item.key)}
-        disabled={disabled || (item.disabled ?? false)}
-        onChange={() => toggleChecked(item.key)}
-      >
-        {item.label}
-      </Checkbox>
-    </div>
+    <Checkbox
+      class="cd-transfer-item"
+      disabled={disabled || (item.disabled ?? false)}
+      {checked}
+      role="listitem"
+      onChange={() => onSelectOrRemove(item)}
+    >
+      {item.label}
+    </Checkbox>
   {/if}
 {/snippet}
 
-<!-- ============ 右侧单项 ============ -->
-{#snippet rightItem(item: TransferItem, vStyle = '')}
-  {@const tIndex = targetIndexOf(item.key)}
+<!-- ============ 右侧单项（对齐 Semi renderRightItem：IconClose 直接承载 class/onClick）======= -->
+{#snippet rightItem(item: TransferItem, index: number, vStyle = '', isOverlay = false)}
   {@const dragRow = canDrag && !(item.disabled ?? false)}
   {#if renderSelectedItem}
-    {@render renderSelectedItem({ item, onRemove: () => removeOne(item.key), sortableHandle: undefined, fullPath: itemFullPath(item.key) })}
+    <!-- 对齐 Semi _sortable SortableItem：外层定位容器始终存在（dnd-kit `ref={setNodeRef}` 的
+         真实 DOM 节点，供 rect 测量/排序几何计算），renderItem({sortableHandle}) 只替换容器
+         内部内容，容器本身用户无法感知/移除、非 display:contents（display:contents 元素
+         getBoundingClientRect() 恒为零矩形，会让 sortable action 的 snapshotRects 测量失效）。
+         data-sortable-item 标记是 sortable action getRows()/resolveIndexFromEvent 判定行边界
+         的依据，缺了它自定义渲染场景下拖拽会完全找不到行。 -->
+    <div
+      class:cd-transfer-right-item-sortable-item-active={!isOverlay && dragIndex === index}
+      style={vStyle}
+      data-sortable-item={isOverlay ? undefined : true}
+    >
+      {@render renderSelectedItem({ item, onRemove: () => onSelectOrRemove(item), sortableHandle, fullPath: itemFullPath(item.key) })}
+    </div>
   {:else}
     <div
       class="cd-transfer-item cd-transfer-right-item"
       class:cd-transfer-right-item-draggable={dragRow}
-      class:cd-transfer-right-item-dragging={dragIndex !== null && dragIndex === tIndex}
-      class:cd-transfer-right-item-drop-before={dropIndex === tIndex && dropSide === 'before'}
-      class:cd-transfer-right-item-drop-after={dropIndex === tIndex && dropSide === 'after'}
+      class:cd-transfer-right-item-sortable-item-active={!isOverlay && dragIndex === index}
       role="listitem"
       style={vStyle}
-      draggable={dragRow}
-      ondragstart={dragRow ? (e) => onRowDragStart(e, item.key) : undefined}
-      ondragover={canDrag ? (e) => onRowDragOver(e, item.key) : undefined}
-      ondragleave={canDrag ? (e) => onRowDragLeave(e, item.key) : undefined}
-      ondrop={canDrag ? (e) => onRowDrop(e, item.key) : undefined}
-      ondragend={canDrag ? resetDrag : undefined}
+      data-sortable-item={isOverlay ? undefined : true}
     >
       {#if dragRow}
-        <span class="cd-transfer-right-item-drag-handler" role="button" aria-label={loc().t('Transfer.dragSort')}>
-          <IconHandle size="small" />
-        </span>
+        <IconHandle role="button" aria-label={loc().t('Transfer.dragSort')} class="cd-transfer-right-item-drag-handler" />
       {/if}
-      <div class="cd-transfer-item-text">{rightLabel(item)}</div>
-      <button
-        type="button"
-        class="cd-transfer-item-close-icon"
-        class:cd-transfer-item-close-icon-disabled={item.disabled}
+      <div class="cd-transfer-right-item-text">{rightLabel(item)}</div>
+      <IconClose
+        role="button"
         aria-label={loc().t('Transfer.remove')}
-        disabled={disabled || (item.disabled ?? false)}
-        onclick={() => removeOne(item.key)}
-      >
-        <IconClose size="small" />
-      </button>
+        aria-disabled={item.disabled}
+        class={`cd-transfer-item-close-icon${item.disabled ? ' cd-transfer-item-close-icon-disabled' : ''}`}
+        onclick={() => onSelectOrRemove(item)}
+      />
     </div>
   {/if}
 {/snippet}
 
-<!-- ============ 左侧面板 ============ -->
+<!-- ============ 左侧面板（对齐 Semi renderLeft）============ -->
 {#snippet leftPanel()}
   {#if renderSourcePanel}
     {@render renderSourcePanel({
@@ -663,13 +687,16 @@
       loading,
       noMatch,
       filterData,
-      sourceData: leftItems,
-      allChecked,
+      sourceData: items,
+      propsDataSource: dataSource,
+      allChecked: !leftContainsNotSelected,
       showNumber,
       inputValue,
+      selectedItems,
       onSearch: onInputChange,
-      onAllClick: handleAll,
+      onAllClick: () => handleAll(leftContainsNotSelected),
       onSelectOrRemove,
+      onSelect: onTreeChange,
     })}
   {:else}
     <section class="cd-transfer-left">
@@ -690,10 +717,7 @@
       {:else}
         {@render filterBox()}
         {#if loading}
-          <div class="cd-transfer-loading" aria-live="polite">
-            <span class="cd-transfer-spinner" aria-hidden="true"></span>
-            <span>{loc().t('Transfer.loading')}</span>
-          </div>
+          <Spin />
         {:else if noMatch}
           {@render emptyBox('left', true)}
         {:else if items.length === 0}
@@ -703,7 +727,9 @@
         <div class="cd-transfer-left-list" role="list" aria-label="Option list">
           {#if grouped}
             {#each pagedGroups as group (group.title)}
-              <div class="cd-transfer-group-title">{group.title}</div>
+              {#if group.title}
+                <div class="cd-transfer-group-title">{group.title}</div>
+              {/if}
               {#each group.items as item (item.key)}
                 {@render leftItem(item)}
               {/each}
@@ -721,7 +747,6 @@
               currentPage={activePage}
               {pageSize}
               onPageChange={onPageChange}
-              size="small"
             />
           </div>
         {/if}
@@ -731,15 +756,23 @@
   {/if}
 {/snippet}
 
-<!-- ============ 右侧面板 ============ -->
+<!-- ============ 右侧面板（对齐 Semi renderRight）============ -->
 {#snippet rightPanel()}
   {#if renderSelectedPanel}
     {@render renderSelectedPanel({
       length: rightItems.length,
       selectedData: rightItems,
       onClear: handleClear,
-      onRemove: (item: TransferItem) => removeOne(item.key),
-      onSortEnd: commit,
+      onRemove: (item: TransferItem) => onSelectOrRemove(item),
+      onSortEnd: ({ oldIndex, newIndex }: { oldIndex: number; newIndex: number }) => {
+        const keys = arrayMove(current, oldIndex, newIndex);
+        const next = new Map<TransferKey, TransferItem>();
+        for (const k of keys) {
+          const item = itemMap.get(k);
+          if (item) next.set(k, item);
+        }
+        commit(next);
+      },
     })}
   {:else}
     <section class="cd-transfer-right">
@@ -752,14 +785,35 @@
           {#each rightVItems as item, i (item.key)}
             {@render rightItem(
               item,
+              rightVRange.startIndex + i,
               `position:absolute; inset-inline:0; transform:translateY(${(rightVRange.startIndex + i) * vItemSize}px); block-size:${vItemSize}px`,
             )}
           {/each}
         </div>
       {:else}
-        <div class="cd-transfer-right-list" role="list" aria-label="Selected list">
-          {#each rightItems as item (item.key)}
-            {@render rightItem(item)}
+        <div
+          class="cd-transfer-right-list"
+          role="list"
+          aria-label="Selected list"
+          use:sortable={{
+            getItemCount: () => rightItems.length,
+            resolveIndexFromEvent: resolveRightDragIndex,
+            dragOverlay: true,
+            onReorder: handleReorder,
+            onDragStart: (i) => (dragIndex = i),
+            onDragEnd: () => {
+              dragIndex = null;
+            },
+            onDragCancel: () => {
+              dragIndex = null;
+            },
+            onDragOverlayStart: handleDragOverlayStart,
+            onDragOverlayMove: handleDragOverlayMove,
+            onDragOverlayEnd: handleDragOverlayEnd,
+          }}
+        >
+          {#each rightItems as item, i (item.key)}
+            {@render rightItem(item, i)}
           {/each}
         </div>
       {/if}
@@ -769,21 +823,23 @@
 
 <div class={cls} {style} role="group" aria-disabled={disabled || undefined}>
   {@render leftPanel()}
-  <div class="cd-transfer-ops">
-    <Button
-      theme="borderless"
-      type="tertiary"
-      size="small"
-      aria-label={loc().t('Transfer.moveToRight')}
-      disabled={moveRightDisabled}
-      onclick={moveToRight}
-    >
-      &gt;
-    </Button>
-  </div>
   {@render rightPanel()}
 </div>
 
+{#if overlayIndex !== null}
+  <!-- DragOverlay：真实渲染 rightItem snippet（非克隆 DOM），position:fixed 挂 body，
+       跟随指针（坐标来自 sortable action 的 onDragOverlayMove），对齐 Semi dnd-kit
+       DragOverlay 视觉（拖拽副本完全不透明清晰，与原位置半透明项区分）。 -->
+  <div
+    use:portalToBody
+    class="cd-transfer-right-item-drag-overlay"
+    style:top="{overlayTop}px"
+    style:left="{overlayLeft}px"
+    style:width="{overlayWidth}px"
+  >
+    {@render rightItem(rightItems[overlayIndex] as TransferItem, overlayIndex, '', true)}
+  </div>
+{/if}
 
 <style>
   .cd-transfer {
@@ -794,7 +850,6 @@
     background-color: var(--cd-color-transfer-bg);
     border: var(--cd-width-transfer-border) solid var(--cd-color-transfer-border);
     border-radius: var(--cd-radius-transfer);
-    color: var(--cd-color-transfer-item-text);
   }
   .cd-transfer,
   .cd-transfer * {
@@ -806,9 +861,15 @@
     height: inherit;
   }
   .cd-transfer-disabled .cd-transfer-header,
-  .cd-transfer-disabled .cd-transfer-item {
+  .cd-transfer-disabled :global(.cd-transfer-item) {
     color: var(--cd-color-transfer-disabled-text);
     cursor: not-allowed;
+  }
+  .cd-transfer-disabled :global(.cd-transfer-item:hover) {
+    background-color: inherit;
+  }
+  .cd-transfer-disabled :global(.cd-transfer-item:hover .cd-transfer-item-close-icon) {
+    visibility: hidden;
   }
 
   .cd-transfer-left {
@@ -825,8 +886,12 @@
     position: relative;
     min-width: 0;
   }
+  .cd-transfer-left :global(.cd-spin) {
+    width: 100%;
+    flex-grow: 1;
+  }
 
-  /* 头部 */
+  /* 头部（对齐 Semi @include font-size-small + @include ver-center：font-size/line-height/font-family 三件套） */
   .cd-transfer-header {
     display: flex;
     align-items: center;
@@ -835,12 +900,20 @@
       var(--cd-spacing-transfer-header-margin-bottom) var(--cd-spacing-transfer-header-margin-left);
     color: var(--cd-color-transfer-header-text);
     font-size: var(--cd-font-size-small);
+    line-height: var(--cd-line-height-small);
+    font-family: var(--cd-font-family-regular);
     flex-shrink: 0;
   }
   .cd-transfer-right-header {
     height: var(--cd-height-transfer-right-header);
     margin-top: var(--cd-spacing-transfer-right-header-margin-top);
     margin-bottom: var(--cd-spacing-transfer-right-header-margin-bottom);
+  }
+  /* 对齐 Semi `.semi-transfer-header .semi-button { @include font-size-small }` */
+  .cd-transfer-header :global(.cd-button) {
+    font-size: var(--cd-font-size-small);
+    line-height: var(--cd-line-height-small);
+    font-family: var(--cd-font-family-regular);
   }
   .cd-transfer-header-total {
     flex: 1;
@@ -870,92 +943,98 @@
     pointer-events: none;
   }
 
-  /* 条目 */
-  .cd-transfer-item {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    flex-wrap: nowrap;
+  /* 条目（对齐 Semi $module-item：Checkbox 根节点直接挂 cd-transfer-item；
+     @include font-size-regular + @include ver-center 三件套 + justify-content/flex-wrap） */
+  :global(.cd-transfer-item) {
     min-height: var(--cd-height-transfer-item-min-height);
     padding: var(--cd-spacing-transfer-item-padding-top) var(--cd-spacing-transfer-item-padding-right)
       var(--cd-spacing-transfer-item-padding-bottom) var(--cd-spacing-transfer-item-padding-left);
     user-select: none;
     font-size: var(--cd-font-size-regular);
+    line-height: var(--cd-line-height-regular);
+    font-family: var(--cd-font-family-regular);
     color: var(--cd-color-transfer-item-text);
     cursor: pointer;
-    transition: background-color 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: nowrap;
+    width: 100%;
+    transition: background-color var(--cd-transition-duration-transfer-item-bg)
+      var(--cd-transition-function-transfer-item-bg) var(--cd-transition-delay-transfer-item-bg);
   }
-  .cd-transfer-item:hover {
+  :global(.cd-transfer-item:hover) {
     background-color: var(--cd-color-transfer-item-bg-hover);
   }
-  .cd-transfer-item:active {
+  :global(.cd-transfer-item:active) {
     background-color: var(--cd-color-transfer-item-bg-active);
   }
-  .cd-transfer-item-disabled {
+  :global(.cd-transfer-item-disabled) {
     cursor: not-allowed;
   }
-  .cd-transfer-item-disabled:hover {
+  :global(.cd-transfer-item-disabled:hover) {
     background-color: inherit;
-  }
-  /* 左侧 Checkbox 整行填充 */
-  .cd-transfer-left-list .cd-transfer-item :global(.cd-checkbox) {
-    width: 100%;
   }
 
   .cd-transfer-right-item {
     color: var(--cd-color-transfer-selected-item-text);
     cursor: auto;
   }
-  .cd-transfer-item-text {
+  .cd-transfer-right-item-text {
     flex: 1;
     word-break: break-all;
-    overflow: hidden;
-    text-overflow: ellipsis;
   }
-  .cd-transfer-item-close-icon {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
+  :global(.cd-transfer-item-close-icon) {
     flex-shrink: 0;
-    padding: 0;
-    border: none;
-    background: transparent;
     font-size: var(--cd-width-transfer-item-close-icon);
     color: var(--cd-color-transfer-close-icon-icon);
     cursor: pointer;
     visibility: hidden;
   }
-  .cd-transfer-right-item:hover .cd-transfer-item-close-icon {
+  .cd-transfer-right-item:hover :global(.cd-transfer-item-close-icon) {
     visibility: visible;
   }
-  .cd-transfer-right-item:hover .cd-transfer-item-close-icon.cd-transfer-item-close-icon-disabled {
+  .cd-transfer-right-item:hover :global(.cd-transfer-item-close-icon.cd-transfer-item-close-icon-disabled) {
     visibility: hidden;
   }
-  .cd-transfer-item-close-icon:disabled {
-    cursor: not-allowed;
-  }
-  .cd-transfer-right-item-drag-handler {
-    display: inline-flex;
-    align-items: center;
+  /* class 挂在跨组件的 IconHandle 上（非本文件内产生的元素），未加 :global() 时 Svelte
+     scoped 属性选择器不会命中，规则整条失效——手柄退回继承父级 .cd-transfer-item 的
+     cursor:pointer，而非 Semi 的 cursor:move。
+     真机实测发现二次坑：全局第三方 reset 有 `button, [role="button"] { cursor: pointer }`，
+     与单类选择器 `.cd-transfer-right-item-drag-handler` 特异性相等（均 0,1,0），胜负取决于
+     两份样式表的加载顺序而非选择器设计——本库场景下顺序不稳定，导致 cursor 在 move/pointer
+     间随机跳变。用父级限定把特异性提到 0,2,0，稳定压过该 reset 规则（不改全局 reset，
+     避免波及站内其它 role=button 元素）。 */
+  :global(.cd-transfer-right-item .cd-transfer-right-item-drag-handler) {
     margin-right: var(--cd-spacing-transfer-right-item-drag-handler-margin-right);
     flex-shrink: 0;
     cursor: move;
-    color: var(--cd-color-text-2);
   }
-  .cd-transfer-right-item-draggable {
-    cursor: grab;
+  /* 对齐 Semi &-sortable-item-active：拖拽源项原位隐藏，DragOverlay 副本跟随指针显示。 */
+  .cd-transfer-right-item-sortable-item-active {
+    opacity: 0;
   }
-  .cd-transfer-right-item-dragging {
-    opacity: 0.5;
+  /* 对齐 Semi &-drag-item-move（dnd-kit DragOverlay 层级）。真机实测 Semi 官网
+     （elementFromPoint 命中的是浮层内部 SVG，document.body 下唯一 fixed 定位元素即
+     此浮层）：浮层不设 pointer-events:none，物理遮挡鼠标位置下方的原列表其他行——
+     这正是"拖拽经过其他行时它们不出现 hover 高亮/删除图标"的真实机制（非样式层面
+     刻意抑制 hover，而是浮层挡住了鼠标，下方行天然收不到 pointer 事件）。拖拽状态机
+     的 pointermove/up 监听绑在 document 上，不受浮层遮挡影响，逻辑不受此影响。
+     浮层自身背景色对齐 hover 态（$color-transfer_item-bg-hover）——因浮层现在会真实
+     接收指针，天然触发 :hover，此处仍显式回填避免抖动时的巧合闪烁。 */
+  .cd-transfer-right-item-drag-overlay {
+    position: fixed;
+    z-index: var(--cd-z-index-transfer-right-item-drag-item-move);
+    margin: 0;
+    box-sizing: border-box;
+    background-color: var(--cd-color-transfer-item-bg-hover);
   }
-  .cd-transfer-right-item-drop-before {
-    box-shadow: inset 0 2px 0 0 var(--cd-color-primary);
-  }
-  .cd-transfer-right-item-drop-after {
-    box-shadow: inset 0 -2px 0 0 var(--cd-color-primary);
+  /* 浮层现在真实接收指针、鼠标压在其上会自然触发 :hover，但显式回填避免依赖巧合命中。 */
+  .cd-transfer-right-item-drag-overlay :global(.cd-transfer-item-close-icon) {
+    visibility: visible;
   }
 
-  /* 分组标题 */
+  /* 分组标题（对齐 Semi @include font-size-small + @include ver-center） */
   .cd-transfer-group-title {
     display: flex;
     align-items: center;
@@ -963,15 +1042,19 @@
     padding-left: var(--cd-spacing-transfer-group-title-padding-left);
     color: var(--cd-color-transfer-group-title-text);
     font-size: var(--cd-font-size-small);
+    line-height: var(--cd-line-height-small);
+    font-family: var(--cd-font-family-regular);
   }
 
-  /* 空态 */
+  /* 空态（对齐 Semi @include all-center + @include font-size-small） */
   .cd-transfer-empty {
     width: var(--cd-width-transfer-empty);
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: var(--cd-font-size-small);
+    line-height: var(--cd-line-height-small);
+    font-family: var(--cd-font-family-regular);
     color: var(--cd-color-transfer-empty-text);
   }
   .cd-transfer-left-empty {
@@ -990,14 +1073,6 @@
     flex-shrink: 0;
   }
 
-  /* 中间操作按钮 */
-  .cd-transfer-ops {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    padding: 0 var(--cd-spacing-tight);
-  }
-
   /* Tree 复用：撑满剩余高度 */
   .cd-transfer-left :global(.cd-transfer-tree) {
     flex: 1;
@@ -1005,38 +1080,8 @@
     min-height: 0;
   }
 
-  /* loading */
-  .cd-transfer-loading {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: var(--cd-spacing-tight);
-    flex-grow: 1;
-    padding: var(--cd-spacing-base-tight);
-    color: var(--cd-color-text-3);
-    font-size: var(--cd-font-size-small);
-  }
-  .cd-transfer-spinner {
-    inline-size: 1em;
-    block-size: 1em;
-    border: 2px solid var(--cd-color-border);
-    border-block-start-color: var(--cd-color-primary);
-    border-radius: 50%;
-    animation: cd-transfer-spin 0.7s linear infinite;
-  }
-  @keyframes cd-transfer-spin {
-    to {
-      transform: rotate(360deg);
-    }
-  }
-  @media (prefers-reduced-motion: reduce) {
-    .cd-transfer-spinner {
-      animation: none;
-    }
-  }
-
   /* —— RTL（对齐 Semi transfer/rtl.scss）——
-     左右两栏之间的分割边框换边、全选文案的单侧外边距换边。 */
+     左右两栏之间的分割边框换边、条目内边距镜像、全选文案的单侧外边距换边。 */
   :global(.cd-rtl) .cd-transfer {
     direction: rtl;
   }
@@ -1044,8 +1089,16 @@
     border-right: 0;
     border-left: var(--cd-width-transfer-left-border) solid var(--cd-color-transfer-border);
   }
+  :global(.cd-rtl .cd-transfer-item) {
+    padding-left: var(--cd-spacing-transfer-item-padding-right);
+    padding-right: var(--cd-spacing-transfer-item-padding-left);
+  }
   :global(.cd-rtl) .cd-transfer-header :global(.cd-transfer-header-all) {
     margin-left: 0;
     margin-right: var(--cd-spacing-transfer-header-all-margin-left);
+  }
+  :global(.cd-rtl) .cd-transfer-group-title {
+    padding-left: 0;
+    padding-right: var(--cd-spacing-transfer-group-title-padding-left);
   }
 </style>

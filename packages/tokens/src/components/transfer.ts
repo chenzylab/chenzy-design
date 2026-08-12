@@ -60,4 +60,13 @@ export const transferTokens = {
 
   // —— Font —— （对齐 Semi $font-transfer_header_all-fontWeight ）
   'font-transfer-header-all-font-weight': { value: '600', category: 'font', label: '全选按钮字重', usage: '穿梭框全选按钮字重' },
+
+  // —— Transition（animation.scss：条目背景色过渡，Semi 实际为 none，即无过渡）——
+  'transition-duration-transfer-item-bg': { value: 'var(--cd-motion-duration-none)', category: 'animation', label: '条目背景色过渡时长', usage: '穿梭框条目-背景色-动画持续时间（Semi transition_duration-none）' },
+  'transition-function-transfer-item-bg': { value: 'var(--cd-motion-ease-in)', category: 'animation', label: '条目背景色过渡曲线', usage: '穿梭框条目-背景色-过渡曲线（Semi transition_function-easeIn）' },
+  'transition-delay-transfer-item-bg': { value: 'var(--cd-motion-delay-none)', category: 'animation', label: '条目背景色过渡延迟', usage: '穿梭框条目-背景色-延迟时间（Semi transition_delay-none）' },
+
+  // —— Z-index（对齐 Semi $z-transfer_right_item_drag_item_move: 2000 !default；
+  // Semi 各组件各自独立定义同值变量，非共享单一全局变量，本库同样为 Transfer 单独建 token）——
+  'z-index-transfer-right-item-drag-item-move': { value: '2000', category: 'other', label: '拖拽浮层层级', usage: '穿梭框右侧面板中正在拖拽元素的 z-index（对齐 Semi $z-transfer_right_item_drag_item_move）' },
 } satisfies TokenGroup;

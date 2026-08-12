@@ -1,7 +1,7 @@
 <!--
-  Transfer 键盘 e2e 夹具（browser project）。对齐 Semi：左侧原生 Checkbox，中间原生
-  移动 Button。受控 value + onChange 回写使「移动到对侧」真实生效（红线 #1）。
-  验证：Tab/focus 到左侧 Checkbox、Space 勾选、点击移动按钮把勾选项移到右侧。
+  Transfer 键盘 e2e 夹具（browser project）。对齐 Semi：左侧原生 Checkbox，勾选即迁移
+  （无中间按钮）。受控 value + onChange 回写使迁移真实生效（红线 #1）。
+  验证：Tab/focus 到左侧 Checkbox、Space 勾选后立即出现在右侧已选列。
 -->
 <script lang="ts">
   import { LocaleProvider } from '../locale-provider/index.js';

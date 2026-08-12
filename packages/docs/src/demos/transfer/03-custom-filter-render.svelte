@@ -1,48 +1,89 @@
 <script lang="ts">
-  import { Transfer, Tag, Highlight } from '@chenzy-design/svelte';
+  import { Transfer, Checkbox, Avatar, Highlight } from '@chenzy-design/svelte';
   import { IconClose } from '@chenzy-design/icons';
   import type { TransferItem } from '@chenzy-design/svelte';
 
-  const data = Array.from({ length: 10 }, (_, i) => ({
-    key: `${i}`,
-    label: `选项 ${i}`,
-  }));
-
-  let value = $state<(string | number)[]>(['1', '3']);
   let searchText = $state('');
 
-  // 自定义筛选逻辑：仅按 label 前缀匹配（对齐 Semi filter 函数形态）。
-  // 注：本库 onSearch 提供后会切换为远程模式（父负责过滤 dataSource），与本地 filter 二选一；
-  // 借 filter 回调本身拿到实时输入文本驱动 Highlight，避免破坏本地筛选。
-  function filter(input: string, item: TransferItem) {
-    searchText = input;
-    return item.label.toLowerCase().startsWith(input.trim().toLowerCase());
-  }
+  const customFilter = (sugInput: string, item: TransferItem) =>
+    String(item.value ?? '').includes(sugInput) || item.label.includes(sugInput);
+
+  const data = [
+    { label: '夏可漫', value: 'xiakeman@example.com', abbr: '夏', color: 'amber', area: 'US', key: 1 },
+    { label: '申悦', value: 'shenyue@example.com', abbr: '申', color: 'indigo', area: 'UK', key: 2 },
+    { label: '文嘉茂', value: 'wenjiamao@example.com', abbr: '文', color: 'cyan', area: 'HK', key: 3 },
+    { label: '曲晨一', value: 'quchenyi@example.com', abbr: '曲', color: 'blue', area: 'India', key: 4 },
+    { label: '曲晨二', value: 'quchener@example.com', abbr: '二', color: 'blue', area: 'India', key: 5 },
+    { label: '曲晨三', value: 'quchensan@example.com', abbr: '三', color: 'blue', area: 'India', key: 6 },
+  ];
+
+  let value = $state<(string | number)[]>(['xiakeman@example.com', 'shenyue@example.com']);
 </script>
 
-<Transfer dataSource={data} {value} {filter} onChange={(keys) => (value = keys)}>
+<Transfer
+  style="width: 568px"
+  dataSource={data}
+  filter={customFilter}
+  {value}
+  inputProps={{ placeholder: '搜索姓名或邮箱' }}
+  onSearch={(text) => (searchText = text)}
+  onChange={(values) => (value = values)}
+>
   {#snippet renderSourceItem({ item, onChange, checked })}
-    <div
-      style="display:flex;align-items:center;gap:8px;padding:6px 12px;cursor:pointer"
-      onclick={onChange}
-      role="presentation"
-    >
-      <input type="checkbox" {checked} tabindex={-1} />
-      <span style="flex:1"><Highlight sourceString={item.label} searchWords={[searchText]} /></span>
-      <Tag size="small" color={checked ? 'blue' : 'grey'}>{checked ? '已选' : '可选'}</Tag>
+    <div class="components-transfer-demo-source-item">
+      <Checkbox {checked} onChange={() => onChange()} style="height: 52px; align-items: center">
+        <Avatar color={item.color as 'amber'} size="small">{item.abbr}</Avatar>
+        <div class="info">
+          <div class="name"><Highlight sourceString={item.label} searchWords={[searchText]} /></div>
+          <div class="email"><Highlight sourceString={String(item.value)} searchWords={[searchText]} /></div>
+        </div>
+      </Checkbox>
     </div>
   {/snippet}
   {#snippet renderSelectedItem({ item, onRemove })}
-    <div style="display:flex;align-items:center;gap:8px;padding:6px 12px">
-      <span style="flex:1">{item.label}</span>
-      <button
-        type="button"
-        aria-label="移除"
-        onclick={onRemove}
-        style="border:none;background:transparent;cursor:pointer;display:inline-flex"
-      >
-        <IconClose size="small" />
-      </button>
+    <div class="components-transfer-demo-selected-item">
+      <Avatar color={item.color as 'amber'} size="small">{item.abbr}</Avatar>
+      <div class="info">
+        <div class="name">{item.label}</div>
+        <div class="email">{item.value}</div>
+      </div>
+      <IconClose onclick={onRemove} />
     </div>
   {/snippet}
 </Transfer>
+
+<style>
+  .components-transfer-demo-selected-item :global(.cd-icon-close) {
+    visibility: hidden;
+    color: var(--cd-color-text-3);
+  }
+  .components-transfer-demo-selected-item:hover :global(.cd-icon-close) {
+    visibility: visible;
+  }
+  .components-transfer-demo-selected-item,
+  .components-transfer-demo-source-item {
+    height: 52px;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 12px;
+  }
+  .components-transfer-demo-selected-item:hover,
+  .components-transfer-demo-source-item:hover {
+    background-color: var(--cd-color-fill-0);
+  }
+  .info {
+    margin-left: 8px;
+    flex-grow: 1;
+  }
+  .name {
+    font-size: 14px;
+    line-height: 20px;
+  }
+  .email {
+    font-size: 12px;
+    line-height: 16px;
+    color: var(--cd-color-text-2);
+  }
+</style>

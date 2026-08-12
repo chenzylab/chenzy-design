@@ -986,11 +986,11 @@
   .cd-tag-input-sortable-item-active {
     opacity: 0.5;
   }
-  /* DragOverlay 浮动副本（对齐 Semi &-drag-item-move z-index:2000）：position:fixed
+  /* DragOverlay 浮动副本（对齐 Semi &-drag-item-move）：position:fixed
      挂 body，跟随指针，不透明、不响应事件。 —— */
   .cd-tag-input-drag-overlay {
     position: fixed;
-    z-index: 2000;
+    z-index: var(--cd-z-index-tag-input-drag-item-move);
     margin: 0;
     pointer-events: none;
     box-sizing: border-box;

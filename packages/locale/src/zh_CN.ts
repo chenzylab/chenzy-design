@@ -219,7 +219,6 @@ export const zh_CN: Locale = {
   },
   Transfer: {
     placeholder: '搜索',
-    titleSource: '源',
     emptyLeft: '暂无数据',
     emptySearch: '无搜索结果',
     emptyRight: '暂无内容，可从左侧勾选',
@@ -228,10 +227,8 @@ export const zh_CN: Locale = {
     clearSelectAll: '取消全选',
     total: '总个数：{total}',
     selected: '已选个数：{total}',
-    moveToRight: '移到右侧',
     remove: '移除',
     dragSort: '拖拽排序',
-    loading: '加载中…',
   },
   Upload: {
     trigger: '选择文件',

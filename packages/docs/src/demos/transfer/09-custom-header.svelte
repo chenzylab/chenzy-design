@@ -1,33 +1,30 @@
 <script lang="ts">
-  import { Transfer } from '@chenzy-design/svelte';
+  import { Transfer, Button } from '@chenzy-design/svelte';
 
-  const data = Array.from({ length: 10 }, (_, i) => ({
-    key: `${i}`,
-    label: `选项 ${i}`,
+  const data = Array.from({ length: 30 }, (_, i) => ({
+    label: `选项名称 ${i}`,
+    value: i,
+    disabled: false,
+    key: `key-${i}`,
   }));
-
-  let value = $state<(string | number)[]>(['1', '2']);
 </script>
 
-<!-- 自定义面板头部信息（renderSourceHeader / renderSelectedHeader） -->
-<Transfer dataSource={data} {value} onChange={(keys) => (value = keys)}>
+<Transfer style="width: 568px; height: 416px" dataSource={data}>
   {#snippet renderSourceHeader({ num, showButton, allChecked, onAllClick })}
-    <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;font-weight:600">
-      <span>可选 {num} 项</span>
+    <div style="margin: 10px 0 0 10px; height: 24px; display: flex; align-items: center">
+      <span>共 {num} 项</span>
       {#if showButton}
-        <button type="button" onclick={onAllClick} style="border:none;background:transparent;color:var(--cd-color-primary);cursor:pointer">
+        <Button theme="borderless" type="tertiary" size="small" onclick={onAllClick}>
           {allChecked ? '取消全选' : '全选'}
-        </button>
+        </Button>
       {/if}
     </div>
   {/snippet}
   {#snippet renderSelectedHeader({ num, showButton, onClear })}
-    <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;font-weight:600">
-      <span>已选 {num} 项</span>
+    <div style="margin: 10px 0 0 10px; height: 24px; display: flex; align-items: center">
+      <span>{num} 项已选</span>
       {#if showButton}
-        <button type="button" onclick={onClear} style="border:none;background:transparent;color:var(--cd-color-danger);cursor:pointer">
-          清空
-        </button>
+        <Button theme="borderless" type="tertiary" size="small" onclick={onClear}>清空</Button>
       {/if}
     </div>
   {/snippet}
