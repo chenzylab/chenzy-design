@@ -1,67 +1,135 @@
 <script lang="ts">
   import { Tree } from '@chenzy-design/svelte';
-  import type { TreeNodeData } from '@chenzy-design/core';
+  import {
+    IconFixedStroked,
+    IconSectionStroked,
+    IconAbsoluteStroked,
+    IconInnerSectionStroked,
+    IconComponentStroked,
+  } from '@chenzy-design/icons';
+  import type { TreeNodeData, TreeKey } from '@chenzy-design/core';
 
-  const treeData: TreeNodeData[] = [
+  let selected = $state<Set<TreeKey>>(new Set());
+  let selectedThroughParent = $state<Set<TreeKey>>(new Set());
+
+  function findDescendantKeys(node: TreeNodeData): TreeKey[] {
+    const res: TreeKey[] = [node.key];
+    function findChild(item: TreeNodeData | undefined) {
+      if (!item?.children?.length) return;
+      for (const child of item.children) {
+        res.push(child.key);
+        findChild(child);
+      }
+    }
+    findChild(node);
+    return res;
+  }
+
+  function handleSelect(_key: TreeKey, _selected: boolean, node: TreeNodeData) {
+    selected = new Set([node.key]);
+    selectedThroughParent = new Set(findDescendantKeys(node));
+  }
+</script>
+
+{#snippet fixedBtnIcon()}
+  <IconFixedStroked style="margin-right: 8px; color: var(--cd-color-text-2)" />
+{/snippet}
+{#snippet sectionIcon()}
+  <IconSectionStroked style="margin-right: 8px; color: var(--cd-color-text-2)" />
+{/snippet}
+{#snippet absoluteIcon()}
+  <IconAbsoluteStroked style="margin-right: 8px; color: var(--cd-color-text-2)" />
+{/snippet}
+{#snippet innerSectionIcon()}
+  <IconInnerSectionStroked style="margin-right: 8px; color: var(--cd-color-text-2)" />
+{/snippet}
+{#snippet componentIcon()}
+  <IconComponentStroked style="margin-right: 8px; color: var(--cd-color-text-2)" />
+{/snippet}
+
+<Tree
+  treeData={[
+    {
+      label: '黑色固定按钮',
+      icon: fixedBtnIcon,
+      key: 'fix-btn-0',
+    },
     {
       label: '模块',
-      key: 'm0',
+      key: 'module-0',
+      icon: sectionIcon,
       children: [
-        { label: '自由摆放组件', key: 'free' },
+        {
+          label: '可自由摆放的组件',
+          icon: absoluteIcon,
+          key: 'free-compo-0',
+        },
         {
           label: '分栏容器',
-          key: 'split',
+          icon: innerSectionIcon,
+          key: 'split-col-0',
           children: [
-            { label: '按钮组件', key: 'btn0' },
-            { label: '文本组件', key: 'btn1' },
+            {
+              label: '按钮组件',
+              icon: componentIcon,
+              key: 'btn-0',
+            },
+            {
+              label: '按钮组件',
+              icon: componentIcon,
+              key: 'btn-1',
+            },
           ],
         },
       ],
     },
-  ];
+    {
+      label: '模块',
+      icon: sectionIcon,
+      key: 'module-1',
+      children: [
+        {
+          label: '自定义组件',
+          icon: componentIcon,
+          key: 'cus-0',
+        },
+      ],
+    },
+  ] as unknown as TreeNodeData[]}
+  renderFullLabel={renderLabel}
+  onSelect={handleSelect}
+  style="width: 260px; height: 420px; border: 1px solid var(--cd-color-border)"
+  defaultExpandAll
+/>
 
-  // 单选选中父节点时，同时高亮其所有子孙节点
-  let selectedKey = $state<string | number | null>(null);
-  let descendants = $state<Set<string | number>>(new Set());
-
-  function collectKeys(node: TreeNodeData): (string | number)[] {
-    const res: (string | number)[] = [node.key];
-    for (const c of node.children ?? []) res.push(...collectKeys(c));
-    return res;
-  }
-</script>
-
-<div style="width:260px">
-  <Tree
-    style="width: 260px; height: 420px; border: 1px solid var(--cd-color-border); border-radius: 6px; box-sizing: border-box"
-    {treeData}
-    defaultExpandAll
-    aria-label="单选高亮子节点树"
-    onSelect={(key, _sel, node) => {
-      selectedKey = key;
-      descendants = new Set(collectKeys(node));
-    }}
+{#snippet renderLabel(ctx: {
+  className: string;
+  data: TreeNodeData;
+  onClick: (e: MouseEvent) => void;
+  expandIcon: any;
+  expandStatus: { expanded: boolean; loading: boolean };
+})}
+  {@const isLeaf = !(ctx.data.children && ctx.data.children.length)}
+  {@const bg = selected.has(ctx.data.key)
+    ? 'var(--cd-color-primary-light-default)'
+    : selectedThroughParent.has(ctx.data.key)
+      ? 'color-mix(in srgb, var(--cd-color-primary-light-default) 50%, transparent)'
+      : 'transparent'}
+  <!-- svelte-ignore a11y_click_events_have_key_events -->
+  <div
+    class={ctx.className}
+    role="treeitem"
+    aria-selected={selected.has(ctx.data.key)}
+    tabindex="-1"
+    onclick={ctx.onClick}
+    style={`background-color: ${bg}`}
   >
-    {#snippet renderFullLabel(ctx)}
-      {@const inSubtree = descendants.has(ctx.data.key)}
-      <div
-        class={ctx.className}
-        role="treeitem"
-        aria-selected={ctx.data.key === selectedKey}
-        tabindex="-1"
-        style={`${ctx.style ?? ''}; background:${
-          ctx.data.key === selectedKey
-            ? 'var(--cd-color-primary-light-default)'
-            : inSubtree
-              ? 'var(--cd-color-primary-light-hover, rgba(0,100,250,.08))'
-              : 'transparent'
-        }`}
-        onclick={ctx.onClick}
-        onkeydown={() => {}}
-      >
-        {#if !ctx.isLeaf}{@render ctx.expandIcon(ctx.expandStatus)}{:else}<span style="width:12px; margin-inline-end:8px"></span>{/if}
-        <span>{ctx.data.label}</span>
-      </div>
-    {/snippet}
-  </Tree>
-</div>
+    {#if isLeaf}
+      <span style="width: 24px"></span>
+    {:else}
+      {@render ctx.expandIcon(ctx.expandStatus)}
+    {/if}
+    {@render (ctx.data.icon as any)?.()}
+    <span>{ctx.data.label}</span>
+  </div>
+{/snippet}

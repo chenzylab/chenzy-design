@@ -1,25 +1,79 @@
 <script lang="ts">
-  import { Tree, Text } from '@chenzy-design/svelte';
-  import type { TreeNodeData } from '@chenzy-design/core';
+  import { Tree } from '@chenzy-design/svelte';
+  import type { TreeNodeData, TreeKey } from '@chenzy-design/core';
 
-  type DragNode = { key: string; label: string; children?: DragNode[] };
-
-  let data = $state<DragNode[]>([
-    { key: 'a', label: '一级 A', children: [{ key: 'a1', label: 'A-1' }, { key: 'a2', label: 'A-2' }] },
-    { key: 'b', label: '一级 B', children: [{ key: 'b1', label: 'B-1' }] },
-    { key: 'c', label: '一级 C' },
+  let treeData = $state<TreeNodeData[]>([
+    {
+      label: 'Asia',
+      value: 'Asia',
+      key: '0',
+      children: [
+        {
+          label: 'China',
+          value: 'China',
+          key: '0-0',
+          children: [
+            {
+              label: 'Beijing',
+              value: 'Beijing',
+              key: '0-0-0',
+            },
+            {
+              label: 'Shanghai',
+              value: 'Shanghai',
+              key: '0-0-1',
+            },
+          ],
+        },
+        {
+          label: 'Japan',
+          value: 'Japan',
+          key: '0-1',
+          children: [
+            {
+              label: 'Osaka',
+              value: 'Osaka',
+              key: '0-1-0',
+            },
+          ],
+        },
+      ],
+    },
+    {
+      label: 'North America',
+      value: 'North America',
+      key: '1',
+      children: [
+        {
+          label: 'United States',
+          value: 'United States',
+          key: '1-0',
+        },
+        {
+          label: 'Canada',
+          value: 'Canada',
+          key: '1-1',
+        },
+      ],
+    },
+    {
+      label: 'Europe',
+      value: 'Europe',
+      key: '2',
+    },
   ]);
-  let info = $state('（未拖拽）');
 
+  // 对齐本库简化后的 onDrop 语义（dropPosition: 'before'|'inside'|'after'，
+  // 取代 Semi 的 dropPosition:number + dropToGap:boolean 组合，效果等价）。
   function reorder(
-    list: DragNode[],
-    dragKey: string | number,
-    dropKey: string | number,
+    list: TreeNodeData[],
+    dragKey: TreeKey,
+    dropKey: TreeKey,
     pos: 'before' | 'inside' | 'after',
-  ): DragNode[] {
-    let dragged: DragNode | undefined;
-    const remove = (arr: DragNode[]): DragNode[] => {
-      const out: DragNode[] = [];
+  ): TreeNodeData[] {
+    let dragged: TreeNodeData | undefined;
+    const remove = (arr: TreeNodeData[]): TreeNodeData[] => {
+      const out: TreeNodeData[] = [];
       for (const n of arr) {
         if (n.key === dragKey) {
           dragged = n;
@@ -31,13 +85,13 @@
     };
     const pruned = remove(list);
     if (!dragged) return list;
-    const insert = (arr: DragNode[]): DragNode[] => {
-      const out: DragNode[] = [];
+    const insert = (arr: TreeNodeData[]): TreeNodeData[] => {
+      const out: TreeNodeData[] = [];
       for (const n of arr) {
         if (n.key === dropKey) {
-          if (pos === 'before') out.push(dragged as DragNode, n);
-          else if (pos === 'after') out.push(n, dragged as DragNode);
-          else out.push({ ...n, children: [...(n.children ?? []), dragged as DragNode] });
+          if (pos === 'before') out.push(dragged as TreeNodeData, n);
+          else if (pos === 'after') out.push(n, dragged as TreeNodeData);
+          else out.push({ ...n, children: [...(n.children ?? []), dragged as TreeNodeData] });
         } else {
           out.push(n.children ? { ...n, children: insert(n.children) } : n);
         }
@@ -48,19 +102,10 @@
   }
 </script>
 
-<div style="width:260px">
-  <Text type="tertiary" size="small">draggable：拖拽节点改变层级/顺序（before / inside / after）</Text>
-  <Tree
-    style="width: 260px; height: 420px; border: 1px solid var(--cd-color-border); border-radius: 6px; box-sizing: border-box"
-    treeData={data as unknown as TreeNodeData[]}
-    draggable
-    defaultExpandAll
-    showLine
-    aria-label="可拖拽树"
-    onDrop={(d) => {
-      data = reorder(data, d.dragNode.key, d.dropNode.key, d.dropPosition);
-      info = `${d.dragNode.label} → ${d.dropNode.label}（${d.dropPosition}）`;
-    }}
-  />
-  <Text type="tertiary" size="small">最近一次：{info}</Text>
-</div>
+<Tree
+  {treeData}
+  draggable
+  onDrop={(info) => {
+    treeData = reorder(treeData, info.dragNode.key, info.dropNode.key, info.dropPosition);
+  }}
+/>

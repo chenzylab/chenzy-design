@@ -4,52 +4,74 @@
 
   const treeData: TreeNodeData[] = [
     {
-      label: '亚洲',
-      key: 'asia',
+      label: 'Asia',
+      value: 'Asia',
+      key: '0',
       children: [
         {
-          label: '中国',
-          key: 'china',
+          label: 'China',
+          value: 'China',
+          key: '0-0',
           children: [
-            { label: '北京', key: 'beijing' },
-            { label: '上海', key: 'shanghai' },
+            {
+              label: 'Beijing',
+              value: 'Beijing',
+              key: '0-0-0',
+            },
+            {
+              label: 'Shanghai',
+              value: 'Shanghai',
+              key: '0-0-1',
+            },
           ],
         },
-        { label: '日本', key: 'japan', children: [{ label: '大阪', key: 'osaka' }] },
+        {
+          label: 'Japan',
+          value: 'Japan',
+          key: '0-1',
+          children: [
+            {
+              label: 'Osaka',
+              value: 'Osaka',
+              key: '0-1-0',
+            },
+          ],
+        },
       ],
     },
     {
-      label: '北美洲',
-      key: 'north-america',
+      label: 'North America',
+      value: 'North America',
+      key: '1',
       children: [
-        { label: '美国', key: 'united-states' },
-        { label: '加拿大', key: 'canada' },
+        {
+          label: 'United States',
+          value: 'United States',
+          key: '1-0',
+        },
+        {
+          label: 'Canada',
+          value: 'Canada',
+          key: '1-1',
+        },
       ],
     },
   ];
 </script>
 
-<div style="width:260px">
-  <!-- renderFullLabel：只有叶子节点单选，父节点仅起分组作用（点击父节点触发展开而非选中） -->
-  <Tree
-    style="width: 260px; height: 420px; border: 1px solid var(--cd-color-border); border-radius: 6px; box-sizing: border-box"
-    {treeData}
-    aria-label="叶子分组单选树"
-    onChange={(...args) => console.log('change', ...args)}
-  >
-    {#snippet renderFullLabel(ctx)}
-      <div
-        class={ctx.className}
-        style={ctx.style}
-        role="treeitem"
-        aria-selected={false}
-        tabindex="-1"
-        onclick={ctx.isLeaf ? ctx.onClick : ctx.onExpand}
-        onkeydown={() => {}}
-      >
-        {@render ctx.expandIcon(ctx.expandStatus)}
-        <span>{ctx.data.label}</span>
-      </div>
-    {/snippet}
-  </Tree>
-</div>
+<Tree {treeData} onChange={(value) => console.log(value)} style="width: 260px; height: 420px; border: 1px solid var(--cd-color-border)">
+  {#snippet renderFullLabel(ctx)}
+    <!-- svelte-ignore a11y_click_events_have_key_events -->
+    <div
+      class={ctx.className}
+      style={ctx.style}
+      role="treeitem"
+      aria-selected={ctx.checkStatus.checked}
+      tabindex="-1"
+      onclick={ctx.isLeaf ? ctx.onClick : ctx.onExpand}
+    >
+      {@render ctx.expandIcon(ctx.expandStatus)}
+      <span>{ctx.data.label}</span>
+    </div>
+  {/snippet}
+</Tree>

@@ -4,44 +4,95 @@
 
   const treeData: TreeNodeData[] = [
     {
-      label: '亚洲',
-      key: 'asia',
+      label: 'Asia',
+      value: 'Asia',
+      key: '0',
       children: [
         {
-          label: '中国',
-          key: 'china',
+          label: 'China',
+          value: 'China',
+          key: '0-0',
           children: [
-            { label: '北京', key: 'beijing' },
-            { label: '上海', key: 'shanghai' },
+            {
+              label: 'Beijing',
+              value: 'Beijing',
+              key: '0-0-0',
+            },
+            {
+              label: 'Shanghai',
+              value: 'Shanghai',
+              key: '0-0-1',
+            },
           ],
         },
-        { label: '日本', key: 'japan', children: [{ label: '大阪', key: 'osaka' }] },
+        {
+          label: 'Japan',
+          value: 'Japan',
+          key: '0-1',
+          children: [
+            {
+              label: 'Osaka',
+              value: 'Osaka',
+              key: '0-1-0',
+            },
+          ],
+        },
+      ],
+    },
+    {
+      label: 'North America',
+      value: 'North America',
+      key: '1',
+      children: [
+        {
+          label: 'United States',
+          value: 'United States',
+          key: '1-0',
+        },
+        {
+          label: 'Canada',
+          value: 'Canada',
+          key: '1-1',
+        },
       ],
     },
   ];
 </script>
 
-<div style="width:260px">
-  <!-- renderFullLabel：只有叶子渲染勾选框（父节点仅分组），配合 multiple + leafOnly -->
-  <Tree style="width: 260px; height: 420px; border: 1px solid var(--cd-color-border); border-radius: 6px; box-sizing: border-box" {treeData} multiple leafOnly defaultExpandAll aria-label="叶子分组勾选树">
-    {#snippet renderFullLabel(ctx)}
-      <div
-        class={ctx.className}
-        style={ctx.style}
-        role="treeitem"
-        aria-selected={false}
-        tabindex="-1"
-        onclick={ctx.isLeaf ? ctx.onCheck : ctx.onExpand}
-        onkeydown={() => {}}
-      >
-        {#if !ctx.isLeaf}{@render ctx.expandIcon(ctx.expandStatus)}{/if}
-        {#if ctx.isLeaf}
-          <span style="margin-inline-end:8px">
-            <Checkbox checked={ctx.checkStatus.checked} indeterminate={ctx.checkStatus.halfChecked} />
-          </span>
-        {/if}
-        <span>{ctx.data.label}</span>
+<Tree {treeData} renderFullLabel={renderLabel} multiple leafOnly style="width: 260px; height: 420px; border: 1px solid var(--cd-color-border)" />
+
+{#snippet renderLabel(ctx: {
+  className: string;
+  style: string | undefined;
+  isLeaf: boolean;
+  checkStatus: { checked: boolean; halfChecked: boolean };
+  expandStatus: { expanded: boolean; loading: boolean };
+  data: TreeNodeData;
+  expandIcon: any;
+  onCheck: (e: MouseEvent) => void;
+  onExpand: (e: MouseEvent) => void;
+})}
+  <!-- svelte-ignore a11y_click_events_have_key_events -->
+  <div
+    class={ctx.className}
+    style={ctx.style}
+    role="treeitem"
+    aria-selected={ctx.checkStatus.checked}
+    tabindex="-1"
+    onclick={ctx.isLeaf ? ctx.onCheck : ctx.onExpand}
+  >
+    {#if !ctx.isLeaf}
+      {@render ctx.expandIcon(ctx.expandStatus)}
+    {/if}
+    {#if ctx.isLeaf}
+      <div role="checkbox" tabindex="-1" aria-checked={ctx.checkStatus.checked} onclick={ctx.onCheck}>
+        <Checkbox
+          indeterminate={ctx.checkStatus.halfChecked}
+          checked={ctx.checkStatus.checked}
+          style="margin-right: 8px"
+        />
       </div>
-    {/snippet}
-  </Tree>
-</div>
+    {/if}
+    <span>{ctx.data.label}</span>
+  </div>
+{/snippet}
