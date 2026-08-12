@@ -89,8 +89,20 @@
   // viewport 元素普通引用（bind:this），不参与响应式几何读取。
   let viewportEl = $state<HTMLDivElement | null>(null);
 
+  // RTL 探测（对齐本库 Rating/Progress 等组件写法）：仅 horizontal 模式关心。现代浏览器
+  // CSSOM View 规范已统一 RTL 容器下 scrollLeft<=0（0 为内容起始/最右侧，往左滚动递减），
+  // 与「offset 沿阅读方向递增」的语义天然一致，故 RTL 下 translateX 取负、锚点从 right 出发。
+  let isRtl = $state(false);
+  $effect(() => {
+    const el = viewportEl;
+    if (!el || !horizontal) return;
+    isRtl = getComputedStyle(el).direction === 'rtl';
+  });
+
   // 本地响应式状态：仅由命令式回调 / ResizeObserver 写入，render 期只读。
   // 主轴滚动偏移：vertical 为 scrollTop、horizontal 为 scrollLeft（方向无关命名沿用 scrollTop）。
+  // RTL + horizontal 时取绝对值——scrollLeft 本身已按 RTL 规范为 <=0，区间数学（fixedRange 等）
+  // 统一按「非负、越滚越大」处理，此处归一化，itemStyle/scrollToIndex 各自按 isRtl 换算回符号。
   let scrollTop = $state(0);
   // 测量得到的视口主轴尺寸：self 模式仅 height 为字符串时由 ResizeObserver 回填；
   // window 模式由 scroll/resize 回调写入 window.innerHeight（命令式，非 render 期）。
@@ -181,7 +193,7 @@
       scrollTop = target;
       return;
     }
-    if (horizontal) el.scrollLeft = target;
+    if (horizontal) el.scrollLeft = isRtl ? -target : target;
     else el.scrollTop = target;
     // 同步本地 state（DOM 滚动事件随后也会触发，这里立即更新避免一帧延迟）。
     scrollTop = target;
@@ -196,8 +208,9 @@
       if (rafId) return;
       rafId = requestAnimationFrame(() => {
         rafId = 0;
-        // 主轴滚动读取发生在回调中（非 render 期）；horizontal 读 scrollLeft。
-        if (el) scrollTop = horizontal ? el.scrollLeft : el.scrollTop;
+        // 主轴滚动读取发生在回调中（非 render 期）；horizontal 读 scrollLeft，
+        // RTL 下 scrollLeft<=0，取绝对值归一化为「非负、越滚越大」（对齐 isRtl 探测的约定）。
+        if (el) scrollTop = horizontal ? Math.abs(el.scrollLeft) : el.scrollTop;
       });
     }
 
@@ -332,23 +345,25 @@
     windowMode
       ? ''
       : horizontal
-        ? `inline-size:${heightStyle}; overflow:auto`
-        : `block-size:${heightStyle}; overflow:auto`,
+        ? `width:${heightStyle}; overflow:auto`
+        : `height:${heightStyle}; overflow:auto`,
   );
   // 撑高/撑宽占位主轴尺寸样式。
   const spacerStyle = $derived(
-    horizontal ? `inline-size:${totalHeight}px` : `block-size:${totalHeight}px`,
+    horizontal ? `width:${totalHeight}px` : `height:${totalHeight}px`,
   );
 
   // 每项主轴定位/尺寸样式（render 期只读派生，不触发测量）。
   function itemStyle(idx: number): string {
     const off = itemOffset(idx);
     if (horizontal) {
-      // 横向：translateX 定位 + 列宽（fixed），高度撑满视口。
-      return `transform:translateX(${off}px); inline-size:${fixedSize}px`;
+      // 横向：translateX 定位 + 列宽（fixed），高度撑满视口。RTL 下锚点在右（CSS 侧
+      // .cd-virtual-list-horizontal.cd-rtl 镜像 right:0），偏移沿阅读方向即向左，故取负。
+      const x = isRtl ? -off : off;
+      return `transform:translateX(${x}px); width:${fixedSize}px`;
     }
     if (dynamic) return `transform:translateY(${off}px)`;
-    return `transform:translateY(${off}px); block-size:${fixedSize}px`;
+    return `transform:translateY(${off}px); height:${fixedSize}px`;
   }
 </script>
 
@@ -372,30 +387,44 @@
 <style>
   .cd-virtual-list {
     position: relative;
-    inline-size: 100%;
+    width: 100%;
     background: var(--cd-virtual-list-bg);
     scrollbar-color: var(--cd-virtual-list-scrollbar) transparent;
   }
   .cd-virtual-list-spacer {
     position: relative;
-    inline-size: 100%;
+    width: 100%;
   }
   .cd-virtual-list-item {
     position: absolute;
-    inset-block-start: 0;
-    inset-inline: 0;
+    top: 0;
+    left: 0;
+    right: 0;
   }
-  /* horizontal：视口主轴为宽度（block-size 撑满父容器高度）；项沿 x 轴绝对定位、纵向撑满。 */
+  /* horizontal：视口主轴为宽度（height 撑满父容器高度）；项沿 x 轴绝对定位、纵向撑满。 */
   .cd-virtual-list-horizontal {
-    block-size: 100%;
+    height: 100%;
   }
   .cd-virtual-list-horizontal .cd-virtual-list-spacer {
-    block-size: 100%;
-    inline-size: auto;
+    height: 100%;
+    width: auto;
   }
   .cd-virtual-list-horizontal .cd-virtual-list-item {
-    inset-block: 0;
-    inset-inline-start: 0;
-    inset-inline-end: auto;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: auto;
+  }
+
+  /* RTL（本库无 Semi 对应参照——通用虚拟列表原语，Semi 无此组件）：显式声明 direction，
+     JS 侧 isRtl 靠 getComputedStyle(el).direction 探测，需要这条规则才有正确值可读；
+     horizontal 模式下锚点从左换到右，与 translateX 取负/scrollLeft 归一化配套。
+     vertical（非 horizontal）的 left:0/right:0 双侧撑满，天然对称，不受方向影响，不写。 */
+  :global(.cd-rtl) .cd-virtual-list {
+    direction: rtl;
+  }
+  :global(.cd-rtl) .cd-virtual-list-horizontal .cd-virtual-list-item {
+    left: auto;
+    right: 0;
   }
 </style>

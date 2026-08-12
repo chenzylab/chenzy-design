@@ -255,3 +255,176 @@
     {/if}
   </div>
 {/if}
+
+<style>
+  .cd-tree-option {
+    display: flex;
+    align-items: center;
+    gap: var(--cd-spacing-extra-tight);
+    height: var(--cd-tree-row-height);
+    /* 首层左内边距 + 行右内边距（对齐 Semi $spacing-tree_option_level1-paddingLeft 8px） */
+    padding-left: var(--cd-spacing-tree-option-level1-padding-left);
+    padding-right: var(--cd-spacing-tree-option-level1-padding-left);
+    border-radius: var(--cd-radius-tree-checkbox-addon);
+    cursor: pointer;
+    position: relative;
+    transition: background-color var(--cd-motion-duration-fast) var(--cd-motion-ease-standard);
+  }
+  .cd-tree-option:hover {
+    background: var(--cd-color-tree-option-bg-hover);
+  }
+  /* 按下态（对齐 Semi $color-tree_option_selected-bg-default = fill-1） */
+  .cd-tree-option:active {
+    background: var(--cd-color-tree-option-selected-bg-default);
+  }
+  .cd-tree-option-selected {
+    color: var(--cd-color-tree-option-text-default);
+    background: var(--cd-color-tree-option-bg-active);
+  }
+  .cd-tree-option-selected:hover,
+  .cd-tree-option-selected:active {
+    background: var(--cd-color-tree-option-bg-active);
+  }
+  /* 键盘 roving 焦点（当前项）：对齐 Semi 无 border，仅用背景区分；焦点可见性靠背景差异。 */
+  .cd-tree-option-active:not(.cd-tree-option-selected) {
+    background: var(--cd-color-tree-option-bg-hover);
+  }
+  .cd-tree-option-disabled {
+    color: var(--cd-color-tree-option-disabled-text-default);
+    cursor: not-allowed;
+  }
+  .cd-tree-option-disabled:hover {
+    background: transparent;
+  }
+
+  /* --- 拖拽排序：被拖节点半透明 + 插入指示线 / 内部高亮 --- */
+  /* 可拖拽行的内边距（对齐 Semi $spacing-tree_option_draggable-paddingY 2 / paddingX 0） */
+  .cd-tree-option[draggable='true'] {
+    padding-top: var(--cd-spacing-tree-option-draggable-padding-y);
+    padding-bottom: var(--cd-spacing-tree-option-draggable-padding-y);
+    padding-right: calc(
+      var(--cd-spacing-tree-option-level1-padding-left) +
+        var(--cd-spacing-tree-option-draggable-padding-x)
+    );
+  }
+  .cd-tree-option-draggable {
+    opacity: 0.5;
+  }
+  /* before/after 用 ::after 画一条插入指示线（不影响布局，子元素不接收 drag 事件） */
+  .cd-tree-option-drag-over-gap-top::after,
+  .cd-tree-option-drag-over-gap-bottom::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: var(--cd-width-tree-option-draggable-border);
+    background: var(--cd-color-tree-option-draggable-insert-border-default);
+    border-radius: 1px;
+    pointer-events: none;
+  }
+  .cd-tree-option-drag-over-gap-top::after {
+    top: -1px;
+  }
+  .cd-tree-option-drag-over-gap-bottom::after {
+    bottom: -1px;
+  }
+  /* inside：成为子节点 → 整行高亮框 */
+  .cd-tree-option-drag-over {
+    background: var(--cd-color-tree-option-bg-hover);
+    box-shadow: inset 0 0 0 1px var(--cd-color-tree-option-draggable-insert-border-default);
+  }
+
+  .cd-tree-option-expand-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    /* 对齐 Semi $width-tree_emptyIcon（展开图标宽 12）+ marginRight 8 */
+    width: var(--cd-width-tree-empty-icon);
+    height: var(--cd-width-tree-empty-icon);
+    margin-right: var(--cd-spacing-tree-icon-margin-right);
+    color: var(--cd-color-tree-option-icon-default);
+    cursor: pointer;
+    transition: transform var(--cd-motion-duration-fast) var(--cd-motion-ease-standard);
+    /* IconTreeTriangleDown 默认朝下（=展开态外观，对齐 Semi）；收起态旋转 -90deg 指向右侧。 */
+    transform: rotate(-90deg);
+  }
+  .cd-tree-option-expand-icon:hover {
+    color: var(--cd-color-tree-option-icon-hover);
+  }
+  .cd-tree-option-expand-icon:active {
+    color: var(--cd-color-tree-option-icon-active);
+  }
+  .cd-tree-option-expand-icon-open {
+    transform: rotate(0deg);
+  }
+  .cd-tree-option-switcher-leaf-line {
+    cursor: default;
+    transform: none;
+  }
+  .cd-tree-option-spin-icon {
+    cursor: default;
+    transform: none;
+    /* 加载 spin 尺寸对齐 Semi $width-tree_spinIcon（12） */
+    width: var(--cd-width-tree-spin-icon);
+    height: var(--cd-width-tree-spin-icon);
+  }
+
+  /* 勾选框：框体样式由 Checkbox 组件自带，此处仅负责在行内的定位与右间距（对齐 Semi label withIcon marginRight 8） */
+  .cd-tree-option-checkbox {
+    display: inline-flex;
+    align-items: center;
+    flex: 0 0 auto;
+    margin-right: var(--cd-spacing-tree-label-with-icon-margin-right);
+  }
+
+  .cd-tree-option-item-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    width: 0;
+    height: var(--cd-width-tree-empty-icon);
+    color: var(--cd-color-tree-option-icon-default);
+  }
+  /* 有自定义图标内容时撑开尺寸 + 右间距（对齐 Semi label withIcon marginRight 8） */
+  .cd-tree-option-item-icon:not(:empty) {
+    width: var(--cd-width-tree-empty-icon);
+    margin-right: var(--cd-spacing-tree-label-with-icon-margin-right);
+  }
+
+  .cd-tree-option-label {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+  /* labelEllipsis：超长单行省略（默认关闭；虚拟化下默认开启） */
+  .cd-tree-option-ellipsis {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
+  .cd-tree-option-suffix {
+    display: inline-flex;
+    align-items: center;
+    flex: 0 0 auto;
+    margin-left: var(--cd-spacing-extra-tight);
+  }
+
+  /* 拖拽幽灵节点：绝对定位在节点外屏幕外，由浏览器 setDragImage 拾取（或 CSS 隐藏） */
+  .cd-tree-drag-ghost {
+    position: absolute;
+    left: -9999px;
+    top: 0;
+    pointer-events: none;
+  }
+
+  /* 搜索命中高亮：class 注入到 Highlight 子组件内部的 mark，需 :global 穿透 scoped CSS。
+     对齐 Semi：primary 文字 + bold + 无独立背景（inherit）。 */
+  .cd-tree-option-label :global(.cd-tree-option-highlight) {
+    padding: 0;
+    color: var(--cd-color-tree-option-highlight-text);
+    background: inherit;
+    font-weight: var(--cd-font-tree-option-highlight-weight);
+  }
+</style>

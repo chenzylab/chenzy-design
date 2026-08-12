@@ -1591,7 +1591,7 @@
       style={`height:${virtualHeightCss}; overflow:auto`}
       onkeydown={onKeydown}
     >
-      <div class="cd-tree-option-indent" style={`height:${totalHeight}px`}>
+      <div class="cd-tree-virtual-spacer" style={`height:${totalHeight}px`}>
         {#each renderFlat as f, i (f.node.key)}
           {@render treeNodeRow(f, `position:absolute; left:0; right:0; transform:translateY(${(vRange.startIndex + i) * rowHeight}px); height:${rowHeight}px`)}
         {/each}
@@ -1689,7 +1689,7 @@
     /* 对齐 Semi tree-option-list（paddingY 8 / paddingX 0；flex:1 占满剩余高度，超出滚动） */
     padding: var(--cd-spacing-tree-option-list-padding-y) var(--cd-spacing-tree-option-list-padding-x);
     flex: 1 1 auto;
-    min-block-size: 0;
+    min-height: 0;
     overflow-y: auto;
     overflow-x: hidden;
   }
@@ -1702,231 +1702,17 @@
     display: block;
     position: relative;
   }
-  .cd-tree-option-indent {
+  /* 虚拟滚动 spacer：撑出总高度，行用 posStyle 绝对定位到正确偏移（自建虚拟化，Semi 用第三方
+     react-window 无对应可抄命名，见 [[semi-has-no-virtuallist-uses-third-party]]）。 */
+  .cd-tree-virtual-spacer {
     position: relative;
-    inline-size: 100%;
+    width: 100%;
   }
 
-  .cd-tree-option {
-    display: flex;
-    align-items: center;
-    gap: var(--cd-spacing-extra-tight);
-    block-size: var(--cd-tree-row-height);
-    /* 首层左内边距 + 行右内边距（对齐 Semi $spacing-tree_option_level1-paddingLeft 8px） */
-    padding-inline: var(--cd-spacing-tree-option-level1-padding-left);
-    border-radius: var(--cd-radius-tree-checkbox-addon);
-    cursor: pointer;
-    transition: background-color var(--cd-motion-duration-fast) var(--cd-motion-ease-standard);
-  }
-  .cd-tree-option:hover {
-    background: var(--cd-color-tree-option-bg-hover);
-  }
-  /* 按下态（对齐 Semi $color-tree_option_selected-bg-default = fill-1） */
-  .cd-tree-option:active {
-    background: var(--cd-color-tree-option-selected-bg-default);
-  }
-  .cd-tree-option-selected {
-    color: var(--cd-color-tree-option-text-default);
-    background: var(--cd-color-tree-option-bg-active);
-  }
-  .cd-tree-option-selected:hover,
-  .cd-tree-option-selected:active {
-    background: var(--cd-color-tree-option-bg-active);
-  }
-  /* 键盘 roving 焦点（当前项）：对齐 Semi 无 border，仅用背景区分；焦点可见性靠背景差异。 */
-  .cd-tree-option-active:not(.cd-tree-option-selected) {
-    background: var(--cd-color-tree-option-bg-hover);
-  }
   /* 键盘操作时（容器 focus-visible 内）给当前项一个可见焦点环，鼠标交互不显示 border。 */
-  .cd-tree-option-list:focus-visible .cd-tree-option-active {
+  .cd-tree-option-list:focus-visible :global(.cd-tree-option-active) {
     outline: 2px solid var(--cd-tree-focus-ring);
     outline-offset: -2px;
-  }
-  .cd-tree-option-disabled {
-    color: var(--cd-color-tree-option-disabled-text-default);
-    cursor: not-allowed;
-  }
-  .cd-tree-option-disabled:hover {
-    background: transparent;
-  }
-
-  /* --- 拖拽排序：被拖节点半透明 + 插入指示线 / 内部高亮 --- */
-  /* 可拖拽行的内边距（对齐 Semi $spacing-tree_option_draggable-paddingY 2 / paddingX 0） */
-  .cd-tree-option[draggable='true'] {
-    padding-block: var(--cd-spacing-tree-option-draggable-padding-y);
-    padding-inline-end: calc(
-      var(--cd-spacing-tree-option-level1-padding-left) +
-        var(--cd-spacing-tree-option-draggable-padding-x)
-    );
-  }
-  .cd-tree-option-draggable {
-    opacity: 0.5;
-  }
-  /* before/after 用 ::after 画一条插入指示线（不影响布局，子元素不接收 drag 事件） */
-  .cd-tree-option-drag-over-gap-top::after,
-  .cd-tree-option-drag-over-gap-bottom::after {
-    content: '';
-    position: absolute;
-    inset-inline: 0;
-    block-size: var(--cd-width-tree-option-draggable-border);
-    background: var(--cd-color-tree-option-draggable-insert-border-default);
-    border-radius: 1px;
-    pointer-events: none;
-  }
-  .cd-tree-option-drag-over-gap-top::after {
-    inset-block-start: -1px;
-  }
-  .cd-tree-option-drag-over-gap-bottom::after {
-    inset-block-end: -1px;
-  }
-  /* inside：成为子节点 → 整行高亮框 */
-  .cd-tree-option-drag-over {
-    background: var(--cd-color-tree-option-bg-hover);
-    box-shadow: inset 0 0 0 1px var(--cd-color-tree-option-draggable-insert-border-default);
-  }
-  /* 节点需相对定位以承载绝对定位的指示线；虚拟化行已 position:absolute，非虚拟行设 relative */
-  .cd-tree-option {
-    position: relative;
-  }
-
-  /* --- showLine 层级引导线：每层一格，用 ::before 画竖线、::after 画横线 --- */
-  .cd-tree-option-line {
-    position: relative;
-    flex: 0 0 auto;
-    inline-size: var(--cd-spacing-tree-option-level-padding-left);
-    align-self: stretch;
-  }
-  /* 贯穿竖线（祖先非末层） */
-  .cd-tree-option-line-through::before {
-    content: '';
-    position: absolute;
-    inset-block: 0;
-    inset-inline-start: 50%;
-    inline-size: var(--cd-width-tree-option-line);
-    background: var(--cd-color-tree-option-line);
-  }
-  /* ├ 形：竖线贯穿 + 横线到右 */
-  .cd-tree-option-line-tee::before {
-    content: '';
-    position: absolute;
-    inset-block: 0;
-    inset-inline-start: 50%;
-    inline-size: var(--cd-width-tree-option-line);
-    background: var(--cd-color-tree-option-line);
-  }
-  /* └ 形：竖线 top→中 + 横线到右 */
-  .cd-tree-option-line-elbow::before {
-    content: '';
-    position: absolute;
-    inset-block-start: 0;
-    block-size: 50%;
-    inset-inline-start: 50%;
-    inline-size: var(--cd-width-tree-option-line);
-    background: var(--cd-color-tree-option-line);
-  }
-  .cd-tree-option-line-tee::after,
-  .cd-tree-option-line-elbow::after {
-    content: '';
-    position: absolute;
-    inset-block-start: 50%;
-    inset-inline-start: 50%;
-    inset-inline-end: 0;
-    block-size: var(--cd-width-tree-option-line);
-    background: var(--cd-color-tree-option-line);
-  }
-
-  .cd-tree-option-expand-icon {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    flex: 0 0 auto;
-    /* 对齐 Semi $width-tree_emptyIcon（展开图标宽 12）+ marginRight 8 */
-    inline-size: var(--cd-width-tree-empty-icon);
-    block-size: var(--cd-width-tree-empty-icon);
-    margin-inline-end: var(--cd-spacing-tree-icon-margin-right);
-    color: var(--cd-color-tree-option-icon-default);
-    cursor: pointer;
-    transition: transform var(--cd-motion-duration-fast) var(--cd-motion-ease-standard);
-    /* IconTreeTriangleDown 默认朝下（=展开态外观，对齐 Semi）；收起态旋转 -90deg 指向右侧。 */
-    transform: rotate(-90deg);
-  }
-  .cd-tree-option-expand-icon:hover {
-    color: var(--cd-color-tree-option-icon-hover);
-  }
-  .cd-tree-option-expand-icon:active {
-    color: var(--cd-color-tree-option-icon-active);
-  }
-  .cd-tree-option-expand-icon-open {
-    transform: rotate(0deg);
-  }
-  .cd-tree-option-switcher-leaf-line {
-    cursor: default;
-    transform: none;
-  }
-  .cd-tree-option-spin-icon {
-    cursor: default;
-    transform: none;
-    /* 加载 spin 尺寸对齐 Semi $width-tree_spinIcon（12） */
-    inline-size: var(--cd-width-tree-spin-icon);
-    block-size: var(--cd-width-tree-spin-icon);
-  }
-
-  /* 勾选框：框体样式由 Checkbox 组件自带，此处仅负责在行内的定位与右间距（对齐 Semi label withIcon marginRight 8） */
-  .cd-tree-option-checkbox {
-    display: inline-flex;
-    align-items: center;
-    flex: 0 0 auto;
-    margin-inline-end: var(--cd-spacing-tree-label-with-icon-margin-right);
-  }
-
-  .cd-tree-option-item-icon {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    flex: 0 0 auto;
-    inline-size: 0;
-    block-size: var(--cd-width-tree-empty-icon);
-    color: var(--cd-color-tree-option-icon-default);
-  }
-  /* 有自定义图标内容时撑开尺寸 + 右间距（对齐 Semi label withIcon marginRight 8） */
-  .cd-tree-option-item-icon:not(:empty) {
-    inline-size: var(--cd-width-tree-empty-icon);
-    margin-inline-end: var(--cd-spacing-tree-label-with-icon-margin-right);
-  }
-
-  .cd-tree-option-label {
-    flex: 1 1 auto;
-    min-inline-size: 0;
-  }
-  /* labelEllipsis：超长单行省略（默认关闭；虚拟化下默认开启） */
-  .cd-tree-option-ellipsis {
-    overflow: hidden;
-    white-space: nowrap;
-    text-overflow: ellipsis;
-  }
-
-  .cd-tree-option-suffix {
-    display: inline-flex;
-    align-items: center;
-    flex: 0 0 auto;
-    margin-inline-start: var(--cd-spacing-extra-tight);
-  }
-
-  /* 拖拽幽灵节点：绝对定位在节点外屏幕外，由浏览器 setDragImage 拾取（或 CSS 隐藏） */
-  .cd-tree-drag-ghost {
-    position: absolute;
-    inset-inline-start: -9999px;
-    inset-block-start: 0;
-    pointer-events: none;
-  }
-
-  /* 搜索命中高亮：class 注入到 Highlight 子组件内部的 mark，需 :global 穿透 scoped CSS。
-     对齐 Semi：primary 文字 + bold + 无独立背景（inherit）。 */
-  .cd-tree-option-label :global(.cd-tree-option-highlight) {
-    padding: 0;
-    color: var(--cd-color-tree-option-highlight-text);
-    background: inherit;
-    font-weight: var(--cd-font-tree-option-highlight-weight);
   }
 
   .cd-tree-empty {
@@ -1935,14 +1721,15 @@
     text-align: center;
   }
 
-  /* motion 开关（对齐 Semi motion）：仅 cd-tree-motion 时启用 switcher 旋转过渡。 */
-  .cd-tree:not(.cd-tree-motion) .cd-tree-option-expand-icon {
+  /* motion 开关（对齐 Semi motion）：仅 cd-tree-motion 时启用 switcher 旋转过渡；
+     子组件 treeNode.svelte 里的选择器需 :global 穿透 scoped CSS。 */
+  .cd-tree:not(.cd-tree-motion) :global(.cd-tree-option-expand-icon) {
     transition: none;
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .cd-tree-option,
-    .cd-tree-option-expand-icon {
+    :global(.cd-tree-option),
+    :global(.cd-tree-option-expand-icon) {
       transition: none;
     }
   }
