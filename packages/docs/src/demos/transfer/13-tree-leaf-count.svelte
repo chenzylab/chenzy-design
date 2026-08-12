@@ -40,7 +40,7 @@
 </script>
 
 <!-- 树穿梭框自定义头部：leafOnlyNum 显示可选叶子节点数量 -->
-<Transfer type="treeList" dataSource={treeData} {value} onChange={(keys) => (value = keys)}>
+<Transfer type="treeList" dataSource={treeData} {value} onChange={(values) => (value = values)}>
   {#snippet renderSourceHeader({ leafOnlyNum })}
     <div style="padding:8px 12px;font-weight:600">共 {leafOnlyNum ?? 0} 个叶子节点可选</div>
   {/snippet}

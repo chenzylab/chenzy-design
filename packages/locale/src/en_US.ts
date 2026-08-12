@@ -218,7 +218,6 @@ export const en_US: Locale = {
   },
   Transfer: {
     placeholder: 'Search',
-    titleSource: 'Source',
     emptyLeft: 'No data',
     emptySearch: 'No search results',
     emptyRight: 'No content, select from the left',
@@ -227,10 +226,8 @@ export const en_US: Locale = {
     clearSelectAll: 'Clear all',
     total: 'Total: {total}',
     selected: 'Selected: {total}',
-    moveToRight: 'Move to right',
     remove: 'Remove',
     dragSort: 'Drag to sort',
-    loading: 'Loading…',
   },
   Upload: {
     trigger: 'Select file',

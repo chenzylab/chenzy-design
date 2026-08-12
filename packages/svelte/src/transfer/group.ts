@@ -54,8 +54,3 @@ export function buildGroups(
   }
   return order.map((title) => ({ title, items: map.get(title)! }));
 }
-
-/** True when any normalized item carries a `group` tag. */
-export function hasGroups(items: TransferItem[]): boolean {
-  return items.some((i) => i.group !== undefined);
-}

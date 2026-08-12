@@ -1,14 +1,18 @@
 <script lang="ts">
-  import { Transfer, Text } from '@chenzy-design/svelte';
+  import { Transfer } from '@chenzy-design/svelte';
 
-  const data = Array.from({ length: 10 }, (_, i) => ({
-    key: `${i}`,
-    label: `选项 ${i}`,
+  const data = Array.from({ length: 30 }, (_, i) => ({
+    label: `选项名称 ${i}`,
+    value: i,
+    disabled: false,
+    key: `key-${i}`,
   }));
-
-  let value = $state<(string | number)[]>(['0', '1', '2', '3']);
 </script>
 
-<!-- draggable：右侧已选列可鼠标拖拽重排，新顺序仅经 onChange 通知 -->
-<Transfer draggable dataSource={data} {value} onChange={(keys) => (value = keys)} />
-<Text type="tertiary">当前顺序：{value.join(', ') || '（无）'}</Text>
+<Transfer
+  style="width: 568px; height: 416px"
+  dataSource={data}
+  defaultValue={[2, 4]}
+  draggable
+  onChange={(values, items) => console.log(values, items)}
+/>

@@ -1,8 +1,7 @@
 <script lang="ts">
   import { Transfer } from '@chenzy-design/svelte';
 
-  // 分组：本库分组结构为 { title, items }（对齐 Semi type='groupList'；
-  // 字段名 items 为本库既定命名，Semi 用 children）。
+  // 分组结构 { title, children }（对齐 Semi type='groupList' GroupItem）。
   const dataWithGroup = [
     {
       title: '类别A',

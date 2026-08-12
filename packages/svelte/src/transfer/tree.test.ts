@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { collectLeafKeys, flattenLeaves, isTreeData } from './tree.js';
-import type { TransferItem, TransferTreeNode } from './types.js';
+import { flattenLeaves } from './tree.js';
+import type { TransferTreeNode } from './types.js';
 
 describe('transfer/tree', () => {
   const tree: TransferTreeNode[] = [
@@ -20,25 +20,19 @@ describe('transfer/tree', () => {
     },
     { key: 'solo', label: '独立项' },
   ];
-  const flat: TransferItem[] = [
-    { key: 'a', label: '北京' },
-    { key: 'b', label: '上海' },
-  ];
-
-  it('isTreeData detects tree vs flat', () => {
-    expect(isTreeData(tree)).toBe(true);
-    expect(isTreeData(flat)).toBe(false);
-    expect(isTreeData([])).toBe(false);
-  });
-
-  it('collectLeafKeys returns only leaves in document order', () => {
-    expect(collectLeafKeys(tree)).toEqual(['hz', 'sh', 'gz', 'solo']);
-  });
 
   it('flattenLeaves returns leaf items and inherits parent disabled', () => {
     const leaves = flattenLeaves(tree);
     expect(leaves.map((l) => l.key)).toEqual(['hz', 'sh', 'gz', 'solo']);
     expect(leaves.find((l) => l.key === 'gz')?.disabled).toBe(true);
     expect(leaves.find((l) => l.key === 'hz')?.disabled).toBe(false);
+  });
+
+  it('flattenLeaves keeps value field when node has one', () => {
+    const withValue: TransferTreeNode[] = [
+      { key: 'a', value: 'val-a', label: 'A', children: [{ key: 'a1', value: 'val-a1', label: 'A1' }] },
+    ];
+    const leaves = flattenLeaves(withValue);
+    expect(leaves[0]).toEqual({ key: 'a1', value: 'val-a1', label: 'A1', disabled: false });
   });
 });

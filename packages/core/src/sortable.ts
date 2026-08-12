@@ -42,9 +42,11 @@ export interface SortableRect {
 
 /**
  * A per-item transform result for one drag frame. `translateX` is populated
- * only in wrap mode (flex-wrap multi-row layouts need both axes); single-axis
- * callers (Table/Tabs) only ever see `translateY` (or read it as the main-axis
- * offset when `axis:'x'`, per the existing back-compat field naming).
+ * in wrap mode for every item (flex-wrap multi-row layouts need both axes),
+ * AND in single-axis mode for the active (dragged) item only — the cross-axis
+ * pointer offset, meant for a drag-overlay visual that must follow the pointer
+ * on both axes even though the OTHER rows only shift along the main axis to
+ * open a gap. Non-active rows in single-axis mode never carry `translateX`.
  */
 export interface SortableTransform {
   index: number;
@@ -306,7 +308,12 @@ export function createSortable(
   let activeIndex = -1;
   let targetIndex = -1;
   let startPos = 0; // main-axis coordinate at pointerdown (1D mode) / clientX (wrap mode)
-  let startPosY = 0; // clientY at pointerdown — wrap mode only (needs both axes)
+  // Raw clientX/clientY at pointerdown, ALWAYS both set regardless of axis/wrap — dnd-kit's
+  // DragOverlay follows the pointer with a plain 2D delta (clientX - startPosX, clientY -
+  // startPosY) from the activator event, independent of the sort axis/strategy. Do not reuse
+  // `startPos`/`startPosY` for this (those hold axis-remapped / wrap-only values).
+  let startPosX = 0;
+  let startPosY = 0;
   let containerStart = 0; // container's main-axis origin (left for 'x', top for 'y')
   let containerStartY = 0; // container's top — wrap mode only
   let rects: SortableRect[] = [];
@@ -351,11 +358,22 @@ export function createSortable(
     }
   };
 
+  // 对齐 dnd-kit AbstractPointerSensor：不靠 CSS user-select:none 事前拦截（自定义渲染场景
+  // 下用户内容不一定带这条样式），而是拖拽激活瞬间清空一次已产生的选区，并在整个拖拽期间监听
+  // document selectionchange、每次变化都立即清空——真机实测 Semi 官方自定义渲染 demo 证实：
+  // 即使 computed user-select 是 auto，拖拽全程也不会出现可见的文字选中，正是靠这套「事后清除」
+  // 而非「事前阻止」的机制（dnd-kit removeTextSelection）。
+  function removeTextSelection(): void {
+    doc?.getSelection()?.removeAllRanges();
+  }
+
   const beginDrag = (): void => {
     pending = false;
     dragging = true;
     snapshotRects();
     targetIndex = activeIndex;
+    removeTextSelection();
+    doc?.addEventListener('selectionchange', removeTextSelection);
     options.onDragStart?.(activeIndex);
   };
 
@@ -389,9 +407,15 @@ export function createSortable(
       pointerDelta,
       rects,
     );
+    // Cross-axis pointer travel — meaningful ONLY for the active row's drag
+    // overlay (dnd-kit's DragOverlay follows the pointer with a plain 2D delta
+    // from the activator event, independent of sort axis/strategy — the OTHER
+    // rows' shift-to-open-a-gap transform stays main-axis-only, untouched).
+    // Other rows never receive this field, matching the axis:'x'/'y' contract.
     const transforms: SortableTransform[] = offsets.map((translateY, index) => ({
       index,
       translateY,
+      ...(index === activeIndex ? { translateX: clientX - startPosX } : {}),
     }));
     options.applyTransforms(transforms, activeIndex, targetIndex);
   };
@@ -401,6 +425,7 @@ export function createSortable(
     doc?.removeEventListener('pointerup', onPointerUp);
     doc?.removeEventListener('pointercancel', onPointerCancel);
     doc?.removeEventListener('keydown', onKeyDown);
+    doc?.removeEventListener('selectionchange', removeTextSelection);
   };
 
   const finishDrag = (commit: boolean): void => {
@@ -457,6 +482,7 @@ export function createSortable(
     if (idx < 0) return;
     activeIndex = idx;
     startPos = wrap ? e.clientX : pointerMain(e);
+    startPosX = e.clientX;
     startPosY = e.clientY;
     pending = true;
     if (doc) {

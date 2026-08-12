@@ -1,11 +1,17 @@
 export interface TransferItem {
   key: string | number;
+  /** 受控值/onChange 回传的标识（对齐 Semi value，独立于 key；缺省时取 key）。 */
+  value?: string | number;
   label: string;
   disabled?: boolean;
   /** Optional group name; items sharing a group render under one group header. */
   group?: string;
   /** 完整路径（treeList + showPath 时右侧已选项的祖先路径，对齐 Semi fullPath）。 */
   fullPath?: { key: string | number; label: string }[];
+  /** 允许任意自定义字段透传（对齐 Semi BasicDataItem `[x: string]: any`），供
+   * renderSourceItem/renderSelectedItem/自定义 filter 消费（如 Semi 官方 demo 的
+   * abbr/color/area 头像信息）。 */
+  [key: string]: unknown;
 }
 
 /**
@@ -33,6 +39,7 @@ export interface TransferRenderGroup {
  */
 export interface TransferTreeNode {
   key: string | number;
+  value?: string | number;
   label: string;
   disabled?: boolean;
   children?: TransferTreeNode[];

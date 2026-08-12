@@ -1,60 +1,202 @@
 <script lang="ts">
-  import { Transfer, Input } from '@chenzy-design/svelte';
+  import { Transfer, Input, Spin, Button, sortable } from '@chenzy-design/svelte';
+  import { IconSearch, IconHandle } from '@chenzy-design/icons';
   import type { TransferItem } from '@chenzy-design/svelte';
 
-  const data = Array.from({ length: 12 }, (_, i) => ({
-    key: `${i}`,
-    label: `选项 ${i}`,
+  // 完全自定义面板 + 拖拽排序（对齐 Semi「完全自定义渲染、拖拽排序」dnd-kit 示例）：
+  // 渲染区完全由 renderSourcePanel/renderSelectedPanel 接管后，拖拽逻辑也需自行实现；
+  // 复用本库通用 sortable action（与 Transfer 内置 draggable 同一套 pointer 事件 + DragOverlay
+  // 几何算法），拖拽结束调用 onSortEnd({ oldIndex, newIndex })。
+  const dataSource = Array.from({ length: 100 }, (_, i) => ({
+    label: `海底捞门店 ${i}`,
+    value: i,
+    disabled: false,
+    key: `key-${i}`,
   }));
 
-  let value = $state<(string | number)[]>(['0', '1', '2', '3']);
-
-  // 完全自定义右侧面板内的 HTML5 拖拽重排：把新顺序经 onSortEnd 上报。
-  let dragKey = $state<string | number | null>(null);
-  function reorder(keys: (string | number)[], from: string | number, to: string | number) {
-    const next = keys.filter((k) => k !== from);
-    const idx = next.indexOf(to);
-    next.splice(idx, 0, from);
-    return next;
+  function itemButtonText(type: 'source' | 'selected', item: TransferItem, selectedItems?: Map<string | number, TransferItem>) {
+    if (type === 'source') return (selectedItems?.has(item.key) ?? false) ? '删除' : '添加';
+    return '删除';
   }
 </script>
 
-<Transfer dataSource={data} {value} draggable onChange={(keys) => (value = keys)}>
-  {#snippet renderSourcePanel({ filterData, inputValue, onSearch, onSelectOrRemove, value: selected })}
-    <section style="flex:1;display:flex;flex-direction:column;border-right:1px solid var(--cd-color-border)">
-      <div style="padding:8px"><Input value={inputValue} placeholder="搜索" onInput={onSearch} /></div>
-      <div style="flex:1;overflow:auto">
-        {#each filterData as item (item.key)}
-          <label style="display:flex;align-items:center;gap:8px;padding:6px 12px;cursor:pointer">
-            <input type="checkbox" checked={selected.includes(item.key)} onchange={() => onSelectOrRemove(item)} />
-            <span>{item.label}</span>
-          </label>
-        {/each}
+<Transfer
+  defaultValue={[2, 4]}
+  class="component-transfer-demo-custom-panel"
+  dataSource={dataSource}
+  onChange={(values) => console.log(values)}
+>
+  {#snippet renderSourcePanel({ loading, noMatch, filterData, selectedItems, allChecked, onAllClick, inputValue, onSearch, onSelectOrRemove })}
+    <section class="source-panel">
+      <div class="panel-header sp-font">门店列表</div>
+      <div class="panel-main">
+        <Input style="width: 454px; margin: 12px 14px" onInput={onSearch} showClear>
+          {#snippet prefix()}<IconSearch />{/snippet}
+        </Input>
+        <div class="panel-controls sp-font">
+          <span>待选门店: {filterData.length}</span>
+          <Button onclick={onAllClick} theme="borderless" size="small">
+            {allChecked ? '取消全选' : '全选'}
+          </Button>
+        </div>
+        <div class="panel-list">
+          {#if loading}
+            <Spin spinning />
+          {:else if noMatch}
+            <div class="empty sp-font">{inputValue ? '无搜索结果' : '暂无内容'}</div>
+          {:else}
+            {#each filterData as item (item.key)}
+              <div class="cd-transfer-item panel-item">
+                <p>{item.label}</p>
+                <Button
+                  theme="borderless"
+                  type="primary"
+                  onclick={() => onSelectOrRemove(item)}
+                  class="panel-item-remove"
+                  size="small"
+                >
+                  {itemButtonText('source', item, selectedItems)}
+                </Button>
+              </div>
+            {/each}
+          {/if}
+        </div>
       </div>
     </section>
   {/snippet}
-  {#snippet renderSelectedPanel({ selectedData, onSortEnd })}
-    <section style="flex:1;display:flex;flex-direction:column">
-      <div style="padding:8px 12px;font-weight:600">已选 {selectedData.length}（可拖拽）</div>
-      <div style="flex:1;overflow:auto">
-        {#each selectedData as item (item.key)}
-          <div
-            role="listitem"
-            draggable="true"
-            style="padding:6px 12px;cursor:grab"
-            ondragstart={() => (dragKey = item.key)}
-            ondragover={(e: DragEvent) => e.preventDefault()}
-            ondrop={() => {
-              if (dragKey != null && dragKey !== item.key) {
-                onSortEnd(reorder(selectedData.map((d: TransferItem) => d.key), dragKey, item.key));
-              }
-              dragKey = null;
-            }}
-          >
-            ⠿ {item.label}
-          </div>
-        {/each}
+  {#snippet renderSelectedPanel({ selectedData, onClear, onRemove, onSortEnd })}
+    <section class="selected-panel">
+      <div class="panel-header sp-font">
+        <div>已选同步门店: {selectedData.length}</div>
+        <Button theme="borderless" type="primary" onclick={onClear} size="small">清空</Button>
       </div>
+      {#if !selectedData.length}
+        <div class="empty sp-font">暂无数据，请从左侧筛选</div>
+      {:else}
+        <div
+          class="panel-main"
+          use:sortable={{
+            getItemCount: () => selectedData.length,
+            onReorder: (from, to) => onSortEnd({ oldIndex: from, newIndex: to }),
+          }}
+        >
+          {#each selectedData as item (item.key)}
+            <div class="cd-transfer-item panel-item" data-sortable-item>
+              <IconHandle class="pane-item-drag-handler" />
+              <div class="panel-item-main">
+                <p>{item.label}</p>
+                <Button
+                  theme="borderless"
+                  type="primary"
+                  onclick={() => onRemove(item)}
+                  class="panel-item-remove"
+                  size="small"
+                >
+                  {itemButtonText('selected', item)}
+                </Button>
+              </div>
+            </div>
+          {/each}
+        </div>
+      {/if}
     </section>
   {/snippet}
 </Transfer>
+
+<style>
+  :global(.component-transfer-demo-custom-panel) .sp-font {
+    color: var(--cd-color-grey-9);
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 20px;
+  }
+  :global(.component-transfer-demo-custom-panel) .empty {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  :global(.component-transfer-demo-custom-panel) .panel-item {
+    flex-shrink: 0;
+    border-radius: 4px;
+    padding: 8px 12px;
+    display: flex;
+    align-items: center;
+    background-color: rgba(22, 24, 35, 0.03);
+  }
+  :global(.component-transfer-demo-custom-panel .pane-item-drag-handler) {
+    cursor: move;
+    flex-shrink: 0;
+    margin-right: 8px;
+  }
+  :global(.component-transfer-demo-custom-panel) .panel-item-main {
+    flex-grow: 1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  :global(.component-transfer-demo-custom-panel) .panel-item-main p {
+    margin: 0 12px;
+  }
+  :global(.component-transfer-demo-custom-panel .panel-item-remove) {
+    cursor: pointer;
+    color: var(--cd-color-primary);
+  }
+  :global(.component-transfer-demo-custom-panel) .panel-header {
+    padding: 10px 12px;
+    border: 1px solid rgba(22, 24, 35, 0.16);
+    border-radius: 4px 4px 0 0;
+    height: 38px;
+    box-sizing: border-box;
+    background-color: var(--cd-color-fill-1);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  :global(.component-transfer-demo-custom-panel) .source-panel {
+    display: flex;
+    flex-direction: column;
+    width: 482px;
+    height: 353px;
+    margin-right: 16px;
+  }
+  :global(.component-transfer-demo-custom-panel) .source-panel .panel-main {
+    border: 1px solid var(--cd-color-border);
+    border-top: none;
+  }
+  :global(.component-transfer-demo-custom-panel) .source-panel .panel-list {
+    display: flex;
+    flex-wrap: wrap;
+    row-gap: 8px;
+    column-gap: 8px;
+    overflow-y: auto;
+    height: 214px;
+    margin-left: 12px;
+    margin-right: 12px;
+    padding-bottom: 8px;
+  }
+  :global(.component-transfer-demo-custom-panel) .source-panel .panel-controls {
+    margin: 10px 12px;
+    font-size: 12px;
+    line-height: 20px;
+  }
+  :global(.component-transfer-demo-custom-panel) .source-panel .panel-item {
+    width: 176px;
+  }
+  :global(.component-transfer-demo-custom-panel) .selected-panel {
+    width: 200px;
+    height: 353px;
+  }
+  :global(.component-transfer-demo-custom-panel) .selected-panel .panel-main {
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    padding: 12px;
+    border: 1px solid var(--cd-color-border);
+    border-top: none;
+    height: 323px;
+    box-sizing: border-box;
+    row-gap: 8px;
+  }
+</style>

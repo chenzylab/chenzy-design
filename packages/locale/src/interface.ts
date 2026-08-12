@@ -307,8 +307,6 @@ export interface Locale {
   };
   Transfer: {
     placeholder: string;
-    /** 分组回退标题 / 源栏标题 */
-    titleSource: string;
     /** 左侧空态 */
     emptyLeft: string;
     /** 搜索无结果空态 */
@@ -325,14 +323,10 @@ export interface Locale {
     total: string;
     /** 右侧计数，uses {total} */
     selected: string;
-    /** 移动按钮 aria-label */
-    moveToRight: string;
     /** 右侧删除单项按钮 aria-label */
     remove: string;
     /** 拖拽手柄 aria-label */
     dragSort: string;
-    /** remote onSearch 加载中提示 */
-    loading: string;
   };
   Upload: {
     trigger: string;

@@ -84,4 +84,7 @@ export const tagInputTokens = {
 
   // —— font ——
   'tag-input-prefix-suffix-fontweight': { value: 'var(--cd-font-weight-bold)', category: 'font', label: 'prefix/suffix 字重', usage: '标签输入框 prefix/suffix 文字字重' },
+
+  // —— z-index ——（对齐 Semi $z-tagInput_drag_item_move: 2000 !default）
+  'z-index-tag-input-drag-item-move': { value: '2000', category: 'other', label: '拖拽浮层层级', usage: '标签输入框中正在拖拽元素的 z-index（对齐 Semi $z-tagInput_drag_item_move）' },
 } satisfies TokenGroup;
