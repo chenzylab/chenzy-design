@@ -14,6 +14,7 @@ import {
   collectLeafKeys,
   siblingKeys,
   accordionExpand,
+  getMotionKeys,
   type TreeNodeData,
 } from './tree.js';
 
@@ -79,6 +80,33 @@ describe('flattenVisible', () => {
     expect(byKey('1-2-1')?.isLast).toBe(false);
     // last root '2'
     expect(byKey('2')?.isLast).toBe(true);
+  });
+});
+
+describe('getMotionKeys', () => {
+  it('collects direct children of eventKey', () => {
+    expect(getMotionKeys('1', new Set(), data)).toEqual(['1-1', '1-2']);
+  });
+
+  it('recurses into children that are themselves expanded', () => {
+    expect(getMotionKeys('1', new Set(['1-2']), data)).toEqual([
+      '1-1',
+      '1-2',
+      '1-2-1',
+      '1-2-2',
+    ]);
+  });
+
+  it('does not recurse into children that are not expanded', () => {
+    expect(getMotionKeys('1', new Set(['1-1']), data)).toEqual(['1-1', '1-2']);
+  });
+
+  it('returns empty for a leaf node', () => {
+    expect(getMotionKeys('1-1', new Set(['1']), data)).toEqual([]);
+  });
+
+  it('returns empty for an unknown key', () => {
+    expect(getMotionKeys('missing', new Set(), data)).toEqual([]);
   });
 });
 

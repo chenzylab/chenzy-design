@@ -86,6 +86,7 @@ export {
   collectLeafKeys,
   siblingKeys,
   accordionExpand,
+  getMotionKeys,
   type CheckedStrategy,
   type TreeKey,
   type TreeNodeData,

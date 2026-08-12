@@ -484,3 +484,37 @@ export function collectCheckedByStrategy(
   walk(data, false);
   return out;
 }
+
+/**
+ * 照搬 Semi `packages/semi-foundation/tree/treeUtil.ts` 的 `getMotionKeys`：
+ *   const getChild = (itemKey) => {
+ *     keyEntities[itemKey].children && keyEntities[itemKey].children.forEach((item) => {
+ *       const { key } = item;
+ *       res.push(key);
+ *       if (expandedKeys.has(key)) getChild(key);
+ *     });
+ *   };
+ *   getChild(eventKey); return res;
+ * 唯一改动：Semi 用预建的 `keyEntities`（key→entity，entity.children 是子 entity 数组）做查找，
+ * 本库 core 未维护该索引（其余函数如 conduct/computeFilteredKeys 均直接对 TreeNodeData[] 递归），
+ * 故用 `findNode` 定位 eventKey 节点后直接遍历其 `children`，递归结构与终止条件逐行对应不变。
+ */
+export function getMotionKeys(
+  eventKey: TreeKey,
+  expandedKeys: ReadonlySet<TreeKey>,
+  data: TreeNodeData[],
+): TreeKey[] {
+  const res: TreeKey[] = [];
+  const target = findNode(data, eventKey);
+  const getChild = (node: TreeNodeData | undefined): void => {
+    node?.children?.forEach((item) => {
+      const { key } = item;
+      res.push(key);
+      if (expandedKeys.has(key)) {
+        getChild(item);
+      }
+    });
+  };
+  getChild(target);
+  return res;
+}

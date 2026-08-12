@@ -31,24 +31,20 @@
     scrollOffsetForIndex,
     computeDropPosition,
     isAncestorOrSelf,
+    getMotionKeys,
     type TreeKey,
     type TreeNodeData,
     type FlatNode,
     type DropPosition,
   } from '@chenzy-design/core';
   import { SvelteMap, SvelteSet } from 'svelte/reactivity';
-  import {
-    IconSearch,
-    IconTreeTriangleDown,
-    IconFile,
-    IconFolder,
-    IconFolderOpen,
-  } from '@chenzy-design/icons';
+  import { IconSearch } from '@chenzy-design/icons';
   import { useLocale } from '../locale-provider/index.js';
   import Input from '../input/Input.svelte';
-  import Checkbox from '../checkbox/Checkbox.svelte';
-  import Spin from '../spin/Spin.svelte';
-  import Highlight from '../highlight/Highlight.svelte';
+  import { setTreeContext, type FullLabelContext } from './treeContext.js';
+  import { ariaCheckedFromState } from './treeUtil.js';
+  import NodeList from './nodeList.svelte';
+  import TreeNodeRow from './treeNode.svelte';
 
   /** 值通道类型（对齐 Semi `Value`）：单选为标量或节点对象，多选为其数组。 */
   type TreeValue =
@@ -79,42 +75,6 @@
    * 暴露节点数据、层级、内置计算好的 class、展开图标 snippet 与全部行为回调，
    * 让使用者完全自定义整行 option 的渲染结构（叶子分组、单选高亮子节点等高级场景）。
    */
-  type FullLabelContext = {
-    /** 节点数据（自定义 keyMaps 时为原始节点） */
-    data: TreeNodeData;
-    /** 层级，从 0 开始 */
-    level: number;
-    /** 虚拟化时必须赋给渲染 DOM 的定位样式（否则行错位） */
-    style: string | undefined;
-    /** 内置样式类名（含缩进/选中/禁用等状态类） */
-    className: string;
-    /**
-     * 内置展开图标 snippet。可展开节点渲染可点击的箭头（点击触发展开/收起），叶子节点为占位。
-     * 用法：`{@render ctx.expandIcon(ctx.expandStatus)}`（传入展开态以渲染正确朝向）。
-     */
-    expandIcon: Snippet<[{ expanded: boolean; loading: boolean }]>;
-    /** 是否叶子节点 */
-    isLeaf: boolean;
-    /** 选中状态 */
-    checkStatus: { checked: boolean; halfChecked: boolean };
-    /** 展开状态 */
-    expandStatus: { expanded: boolean; loading: boolean };
-    /** 该节点是否命中当前搜索 */
-    filtered: boolean;
-    /** 当前搜索框输入值 */
-    searchWord: string;
-    /** 单选/行点击回调 */
-    onClick: (e: MouseEvent) => void;
-    /** 勾选回调 */
-    onCheck: (e: MouseEvent) => void;
-    /** 展开/收起回调 */
-    onExpand: (e: MouseEvent) => void;
-    /** 右键回调 */
-    onContextMenu: (e: MouseEvent) => void;
-    /** 双击回调 */
-    onDoubleClick: (e: MouseEvent) => void;
-  };
-
   /**
    * searchRender 自定义搜索框渲染上下文（对齐 Semi `searchRender` 收到的 inputProps）。
    * Semi 把这些 props spread 给内置 Input；本库同样透传，snippet 可原样传给我们的 `Input` 组件。
@@ -780,6 +740,14 @@
   const isEmpty = $derived(visibleFlat.length === 0);
   const emptyText = $derived(emptyContent ?? loc().t('Tree.emptyText'));
 
+  // --- 展开/收起过渡动画状态（对齐 Semi setExpandedStatus + NodeList transitionNodes） ---
+  // motionKeys：本次展开/收起操作涉及的节点集合（getMotionKeys，供 nodeList.svelte 识别哪段做过渡）。
+  // motionType：'show'（展开）| 'hide'（收起）；flattenListSnapshot：操作前（旧态）的扁平列表快照，
+  // hide 动画时 nodeList 用它定位被收起的行（对齐 Semi cacheFlattenNodes + flattenList）。
+  let motionKeys = $state<Set<TreeKey>>(new Set());
+  let motionType = $state<'show' | 'hide' | ''>('');
+  let flattenListSnapshot = $state<FlatNode[]>([]);
+
   // --- roving 焦点：activeKey + 派生高亮，render 不读挂载 registry (红线 #2) ---
   let activeKey = $state<TreeKey | null>(null);
   const activeDescId = $derived.by(() => {
@@ -1048,8 +1016,20 @@
       next = new Set(currentExpandedSet);
       next.delete(node.key);
     }
+    // 对齐 Semi setExpandedStatus：收起前先用旧 expandedKeys 快照 flat（hide 动画定位用），
+    // 再算 motionKeys（本次操作导致可见性变化的后代节点），才切换到新的展开集。
+    if (motionEnabled) {
+      flattenListSnapshot = flat;
+      motionKeys = new Set(getMotionKeys(node.key, next, mergedData));
+      motionType = expand ? 'show' : 'hide';
+    }
     if (!isExpandControlled) innerExpanded = next;
     onExpand?.([...next], { expanded: expand, node: toOrig(node) });
+  }
+
+  function onNodeListMotionEnd(): void {
+    motionKeys = new Set();
+    motionType = '';
   }
 
   // 节点是否有仍在展开集中的子孙（供 autoExpandParent 判断「父节点能否收起」）。
@@ -1489,6 +1469,69 @@
       .filter(Boolean)
       .join(' ');
   }
+
+  // --- TreeNode 共享上下文（对齐 Semi TreeContext）：树级配置与事件回调下发给每行，
+  // 避免 <TreeNode> 逐个 prop 透传。函数式适配现有回调的参数顺序/签名差异（不改动既有函数）。
+  setTreeContext({
+    get multiple() {
+      return multiple;
+    },
+    get directory() {
+      return directory;
+    },
+    get showLine() {
+      return showLine;
+    },
+    get blockNode() {
+      return effBlockNode;
+    },
+    get draggable() {
+      return draggable;
+    },
+    get wantsDoubleClick() {
+      return Boolean(onDoubleClick) || effExpandAction === 'doubleClick';
+    },
+    get wantsContextMenu() {
+      return Boolean(onContextMenu);
+    },
+    get renderLabel() {
+      return renderLabel;
+    },
+    get renderFullLabel() {
+      return renderFullLabel;
+    },
+    toOrig,
+    get icon() {
+      return icon;
+    },
+    get expandIcon() {
+      return expandIcon;
+    },
+    get suffix() {
+      return suffix;
+    },
+    get dragGhost() {
+      return dragGhost;
+    },
+    onNodeClick: (node) => onRowClick(node),
+    onNodeExpand: (node) => toggleExpand(node),
+    onNodeCheck: (node) => emitCheck(node),
+    onNodeRightClick: (node, e) => {
+      if (onContextMenu) {
+        e.preventDefault();
+        onContextMenu(e, toOrig(node));
+      }
+    },
+    onNodeDoubleClick: (node, e) => onRowDblClick(e, node),
+    onNodeDragStart: (node, e) => onNodeDragStart(e, node),
+    onNodeDragOver: (node, e) => {
+      const f = flat.find((x) => x.node.key === node.key);
+      if (f) onNodeDragOver(e, f);
+    },
+    onNodeDragLeave: (node, e) => onNodeDragLeave(e, node),
+    onNodeDragEnd: () => onNodeDragEnd(),
+    onNodeDrop: (node, e) => onNodeDrop(e, node),
+  });
 </script>
 
 <div class={cls} style={rootStyle}>
@@ -1534,7 +1577,8 @@
     <div class="cd-tree-empty">{emptyText}</div>
   {:else if virtualized}
     <!-- 虚拟滚动：role=tree 容器自身滚动，spacer 撑总高，行绝对定位按索引偏移。
-         只渲染视口内切片 renderFlat，保持 treeitem 语义不变（a11y 取舍见下）。-->
+         只渲染视口内切片 renderFlat，保持 treeitem 语义不变（a11y 取舍见下）。
+         虚拟化下强制关闭动画（motionEnabled=false），不经 NodeList，直接渲染每行。 -->
     <div
       class="cd-tree-option-list cd-tree-virtual-list"
       role="tree"
@@ -1544,12 +1588,12 @@
       aria-disabled={disabled || undefined}
       tabindex={disabled ? -1 : 0}
       bind:this={viewportEl}
-      style={`block-size:${virtualHeightCss}; overflow:auto`}
+      style={`height:${virtualHeightCss}; overflow:auto`}
       onkeydown={onKeydown}
     >
-      <div class="cd-tree-option-indent" style={`block-size:${totalHeight}px`}>
+      <div class="cd-tree-option-indent" style={`height:${totalHeight}px`}>
         {#each renderFlat as f, i (f.node.key)}
-          {@render row(f, `position:absolute; inset-inline:0; transform:translateY(${(vRange.startIndex + i) * rowHeight}px); block-size:${rowHeight}px`)}
+          {@render treeNodeRow(f, `position:absolute; left:0; right:0; transform:translateY(${(vRange.startIndex + i) * rowHeight}px); height:${rowHeight}px`)}
         {/each}
       </div>
     </div>
@@ -1565,26 +1609,20 @@
       bind:this={listEl}
       onkeydown={onKeydown}
     >
-      {#each visibleFlat as f (f.node.key)}
-        {@render row(f, undefined)}
-      {/each}
+      <NodeList
+        flattenNodes={visibleFlat}
+        {motionKeys}
+        {motionType}
+        flattenList={flattenListSnapshot}
+        motion={motionEnabled}
+        onMotionEnd={onNodeListMotionEnd}
+        renderTreeNode={treeNodeRow}
+      />
     </div>
   {/if}
 </div>
 
-{#snippet fullLabelSwitcher(s: { expanded: boolean; loading: boolean })}
-  {#if s.loading}
-    <span class="cd-tree-option-expand-icon cd-tree-option-spin-icon" aria-hidden="true">
-      <Spin size="small" />
-    </span>
-  {:else}
-    <span class="cd-tree-option-expand-icon" class:cd-tree-option-expand-icon-open={s.expanded} aria-hidden="true">
-      <IconTreeTriangleDown size="small" />
-    </span>
-  {/if}
-{/snippet}
-
-{#snippet row(f: FlatNode, posStyle: string | undefined)}
+{#snippet treeNodeRow(f: FlatNode, posStyle: string | undefined)}
   {@const node = f.node}
   {@const expandable = isExpandable(node, f.hasChildren)}
   {@const loading = loadingKeys.has(node.key)}
@@ -1592,196 +1630,27 @@
   {@const nodeDisabled = isNodeDisabled(node)}
   {@const selected = selectedSet.has(node.key)}
   {@const checked = rowChecked(node)}
-  {@const active = activeKey === node.key}
-  {@const dragging = dragKey === node.key}
-  {@const isDropTarget = dropKey === node.key}
-  {@const indentStyle = showLine ? '' : `padding-inline-start: calc(var(--cd-spacing-tree-option-level1-padding-left) + ${f.level} * var(--cd-spacing-tree-option-level-padding-left))`}
-  {#if renderFullLabel}
-    <!-- renderFullLabel：整行完全由使用者接管（对齐 Semi）。提供内置状态类/图标/回调，
-         使用者自绘结构；虚拟化时须把 ctx.style 赋给渲染根节点。 -->
-    {@render renderFullLabel({
-      data: toOrig(node),
-      level: f.level,
-      style: [posStyle, indentStyle].filter(Boolean).join('; ') || undefined,
-      className: fullLabelClass(f, selected, nodeDisabled, active),
-      expandIcon: fullLabelSwitcher,
-      isLeaf: !expandable,
-      checkStatus: { checked, halfChecked: rowHalf(node) },
-      expandStatus: { expanded, loading },
-      filtered: searchActive && filterResult.matched.has(node.key),
-      searchWord: trimmedSearch,
-      onClick: () => onRowClick(node),
-      onCheck: () => emitCheck(node),
-      onExpand: () => toggleExpand(node),
-      onContextMenu: (e: MouseEvent) => { e.preventDefault(); onContextMenu?.(e, toOrig(node)); },
-      onDoubleClick: (e: MouseEvent) => onRowDblClick(e, node),
-    })}
-  {:else}
-        <!-- treeitem 焦点经容器 aria-activedescendant 漫游管理，行本身 tabindex=-1，键盘统一在 role=tree 容器处理 -->
-        <!-- svelte-ignore a11y_click_events_have_key_events -->
-        <div
-          id={itemId(node.key)}
-          class="cd-tree-option"
-          class:cd-tree-option-selected={selected}
-          class:cd-tree-option-disabled={nodeDisabled}
-          class:cd-tree-option-active={active}
-          class:cd-tree-option-block={effBlockNode}
-          class:cd-tree-option-draggable={dragging}
-          class:cd-tree-option-drag-over-gap-top={isDropTarget && dropPos === 'before'}
-          class:cd-tree-option-drag-over={isDropTarget && dropPos === 'inside'}
-          class:cd-tree-option-drag-over-gap-bottom={isDropTarget && dropPos === 'after'}
-          role="treeitem"
-          draggable={draggable && !nodeDisabled ? true : undefined}
-          tabindex={-1}
-          aria-level={f.level + 1}
-          aria-setsize={f.setSize}
-          aria-posinset={f.posInSet}
-          aria-expanded={expandable ? expanded : undefined}
-          aria-selected={!multiple ? selected : undefined}
-          aria-checked={multiple ? ariaCheckedValue(node) : undefined}
-          aria-disabled={nodeDisabled || undefined}
-          style={[posStyle, indentStyle].filter(Boolean).join('; ') || undefined}
-          onclick={() => onRowClick(node)}
-          ondblclick={onDoubleClick || effExpandAction === 'doubleClick'
-            ? (e) => onRowDblClick(e, node)
-            : undefined}
-          oncontextmenu={onContextMenu ? (e) => { e.preventDefault(); onContextMenu(e, toOrig(node)); } : undefined}
-          ondragstart={draggable ? (e) => onNodeDragStart(e, node) : undefined}
-          ondragover={draggable ? (e) => onNodeDragOver(e, f) : undefined}
-          ondragleave={draggable ? (e) => onNodeDragLeave(e, node) : undefined}
-          ondrop={draggable ? (e) => onNodeDrop(e, node) : undefined}
-          ondragend={draggable ? onNodeDragEnd : undefined}
-        >
-          {#if showLine && f.level > 0}
-            <!-- 引导线列：每层祖先一格，祖先非末→贯穿竖线；自身连接列画拐角 -->
-            {#each Array(f.level) as _, depth (depth)}
-              {@const isSelfColumn = depth === f.level - 1}
-              <span
-                class="cd-tree-option-line"
-                class:cd-tree-option-line-through={!isSelfColumn && !f.ancestorIsLast[depth]}
-                class:cd-tree-option-line-elbow={isSelfColumn && f.isLast}
-                class:cd-tree-option-line-tee={isSelfColumn && !f.isLast}
-                aria-hidden="true"
-              ></span>
-            {/each}
-          {/if}
-          {#if loading}
-            {#if expandIcon}
-              {@render expandIcon({ node, expanded: false, loading: true })}
-            {:else}
-              <!-- 加载态复用 Spin 组件（对齐 Semi Tree 内部用 Spin） -->
-              <span class="cd-tree-option-expand-icon cd-tree-option-spin-icon" aria-hidden="true">
-                <Spin size="small" />
-              </span>
-            {/if}
-          {:else if expandable}
-            {#if expandIcon}
-              <!-- svelte-ignore a11y_click_events_have_key_events -->
-              <span
-                role="button"
-                tabindex="-1"
-                aria-label={expanded ? loc().t('Tree.collapse') : loc().t('Tree.expand')}
-                onclick={(e) => {
-                  e.stopPropagation();
-                  if (!nodeDisabled) toggleExpand(node);
-                }}
-              >
-                {@render expandIcon({ node, expanded, loading: false })}
-              </span>
-            {:else}
-              <!-- svelte-ignore a11y_click_events_have_key_events -->
-              <span
-                class="cd-tree-option-expand-icon"
-                class:cd-tree-option-expand-icon-open={expanded}
-                role="button"
-                tabindex="-1"
-                aria-label={expanded ? loc().t('Tree.collapse') : loc().t('Tree.expand')}
-                onclick={(e) => {
-                  e.stopPropagation();
-                  if (!nodeDisabled) toggleExpand(node);
-                }}
-              >
-                <IconTreeTriangleDown size="small" />
-              </span>
-            {/if}
-          {:else}
-            {#if expandIcon}
-              {@render expandIcon({ node, expanded: false, loading: false })}
-            {:else}
-              <span class="cd-tree-option-expand-icon cd-tree-option-switcher-leaf-line" aria-hidden="true"></span>
-            {/if}
-          {/if}
-
-          {#if multiple}
-            <!-- 勾选框复用 Checkbox 组件（对齐 Semi Tree 内部用 Checkbox）。
-                 交互由 Checkbox 自身的 onChange 触发 emitCheck（不要在外层容器加 onclick——
-                 Checkbox 内部是 label+input，点 label 会双触发 click，导致 toggle 抵消）。
-                 外层 span 仅阻止点击冒泡到行（避免额外触发行选中/展开）。 -->
-            <!-- span 仅拦截冒泡、非交互元素（交互由内部 Checkbox 承载），故忽略静态元素交互告警 -->
-            <!-- svelte-ignore a11y_click_events_have_key_events -->
-            <!-- svelte-ignore a11y_no_static_element_interactions -->
-            <span
-              class="cd-tree-option-checkbox"
-              onclick={(e) => e.stopPropagation()}
-            >
-              <Checkbox
-                checked={checked}
-                indeterminate={!checked && rowHalf(node)}
-                disabled={!isCheckableNode(node)}
-                aria-label="Toggle the checked state of checkbox"
-                onChange={() => emitCheck(node)}
-              />
-            </span>
-          {/if}
-
-          {#if icon || directory}
-            {@const isLeaf = !expandable}
-            <span class="cd-tree-option-item-icon" class:cd-tree-option-item-icon-directory={directory && !icon} aria-hidden="true">
-              {#if icon}
-                {@render icon({ node, expanded, isLeaf })}
-              {:else if directory}
-                <!-- directory 模式内置目录/文件图标（对齐 Semi IconFolder/IconFolderOpen/IconFile）；可用 icon snippet 覆盖 -->
-                {#if isLeaf}
-                  <IconFile />
-                {:else if expanded}
-                  <IconFolderOpen />
-                {:else}
-                  <IconFolder />
-                {/if}
-              {/if}
-            </span>
-          {/if}
-
-          <span class="cd-tree-option-label" class:cd-tree-option-ellipsis={ellipsis}>
-            {#if renderLabel}
-              {@render renderLabel({ node, level: f.level, searchValue: trimmedSearch, selected, checked })}
-            {:else if searchActive && typeof node.label === 'string'}
-              <!-- 搜索命中高亮复用 Highlight 组件（对齐 Semi Tree 内部用 Highlight）；
-                   label 非字符串（Snippet/富节点）时高亮本就无法生效，原样渲染即可
-                   （对齐 Cascader highlightParts 同构处理）。 -->
-              <Highlight
-                sourceString={node.label}
-                searchWords={trimmedSearch}
-                highlightClassName="cd-tree-option-highlight"
-              />
-            {:else if typeof node.label === 'function'}
-              {@render (node.label as Snippet)()}
-            {:else}{node.label}{/if}
-          </span>
-
-          {#if suffix}
-            <span class="cd-tree-option-suffix">
-              {@render suffix({ node })}
-            </span>
-          {/if}
-
-          {#if dragGhost && dragging}
-            <span class="cd-tree-drag-ghost" aria-hidden="true">
-              {@render dragGhost({ node })}
-            </span>
-          {/if}
-        </div>
-  {/if}
+  {@const halfChecked = rowHalf(node)}
+  <TreeNodeRow
+    flat={f}
+    {baseId}
+    {expandable}
+    {loading}
+    {expanded}
+    disabled={nodeDisabled}
+    {selected}
+    {checked}
+    {halfChecked}
+    checkable={isCheckableNode(node)}
+    active={activeKey === node.key}
+    dragging={dragKey === node.key}
+    isDropTarget={dropKey === node.key}
+    {dropPos}
+    filtered={searchActive && filterResult.matched.has(node.key)}
+    searchWord={trimmedSearch}
+    {ellipsis}
+    {posStyle}
+  />
 {/snippet}
 
 <style>
