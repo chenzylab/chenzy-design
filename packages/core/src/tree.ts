@@ -21,6 +21,12 @@ export interface TreeNodeData {
   label: unknown;
   disabled?: boolean;
   isLeaf?: boolean;
+  /**
+   * 节点级自定义图标（对齐 Semi TreeNodeData.icon: ReactNode）。渲染层按需断言为
+   * Snippet；优先级高于组件级 `icon` prop（对齐 Semi treeNode.tsx renderIcon：
+   * `data.icon` 命中即返回，其次才是组件级 `treeIcon`，与 directory 内置图标无关）。
+   */
+  icon?: unknown;
   children?: TreeNodeData[];
 }
 

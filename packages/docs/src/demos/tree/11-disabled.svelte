@@ -1,41 +1,70 @@
 <script lang="ts">
-  import { Tree, Text } from '@chenzy-design/svelte';
+  import { Tree } from '@chenzy-design/svelte';
   import type { TreeNodeData } from '@chenzy-design/core';
 
-  // 部分节点 disabled；disableStrictly 下禁用节点勾选态不受父/子联动改变
   const treeData: TreeNodeData[] = [
     {
-      label: '亚洲',
-      key: 'asia',
+      label: 'Asia',
+      value: 'Asia',
+      key: '0',
       children: [
         {
-          label: '中国',
-          key: 'china',
+          label: 'China',
+          value: 'China',
+          key: '0-0',
           children: [
-            { label: '北京', key: 'beijing' },
-            { label: '上海（禁用）', key: 'shanghai', disabled: true },
+            {
+              label: 'Beijing',
+              value: 'Beijing',
+              key: '0-0-0',
+              disabled: true,
+            },
+            {
+              label: 'Shanghai',
+              value: 'Shanghai',
+              key: '0-0-1',
+              disabled: true,
+            },
           ],
         },
-        { label: '日本（禁用）', key: 'japan', disabled: true },
+        {
+          label: 'Japan',
+          value: 'Japan',
+          key: '0-1',
+          children: [
+            {
+              label: 'Osaka',
+              value: 'Osaka',
+              key: '0-1-0',
+            },
+          ],
+        },
+      ],
+    },
+    {
+      label: 'North America',
+      value: 'North America',
+      key: '1',
+      children: [
+        {
+          label: 'United States',
+          value: 'United States',
+          key: '1-0',
+        },
+        {
+          label: 'Canada',
+          value: 'Canada',
+          key: '1-1',
+        },
       ],
     },
   ];
-
-  // 初始勾选一个 disabled 节点（上海）——disableStrictly 下它被锁定，父级显半选
-  let checked = $state<(string | number)[]>(['shanghai']);
 </script>
 
-<div style="width:260px">
-  <Text type="tertiary" size="small">disableStrictly：禁用节点勾选态被锁定，非禁用节点仍可正常勾选</Text>
-  <Tree
-    style="width: 260px; height: 420px; border: 1px solid var(--cd-color-border); border-radius: 6px; box-sizing: border-box"
-    {treeData}
-    multiple
-    disableStrictly
-    defaultExpandAll
-    value={checked}
-    onChange={(value) => (checked = value as (string | number)[])}
-    aria-label="严格禁用树"
-  />
-  <Text type="tertiary" size="small">已勾选 {checked.length} 项</Text>
-</div>
+<Tree
+  {treeData}
+  defaultValue="Shanghai"
+  multiple
+  disableStrictly
+  style="width: 260px; height: 420px; border: 1px solid var(--cd-color-border)"
+/>

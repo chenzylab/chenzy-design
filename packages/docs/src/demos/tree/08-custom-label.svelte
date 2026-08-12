@@ -1,34 +1,38 @@
 <script lang="ts">
-  import { Tree, Tag } from '@chenzy-design/svelte';
+  import { Tree, ButtonGroup, Button, Toast } from '@chenzy-design/svelte';
   import type { TreeNodeData } from '@chenzy-design/core';
 
-  const treeData: TreeNodeData[] = [
-    {
-      label: '前端团队',
-      key: 'fe',
-      children: [
-        { label: '张三', key: 'zhang' },
-        { label: '李四', key: 'li' },
-      ],
-    },
-    {
-      label: '后端团队',
-      key: 'be',
-      children: [{ label: '王五', key: 'wang' }],
-    },
-  ];
+  function onTip(e: MouseEvent) {
+    Toast.info({ content: 'Hi, Bytedance dance dance', duration: 3 });
+    e.stopPropagation();
+  }
 </script>
 
-<div style="width:260px">
-  <!-- renderLabel snippet：自定义节点渲染（父节点加计数标签） -->
-  <Tree style="width: 260px; height: 420px; border: 1px solid var(--cd-color-border); border-radius: 6px; box-sizing: border-box" {treeData} defaultExpandAll aria-label="自定义节点内容树">
-    {#snippet renderLabel({ node })}
-      <span style="display:inline-flex; align-items:center; gap:8px">
-        {node.label}
-        {#if node.children?.length}
-          <Tag size="small" color="blue">{node.children.length} 人</Tag>
-        {/if}
-      </span>
-    {/snippet}
-  </Tree>
-</div>
+{#snippet nodeLabel(text: string)}
+  <div style="display:flex; justify-content:space-between; align-items:center">
+    <span>{text}</span>
+    <ButtonGroup size="small" theme="borderless">
+      <Button onClick={onTip}>提示</Button>
+      <Button>点击</Button>
+    </ButtonGroup>
+  </div>
+{/snippet}
+
+{#snippet asiaLabel()}{@render nodeLabel('亚洲')}{/snippet}
+{#snippet chinaLabel()}{@render nodeLabel('中国')}{/snippet}
+{#snippet japanLabel()}{@render nodeLabel('日本')}{/snippet}
+
+<Tree
+  treeData={[
+    {
+      label: asiaLabel,
+      value: 'yazhou',
+      key: 'yazhou',
+      children: [
+        { label: chinaLabel, value: 'zhongguo', key: 'zhongguo' },
+        { label: japanLabel, value: 'riben', key: 'riben' },
+      ],
+    },
+  ] as unknown as TreeNodeData[]}
+  style="width: 260px; height: 420px; border: 1px solid var(--cd-color-border)"
+/>

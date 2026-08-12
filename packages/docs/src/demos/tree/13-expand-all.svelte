@@ -1,46 +1,47 @@
 <script lang="ts">
-  import { Tree, Button, Text } from '@chenzy-design/svelte';
-  import type { TreeNodeData } from '@chenzy-design/core';
+  import { Tree, Button } from '@chenzy-design/svelte';
 
-  const initial: TreeNodeData[] = [
-    { label: '节点 1', key: 'n1', children: [{ label: '节点 1-1', key: 'n1-1' }] },
-  ];
+  type SimpleJson = Record<string, string | Record<string, string>>;
 
-  let data = $state<TreeNodeData[]>(initial);
-  let count = 1;
+  const json: SimpleJson = {
+    Node1: {
+      'Child Node1': '0-0-1',
+      'Child Node2': '0-0-2',
+    },
+    Node2: '0-1',
+  };
+  const json2: SimpleJson = {
+    Node3: {
+      'Child Node1': '0-0-1',
+      'Child Node2': '0-0-2',
+      'Child Node3': '0-0-3',
+      'Child Node4': '0-0-4',
+    },
+    Node2: '0-1',
+  };
 
-  function addNode() {
-    count += 1;
-    data = [
-      ...data,
-      { label: `节点 ${count}`, key: `n${count}`, children: [{ label: `节点 ${count}-1`, key: `n${count}-1` }] },
-    ];
+  let tree = $state<SimpleJson>(json);
+  function handleClick() {
+    tree = json2;
   }
 </script>
 
-<div style="display:flex; flex-direction:column; gap:12px">
-  <Button size="small" onclick={addNode}>追加一个节点</Button>
-  <Text type="tertiary" size="small">
-    defaultExpandAll 追加后不再展开新节点；expandAll 追加后仍自动展开
-  </Text>
-  <div style="display:flex; gap:32px; align-items:flex-start">
-    <div style="width:200px">
-      <Text size="small">defaultExpandAll</Text>
-      <Tree
-        style="border: 1px solid var(--cd-color-border); border-radius: 6px"
-        treeData={data}
-        defaultExpandAll
-        aria-label="defaultExpandAll 树"
-      />
-    </div>
-    <div style="width:200px">
-      <Text size="small">expandAll</Text>
-      <Tree
-        style="border: 1px solid var(--cd-color-border); border-radius: 6px"
-        treeData={data}
-        expandAll
-        aria-label="expandAll 树"
-      />
-    </div>
+<Button onClick={handleClick} style="margin-bottom: 10px">点击更新 TreeData</Button>
+<div style="display: flex">
+  <div>
+    <span>defaultExpandAll</span>
+    <Tree
+      defaultExpandAll
+      treeDataSimpleJson={tree}
+      style="margin-right: 20px; width: 260px; height: 420px; border: 1px solid var(--cd-color-border)"
+    />
+  </div>
+  <div>
+    <span>expandAll</span>
+    <Tree
+      expandAll
+      treeDataSimpleJson={tree}
+      style="width: 260px; height: 420px; border: 1px solid var(--cd-color-border)"
+    />
   </div>
 </div>

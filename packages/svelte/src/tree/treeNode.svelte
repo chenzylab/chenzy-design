@@ -215,10 +215,17 @@
       </span>
     {/if}
 
-    {#if ctx.icon || ctx.directory}
+    {#if node.icon || ctx.icon || ctx.directory}
       {@const isLeaf = !expandable}
-      <span class="cd-tree-option-item-icon" class:cd-tree-option-item-icon-directory={ctx.directory && !ctx.icon} aria-hidden="true">
-        {#if ctx.icon}
+      <span
+        class="cd-tree-option-item-icon"
+        class:cd-tree-option-item-icon-directory={ctx.directory && !node.icon && !ctx.icon}
+        aria-hidden="true"
+      >
+        {#if node.icon}
+          <!-- 节点级 icon 优先（对齐 Semi renderIcon：data.icon 命中即返回） -->
+          {@render (node.icon as Snippet)()}
+        {:else if ctx.icon}
           {@render ctx.icon({ node, expanded, isLeaf })}
         {:else if ctx.directory}
           {#if isLeaf}

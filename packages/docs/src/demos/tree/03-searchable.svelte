@@ -1,48 +1,73 @@
 <script lang="ts">
-  import { Tree, Text, Switch } from '@chenzy-design/svelte';
+  import { Tree, Switch } from '@chenzy-design/svelte';
   import type { TreeNodeData } from '@chenzy-design/core';
 
   const treeData: TreeNodeData[] = [
     {
-      label: '亚洲',
-      key: 'asia',
+      label: 'Asia',
+      value: 'Asia',
+      key: '0',
       children: [
         {
-          label: '中国',
-          key: 'china',
+          label: 'China',
+          value: 'China',
+          key: '0-0',
           children: [
-            { label: '北京', key: 'beijing' },
-            { label: '上海', key: 'shanghai' },
+            {
+              label: 'Beijing',
+              value: 'Beijing',
+              key: '0-0-0',
+            },
+            {
+              label: 'Shanghai',
+              value: 'Shanghai',
+              key: '0-0-1',
+            },
           ],
         },
-        { label: '日本', key: 'japan', children: [{ label: '大阪', key: 'osaka' }] },
+        {
+          label: 'Japan',
+          value: 'Japan',
+          key: '0-1',
+          children: [
+            {
+              label: 'Osaka',
+              value: 'Osaka',
+              key: '0-1-0',
+            },
+          ],
+        },
       ],
     },
     {
-      label: '北美洲',
-      key: 'na',
+      label: 'North America',
+      value: 'North America',
+      key: '1',
       children: [
-        { label: '美国', key: 'us' },
-        { label: '加拿大', key: 'canada' },
+        {
+          label: 'United States',
+          value: 'United States',
+          key: '1-0',
+        },
+        {
+          label: 'Canada',
+          value: 'Canada',
+          key: '1-1',
+        },
       ],
     },
   ];
 
-  let filteredOnly = $state(false);
+  let showFilteredOnly = $state(false);
 </script>
 
-<div style="display:flex; flex-direction:column; gap:12px; width:260px">
-  <label style="display:flex; align-items:center; gap:8px">
-    <Switch checked={filteredOnly} onChange={(v) => (filteredOnly = v)} size="small" />
-    <Text size="small">showFilteredOnly（只展示命中结果）</Text>
-  </label>
-  <!-- filterTreeNode 开启搜索；默认对 label 搜索，命中高亮 + 自动展开祖先 -->
-  <Tree
-    style="width: 260px; height: 420px; border: 1px solid var(--cd-color-border); border-radius: 6px; box-sizing: border-box"
-    {treeData}
-    filterTreeNode
-    showFilteredOnly={filteredOnly}
-    defaultExpandAll
-    aria-label="可搜索地区树"
-  />
-</div>
+<span>showFilteredOnly</span>
+<Switch checked={showFilteredOnly} onChange={(v) => (showFilteredOnly = v)} size="small" />
+<br />
+<Tree
+  {treeData}
+  multiple
+  filterTreeNode
+  {showFilteredOnly}
+  style="width: 260px; height: 420px; border: 1px solid var(--cd-color-border)"
+/>

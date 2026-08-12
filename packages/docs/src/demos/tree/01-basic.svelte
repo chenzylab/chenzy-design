@@ -1,45 +1,38 @@
 <script lang="ts">
-  import { Tree, Text } from '@chenzy-design/svelte';
+  import { Tree } from '@chenzy-design/svelte';
   import type { TreeNodeData } from '@chenzy-design/core';
 
-  // 对齐 Semi 示例数据（Asia / North America）
   const treeData: TreeNodeData[] = [
     {
       label: '亚洲',
-      key: 'asia',
+      value: 'Asia',
+      key: '0',
       children: [
         {
           label: '中国',
-          key: 'china',
+          value: 'China',
+          key: '0-0',
           children: [
-            { label: '北京', key: 'beijing' },
-            { label: '上海', key: 'shanghai' },
+            {
+              label: '北京',
+              value: 'Beijing',
+              key: '0-0-0',
+            },
+            {
+              label: '上海',
+              value: 'Shanghai',
+              key: '0-0-1',
+            },
           ],
         },
-        { label: '日本', key: 'japan', children: [{ label: '大阪', key: 'osaka' }] },
       ],
     },
     {
       label: '北美洲',
-      key: 'na',
-      children: [
-        { label: '美国', key: 'us' },
-        { label: '加拿大', key: 'canada' },
-      ],
+      value: 'North America',
+      key: '1',
     },
   ];
-
-  let selected = $state<string | number>('beijing');
 </script>
 
-<div style="width:260px">
-  <Tree
-    style="width: 260px; height: 420px; border: 1px solid var(--cd-color-border); border-radius: 6px; box-sizing: border-box"
-    {treeData}
-    defaultExpandAll
-    value={selected}
-    onChange={(v) => (selected = v as string | number)}
-    aria-label="地区树"
-  />
-  <Text type="tertiary" size="small">已选：{selected}</Text>
-</div>
+<Tree {treeData} defaultExpandAll style="width: 260px; height: 420px; border: 1px solid var(--cd-color-border)" />

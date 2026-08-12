@@ -4,35 +4,59 @@
 
   const treeData: TreeNodeData[] = [
     {
-      label: 'src',
-      key: 'src',
+      label: 'Asia',
+      value: 'Asia',
+      key: '0',
       children: [
         {
-          label: 'components',
-          key: 'components',
+          label: 'China',
+          value: 'China',
+          key: '0-0',
           children: [
-            { label: 'Tree.svelte', key: 'tree' },
-            { label: 'Input.svelte', key: 'input' },
+            {
+              label: 'Beijing',
+              value: 'Beijing',
+              key: '0-0-0',
+            },
+            {
+              label: 'Shanghai',
+              value: 'Shanghai',
+              key: '0-0-1',
+            },
           ],
         },
-        { label: 'index.ts', key: 'index' },
+        {
+          label: 'Japan',
+          value: 'Japan',
+          key: '0-1',
+          children: [
+            {
+              label: 'Osaka',
+              value: 'Osaka',
+              key: '0-1-0',
+            },
+          ],
+        },
       ],
     },
     {
-      label: 'public',
-      key: 'public',
-      children: [{ label: 'favicon.ico', key: 'favicon' }],
+      label: 'North America',
+      value: 'North America',
+      key: '1',
+      children: [
+        {
+          label: 'United States',
+          value: 'United States',
+          key: '1-0',
+        },
+        {
+          label: 'Canada',
+          value: 'Canada',
+          key: '1-1',
+        },
+      ],
     },
   ];
 </script>
 
-<div>
-  <!-- directory：目录树模式（整行块 + 内置目录/文件图标 + 点击整行展开） -->
-  <Tree
-    style="width: 260px; height: 420px; border: 1px solid var(--cd-color-border); border-radius: 6px; box-sizing: border-box"
-    {treeData}
-    directory
-    defaultExpandAll
-    aria-label="目录树"
-  />
-</div>
+<Tree {treeData} directory style="width: 260px; height: 420px; border: 1px solid var(--cd-color-border)" />

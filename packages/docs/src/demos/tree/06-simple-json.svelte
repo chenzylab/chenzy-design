@@ -1,19 +1,19 @@
 <script lang="ts">
   import { Tree } from '@chenzy-design/svelte';
 
-  // treeDataSimpleJson：扁平 { key: value } 键值对，key 同时作 key/label，嵌套对象转子树
   const json = {
-    亚洲: {
-      中国: { 北京: 'beijing', 上海: 'shanghai' },
-      日本: 'japan',
+    Node1: {
+      'Child Node1': '0-0-1',
+      'Child Node2': '0-0-2',
     },
-    北美洲: {
-      美国: 'us',
-      加拿大: 'canada',
-    },
+    Node2: '0-1',
   };
 </script>
 
-<div style="width:260px">
-  <Tree style="width: 260px; height: 420px; border: 1px solid var(--cd-color-border); border-radius: 6px; box-sizing: border-box" treeDataSimpleJson={json} defaultExpandAll aria-label="简单 JSON 树" />
-</div>
+<Tree
+  treeDataSimpleJson={json}
+  multiple
+  onChange={(e) => console.log('当前所有选中项: ', e)}
+  onSelect={(e) => console.log('当前选项: ', e)}
+  style="width: 260px; height: 420px; border: 1px solid var(--cd-color-border)"
+/>
