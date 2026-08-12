@@ -12,7 +12,7 @@
   <div style="display:flex; justify-content:space-between; align-items:center">
     <span>{text}</span>
     <ButtonGroup size="small" theme="borderless">
-      <Button onClick={onTip}>提示</Button>
+      <Button onclick={onTip}>提示</Button>
       <Button>点击</Button>
     </ButtonGroup>
   </div>

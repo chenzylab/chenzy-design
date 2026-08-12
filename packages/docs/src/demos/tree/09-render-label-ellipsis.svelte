@@ -37,7 +37,7 @@
       <Text ellipsis={{ showTooltip: true }} style="width: calc(100% - 48px)">
         {node.label}
       </Text>
-      <Button onClick={onMore(String(node.key))} size="small">
+      <Button onclick={onMore(String(node.key))} size="small">
         {#snippet icon()}
           <IconMore />
         {/snippet}

@@ -26,5 +26,5 @@
 <div style="width: 260px; height: 420px; border: 1px solid var(--cd-color-border)">
   <Tree {treeData} />
   <br />
-  <Button onClick={add} style="margin: 20px">动态改变数据</Button>
+  <Button onclick={add} style="margin: 20px">动态改变数据</Button>
 </div>

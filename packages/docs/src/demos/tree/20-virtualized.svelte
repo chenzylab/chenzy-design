@@ -43,7 +43,7 @@
 </script>
 
 <div style="padding: 0 20px">
-  <Button onClick={onGen}>生成数据: </Button>
+  <Button onclick={onGen}>生成数据: </Button>
   <span>共 {total} 个节点</span>
   <br />
   <br />

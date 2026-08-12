@@ -26,7 +26,7 @@
   }
 </script>
 
-<Button onClick={handleClick} style="margin-bottom: 10px">点击更新 TreeData</Button>
+<Button onclick={handleClick} style="margin-bottom: 10px">点击更新 TreeData</Button>
 <div style="display: flex">
   <div>
     <span>defaultExpandAll</span>
