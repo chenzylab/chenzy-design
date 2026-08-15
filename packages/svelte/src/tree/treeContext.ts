@@ -1,6 +1,6 @@
 import { getContext, setContext } from 'svelte';
 import type { Snippet } from 'svelte';
-import type { TreeKey, TreeNodeData } from '@chenzy-design/core';
+import type { TreeNodeData } from '@chenzy-design/core';
 
 /**
  * Tree 节点渲染共享上下文（对齐 Semi `treeContext.tsx` 的 `TreeContextValue`）。
