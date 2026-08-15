@@ -1,7 +1,7 @@
 <script lang="ts">
   import { TreeSelect } from '@chenzy-design/svelte';
   import type { TreeKey } from '@chenzy-design/svelte';
-  import { treeDataEn as treeData } from './_data';
+  import { treeDataWithJapan as treeData } from './_data';
 
   let expandedKeys = $state<TreeKey[]>([]);
 </script>
@@ -14,7 +14,6 @@
   {expandedKeys}
   onExpand={(keys) => (expandedKeys = keys)}
   onSearch={(_input, filteredExpandedKeys) => {
-    if (filteredExpandedKeys) expandedKeys = filteredExpandedKeys;
+    if (filteredExpandedKeys) expandedKeys = [...filteredExpandedKeys, ...expandedKeys];
   }}
-  placeholder="展开受控 + 搜索展开"
 />

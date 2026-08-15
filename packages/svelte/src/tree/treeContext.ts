@@ -42,6 +42,23 @@ export interface FullLabelContext {
   onContextMenu: (e: MouseEvent) => void;
   /** 双击回调 */
   onDoubleClick: (e: MouseEvent) => void;
+  /**
+   * 是否可拖拽（对齐 Semi `draggable && renderFullLabel` 态：cloneElement 强制给自定义渲染的
+   * 根节点注入 draggable + 六个 ondrag* 事件）。为 false 时无需绑定下面的拖拽事件，Semi 同款
+   * `draggable={(!disabled && draggable) || undefined}` 语义——本库把这个布尔值直接暴露出来，
+   * 调用方按需把 draggable 与拖拽事件绑到自己的根节点上。
+   */
+  draggable: boolean;
+  /** 拖拽开始回调（仅 draggable 为 true 时需要绑定） */
+  onDragStart: (e: DragEvent) => void;
+  /** 拖拽经过回调 */
+  onDragOver: (e: DragEvent) => void;
+  /** 拖拽离开回调 */
+  onDragLeave: (e: DragEvent) => void;
+  /** 放下回调 */
+  onDrop: (e: DragEvent) => void;
+  /** 拖拽结束回调 */
+  onDragEnd: (e: DragEvent) => void;
 }
 
 export interface TreeContextValue {

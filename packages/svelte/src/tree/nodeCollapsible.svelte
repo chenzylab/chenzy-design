@@ -19,7 +19,7 @@
   const { open = false, motion = true, duration = 200, onMotionEnd, children }: Props = $props();
 
   // svelte-ignore state_referenced_locally
-  let isOpen = $state(!open);
+  let isOpen = $state(open);
 
   $effect(() => {
     const timer = setTimeout(() => {

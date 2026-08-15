@@ -3,27 +3,26 @@
   import type { TreeNode } from './_data';
 
   const initialData: TreeNode[] = [
-    { label: '亚洲', value: 'Asia', key: '0', isLeaf: false },
-    { label: '欧洲', value: 'Europe', key: '1', isLeaf: false },
+    { label: 'Expand to load', value: '0', key: '0' },
+    { label: 'Expand to load', value: '1', key: '1' },
+    { label: 'Leaf Node', value: '2', key: '2', isLeaf: true },
   ];
 
-  let counter = 0;
-  const loadData = (node: TreeNode): Promise<TreeNode[]> => {
+  function loadData(node: TreeNode): Promise<TreeNode[]> {
     return new Promise((resolve) => {
       setTimeout(() => {
-        const id = counter++;
         resolve([
-          { label: `${node.label} - 子级 ${id}`, value: `${node.value}-${id}`, key: `${node.key}-${id}`, isLeaf: true },
+          { label: 'Child Node', value: `${node.key}-0`, key: `${node.key}-0` },
+          { label: 'Child Node', value: `${node.key}-1`, key: `${node.key}-1` },
         ]);
       }, 1000);
     });
-  };
+  }
 </script>
 
 <TreeSelect
-  style="width: 300px"
-  dropdownStyle="max-height: 400px; overflow: auto"
-  treeData={initialData}
   {loadData}
-  placeholder="点击节点异步加载子级"
+  treeData={initialData}
+  style="width: 300px"
+  placeholder="请选择"
 />

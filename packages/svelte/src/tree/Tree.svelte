@@ -32,6 +32,8 @@
     computeDropPosition,
     isAncestorOrSelf,
     getMotionKeys,
+    getValueOrKey,
+    buildValueKeyIndex,
     type TreeKey,
     type TreeNodeData,
     type FlatNode,
@@ -494,23 +496,6 @@
     return findNode(mergedData, key);
   }
 
-  /**
-   * value → key 反查表（对齐 Semi getValueOrKey：值通道优先用节点 value 字段标识，
-   * 缺失时才 fallback key）。仅收录声明了 value 字段的节点；未声明的节点本就该继续
-   * 走 key，无需出现在这张表里。
-   */
-  const keyByNodeValue = $derived.by(() => {
-    const map = new Map<TreeKey, TreeKey>();
-    function walk(nodes: TreeNodeData[]): void {
-      for (const n of nodes) {
-        if (n.value !== undefined) map.set(n.value, n.key);
-        if (n.children) walk(n.children);
-      }
-    }
-    walk(mergedData);
-    return map;
-  });
-
   // --- 异步加载：本地缓存子节点 + loading/loaded 标记（不写回受控 treeData，红线 #1）---
   const loadedChildren = new SvelteMap<TreeKey, TreeNodeData[]>();
   const loadingKeys = new SvelteSet<TreeKey>();
@@ -534,6 +519,13 @@
       });
     return inject(normalizedData);
   });
+
+  /**
+   * value → key 反查表（对齐 Semi getValueOrKey：值通道优先用节点 value 字段标识，
+   * 缺失时才 fallback key）。仅收录声明了 value 字段的节点；未声明的节点本就该继续
+   * 走 key，无需出现在这张表里。
+   */
+  const keyByNodeValue = $derived(buildValueKeyIndex(mergedData));
 
   // 行是否可展开：原本有子 → 是；否则有 loadData、非叶子、尚未加载（或加载出非空）→ 是。
   function isExpandable(node: TreeNodeData, flatHasChildren: boolean): boolean {
@@ -585,7 +577,7 @@
       return node ? toOrig(node) : key;
     }
     const node = findMerged(key);
-    return node?.value ?? key;
+    return node ? getValueOrKey(node) : key;
   }
   function initValue(): TreeKey | TreeKey[] | null {
     const dv = defaultValue as ValueEntry | ValueEntry[] | null;
@@ -703,7 +695,8 @@
     return (node: TreeNodeData) => nodeFilterText(node).toLowerCase().includes(lower);
   });
   const filterResult = $derived.by(() => {
-    if (!searchActive) return { matched: new Set<TreeKey>(), expand: new Set<TreeKey>() };
+    if (!searchActive)
+      return { matched: new Set<TreeKey>(), expand: new Set<TreeKey>(), descendants: new Set<TreeKey>() };
     return computeFilteredKeys(mergedData, matchPredicate);
   });
 
@@ -729,11 +722,16 @@
   // --- 可见扁平节点 ---
   const flat = $derived(flattenVisible(mergedData, effectiveExpanded));
   // showFilteredOnly（对齐 Semi）：搜索激活时仅保留命中节点及其祖先链（expand 集即祖先链 +
-  // 自身有命中后代者），隐藏其它未命中节点。默认 false 时展示全树（命中项高亮、祖先自动展开）。
+  // 自身有命中后代者）+ 命中节点的全部后代（descendants，对齐 Semi findDescendantKeys；使
+  // 手动展开命中节点时其子孙仍可见，而非到命中节点为止），隐藏其它未命中节点。默认 false 时
+  // 展示全树（命中项高亮、祖先自动展开）。
   const visibleFlat = $derived.by(() => {
     if (!searchActive || !showFilteredOnly) return flat;
     return flat.filter(
-      (f) => filterResult.matched.has(f.node.key) || filterResult.expand.has(f.node.key),
+      (f) =>
+        filterResult.matched.has(f.node.key) ||
+        filterResult.expand.has(f.node.key) ||
+        filterResult.descendants.has(f.node.key),
     );
   });
 
@@ -1016,10 +1014,11 @@
       next = new Set(currentExpandedSet);
       next.delete(node.key);
     }
-    // 对齐 Semi setExpandedStatus：收起前先用旧 expandedKeys 快照 flat（hide 动画定位用），
+    // 对齐 Semi setExpandedStatus：收起前先用旧 expandedKeys 快照 visibleFlat（hide 动画定位用，
+    // 必须是 showFilteredOnly 过滤后的可见态，否则搜索态收起会把本应隐藏的同级节点带出来），
     // 再算 motionKeys（本次操作导致可见性变化的后代节点），才切换到新的展开集。
     if (motionEnabled) {
-      flattenListSnapshot = flat;
+      flattenListSnapshot = visibleFlat;
       motionKeys = new Set(getMotionKeys(node.key, next, mergedData));
       motionType = expand ? 'show' : 'hide';
     }

@@ -1,6 +1,6 @@
 <script lang="ts">
   import { TreeSelect, Switch, Text } from '@chenzy-design/svelte';
-  import { treeDataEn as treeData } from './_data';
+  import { treeDataEnNoChengdu as treeData } from './_data';
 
   let showFilteredOnly = $state(false);
 
@@ -32,5 +32,20 @@
   {showFilteredOnly}
   placeholder="多选可搜索的"
   searchPlaceholder="请输入关键字开始搜索"
+  {onSearch}
+/>
+<br />
+<br />
+<TreeSelect
+  style="width: 300px"
+  dropdownStyle="max-height: 400px; overflow: auto"
+  {treeData}
+  multiple
+  filterTreeNode
+  maxTagCount={2}
+  {showFilteredOnly}
+  placeholder="搜索框autofocus"
+  searchPlaceholder="autofocus"
+  searchAutoFocus
   {onSearch}
 />

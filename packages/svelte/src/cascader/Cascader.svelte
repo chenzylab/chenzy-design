@@ -1137,6 +1137,31 @@
     }
   }
 
+  /**
+   * 进/退场动画对齐 Semi（Cascader 面板本体是 Popover 实例，继承其 zoomIn/zoomOut；
+   * 本库自建 use:floating，之前完全没有面板动画——motion prop 只驱动了箭头 transition，
+   * 是真实功能缺口，非退场时序问题。与 Select/TreeSelect 同构模式补齐进出场）：
+   * 面板挂载后一直保留 DOM（hasBeenOpened 恒 true，无 destroyOnClose），关闭时先播放
+   * hide 动画（panelLeaving），animationend 后才真正 hidden（panelHidden）。
+   */
+  let panelLeaving = $state(false);
+  let panelHidden = $state(true);
+  $effect(() => {
+    if (isOpen) {
+      panelHidden = false;
+      panelLeaving = false;
+    } else if (motion) {
+      panelLeaving = true;
+    } else {
+      panelHidden = true;
+    }
+  });
+  function finalizeClose(): void {
+    if (!panelLeaving) return;
+    panelLeaving = false;
+    panelHidden = true;
+  }
+
   function toggleOpen() {
     if (disabled) return;
     // 对齐 Semi handleClick：可搜索时点击开着的触发器不收起（焦点留搜索框继续输入）。
@@ -1789,7 +1814,10 @@
   {#if shouldRender}
     <div
       class={['cd-cascader-popover', dropdownClassName].filter(Boolean).join(' ')}
-      class:cd-cascader-popover-hidden={!isOpen}
+      class:cd-cascader-popover-hidden={panelHidden}
+      class:cd-cascader-popover-motion-show={motion && isOpen}
+      class:cd-cascader-popover-motion-hide={motion && panelLeaving}
+      onanimationend={finalizeClose}
       bind:this={panelEl}
       use:floating={{
         trigger: rootEl,
@@ -2054,6 +2082,55 @@
   /* 关闭后保留 DOM 但不可见、不可交互、不占位（对齐 Semi Popover motion）。 */
   .cd-cascader-popover-hidden {
     display: none;
+  }
+  /*
+   * 进/退场动画对齐 Semi zoomIn/zoomOut（Cascader 面板本体是 Popover 实例，继承其动画）：
+   * scale(0.8→1) + opacity(0→1)，用独立 CSS `scale` 属性（非 transform:scale()）——
+   * use:floating 用 transform:translate(x,y) 定位（inline style），scale 与 transform
+   * 正交，同一元素上二者互不覆盖（同 Select/TreeSelect/Tooltip 解法）。
+   */
+  .cd-cascader-popover-motion-show {
+    animation: cd-cascader-dropdown-zoom-in var(--cd-animation-duration-cascader-dropdown-in)
+      var(--cd-animation-function-cascader-dropdown-in);
+  }
+  .cd-cascader-popover-motion-hide {
+    animation: cd-cascader-dropdown-zoom-out var(--cd-animation-duration-cascader-dropdown-out)
+      var(--cd-animation-function-cascader-dropdown-out);
+  }
+  @keyframes cd-cascader-dropdown-zoom-in {
+    from {
+      opacity: var(--cd-cascader-dropdown-motion-zoom-opacity-from);
+      scale: var(--cd-cascader-dropdown-motion-zoom-scale-from);
+    }
+    50% {
+      opacity: var(--cd-cascader-dropdown-motion-zoom-opacity-to);
+    }
+    to {
+      opacity: var(--cd-cascader-dropdown-motion-zoom-opacity-to);
+      scale: 1;
+    }
+  }
+  @keyframes cd-cascader-dropdown-zoom-out {
+    from {
+      opacity: var(--cd-cascader-dropdown-motion-zoom-opacity-to);
+      scale: 1;
+    }
+    60% {
+      opacity: var(--cd-cascader-dropdown-motion-zoom-opacity-from);
+      scale: var(--cd-cascader-dropdown-motion-zoom-scale-from);
+    }
+    to {
+      opacity: var(--cd-cascader-dropdown-motion-zoom-opacity-from);
+      scale: var(--cd-cascader-dropdown-motion-zoom-scale-from);
+    }
+  }
+  /* 减少动效：时长归零而非 animation:none——后者不触发 animationend，
+     会让 finalizeClose 永远不被调用，面板卡在展开态无法真正隐藏（对齐 TreeSelect/Select）。 */
+  @media (prefers-reduced-motion: reduce) {
+    .cd-cascader-popover-motion-show,
+    .cd-cascader-popover-motion-hide {
+      animation-duration: 0.01ms;
+    }
   }
   /* 触发器内搜索段（对齐 Semi .cascader-single.cascader-filterable .cascader-search-wrapper）：
      占满选择区，<Input> 绝对定位铺满容器（top:0 left:0 width:100% height:100%），

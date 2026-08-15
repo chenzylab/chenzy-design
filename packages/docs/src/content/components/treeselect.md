@@ -42,8 +42,8 @@ brief: 树选择器用于多层级树形数据的结构化展示 & 选取，例�
   import dynamicDataSrc from '../../demos/tree-select/16-dynamic-data.svelte?raw';
   import LoadData from '../../demos/tree-select/17-load-data.svelte';
   import loadDataSrc from '../../demos/tree-select/17-load-data.svelte?raw';
-  import TriggerRender from '../../demos/tree-select/18-trigger-render.svelte';
-  import triggerRenderSrc from '../../demos/tree-select/18-trigger-render.svelte?raw';
+  import TriggerRenderMultiple from '../../demos/tree-select/21-trigger-render-multiple.svelte';
+  import triggerRenderMultipleSrc from '../../demos/tree-select/21-trigger-render-multiple.svelte?raw';
   import RenderSelected from '../../demos/tree-select/19-render-selected.svelte';
   import renderSelectedSrc from '../../demos/tree-select/19-render-selected.svelte?raw';
   import SearchMethod from '../../demos/tree-select/20-search-method.svelte';
@@ -94,7 +94,7 @@ import { TreeSelect } from '@chenzy-design/svelte';
 
 <DemoBox code={searchPositionSrc}><SearchPosition /></DemoBox>
 
-### Trigger 内多行换行
+### Trigger 内多行换行（triggerTagWrap）
 
 当你在**多选 + 搜索框位于 trigger** 的场景下，选择了较多项或输入较长文本时，默认 trigger 可能会更倾向于保持单行展示。通过设置 `triggerTagWrap={true}`，可以让 trigger 内的已选标签支持自动换行（多行展示）。
 
@@ -162,11 +162,32 @@ import { TreeSelect } from '@chenzy-design/svelte';
 
 如果默认的触发器样式满足不了你的需求，可以用 `triggerRender` 自定义选择框的展示。
 
-<DemoBox code={triggerRenderSrc}><TriggerRender /></DemoBox>
+triggerRender 入参如下：
+
+```ts
+interface TriggerRenderProps {
+  componentProps: Partial<Record<keyof Props, unknown>>; // 所有用户传给 TreeSelect 的 props
+  disabled: boolean; // 是否禁用 TreeSelect
+  value: TreeNode[]; // 已选中的 node 数组
+  inputValue: string; // 当前 input 框的输入值
+  onClear: (e: MouseEvent) => void; // 用于清空值的函数
+  placeholder: string; // placeholder
+  onRemove: (key: TreeKey) => void; // 删除单个 item 时调用的函数，以 item 的 key 作为入参
+  onSearch: (inputValue: string) => void; // 用于在 Input 框值更新时启动搜索；当你在 triggerRender 自定义的 Input 组件值更新时，应调用该函数以向 TreeSelect 内部同步状态，使用时需设置 filterTreeNode 非 false、searchPosition 为 'trigger'
+  isOpen: boolean; // 面板是否展开（本库额外新增字段，Semi 无此字段）
+}
+```
+
+<DemoBox code={triggerRenderMultipleSrc}><TriggerRenderMultiple /></DemoBox>
 
 ### 自定义渲染已选项
 
 你可以通过 `renderSelectedItem` 自定义选择框中已选项标签的渲染结构。
+
+- 单选、多选统一签名：`renderSelectedItem({ node: TreeNode; onRemove: () => void })`
+- 单选时忽略 `onRemove`，直接渲染任意内容替换整个已选展示
+- 多选时每个已选节点独立渲染一次；`onRemove` 用于移除该节点（对齐 Semi 的 `onClose`）
+- 对齐 Semi `renderSelectedItem` 的 `{ isRenderInTag, content }` 双返回协议：Semi 用返回值告知框架是否需要外层包一层 Tag（`isRenderInTag=true` 自动包裹带背景色和关闭按钮的 Tag，`isRenderInTag=false` 直接渲染返回的 content）；Svelte Snippet 直接接管渲染，不存在框架二次包裹——想要 Tag 外壳就在 Snippet 内自己渲染 `<Tag>`，不想要则渲染任意内容，表达能力等价
 
 <DemoBox code={renderSelectedSrc}><RenderSelected /></DemoBox>
 
@@ -182,6 +203,11 @@ import { TreeSelect } from '@chenzy-design/svelte';
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
+| aria-label | 无障碍标签 | string | - |
+| ariaDescribedby | aria-describedby：关联 helpText / extraText | string | - |
+| ariaErrormessage | aria-errormessage：error 态关联错误信息容器 | string | - |
+| ariaLabelledby | aria-labelledby：关联外部 label 元素 | string | - |
+| ariaRequired | aria-required：必填语义 | boolean | - |
 | arrowIcon | 自定义右侧下拉箭头 Icon | Snippet | - |
 | autoAdjustOverflow | 浮层被遮挡时是否自动调整方向 | boolean | true |
 | autoExpandParent | 是否自动展开父节点 | boolean | false |
@@ -191,6 +217,7 @@ import { TreeSelect } from '@chenzy-design/svelte';
 | class | 选择框的 className 属性 | string | - |
 | clearIcon | 可用于自定义清除按钮，showClear 为 true 时有效 | Snippet | - |
 | clickToHide | 选择后是否自动关闭下拉弹层，仅单选模式有效 | boolean | true |
+| clickTriggerToHide | 面板打开状态下，点击 Trigger 后是否关闭面板 | boolean | true |
 | defaultExpandAll | 设置在初始化时是否展开所有节点 | boolean | false |
 | defaultExpandedKeys | 默认展开的节点，显示其直接子级 | `string[]` | - |
 | defaultOpen | 默认展开下拉菜单 | boolean | false |
@@ -198,9 +225,11 @@ import { TreeSelect } from '@chenzy-design/svelte';
 | disabled | 是否禁用 | boolean | false |
 | disableStrictly | 是否严格禁用 | boolean | false |
 | dropdownClassName | 下拉菜单的 className 属性 | string | - |
+| dropdownMargin | 下拉菜单计算溢出时增加的冗余值，作用同 Tooltip margin | `object \| number` | - |
 | dropdownMatchSelectWidth | 下拉菜单最小宽度是否等于 Select | boolean | true |
 | dropdownStyle | 下拉菜单的样式 | `string \| Record<string, string>` | - |
 | emptyContent | 当搜索无结果时展示的内容 | `string \| Snippet` | 暂无数据 |
+| expandAction | 展开逻辑，可选 `false`、`'click'`、`'doubleClick'`，默认仅点击展开按钮才会展开 | `boolean \| string` | false |
 | expandAll | 设置是否默认展开所有节点，若后续数据发生改变，展开情况也会受此 api 影响 | boolean | false |
 | expandedKeys | （受控）展开的节点，默认展开节点显示其直接子级 | `string[]` | - |
 | expandIcon | 自定义展开图标 | Snippet | - |
@@ -208,12 +237,17 @@ import { TreeSelect } from '@chenzy-design/svelte';
 | filterTreeNode | 是否根据输入项进行筛选，默认用 treeNodeFilterProp 的值筛选 | `boolean \| ((input, treeNodeString, data) => boolean)` | false |
 | remote | 是否启用远程搜索，开启后输入时跳过本地过滤，仅触发 onSearch 回调 | boolean | false |
 | getPopupContainer | 指定父级 DOM，弹层将会渲染至该 DOM 中，自定义需要设置 `position: relative` | `() => HTMLElement` | - |
+| insetLabel | 触发器内嵌标签，渲染在回填值/占位符之前 | `string \| Snippet` | - |
+| insetLabelId | 内嵌标签的 id（a11y 关联用） | string | - |
 | labelEllipsis | 是否开启 label 的超出省略，默认虚拟化状态下开启 | boolean | false |
 | leafOnly | 多选模式下 onChange 回调入参及展示标签只有叶子节点 | boolean | false |
 | loadData | 异步加载数据，需要返回一个 Promise | `(node) => Promise<node[]>` | - |
+| loadedKeys | （受控）已经加载的节点，配合 loadData 使用 | `Set<string>` | - |
 | maxTagCount | 最多显示多少个 tag | number | - |
+| motion | 下拉浮层进出场动画 | boolean | true |
 | motionExpand | 是否开启选项树节点动画 | boolean | true |
 | multiple | 是否支持多选 | boolean | false |
+| optionListStyle | optionList 的样式 | `string \| Record<string, string>` | - |
 | outerBottomSlot | 渲染在弹出层底部，与 optionList 平级的自定义 slot | Snippet | - |
 | outerTopSlot | 渲染在弹出层顶部，与 optionList 平级的自定义 slot | Snippet | - |
 | placeholder | 选择框默认文字 | string | - |
@@ -234,6 +268,7 @@ import { TreeSelect } from '@chenzy-design/svelte';
 | showRestTagsPopover | 当超过 maxTagCount，hover +N 时，是否通过 Popover 显示剩余内容 | boolean | false |
 | showSearchClear | 是否显示搜索框的清除按钮 | boolean | true |
 | size | 选择框大小，可选 `large`、`small`、`default` | string | default |
+| stopPropagation | 触发器点击是否阻止事件冒泡 | boolean | true |
 | style | 选择框的样式 | string | - |
 | suffix | 后缀标签 | `string \| Snippet` | - |
 | treeData | treeNodes 数据，key 值在整个树范围内唯一 | `TreeNodeData[]` | `[]` |

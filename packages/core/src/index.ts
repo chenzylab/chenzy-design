@@ -87,6 +87,8 @@ export {
   siblingKeys,
   accordionExpand,
   getMotionKeys,
+  getValueOrKey,
+  buildValueKeyIndex,
   type CheckedStrategy,
   type TreeKey,
   type TreeNodeData,

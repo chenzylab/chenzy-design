@@ -104,6 +104,7 @@
 
 {#snippet renderLabel(ctx: {
   className: string;
+  style: string | undefined;
   data: TreeNodeData;
   onClick: (e: MouseEvent) => void;
   expandIcon: any;
@@ -122,7 +123,7 @@
     aria-selected={selected.has(ctx.data.key)}
     tabindex="-1"
     onclick={ctx.onClick}
-    style={`background-color: ${bg}`}
+    style={[ctx.style, `background-color: ${bg}`].filter(Boolean).join('; ')}
   >
     {#if isLeaf}
       <span style="width: 24px"></span>

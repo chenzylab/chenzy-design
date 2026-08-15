@@ -85,7 +85,18 @@
       {@render ctx.expandIcon(ctx.expandStatus)}
     {/if}
     {#if ctx.isLeaf}
-      <div role="checkbox" tabindex="-1" aria-checked={ctx.checkStatus.checked} onclick={ctx.onCheck}>
+      <!-- stopPropagation：本行根 div 叶子态 onclick 也绑定了 ctx.onCheck（用于点击整行触发
+           选中），若这层不拦截冒泡，点击 Checkbox 会先在这里触发一次 onCheck，再冒泡到根 div
+           触发第二次，两次切换相互抵消，视觉上表现为点击无反应。 -->
+      <div
+        role="checkbox"
+        tabindex="-1"
+        aria-checked={ctx.checkStatus.checked}
+        onclick={(e) => {
+          e.stopPropagation();
+          ctx.onCheck(e);
+        }}
+      >
         <Checkbox
           indeterminate={ctx.checkStatus.halfChecked}
           checked={ctx.checkStatus.checked}

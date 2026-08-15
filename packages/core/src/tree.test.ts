@@ -15,6 +15,8 @@ import {
   siblingKeys,
   accordionExpand,
   getMotionKeys,
+  getValueOrKey,
+  buildValueKeyIndex,
   type TreeNodeData,
 } from './tree.js';
 
@@ -107,6 +109,31 @@ describe('getMotionKeys', () => {
 
   it('returns empty for an unknown key', () => {
     expect(getMotionKeys('missing', new Set(), data)).toEqual([]);
+  });
+});
+
+describe('getValueOrKey / buildValueKeyIndex', () => {
+  it('falls back to key when value is undefined', () => {
+    expect(getValueOrKey({ key: '1', label: 'Root 1' })).toBe('1');
+  });
+
+  it('prefers value when declared', () => {
+    expect(getValueOrKey({ key: '1', value: 'v1', label: 'Root 1' })).toBe('v1');
+  });
+
+  it('prefers value even when it is falsy but defined (0 or "")', () => {
+    expect(getValueOrKey({ key: '1', value: 0, label: 'Root 1' })).toBe(0);
+    expect(getValueOrKey({ key: '1', value: '', label: 'Root 1' })).toBe('');
+  });
+
+  it('buildValueKeyIndex only indexes nodes that declare value', () => {
+    const tree: TreeNodeData[] = [
+      { key: '1', value: 'v1', label: 'Root 1', children: [{ key: '1-1', label: 'Child 1-1' }] },
+      { key: '2', label: 'Root 2' },
+    ];
+    const index = buildValueKeyIndex(tree);
+    expect(index.get('v1')).toBe('1');
+    expect(index.size).toBe(1);
   });
 });
 

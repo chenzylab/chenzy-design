@@ -137,10 +137,17 @@
 
 {#snippet renderLabel(ctx: {
   className: string;
+  style: string | undefined;
   data: TreeNodeData;
   onClick: (e: MouseEvent) => void;
   expandIcon: any;
   expandStatus: { expanded: boolean; loading: boolean };
+  draggable: boolean;
+  onDragStart: (e: DragEvent) => void;
+  onDragOver: (e: DragEvent) => void;
+  onDragLeave: (e: DragEvent) => void;
+  onDrop: (e: DragEvent) => void;
+  onDragEnd: (e: DragEvent) => void;
 })}
   {@const isLeaf = !(ctx.data.children && ctx.data.children.length)}
   {@const bg = selected.has(ctx.data.key)
@@ -149,13 +156,21 @@
       ? 'color-mix(in srgb, var(--cd-color-primary-light-default) 50%, transparent)'
       : 'transparent'}
   <!-- svelte-ignore a11y_click_events_have_key_events -->
+  <!-- draggable + ondrag*：对齐 Semi renderFullLabel + draggable 场景 cloneElement 强制注入
+       的拖拽属性——Tree 传了 draggable 时，自定义渲染的根节点也必须自己接上这些才能真正拖动。 -->
   <div
     class={ctx.className}
     role="treeitem"
     aria-selected={selected.has(ctx.data.key)}
     tabindex="-1"
+    draggable={ctx.draggable}
     onclick={ctx.onClick}
-    style={`background-color: ${bg}`}
+    ondragstart={ctx.onDragStart}
+    ondragover={ctx.onDragOver}
+    ondragleave={ctx.onDragLeave}
+    ondrop={ctx.onDrop}
+    ondragend={ctx.onDragEnd}
+    style={[ctx.style, `background-color: ${bg}`].filter(Boolean).join('; ')}
   >
     {#if isLeaf}
       <span style="width: 24px"></span>

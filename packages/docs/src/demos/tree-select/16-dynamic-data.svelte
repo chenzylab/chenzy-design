@@ -1,18 +1,34 @@
 <script lang="ts">
-  import { TreeSelect, Button, Space } from '@chenzy-design/svelte';
-  import type { TreeNode } from './_data';
+  import { TreeSelect, Button } from '@chenzy-design/svelte';
+  import type { TreeNode } from '@chenzy-design/svelte';
 
-  const datasetA: TreeNode[] = [
-    { label: '亚洲', value: 'Asia', key: '0', children: [{ label: '中国', value: 'China', key: '0-0' }] },
-  ];
-  const datasetB: TreeNode[] = [
-    { label: '欧洲', value: 'Europe', key: '1', children: [{ label: '法国', value: 'France', key: '1-0' }] },
-  ];
+  let treeData = $state<TreeNode[]>([]);
 
-  let treeData = $state<TreeNode[]>(datasetA);
+  function add() {
+    const itemLength = Math.floor(Math.random() * 5) + 1;
+    treeData = new Array(itemLength).fill(0).map((_v, i) => {
+      const length = Math.floor(Math.random() * 3);
+      const children: TreeNode[] = new Array(length).fill(0).map((_cv, ci) => ({
+        key: `${i}-${ci}`,
+        label: `Leaf-${i}-${ci}`,
+        value: `${i}-${ci}`,
+      }));
+      return {
+        key: `${i}`,
+        label: `Item-${i}`,
+        value: `${i}`,
+        children,
+      };
+    });
+  }
 </script>
 
-<Space vertical align="start">
-  <Button onclick={() => (treeData = treeData === datasetA ? datasetB : datasetA)}>切换数据源</Button>
-  <TreeSelect style="width: 300px" dropdownStyle="max-height: 400px; overflow: auto" {treeData} defaultExpandAll placeholder="动态更新数据" />
-</Space>
+<TreeSelect
+  style="width: 300px"
+  dropdownStyle="max-height: 400px; overflow: auto"
+  {treeData}
+  placeholder="请选择"
+/>
+<br />
+<br />
+<Button onclick={add}>动态改变数据</Button>

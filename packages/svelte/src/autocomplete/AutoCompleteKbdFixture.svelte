@@ -4,8 +4,11 @@
   高亮走 aria-activedescendant 指向 option id。
   对齐 Semi：组件不做本地过滤，data 由外部按输入 query 准备（此处 onChange 里就地过滤）。
   夹具暴露 onSelect 写入 lastSelected，供测试断言 Enter 选中。
+  必须引 tokens.css：不引则 var() 全失效（面板进出场动画用到 --cd-animation-duration-tooltip-*
+  等 token，缺失会导致 animation-duration 解析为 0s）。
 -->
 <script lang="ts">
+  import '@chenzy-design/tokens/tokens.css';
   import { LocaleProvider } from '../locale-provider/index.js';
   import AutoComplete from './AutoComplete.svelte';
 

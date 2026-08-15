@@ -335,14 +335,26 @@ export function collectLeafKeys(
 /**
  * Search filtering: returns the set of node keys to expand so that every node
  * matching `match` is visible (its ancestor chain). The matched keys themselves
- * are returned separately for highlighting.
+ * are returned separately for highlighting. `descendants` holds every descendant
+ * of a matched node (对齐 Semi findDescendantKeys(filteredOptsKeys, ...)：命中节点
+ * 本身可能没有子节点被 match 命中，但 showFilteredOnly 下用户手动展开命中节点时，
+ * 其全部子孙仍需可见，而非仅展示到命中节点为止）。
  */
 export function computeFilteredKeys(
   data: TreeNodeData[],
   match: (node: TreeNodeData) => boolean,
-): { matched: Set<TreeKey>; expand: Set<TreeKey> } {
+): { matched: Set<TreeKey>; expand: Set<TreeKey>; descendants: Set<TreeKey> } {
   const matched = new Set<TreeKey>();
   const expand = new Set<TreeKey>();
+  const descendants = new Set<TreeKey>();
+
+  function collectDescendants(node: TreeNodeData) {
+    if (!node.children) return;
+    for (const child of node.children) {
+      descendants.add(child.key);
+      collectDescendants(child);
+    }
+  }
 
   function walk(node: TreeNodeData, ancestors: TreeKey[]): boolean {
     let childHit = false;
@@ -352,7 +364,10 @@ export function computeFilteredKeys(
       }
     }
     const selfHit = match(node);
-    if (selfHit) matched.add(node.key);
+    if (selfHit) {
+      matched.add(node.key);
+      collectDescendants(node);
+    }
     if (selfHit || childHit) {
       // expand all ancestors so this node is reachable
       for (const a of ancestors) expand.add(a);
@@ -363,7 +378,7 @@ export function computeFilteredKeys(
   }
 
   for (const root of data) walk(root, []);
-  return { matched, expand };
+  return { matched, expand, descendants };
 }
 
 /**
@@ -523,4 +538,31 @@ export function getMotionKeys(
   };
   getChild(target);
   return res;
+}
+
+/**
+ * 值通道回退语义（对齐 Semi `treeUtil.getValueOrKey`）：节点声明了 `value` 字段时，
+ * 对外值通道（onChange 抛出值 / 受控 value 展示）优先取 `value`；未声明（`undefined`）
+ * 才回退 `key`。内部选中态索引（expandedKeys/checkedKeys/selectedKeys 等）恒用 `key`，
+ * 与此函数无关——这只管「对外该展示/传出什么」。
+ */
+export function getValueOrKey(node: TreeNodeData): TreeKey {
+  return node.value ?? node.key;
+}
+
+/**
+ * 构建 value → key 反查表（对齐 Tree.svelte 既有 `keyByNodeValue` 用途，供受控
+ * value/defaultValue 传入的是节点 `value` 时反查回内部 `key`）。仅收录声明了 `value`
+ * 字段的节点；未声明的节点本就该继续走 key，无需出现在表里。
+ */
+export function buildValueKeyIndex(data: TreeNodeData[]): Map<string | number, TreeKey> {
+  const map = new Map<string | number, TreeKey>();
+  function walk(nodes: TreeNodeData[]): void {
+    for (const n of nodes) {
+      if (n.value !== undefined) map.set(n.value, n.key);
+      if (n.children) walk(n.children);
+    }
+  }
+  walk(data);
+  return map;
 }
