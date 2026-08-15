@@ -14,6 +14,9 @@ import {
   collectLeafKeys,
   siblingKeys,
   accordionExpand,
+  getMotionKeys,
+  getValueOrKey,
+  buildValueKeyIndex,
   type TreeNodeData,
 } from './tree.js';
 
@@ -79,6 +82,58 @@ describe('flattenVisible', () => {
     expect(byKey('1-2-1')?.isLast).toBe(false);
     // last root '2'
     expect(byKey('2')?.isLast).toBe(true);
+  });
+});
+
+describe('getMotionKeys', () => {
+  it('collects direct children of eventKey', () => {
+    expect(getMotionKeys('1', new Set(), data)).toEqual(['1-1', '1-2']);
+  });
+
+  it('recurses into children that are themselves expanded', () => {
+    expect(getMotionKeys('1', new Set(['1-2']), data)).toEqual([
+      '1-1',
+      '1-2',
+      '1-2-1',
+      '1-2-2',
+    ]);
+  });
+
+  it('does not recurse into children that are not expanded', () => {
+    expect(getMotionKeys('1', new Set(['1-1']), data)).toEqual(['1-1', '1-2']);
+  });
+
+  it('returns empty for a leaf node', () => {
+    expect(getMotionKeys('1-1', new Set(['1']), data)).toEqual([]);
+  });
+
+  it('returns empty for an unknown key', () => {
+    expect(getMotionKeys('missing', new Set(), data)).toEqual([]);
+  });
+});
+
+describe('getValueOrKey / buildValueKeyIndex', () => {
+  it('falls back to key when value is undefined', () => {
+    expect(getValueOrKey({ key: '1', label: 'Root 1' })).toBe('1');
+  });
+
+  it('prefers value when declared', () => {
+    expect(getValueOrKey({ key: '1', value: 'v1', label: 'Root 1' })).toBe('v1');
+  });
+
+  it('prefers value even when it is falsy but defined (0 or "")', () => {
+    expect(getValueOrKey({ key: '1', value: 0, label: 'Root 1' })).toBe(0);
+    expect(getValueOrKey({ key: '1', value: '', label: 'Root 1' })).toBe('');
+  });
+
+  it('buildValueKeyIndex only indexes nodes that declare value', () => {
+    const tree: TreeNodeData[] = [
+      { key: '1', value: 'v1', label: 'Root 1', children: [{ key: '1-1', label: 'Child 1-1' }] },
+      { key: '2', label: 'Root 2' },
+    ];
+    const index = buildValueKeyIndex(tree);
+    expect(index.get('v1')).toBe('1');
+    expect(index.size).toBe(1);
   });
 });
 

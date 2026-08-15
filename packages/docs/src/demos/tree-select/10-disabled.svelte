@@ -3,4 +3,31 @@
   import { treeData } from './_data';
 </script>
 
-<TreeSelect style="width: 300px" {treeData} disabled defaultValue="Shanghai" placeholder="请选择" />
+<div>
+  <TreeSelect
+    style="width: 300px"
+    dropdownStyle="max-height: 400px; overflow: auto"
+    {treeData}
+    disabled
+    placeholder="禁用下拉菜单"
+  />
+  <br />
+  <br />
+  <TreeSelect
+    style="width: 300px"
+    defaultValue="Shanghai"
+    dropdownStyle="max-height: 400px; overflow: auto"
+    {treeData}
+    disabled
+  />
+  <br />
+  <br />
+  <TreeSelect
+    style="width: 300px"
+    defaultValue={['Shanghai', 'North America']}
+    dropdownStyle="max-height: 400px; overflow: auto"
+    {treeData}
+    multiple
+    disabled
+  />
+</div>

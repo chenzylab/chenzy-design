@@ -44,6 +44,7 @@ TreeSelect 是「树形数据 + 下拉选择」的复合输入控件：把 Tree 
 
 **@chenzy-design/svelte · `<TreeSelect>`**
 - 渲染触发器、浮层、Tree 节点、Tag、虚拟列表容器；绑定 core 输出的 actions/attrs（spread aria 属性）。
+- 面板层直接复用 `../tree/treeNode.svelte`、`../tree/nodeList.svelte`（对齐 Semi treeNode.tsx 被 Tree/TreeSelect 共用同一份组件的事实）；改动这两个文件会同时影响 Tree 与 TreeSelect 的节点渲染，需同步验证两处消费方。
 - 虚拟化：可见节点数 > `virtualizeThreshold`（默认 100）时启用窗口渲染（固定/估算行高），仅渲染视口 + overscan。
 - destroyOnClose / lazy：浮层未首次打开不渲染 Tree DOM。
 
@@ -55,8 +56,8 @@ TreeSelect 是「树形数据 + 下拉选择」的复合输入控件：把 Tree 
 
 | Prop | 类型 | 默认值 | 说明 |
 | --- | --- | --- | --- |
-| value | `TreeKey\|TreeKey[]\|null` | `undefined` |  |
-| defaultValue | `TreeKey\|TreeKey[]\|null` | `null` |  |
+| value | `TreeKey\|TreeNode\|Array<TreeKey\|TreeNode>\|null` | `undefined` | onChangeWithObject 开启时为节点对象（或对象数组） |
+| defaultValue | `TreeKey\|TreeNode\|Array<TreeKey\|TreeNode>\|null` | `null` | onChangeWithObject 开启时为节点对象（或对象数组） |
 | treeData | `TreeNode[]` | `[]` | 树数据源；字段名可经 keyMaps 自定义 |
 | defaultOpen | `boolean` | `false` |  |
 | multiple | `boolean` | `false` | checkbox 多选 + 父子联动，多 tag 回显 |
@@ -70,8 +71,7 @@ TreeSelect 是「树形数据 + 下拉选择」的复合输入控件：把 Tree 
 | leafOnly | `boolean` | `false` |  |
 | defaultExpandAll | `boolean` | `false` |  |
 | defaultExpandedKeys | `TreeKey[]` | `[]` | 默认展开的节点 key（非受控初始展开集，与 defaultExpandAll 取并集；对齐 Semi） |
-| filterable | `boolean` | `false` | 面板搜索框过滤节点 + 高亮命中 |
-| filterTreeNode | `boolean \| ((inputValue: string, treeNodeString: string, data?: TreeNode) => boolean)` | `undefined` | 按输入筛选节点（对齐 Semi）：true 开启搜索并默认按 treeNodeFilterProp 包含匹配；函数则自定义匹配谓词。与 filterable 其一为真即显示搜索框 |
+| filterTreeNode | `boolean \| ((inputValue: string, treeNodeString: string, data?: TreeNode) => boolean)` | `undefined` | 按输入筛选节点（对齐 Semi）：true 开启搜索并默认按 treeNodeFilterProp 包含匹配；函数则自定义匹配谓词。remote 或 filterTreeNode 真值时显示搜索框 |
 | remote | `boolean` | `false` | 远程搜索：输入仅触发 onSearch，不本地过滤（外部更新 treeData） |
 | onSearch | `(input: string, filteredExpandedKeys: TreeKey[], filteredNodes: TreeNode[]) => void` | `undefined` | 搜索输入回调（对齐 Semi 三入参）：入参为当前输入、过滤后应展开的节点 keys、命中节点数组 |
 | loadData | `(node: TreeNode) => Promise<TreeNode[]>` | `undefined` | 异步加载子节点：展开未加载的非叶子节点时调用，返回该节点子节点数组（加载中显示 spinner，竞态去重，不写回 treeData）。与 Tree 的 loadData 对齐 |
@@ -80,7 +80,7 @@ TreeSelect 是「树形数据 + 下拉选择」的复合输入控件：把 Tree 
 | insetLabel | `Snippet \| string` | `undefined` | 触发器内嵌标签，渲染在回填值/占位符之前（对齐 Semi insetLabel），消费 --cd-color/font-tree-select-label token |
 | insetLabelId | `string` | `undefined` | 内嵌标签的 id（a11y 关联用），对齐 Semi insetLabelId |
 | motion | `boolean` | `true` | 下拉浮层开合动画（淡入）；与 Cascader/Dropdown 的 motion 对齐。reduced-motion 退化 |
-| onChange | `(value: TreeKey\|TreeKey[]\|null) => void` | `undefined` | 多选返回 checked 全集数组，单选返回单 key |
+| onChange | `(value: TreeKey\|TreeNode\|Array<TreeKey\|TreeNode>\|null) => void` | `undefined` | 多选返回 checked 全集数组，单选返回单值；onChangeWithObject 开启时携带节点对象而非仅 key |
 | aria-label | `string` | `undefined` |  |
 | ariaLabelledby | `string` | `undefined` | aria-labelledby：关联外部 label 元素（Form.Field 透传 labelId，对齐 Semi） |
 | ariaDescribedby | `string` | `undefined` | aria-describedby：关联 helpText / extraText（Form.Field 透传） |
@@ -125,8 +125,8 @@ TreeSelect 是「树形数据 + 下拉选择」的复合输入控件：把 Tree 
 | showRestTagsPopover | `boolean` | `false` | 多选 maxTagCount 折叠出 +N 时，hover +N 用 Popover 浮层展示折叠掉的剩余全部 Tag |
 | restTagsPopoverProps | `Record<string, unknown>` | `undefined` | 透传给剩余 Tag Popover 浮层的额外 props（在默认 trigger=hover/position=top 之后展开，可覆盖） |
 | triggerTagWrap | `boolean` | `false` | trigger 多选 tags 换行显示（默认单行截断折叠） |
-| renderLabel | `Snippet<[{ label: string; data: TreeNode; searchWord: string }]>` | `undefined` | 自定义节点 label 渲染（仅替换文字部分） |
-| renderFullLabel | `Snippet<[{ node: TreeNode; expanded: boolean; level: number; checked: boolean; halfChecked: boolean; selected: boolean }]>` | `undefined` | 完全自定义节点行渲染（替换整行内容） |
+| renderLabel | `Snippet<[{ node: TreeNodeData; level: number; searchValue: string; selected: boolean; checked: boolean }]>` | `undefined` | 自定义节点 label 渲染（仅替换文字部分）；与 Tree.svelte 签名统一（Semi treeNode.tsx 是 Tree/TreeSelect 共用同一份组件） |
+| renderFullLabel | `Snippet<[FullLabelContext]>` | `undefined` | 完全自定义节点行渲染（替换整行内容）；FullLabelContext 含 data/level/style/className/expandIcon/isLeaf/checkStatus/expandStatus/filtered/searchWord/onClick/onCheck/onExpand/onContextMenu/onDoubleClick，定义见 `../tree/treeContext.ts` |
 | renderSelectedItem | `Snippet<[{ node: TreeNode; onRemove: () => void }]>` | `undefined` | 自定义 trigger 已选 tag 渲染（多选时每个 tag 独立渲染） |
 | treeNodeLabelProp | `string` | `'label'` | 节点数据中用作显示 label 的字段名 |
 | keyMaps | `{ key?: string; label?: string; value?: string; children?: string }` | `undefined` | 自定义节点字段名映射（对齐 Semi keyMaps）：适配任意后端数据结构，如 { key:'id', label:'name', children:'sub' } |
@@ -158,16 +158,7 @@ TreeSelect 是「树形数据 + 下拉选择」的复合输入控件：把 Tree 
 
 ### Slots
 
-| Slot | 作用域参数 | 说明 |
-| --- | --- | --- |
-| trigger | `{ open; value; nodes; placeholder }` | 完全自定义触发器渲染。 |
-| label | `{ node; level }` | 自定义节点 label 渲染（如高亮匹配关键字）。 |
-| tag | `{ node; onClose }` | 自定义多选回填 Tag。 |
-| icon | `{ node }` | 自定义节点前缀图标。 |
-| empty | — | 无数据/无匹配自定义内容。 |
-| prefix / suffix | — | 触发器前/后缀。 |
-| arrow | `{ open }` | 自定义展开箭头。 |
-| loading | — | 自定义 loading 占位。 |
+> 本组件无独立 `<slot>` 通道，均由 Props 表内 Snippet 类型 prop 承担（Svelte 5 无 slot 概念）：完全自定义触发器见 `triggerRender`，节点 label 见 `renderLabel`/`renderFullLabel`，多选回填 Tag 见 `renderSelectedItem`，前缀图标见 `expandIcon`，空态见 `emptyContent`，触发器前后缀见 `prefix`/`suffix`，清除按钮图标见 `clearIcon`。无独立 loading 插槽。
 
 ## 5. 主题 / Token
 

@@ -1,28 +1,25 @@
 <script lang="ts">
-  import { TreeSelect } from '@chenzy-design/svelte';
-  import { treeDataEn as treeData } from './_data';
+  import { TreeSelect, Tag, Title } from '@chenzy-design/svelte';
+  import { treeDataFourContinents as treeData } from './_data';
 </script>
 
-<TreeSelect
-  style="width: 300px"
-  dropdownStyle="max-height: 400px; overflow: auto"
-  {treeData}
-  multiple
-  defaultValue={['Beijing', 'Shanghai']}
-  defaultExpandAll
-  placeholder="请选择"
->
+<Title heading={6} style="margin: 20px 0 10px">单选</Title>
+<TreeSelect style="width: 300px" {treeData}>
+  {#snippet renderSelectedItem({ node })}
+    {node.label}
+  {/snippet}
+</TreeSelect>
+
+<Title heading={6} style="margin: 20px 0 10px">多选 + isRenderInTag=true</Title>
+<TreeSelect style="width: 300px" {treeData} multiple>
   {#snippet renderSelectedItem({ node, onRemove })}
-    <span
-      style="display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; margin-right: 6px; border-radius: 12px; background-color: var(--cd-color-info-light-default); font-size: 12px"
-    >
-      📍 {node.label}
-      <button
-        type="button"
-        style="border: none; background: none; cursor: pointer; padding: 0; color: var(--cd-color-text-2)"
-        aria-label="移除"
-        onclick={onRemove}>×</button
-      >
-    </span>
+    <Tag color="white" closable onClose={onRemove}>{node.label}</Tag>
+  {/snippet}
+</TreeSelect>
+
+<Title heading={6} style="margin: 20px 0 10px">多选 + isRenderInTag=false</Title>
+<TreeSelect style="width: 300px" {treeData} multiple maxTagCount={2}>
+  {#snippet renderSelectedItem({ node, onRemove })}
+    <Tag color="white" closable onClose={onRemove}>{node.value}</Tag>
   {/snippet}
 </TreeSelect>

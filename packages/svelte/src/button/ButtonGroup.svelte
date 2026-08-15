@@ -194,39 +194,43 @@
     z-index: 1;
   }
 
-  /* ===== 分隔线（对齐 Semi button.scss `-group-line`，两层结构）===== */
-  /* 外层：per-type 背景色（真实存在，但恒被下方 ::before 完全覆盖，与 Semi 视觉行为一致）。 */
-  .cd-button-group-line {
+  /* ===== 分隔线（对齐 Semi button.scss `-group-line`，两层结构）=====
+     groupLines action 用 document.createElement('span') 命令式插入这些分隔线节点，
+     不经过 Svelte 模板编译，天生不带 scoped hash class（如 svelte-xxxxx）。普通 scoped
+     选择器（如 `.cd-button-group-line`）只会编译成 `.cd-button-group-line.svelte-xxxxx`，
+     永远无法匹配这些动态节点，导致分隔线完全不可见（::before content:none 未生效）。
+     故这里全部用 :global() 包裹，摆脱 scoped 限制。 */
+  :global(.cd-button-group-line) {
     display: inline-flex;
     align-items: center;
     background-color: var(--cd-color-button-group-border-default);
   }
-  .cd-button-group-line-primary {
+  :global(.cd-button-group-line-primary) {
     background-color: var(--cd-color-button-primary-bg-default);
   }
-  .cd-button-group-line-secondary {
+  :global(.cd-button-group-line-secondary) {
     background-color: var(--cd-color-button-secondary-bg-default);
   }
-  .cd-button-group-line-tertiary {
+  :global(.cd-button-group-line-tertiary) {
     background-color: var(--cd-color-button-tertiary-bg-default);
   }
-  .cd-button-group-line-warning {
+  :global(.cd-button-group-line-warning) {
     background-color: var(--cd-color-button-warning-bg-default);
   }
-  .cd-button-group-line-danger {
+  :global(.cd-button-group-line-danger) {
     background-color: var(--cd-color-button-danger-bg-default);
   }
-  .cd-button-group-line-disabled {
+  :global(.cd-button-group-line-disabled) {
     background-color: var(--cd-color-button-disabled-bg-default);
   }
-  .cd-button-group-line-light {
+  :global(.cd-button-group-line-light) {
     background-color: var(--cd-color-button-light-bg-default);
   }
-  .cd-button-group-line-borderless {
+  :global(.cd-button-group-line-borderless) {
     background-color: transparent;
   }
   /* 内层：固定 group-border 色，同宽高覆盖外层（Semi ::before，视觉上唯一可见的部分）。 */
-  .cd-button-group-line::before {
+  :global(.cd-button-group-line::before) {
     display: block;
     content: '';
     width: var(--cd-width-button-group-border);

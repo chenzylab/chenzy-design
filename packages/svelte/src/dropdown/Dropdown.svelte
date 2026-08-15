@@ -227,6 +227,30 @@
   });
   const shouldRender = $derived(isOpen || (hasBeenOpened && keepDOM));
 
+  /**
+   * 进/退场动画对齐 Semi（与 Select/Cascader/TreeSelect 同构模式）：keepDOM=true 时
+   * 面板关闭后保留 DOM，可以先播放 hide 动画再真正隐藏；keepDOM=false（默认）时面板
+   * 整个从 `{#if}` 卸载，DOM 立即消失，来不及播放退场动画——用户未要求保留 DOM，
+   * 立即消失符合预期（与 Select destroyOnClose=true / Tooltip keepDOM=false 同一决策）。
+   */
+  let panelLeaving = $state(false);
+  let panelHidden = $state(true);
+  $effect(() => {
+    if (isOpen) {
+      panelHidden = false;
+      panelLeaving = false;
+    } else if (motion && keepDOM) {
+      panelLeaving = true;
+    } else {
+      panelHidden = true;
+    }
+  });
+  function finalizeClose(): void {
+    if (!panelLeaving) return;
+    panelLeaving = false;
+    panelHidden = true;
+  }
+
   // --- hover / focus 延迟开关 ---
   let enterTimer: ReturnType<typeof setTimeout> | undefined;
   let leaveTimer: ReturnType<typeof setTimeout> | undefined;
@@ -600,7 +624,7 @@
     id={menuId}
     bind:this={menuWrapperEl}
     style={wrapperInlineStyle}
-    class:cd-dropdown-motion={motion}
+    class:cd-dropdown-motion-show={motion}
     use:cursorFloating={{ x: cursorX, y: cursorY }}
     onkeydown={onMenuKeydown}
     onclick={onMenuClick}
@@ -615,8 +639,10 @@
     id={menuId}
     bind:this={menuWrapperEl}
     style={wrapperInlineStyle}
-    class:cd-dropdown-hidden={!isOpen}
-    class:cd-dropdown-motion={motion && isOpen}
+    class:cd-dropdown-hidden={keepDOM ? panelHidden : !isOpen}
+    class:cd-dropdown-motion-show={motion && isOpen}
+    class:cd-dropdown-motion-hide={motion && keepDOM && panelLeaving}
+    onanimationend={finalizeClose}
     use:floating={{ trigger: anchorEl, placement: position, autoAdjust: autoAdjustOverflow, offset, padding: floatPadding, getContainer: resolvePopupContainer, open: isOpen, rePosKey }}
     onkeydown={onMenuKeydown}
     onpointerenter={() => trigger === 'hover' && clearTimers()}
@@ -657,22 +683,55 @@
   .cd-dropdown-hidden {
     display: none;
   }
-  /* motion：进场淡入；定位 transform 由 use:floating 写入 inline style，
-     keyframe 绝不能设 transform（会覆盖 translate 使浮层飘走），故只动 opacity。 */
-  .cd-dropdown-motion {
-    animation: cd-dropdown-in var(--cd-motion-duration-fast) var(--cd-motion-ease-standard) both;
+  /*
+   * 进/退场动画对齐 Semi（Semi Dropdown 本体是 <Tooltip> 实例，动画即 Tooltip 的
+   * zoomIn/zoomOut，故直接复用 tooltip 命名空间的 token）：scale(0.8→1) + opacity(0→1)，
+   * 用独立 CSS `scale` 属性（非 transform:scale()）——use:floating 用 transform:translate()
+   * 定位，scale 与 transform 正交，同一元素上二者互不覆盖（同 Select/Cascader/TreeSelect
+   * 解法，纠正了此前"只能动 opacity"的过时限制）。退场仅 keepDOM=true 时生效（见 script
+   * 状态机注释）。
+   */
+  .cd-dropdown-motion-show {
+    animation: cd-dropdown-zoom-in var(--cd-animation-duration-tooltip-in)
+      var(--cd-animation-function-tooltip-in);
   }
-  @keyframes cd-dropdown-in {
+  .cd-dropdown-motion-hide {
+    animation: cd-dropdown-zoom-out var(--cd-animation-duration-tooltip-out)
+      var(--cd-animation-function-tooltip-out);
+  }
+  @keyframes cd-dropdown-zoom-in {
     from {
-      opacity: 0;
+      opacity: var(--cd-tooltip-motion-zoom-opacity-from);
+      scale: var(--cd-tooltip-motion-zoom-scale-from);
+    }
+    50% {
+      opacity: var(--cd-tooltip-motion-zoom-opacity-to);
     }
     to {
-      opacity: 1;
+      opacity: var(--cd-tooltip-motion-zoom-opacity-to);
+      scale: 1;
     }
   }
+  @keyframes cd-dropdown-zoom-out {
+    from {
+      opacity: var(--cd-tooltip-motion-zoom-opacity-to);
+      scale: 1;
+    }
+    60% {
+      opacity: var(--cd-tooltip-motion-zoom-opacity-from);
+      scale: var(--cd-tooltip-motion-zoom-scale-from);
+    }
+    to {
+      opacity: var(--cd-tooltip-motion-zoom-opacity-from);
+      scale: var(--cd-tooltip-motion-zoom-scale-from);
+    }
+  }
+  /* 减少动效：时长归零而非 animation:none——后者不触发 animationend，
+     会让 finalizeClose 永远不被调用，面板卡在展开态无法真正隐藏（keepDOM=true 时）。 */
   @media (prefers-reduced-motion: reduce) {
-    .cd-dropdown-motion {
-      animation: none;
+    .cd-dropdown-motion-show,
+    .cd-dropdown-motion-hide {
+      animation-duration: 0.01ms;
     }
   }
 </style>

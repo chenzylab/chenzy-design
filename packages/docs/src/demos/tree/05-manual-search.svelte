@@ -4,38 +4,67 @@
 
   const treeData: TreeNodeData[] = [
     {
-      label: '亚洲',
-      key: 'asia',
+      label: 'Asia',
+      value: 'Asia',
+      key: '0',
       children: [
-        { label: '中国', key: 'china', children: [{ label: '北京', key: 'beijing' }] },
-        { label: '日本', key: 'japan' },
+        {
+          label: 'China',
+          value: 'China',
+          key: '0-0',
+          children: [
+            {
+              label: 'Beijing',
+              value: 'Beijing',
+              key: '0-0-0',
+            },
+            {
+              label: 'Shanghai',
+              value: 'Shanghai',
+              key: '0-0-1',
+            },
+          ],
+        },
+        {
+          label: 'Japan',
+          value: 'Japan',
+          key: '0-1',
+          children: [
+            {
+              label: 'Osaka',
+              value: 'Osaka',
+              key: '0-1-0',
+            },
+          ],
+        },
       ],
     },
-    { label: '北美洲', key: 'na', children: [{ label: '美国', key: 'us' }] },
+    {
+      label: 'North America',
+      value: 'North America',
+      key: '1',
+      children: [
+        {
+          label: 'United States',
+          value: 'United States',
+          key: '1-0',
+        },
+        {
+          label: 'Canada',
+          value: 'Canada',
+          key: '1-1',
+        },
+      ],
+    },
   ];
 
-  // 通过组件实例 search() 方法手动触发搜索；searchRender={false} 隐藏内部搜索框
   let tree = $state<{ search: (v: string) => void } | undefined>();
-  let keyword = $state('');
 </script>
 
-<div style="display:flex; flex-direction:column; gap:12px; width:260px">
-  <Input
-    value={keyword}
-    placeholder="外部搜索框，输入后回车/输入触发"
-    onInput={(v) => {
-      keyword = v;
-      tree?.search(v);
-    }}
-  />
-  <!-- filterTreeNode 开启搜索能力，searchRender={false} 隐藏内置框，由外部 search() 驱动 -->
-  <Tree
-    style="width: 260px; height: 420px; border: 1px solid var(--cd-color-border); border-radius: 6px; box-sizing: border-box"
-    bind:this={tree}
-    {treeData}
-    filterTreeNode
-    searchRender={false}
-    defaultExpandAll
-    aria-label="手动触发搜索树"
-  />
+<div>
+  <Input aria-label="filter tree" showClear onInput={(v) => tree?.search(v)}>
+    {#snippet prefix()}Search{/snippet}
+  </Input>
+  <div style="margin-top: 20px">搜索结果如下：</div>
+  <Tree bind:this={tree} filterTreeNode searchRender={false} {treeData} blockNode={false} />
 </div>

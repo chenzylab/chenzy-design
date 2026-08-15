@@ -154,6 +154,8 @@
     position?: Position;
     /** 浮层溢出视口时自动翻转到反向 placement（默认 true，对齐 Semi autoAdjustOverflow）。 */
     autoAdjustOverflow?: boolean;
+    /** 下拉浮层进出场动画（对齐 Semi motion，默认 true；Semi AutoComplete 本体是 Popover 实例）。 */
+    motion?: boolean;
     /** 透传键盘原始事件（在内部键盘逻辑之前调用）。 */
     onKeyDown?: (e: KeyboardEvent) => void;
     /** 根节点自定义 class。 */
@@ -204,6 +206,7 @@
     autoFocus: autoFocusProp,
     position: positionProp,
     autoAdjustOverflow = true,
+    motion = true,
     onKeyDown,
     class: className = '',
     style = '',
@@ -331,6 +334,35 @@
 
   // 展开且（有候选 或 加载中）时才展示浮层。
   const showDropdown = $derived(isOpen && (options.length > 0 || loading));
+
+  /**
+   * 进/退场动画对齐 Semi（AutoComplete 本体是 Popover 实例，继承其 zoomIn/zoomOut；
+   * 本库此前完全没有面板动画/motion prop，是真实功能缺口，与 Cascader 同类问题）：
+   * 面板挂载后一直保留 DOM（hasBeenOpened 恒 true），关闭时先播放 hide 动画
+   * （panelLeaving），animationend 后才真正 hidden（panelHidden）。
+   */
+  let hasBeenOpened = $state(false);
+  $effect(() => {
+    if (showDropdown) hasBeenOpened = true;
+  });
+  const shouldRenderPanel = $derived(showDropdown || hasBeenOpened);
+  let panelLeaving = $state(false);
+  let panelHidden = $state(true);
+  $effect(() => {
+    if (showDropdown) {
+      panelHidden = false;
+      panelLeaving = false;
+    } else if (motion) {
+      panelLeaving = true;
+    } else {
+      panelHidden = true;
+    }
+  });
+  function finalizeClose(): void {
+    if (!panelLeaving) return;
+    panelLeaving = false;
+    panelHidden = true;
+  }
 
   // suffix 槽是否有内容——renderSelectedItem 不渲染在 suffix（它决定 input 显示文本本身，见 displayText/commit）。
   const hasSuffixSlot = $derived(suffix != null);
@@ -628,7 +660,7 @@
     />
   {/if}
 
-  {#if showDropdown && rootEl}
+  {#if shouldRenderPanel && rootEl}
     <!--
       listbox 有意不可聚焦（roving focus 模式，对齐 Semi/W3C combobox pattern）：
       焦点始终停留在 input 上，经 aria-activedescendant 关联高亮项，listbox 自身不参与 Tab 顺序。
@@ -637,6 +669,10 @@
     <div
       bind:this={dropdownEl}
       class={['cd-autocomplete-option-list', dropdownClassName].filter(Boolean).join(' ')}
+      class:cd-autocomplete-option-list-hidden={panelHidden}
+      class:cd-autocomplete-option-list-motion-show={motion && showDropdown}
+      class:cd-autocomplete-option-list-motion-hide={motion && panelLeaving}
+      onanimationend={finalizeClose}
       role="listbox"
       id={listId}
       aria-busy={loading || undefined}
@@ -724,6 +760,59 @@
     background: var(--cd-color-bg-3);
     border-radius: var(--cd-border-radius-medium);
     box-shadow: var(--cd-shadow-elevated);
+  }
+  /* 关闭后保留 DOM 但不可见、不可交互、不占位（首开后不销毁重建，对齐 Semi Popover motion）。 */
+  .cd-autocomplete-option-list-hidden {
+    display: none;
+  }
+  /*
+   * 进/退场动画对齐 Semi（AutoComplete 本体是 Popover 实例，Popover 动画复用 Tooltip
+   * zoomIn/zoomOut，故直接用 tooltip 命名空间 token）：scale(0.8→1) + opacity(0→1)，
+   * 用独立 CSS `scale` 属性（非 transform:scale()）——use:floating 用 transform:translate()
+   * 定位，scale 与 transform 正交，同一元素上二者互不覆盖（同 Select/Cascader/Dropdown 解法）。
+   */
+  .cd-autocomplete-option-list-motion-show {
+    animation: cd-autocomplete-zoom-in var(--cd-animation-duration-tooltip-in)
+      var(--cd-animation-function-tooltip-in);
+  }
+  .cd-autocomplete-option-list-motion-hide {
+    animation: cd-autocomplete-zoom-out var(--cd-animation-duration-tooltip-out)
+      var(--cd-animation-function-tooltip-out);
+  }
+  @keyframes cd-autocomplete-zoom-in {
+    from {
+      opacity: var(--cd-tooltip-motion-zoom-opacity-from);
+      scale: var(--cd-tooltip-motion-zoom-scale-from);
+    }
+    50% {
+      opacity: var(--cd-tooltip-motion-zoom-opacity-to);
+    }
+    to {
+      opacity: var(--cd-tooltip-motion-zoom-opacity-to);
+      scale: 1;
+    }
+  }
+  @keyframes cd-autocomplete-zoom-out {
+    from {
+      opacity: var(--cd-tooltip-motion-zoom-opacity-to);
+      scale: 1;
+    }
+    60% {
+      opacity: var(--cd-tooltip-motion-zoom-opacity-from);
+      scale: var(--cd-tooltip-motion-zoom-scale-from);
+    }
+    to {
+      opacity: var(--cd-tooltip-motion-zoom-opacity-from);
+      scale: var(--cd-tooltip-motion-zoom-scale-from);
+    }
+  }
+  /* 减少动效：时长归零而非 animation:none——后者不触发 animationend，
+     会让 finalizeClose 永远不被调用，面板卡在展开态无法真正隐藏。 */
+  @media (prefers-reduced-motion: reduce) {
+    .cd-autocomplete-option-list-motion-show,
+    .cd-autocomplete-option-list-motion-hide {
+      animation-duration: 0.01ms;
+    }
   }
   /* 加载区：对齐 Semi .semi-autocomplete-loading-wrapper（复用 Spin） */
   .cd-autocomplete-loading-wrapper {

@@ -281,6 +281,31 @@
     st.markOpened();
   });
 
+  /**
+   * 进/退场动画对齐 Semi（TimePicker 本体是 Popover 实例，继承其 zoomIn/zoomOut；
+   * 本库自建 use:floating，之前完全没有面板动画——motion prop 只驱动了
+   * transition:none，是真实功能缺口，非退场时序问题。与 Cascader/AutoComplete
+   * 同构模式补齐进出场）：面板挂载后一直保留 DOM（st.hasOpened 恒 true），关闭时
+   * 先播放 hide 动画（panelLeaving），animationend 后才真正 hidden（panelHidden）。
+   */
+  let panelLeaving = $state(false);
+  let panelHidden = $state(true);
+  $effect(() => {
+    if (isOpen) {
+      panelHidden = false;
+      panelLeaving = false;
+    } else if (motion) {
+      panelLeaving = true;
+    } else {
+      panelHidden = true;
+    }
+  });
+  function finalizeClose(): void {
+    if (!panelLeaving) return;
+    panelLeaving = false;
+    panelHidden = true;
+  }
+
   // Combobox 时间列变化（抛新时间戳）→ commit 到对应编辑端（保留该端日期部分）。
   function onComboboxChange(panelIndex: 0 | 1, timeStampValue: number) {
     const t = new Date(timeStampValue);
@@ -466,7 +491,8 @@
     [
       'cd-time-picker-panel',
       isRange && 'cd-time-picker-range-panel',
-      !motion && 'cd-time-picker-panel-no-motion',
+      motion && isOpen && 'cd-time-picker-panel-motion-show',
+      motion && panelLeaving && 'cd-time-picker-panel-motion-hide',
       popupClassName,
     ]
       .filter(Boolean)
@@ -558,9 +584,10 @@
       role="dialog"
       aria-label={loc().t('TimePicker.triggerLabel')}
       tabindex="-1"
-      hidden={!isOpen || undefined}
+      hidden={panelHidden || undefined}
       onclick={(e) => stopPropagation && e.stopPropagation()}
       onkeydown={(e) => e.key === 'Escape' && setOpen(false)}
+      onanimationend={finalizeClose}
       use:floating={{ trigger: rootEl, placement: panelPlacement, autoAdjust: autoAdjustOverflow, offset: 4, getContainer: getPopupContainer, open: isOpen }}
     >
       {#if isRange}
@@ -629,8 +656,46 @@
   .cd-time-picker-panel:focus-visible {
     outline: none;
   }
-  .cd-time-picker-panel-no-motion {
-    transition: none;
+  /*
+   * 进/退场动画对齐 Semi（TimePicker 本体是 Popover 实例，Popover 动画复用 Tooltip
+   * zoomIn/zoomOut，故直接用 tooltip 命名空间 token）：scale(0.8→1) + opacity(0→1)，
+   * 用独立 CSS `scale` 属性（非 transform:scale()）——use:floating 用 transform:translate()
+   * 定位，scale 与 transform 正交，同一元素上二者互不覆盖（同 Select/Cascader/AutoComplete）。
+   */
+  .cd-time-picker-panel-motion-show {
+    animation: cd-time-picker-zoom-in var(--cd-animation-duration-tooltip-in)
+      var(--cd-animation-function-tooltip-in);
+  }
+  .cd-time-picker-panel-motion-hide {
+    animation: cd-time-picker-zoom-out var(--cd-animation-duration-tooltip-out)
+      var(--cd-animation-function-tooltip-out);
+  }
+  @keyframes cd-time-picker-zoom-in {
+    from {
+      opacity: var(--cd-tooltip-motion-zoom-opacity-from);
+      scale: var(--cd-tooltip-motion-zoom-scale-from);
+    }
+    50% {
+      opacity: var(--cd-tooltip-motion-zoom-opacity-to);
+    }
+    to {
+      opacity: var(--cd-tooltip-motion-zoom-opacity-to);
+      scale: 1;
+    }
+  }
+  @keyframes cd-time-picker-zoom-out {
+    from {
+      opacity: var(--cd-tooltip-motion-zoom-opacity-to);
+      scale: 1;
+    }
+    60% {
+      opacity: var(--cd-tooltip-motion-zoom-opacity-from);
+      scale: var(--cd-tooltip-motion-zoom-scale-from);
+    }
+    to {
+      opacity: var(--cd-tooltip-motion-zoom-opacity-from);
+      scale: var(--cd-tooltip-motion-zoom-scale-from);
+    }
   }
 
   /* --- 面板列视图（TimePicker 独立面板专属，对齐 Semi timePicker.scss `.semi-timepicker-panel ...`）---
@@ -697,9 +762,15 @@
     padding: var(--cd-spacing-time-picker-range-panel-scrolllist-header-body-padding);
   }
 
+  /* 减少动效：时长归零而非 animation:none——后者不触发 animationend，
+     会让 finalizeClose 永远不被调用，面板卡在展开态无法真正隐藏。 */
   @media (prefers-reduced-motion: reduce) {
     .cd-time-picker-panel {
       transition: none;
+    }
+    .cd-time-picker-panel-motion-show,
+    .cd-time-picker-panel-motion-hide {
+      animation-duration: 0.01ms;
     }
   }
 

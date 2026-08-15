@@ -134,4 +134,6 @@ export const selectTokens = {
   'select-dropdown-motion-zoom-opacity-to': { value: '1', category: 'animation', label: '浮层最终透明度', usage: '浮层进场最终透明度（组件消费）' },
   'animation-duration-select-dropdown-in': { value: '100ms', category: 'animation', label: '浮层弹出动画时长', usage: '选择器下拉浮层弹出动画持续时间（组件消费）' },
   'animation-function-select-dropdown-in': { value: 'cubic-bezier(0.215, 0.61, 0.355, 1)', category: 'animation', label: '浮层弹出动画曲线', usage: '选择器下拉浮层弹出动画插值函数（组件消费）' },
+  'animation-duration-select-dropdown-out': { value: '100ms', category: 'animation', label: '浮层收起动画时长', usage: '选择器下拉浮层收起动画持续时间（组件消费）' },
+  'animation-function-select-dropdown-out': { value: 'cubic-bezier(0.215, 0.61, 0.355, 1)', category: 'animation', label: '浮层收起动画曲线', usage: '选择器下拉浮层收起动画插值函数（组件消费）' },
 } satisfies TokenGroup;

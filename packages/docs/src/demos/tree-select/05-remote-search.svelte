@@ -1,41 +1,34 @@
 <script lang="ts">
   import { TreeSelect } from '@chenzy-design/svelte';
-  import { treeDataEn as initial, type TreeNode } from './_data';
+  import type { TreeNode } from './_data';
 
-  let treeData = $state<TreeNode[]>(initial);
+  let value = $state<string | undefined>(undefined);
+  let treeData = $state<TreeNode[]>([]);
 
-  let timer: ReturnType<typeof setTimeout> | undefined;
-  const onSearch = (input: string) => {
-    clearTimeout(timer);
-    timer = setTimeout(() => {
-      if (!input) {
-        treeData = initial;
-        return;
-      }
-      // 模拟远程返回：按输入构造节点
+  // 模拟远程搜索
+  function handleSearch(inputValue: string) {
+    if (!inputValue) {
+      treeData = [];
+      return;
+    }
+    // 模拟网络请求
+    setTimeout(() => {
       treeData = [
-        {
-          label: `${input} 地区`,
-          value: `${input}-region`,
-          key: `${input}-region`,
-          children: [
-            { label: `${input} 城市 A`, value: `${input}-a`, key: `${input}-a` },
-            { label: `${input} 城市 B`, value: `${input}-b`, key: `${input}-b` },
-          ],
-        },
+        { label: `${inputValue} - 结果1`, value: `${inputValue}-1`, key: `${inputValue}-1` },
+        { label: `${inputValue} - 结果2`, value: `${inputValue}-2`, key: `${inputValue}-2` },
+        { label: `${inputValue} - 结果3`, value: `${inputValue}-3`, key: `${inputValue}-3` },
       ];
-    }, 300);
-  };
+    }, 500);
+  }
 </script>
 
 <TreeSelect
   style="width: 300px"
-  dropdownStyle="max-height: 400px; overflow: auto"
+  placeholder="请输入关键字进行远程搜索"
   {treeData}
-  remote
   filterTreeNode
-  searchAutoFocus
-  emptyContent="输入以搜索远程数据"
-  {onSearch}
-  placeholder="远程搜索"
+  remote
+  {value}
+  onChange={(v) => (value = v as string | undefined)}
+  onSearch={handleSearch}
 />

@@ -102,7 +102,10 @@ const components = [
   // IconTick/empty 占位图标、tag 节点级 disabled 态、ARIA menu/menuitem 模型改造
   // （aria-owns/haspopup/expanded）、RTL 键义对调、TagInput wrapper 精细化覆盖等
   // 真实功能补齐（非无谓膨胀），实测 13.95 KB，预算随之上调。
-  ['cascader', '{ Cascader }', '14.1 KB'],
+  // 2026-08-12 补齐面板进出场动画对齐 Semi zoomIn/zoomOut（此前 motion prop 名不副实，
+  // 只驱动箭头 transition，面板本身无任何动画——真实功能缺口，非无谓膨胀），实测 14.22 KB，
+  // 预算随之上调。
+  ['cascader', '{ Cascader }', '14.3 KB'],
   // 2026-08-07 全量严格对齐 Semi：拆分 CheckboxInner.svelte（对齐 checkboxInner.tsx 文件结构），
   // 去掉 pointer-events:none 点击互斥 hack 改为单一入口，补 JS focusVisible/clickState 状态机
   // （对齐 handleFocusVisible，替代纯 CSS :focus-visible 在“JS 主动 focus()”场景的误判），
@@ -156,7 +159,9 @@ const components = [
   // 改回纯透传（此前自造成 validateStatus 自动推导，违背有则有无则去）+ onFocus/onBlur 补
   // 事件参数 + motion 浮层进出场动画（对齐 Semi Select 内部 Popover 实例的 zoomIn，新增
   // keyframe + token），真实功能对齐带来的体积增长，实测 11.43 KB，预算按实测校准留少量余量。
-  ['select', '{ Select }', '11.5 KB'],
+  // 2026-08-12 补齐面板退场动画（进场此前已实现，退场 zoomOut 是真实缺口——原本关闭立即
+  // display:none 无过渡）+ destroyOnClose 边界处理，实测 11.62 KB，预算随之上调。
+  ['select', '{ Select }', '11.7 KB'],
   ['slider', '{ Slider }', '5.5 KB'],
   ['switch', '{ Switch }', '2.7 KB'],
   ['tag-input', '{ TagInput }', '6.25 KB'],
@@ -164,7 +169,9 @@ const components = [
   // semi-foundation/timePicker/{foundation,constants}.ts 的文件分层），并补齐 use12Hours 默认
   // format 分派 / panelHeader·panelFooter 数组 / disabledTime 传 dates 数组等 Semi 能力，
   // 实测 8.33 KB，按实测校准留余量（对齐 memory perf-budgets-calibrated-from-real-measurement）。
-  ['time-picker', '{ TimePicker }', '8.6 KB'],
+  // 2026-08-12 补齐面板进出场动画（此前 motion prop 名不副实，只驱动 transition:none，
+  // 面板本身无任何动画——真实功能缺口），实测 8.75 KB，预算随之上调。
+  ['time-picker', '{ TimePicker }', '8.9 KB'],
   ['transfer', '{ Transfer }', '10.9 KB'],
   ['tree-select', '{ TreeSelect }', '12 KB'],
   // 13 KB → 14 KB：破坏性重写严格对齐 Semi，FileCard 拆分后按 Semi「组件调用组件」
@@ -228,15 +235,25 @@ const components = [
   // 二次补齐 Semi 文档全量 API（showSortTip+Tooltip、sortIcon/filterIcon、renderFilterDropdown/renderFilterDropdownItem+FilterDropdownHost、onHeaderCell、filterConfirmMode confirm 模式、defaultFilteredValue、filterChildrenRecord/sortChildrenRecord 树形过滤排序、rowSelection.checkRelation/clickRow/hidden/renderCell、pagination.currentPage/total/position/formatPageText、Table 级 resizable+onResize 事件、expandAllRows、emptySnippet、onRow 拖拽事件）后实测 20.44 KB。
   // 三次视觉对齐修（scroll.x 用 width 修列宽撑大致 tooltip 失效、bordered 伸缩列手柄透明）后实测 21.01 KB，预算按小幅 headroom 校准。
   // 补组合式 <Column>（context 收集树，对齐 Semi Table.Column 双写法）后实测 21.79 KB。
-  ['table', '{ Table }', '22 KB'],
+  // 2026-08-12 补齐列筛选浮层进出场动画（对齐 Semi 列筛选复用 Dropdown 即 Tooltip 实例的
+  // zoomIn/zoomOut；本库自建 use:floating 之前无任何面板动画），实测 22.12 KB，预算随之上调。
+  ['table', '{ Table }', '22.2 KB'],
   ['tag', '{ Tag, TagGroup, SplitTagGroup }', '5 KB'],
   ['timeline', '{ TimelineItem }', '5.4 KB'],
   // 对齐 Semi 破坏性重写：单 path 箭头 + .cd-tooltip-wrapper[x-placement] 12 方位定位 CSS
   // 全部内联进基座（原 3.07 KB → 4.2 KB 实测）；预算按 +15% buffer 校准（见浮层三件套注）。
   // 新增 registerOverlayRoot 全局浮层注册（修复嵌套 portal 浮层 pointerleave 误关闭，
   // 见 nested-portal-overlay-pointerleave-false-close）后实测 5.03 KB，预算按小幅 headroom 校准。
-  ['tooltip', '{ Tooltip }', '5.1 KB'],
-  ['tree', '{ Tree }', '11 KB'],
+  // 2026-08-12 补齐面板退场动画（zoomOut keyframe + panelLeaving/panelHidden 状态机 +
+  // afterClose 真实等待 animationend，替代此前 requestAnimationFrame 近似值）——Tooltip
+  // 是全部浮层组件（Popover/Popconfirm/Dropdown/DatePicker/AutoComplete...）的继承链
+  // 底层基座，此处补的能力会随继承传导到所有消费方，实测 5.16 KB，预算随之上调。
+  ['tooltip', '{ Tooltip }', '5.25 KB'],
+  // 2026-08-13 renderFullLabel 场景补齐真实功能缺口：叶子节点 expandIcon 判断、缩进
+  // padding-left 公式、拖拽 draggable/ondrag* 六事件透传、drag-over 三态插入线/高亮框
+  // class 拼接（此前完全空白，renderFullLabel + draggable 组合下点击箭头无法折叠、
+  // 拖拽看不到任何插入位置提示），实测 11.99 KB，预算按实测校准。
+  ['tree', '{ Tree }', '12.1 KB'],
   ['user-guide', '{ UserGuide }', '5.5 KB'],
   ['virtual-list', '{ VirtualList }', '2.65 KB'],
   // show · 富媒体（P0-P2）—— 预算按实测 +~15% 校准（见各 spec §9）。

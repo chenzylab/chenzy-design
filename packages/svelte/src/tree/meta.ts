@@ -255,7 +255,7 @@ export const meta = {
   ],
   slots: [
     { name: 'renderLabel', desc: '自定义节点内容渲染：{ node, level, searchValue, selected, checked }' },
-    { name: 'renderFullLabel', desc: '整行接管渲染：FullLabelContext（data/level/style/className/expandIcon/checkStatus/expandStatus/onClick/onCheck/onExpand…）' },
+    { name: 'renderFullLabel', desc: '整行接管渲染：FullLabelContext（data/level/style/className/expandIcon/checkStatus/expandStatus/onClick/onCheck/onExpand/draggable/onDragStart/onDragOver/onDragLeave/onDrop/onDragEnd…）' },
     { name: 'searchRender', desc: '自定义搜索框：SearchRenderContext（value/placeholder/onChange/onClear/showClear/disabled）' },
     { name: 'icon', desc: '自定义节点图标：{ node, expanded, isLeaf }' },
     { name: 'expandIcon', desc: '自定义展开图标：{ node, expanded, loading }' },

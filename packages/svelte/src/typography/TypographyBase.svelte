@@ -700,11 +700,8 @@
     默认 inline-block + width:auto（shrink-to-fit），当 Text 依赖 flex:1 分配宽度时
     （如 Upload 文件名）会与外层 flex 容器的宽度传导断开，永久塌陷为 0。
     见 memory: tooltip-trigger-wrapper-shrinks-use-triggerstyle。
+    两层包裹的完整覆盖规则见下方 .cd-tooltip:has(...) 复合选择器（外层+内层一起处理）。
   */
-  :global(.cd-tooltip-trigger:has(> .cd-typography-ellipsis-single-line)) {
-    display: block;
-    inline-size: 100%;
-  }
 
   :global(.cd-typography-ellipsis-expand) {
     display: inline;
@@ -716,16 +713,21 @@
     color: var(--cd-color-typography-link-text-hover);
   }
 
-  /* showTooltip 包裹撑满父宽，使宽度约束正确传递到宿主省略节点。 */
+  /* showTooltip 两层包裹（.cd-tooltip 外层 + .cd-tooltip-trigger 内层）都要作为所在 flex
+     容器的普通 flex-item 参与空间分配（flex:1 1 auto + min-inline-size:0），而非固定
+     width/max-width:100%——固定 100% 只在该 flex 行只有这一个子项时安全，一旦有兄弟元素
+     （如 Tree renderLabel 里 Text 旁边的按钮）就会独占整行宽度，把兄弟挤出可视区域。 */
   :global(.cd-tooltip:has(> .cd-tooltip-trigger > .cd-typography-ellipsis-single-line)),
   :global(.cd-tooltip:has(> .cd-tooltip-trigger > .cd-typography-ellipsis-multiple-line)) {
-    display: block;
-    max-inline-size: 100%;
+    display: flex;
+    flex: 1 1 auto;
+    min-inline-size: 0;
   }
   :global(.cd-tooltip:has(> .cd-tooltip-trigger > .cd-typography-ellipsis-single-line) > .cd-tooltip-trigger),
   :global(.cd-tooltip:has(> .cd-tooltip-trigger > .cd-typography-ellipsis-multiple-line) > .cd-tooltip-trigger) {
-    display: block;
-    max-inline-size: 100%;
+    display: flex;
+    flex: 1 1 auto;
+    min-inline-size: 0;
   }
 
   /* ══ Copyable（对齐 typography.scss action-copy / action-copied）══ */

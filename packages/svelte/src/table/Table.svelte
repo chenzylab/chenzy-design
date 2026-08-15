@@ -557,15 +557,29 @@
     return registerOverlayRoot(filterPanelEl);
   });
 
+  /**
+   * 进/退场动画对齐 Semi（Semi 列筛选浮层复用 <Dropdown>，继承其 zoomIn/zoomOut；
+   * 本库自建 use:floating，之前完全没有面板动画。同一时刻仅一个 openFilterKey，
+   * 关闭时记录 closingFilterKey 播放 hide 动画，animationend 后才真正从 DOM 卸载。
+   * 切换到另一列时旧列走退场、新列走进场，两者 key 不同，DOM 上短暂共存不冲突。
+   */
+  let closingFilterKey = $state<string | null>(null);
+
   // 打开/关闭筛选浮层（统一入口：同步 temp 快照 + onFilterDropdownVisibleChange 通知）。
   function setFilterOpen(col: ColumnDef<T>, colKey: string, open: boolean) {
     if (open) {
       tempFilterState.set(colKey, [...effectiveFilterValues(col, colKey)]);
       openFilterKey = colKey;
+      if (closingFilterKey === colKey) closingFilterKey = null;
     } else if (openFilterKey === colKey) {
       openFilterKey = null;
+      closingFilterKey = colKey;
     }
     col.onFilterDropdownVisibleChange?.(open);
+  }
+
+  function finalizeFilterClose(colKey: string): void {
+    if (closingFilterKey === colKey) closingFilterKey = null;
   }
 
   // 浮层外点击/Esc 关闭（红线 #3：$effect 内 useDismiss，cleanup 解绑）
@@ -577,6 +591,7 @@
     return useDismiss(trigger, {
       onDismiss: () => {
         openFilterKey = null;
+        closingFilterKey = key;
         // dismiss 关闭也要通知 visible=false
         leafColumns.forEach((c, i) => {
           if (colKeyOf(c, i) === key) c.onFilterDropdownVisibleChange?.(false);
@@ -2108,6 +2123,9 @@
       {@const confirmMode = isConfirmMode(col)}
       <div
         class="cd-table-column-filter-dropdown"
+        class:cd-table-column-filter-dropdown-motion-show={openFilterKey === colKey}
+        class:cd-table-column-filter-dropdown-motion-hide={closingFilterKey === colKey}
+        onanimationend={() => finalizeFilterClose(colKey)}
         use:floating={{ trigger: filterTriggers[colKey], placement: 'bottomEnd', autoAdjust: true, offset: 4, getContainer: getPopupContainer }}
         bind:this={filterPanelEl}
       >
@@ -2282,13 +2300,13 @@
                   <IconFilter size="small" aria-hidden="true" />
                 {/if}
               </button>
-              {#if openFilterKey === colKey && filterTriggers[colKey]}
+              {#if (openFilterKey === colKey || closingFilterKey === colKey) && filterTriggers[colKey]}
                 {@render filterDropdownPanel(col, colKey)}
               {/if}
             {/if}
             </div>
             <!-- 自定义 title 时 filter 按钮由 title snippet 摆放，浮层在此独立渲染（触发器仍绑 filterTriggers[colKey]） -->
-            {#if hasFilter && typeof col.title !== 'string' && openFilterKey === colKey && filterTriggers[colKey]}
+            {#if hasFilter && typeof col.title !== 'string' && (openFilterKey === colKey || closingFilterKey === colKey) && filterTriggers[colKey]}
               {@render filterDropdownPanel(col, colKey)}
             {/if}
 
@@ -3074,6 +3092,53 @@
     border-radius: var(--cd-border-radius-medium, 6px);
     box-shadow: var(--cd-shadow-elevated, 0 4px 12px rgba(0, 0, 0, 0.12));
     font-weight: var(--cd-font-weight-regular, 400);
+  }
+  /*
+   * 进/退场动画对齐 Semi（列筛选浮层复用 Dropdown，即 Tooltip 实例，故用 tooltip
+   * 命名空间 token）：scale(0.8→1) + opacity(0→1)，用独立 CSS `scale` 属性
+   * （非 transform:scale()）——use:floating 用 transform:translate() 定位，
+   * scale 与 transform 正交，同一元素上二者互不覆盖。
+   */
+  .cd-table-column-filter-dropdown-motion-show {
+    animation: cd-table-filter-zoom-in var(--cd-animation-duration-tooltip-in)
+      var(--cd-animation-function-tooltip-in);
+  }
+  .cd-table-column-filter-dropdown-motion-hide {
+    animation: cd-table-filter-zoom-out var(--cd-animation-duration-tooltip-out)
+      var(--cd-animation-function-tooltip-out);
+  }
+  @keyframes cd-table-filter-zoom-in {
+    from {
+      opacity: var(--cd-tooltip-motion-zoom-opacity-from);
+      scale: var(--cd-tooltip-motion-zoom-scale-from);
+    }
+    50% {
+      opacity: var(--cd-tooltip-motion-zoom-opacity-to);
+    }
+    to {
+      opacity: var(--cd-tooltip-motion-zoom-opacity-to);
+      scale: 1;
+    }
+  }
+  @keyframes cd-table-filter-zoom-out {
+    from {
+      opacity: var(--cd-tooltip-motion-zoom-opacity-to);
+      scale: 1;
+    }
+    60% {
+      opacity: var(--cd-tooltip-motion-zoom-opacity-from);
+      scale: var(--cd-tooltip-motion-zoom-scale-from);
+    }
+    to {
+      opacity: var(--cd-tooltip-motion-zoom-opacity-from);
+      scale: var(--cd-tooltip-motion-zoom-scale-from);
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .cd-table-column-filter-dropdown-motion-show,
+    .cd-table-column-filter-dropdown-motion-hide {
+      animation-duration: 0.01ms;
+    }
   }
   .cd-table-column-filter-list {
     margin: 0;

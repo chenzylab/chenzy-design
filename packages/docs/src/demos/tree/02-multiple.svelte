@@ -1,46 +1,72 @@
 <script lang="ts">
-  import { Tree, Text } from '@chenzy-design/svelte';
+  import { Tree } from '@chenzy-design/svelte';
   import type { TreeNodeData } from '@chenzy-design/core';
 
   const treeData: TreeNodeData[] = [
     {
-      label: '亚洲',
-      key: 'asia',
+      label: 'Asia',
+      value: 'Asia',
+      key: '0',
       children: [
         {
-          label: '中国',
-          key: 'china',
+          label: 'China',
+          value: 'China',
+          key: '0-0',
           children: [
-            { label: '北京', key: 'beijing' },
-            { label: '上海', key: 'shanghai' },
+            {
+              label: 'Beijing',
+              value: 'Beijing',
+              key: '0-0-0',
+            },
+            {
+              label: 'Shanghai',
+              value: 'Shanghai',
+              key: '0-0-1',
+            },
+            {
+              label: 'Chengdu',
+              value: 'Chengdu',
+              key: '0-0-2',
+            },
           ],
         },
-        { label: '日本', key: 'japan', children: [{ label: '大阪', key: 'osaka' }] },
+        {
+          label: 'Japan',
+          value: 'Japan',
+          key: '0-1',
+          children: [
+            {
+              label: 'Osaka',
+              value: 'Osaka',
+              key: '0-1-0',
+            },
+          ],
+        },
       ],
     },
     {
-      label: '北美洲',
-      key: 'na',
+      label: 'North America',
+      value: 'North America',
+      key: '1',
       children: [
-        { label: '美国', key: 'us' },
-        { label: '加拿大', key: 'canada' },
+        {
+          label: 'United States',
+          value: 'United States',
+          key: '1-0',
+        },
+        {
+          label: 'Canada',
+          value: 'Canada',
+          key: '1-1',
+        },
       ],
     },
   ];
-
-  let checked = $state<(string | number)[]>([]);
 </script>
 
-<div style="width:260px">
-  <!-- multiple：渲染 checkbox，所有子项被选中时自动勾选父项，部分选中显半选；值走 value/onChange -->
-  <Tree
-    style="width: 260px; height: 420px; border: 1px solid var(--cd-color-border); border-radius: 6px; box-sizing: border-box"
-    {treeData}
-    multiple
-    defaultExpandAll
-    value={checked}
-    onChange={(value) => (checked = value as (string | number)[])}
-    aria-label="多选地区树"
-  />
-  <Text type="tertiary" size="small">已勾选 {checked.length} 项</Text>
-</div>
+<Tree
+  {treeData}
+  multiple
+  defaultExpandAll
+  style="width: 260px; height: 420px; border: 1px solid var(--cd-color-border)"
+/>

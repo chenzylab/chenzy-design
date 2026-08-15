@@ -9,6 +9,10 @@
   fallbackToWindow 降级（原生不可用或显式开启时监听 window.resize 近似重测），
   onResizeStart/onResizeEnd 边界事件（连续变化首帧 / 静默结束，core 纯状态机驱动）。
 
+  observeParent（严格对齐 Semi `ReactResizeObserver.observeElement`）：并非"改为只观测父节点"，
+  而是在观测自身（或 observeChild 时的子元素）之外，**额外同时观测其 parentElement**——
+  两个目标共用同一个 observer 实例，回调按 entry.target 区分触发两次，与 Semi 完全一致。
+
   ⚠️ 死循环红线：
     - 红线 #1：无受控回写，尺寸只向 slot / 回调单向分发。
     - 红线 #3：observer 在 $effect 内命令式创建 + observe，
@@ -53,10 +57,11 @@
     /** 包裹元素标签，默认 'div'。须为可生成盒子的元素（勿用 display:contents 类标签）。 */
     tag?: string;
     /**
-     * 观测包裹元素的父节点（parentElement）而非自身，默认 false（对标 Semi observeParent）。
-     * 用于「监听我所处容器的尺寸」而无需再包一层被观测元素。
-     * 与 multiple 互斥（multiple 观测子元素，observeParent 观测父元素）；同时为 true 时
-     * multiple 优先，observeParent 被忽略。父节点缺失（无 parentElement）时静默不观测。
+     * 额外同时观测包裹元素（或 observeChild 时的子元素）的父节点（parentElement），默认 false
+     * （严格对齐 Semi observeParent：`element` 与 `element.parentNode` **同时**观测，非互斥替代）。
+     * 用于「既要监听自身，又要监听所处容器」的场景。回调据 `entry.target` 区分是自身还是父节点那次。
+     * 与 multiple 互斥（multiple 观测子元素，忽略 observeParent）；可与 observeChild 叠加。
+     * 父节点缺失（无 parentElement）时该次静默不观测，自身观测仍生效。
      */
     observeParent?: boolean;
     /**
@@ -66,7 +71,7 @@
      * 包裹元素仍在 DOM 里（`display: contents` 不生成盒子，故改用不影响布局的
      * `display: block; width/height: 100%` 透传），但**观测目标取 firstElementChild**，
      * 即用户真实元素，尺寸语义与 Semi 一致。
-     * 与 multiple / observeParent 互斥（优先级：multiple > observeChild > observeParent）。
+     * 与 multiple 互斥（multiple 优先）；可与 observeParent 叠加（同时观测子元素与其父节点）。
      * 子元素缺失时回退观测包裹元素。
      */
     observeChild?: boolean;
@@ -174,12 +179,20 @@
       // 缺子元素时回退观测包裹元素，保证仍有尺寸输出。
       const child = node.firstElementChild;
       ro.observe(child ?? node);
-    } else if (observeParent) {
-      // 观测父节点（对标 Semi observeParent）。父节点缺失时静默不观测。
-      const parent = node.parentElement;
-      if (parent) ro.observe(parent);
+      // observeParent 与 observeChild 同时开启时，对齐 Semi 语义在子元素基础上再叠加观测其父节点。
+      if (observeParent) {
+        const parent = (child ?? node).parentElement;
+        if (parent) ro.observe(parent);
+      }
     } else {
+      // 始终观测包裹元素自身（对齐 Semi 观测 element 本身）；
+      // observeParent 时额外同时观测其父节点（对齐 Semi「element + element.parentNode 都观测」，
+      // 非互斥替代——回调会收到两条 entry，用 entry.target 区分）。
       ro.observe(node);
+      if (observeParent) {
+        const parent = node.parentElement;
+        if (parent) ro.observe(parent);
+      }
     }
 
     return () => ro.disconnect();

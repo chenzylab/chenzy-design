@@ -501,6 +501,31 @@
     }
   }
 
+  /**
+   * 进/退场动画对齐 Semi（与 TreeSelect 同构模式）：destroyOnClose=false（默认）时面板
+   * 挂载后一直保留 DOM，仅靠 hidden 隐藏——关闭时先播放 hide 动画（panelLeaving=true），
+   * animationend 后才真正 hidden（panelHidden=true）。destroyOnClose=true 时面板整个从
+   * `{#if}` 移除，DOM 立即卸载，来不及播放退场动画——用户显式要求"不保留 DOM"，
+   * "立即消失"符合该语义，不强行补退场动画（与 Tooltip keepDOM=false 场景同一决策）。
+   */
+  let panelLeaving = $state(false);
+  let panelHidden = $state(true);
+  $effect(() => {
+    if (isOpen) {
+      panelHidden = false;
+      panelLeaving = false;
+    } else if (motion) {
+      panelLeaving = true;
+    } else {
+      panelHidden = true;
+    }
+  });
+  function finalizeClose(): void {
+    if (!panelLeaving) return;
+    panelLeaving = false;
+    panelHidden = true;
+  }
+
   // rePosition() 命令式重定位钩子：递增该 key 传入 use:floating 参数，触发 action 的 update
   // 在原位重算浮层位置（use-floating action 参数变化且 trigger/placement 不变时走 handle.update()）。
   let reposKey = $state(0);
@@ -1393,11 +1418,13 @@
     -->
     <div
       class={dropdownCls}
-      class:cd-select-dropdown-motion={motion}
+      class:cd-select-dropdown-motion-show={motion && isOpen}
+      class:cd-select-dropdown-motion-hide={motion && panelLeaving}
+      onanimationend={finalizeClose}
       bind:this={dropdownRootEl}
       use:floating={{ trigger: rootEl, placement: position, autoAdjust: autoAdjustOverflow, offset: dropdownOffset, matchWidth: dropdownMatchSelectWidth, getContainer: getPopupContainer, rePosKey: reposKey, open: isOpen }}
       style={dropdownRootInlineStyle}
-      hidden={!isOpen || undefined}
+      hidden={destroyOnClose ? undefined : (panelHidden || undefined)}
     >
       {#if outerTopSlot}
         <div class="cd-select-outer-top">{@render outerTopSlot()}</div>
@@ -2109,15 +2136,21 @@
     display: none;
   }
   /*
-   * motion：进出场 zoomIn（对齐 Semi Select 内部 Popover 实例的 zoomIn，非 Tooltip 自己那份——
+   * motion：进出场 zoomIn/zoomOut（对齐 Semi Select 内部 Popover 实例的 zoomIn/zoomOut——
    * 两者 SCSS 变量命名空间不同但取值一致，见 tokens/select.ts 顶部注释）。用独立 scale 属性
    * （非 transform）做缩放：use:floating 用 transform: translate() 定位，动画走 transform
-   * 会覆盖定位把浮层拉到 (0,0)；scale 属性与 transform 正交，二者叠加互不覆盖（同 Tooltip 解法）。
-   * [hidden] 属性每次 open 都会移除再添加（浏览器据此重启 animation），故不需要额外 key 控制重播。
+   * 会覆盖定位把浮层拉到 (0,0)；scale 属性与 transform 正交，二者叠加互不覆盖（同 Tooltip 解法，
+   * 与 TreeSelect 同构）。退场：关闭时先播放 hide 动画（panelLeaving），onanimationend 触发
+   * finalizeClose 才真正 [hidden]（destroyOnClose=false 场景；true 场景关闭即整个卸载，
+   * 不适用退场动画——用户已显式要求不保留 DOM，立即消失符合预期）。
    */
-  .cd-select-dropdown-motion {
+  .cd-select-dropdown-motion-show {
     animation: cd-select-dropdown-zoom-in var(--cd-animation-duration-select-dropdown-in)
-      var(--cd-animation-function-select-dropdown-in) both;
+      var(--cd-animation-function-select-dropdown-in);
+  }
+  .cd-select-dropdown-motion-hide {
+    animation: cd-select-dropdown-zoom-out var(--cd-animation-duration-select-dropdown-out)
+      var(--cd-animation-function-select-dropdown-out);
   }
   @keyframes cd-select-dropdown-zoom-in {
     from {
@@ -2132,9 +2165,26 @@
       scale: 1;
     }
   }
+  @keyframes cd-select-dropdown-zoom-out {
+    from {
+      opacity: var(--cd-select-dropdown-motion-zoom-opacity-to);
+      scale: 1;
+    }
+    60% {
+      opacity: var(--cd-select-dropdown-motion-zoom-opacity-from);
+      scale: var(--cd-select-dropdown-motion-zoom-scale-from);
+    }
+    to {
+      opacity: var(--cd-select-dropdown-motion-zoom-opacity-from);
+      scale: var(--cd-select-dropdown-motion-zoom-scale-from);
+    }
+  }
+  /* 减少动效：时长归零而非 animation:none——后者不触发 animationend，
+     会让 finalizeClose 永远不被调用，面板卡在展开态无法真正隐藏（对齐 TreeSelect/Toast）。 */
   @media (prefers-reduced-motion: reduce) {
-    .cd-select-dropdown-motion {
-      animation: none;
+    .cd-select-dropdown-motion-show,
+    .cd-select-dropdown-motion-hide {
+      animation-duration: 0.01ms;
     }
   }
   /* 内层滚动列表：optionList + inner header/footer + 浮层搜索框，超出 maxHeight 时纵向滚动 */

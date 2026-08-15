@@ -16,6 +16,8 @@ Tree（树形控件）以层级缩进的方式展示具有父子关系的结构�
 
 不在本组件范围：异步分页加载列表（用 List）、表格行树（用 Table 的 `treeData`）、纯导航菜单（用 Menu）。异步子节点加载通过 `loadData` 内置支持。
 
+> **实现状态注**：`checkable`、`checkStrictly`、`accordion`、`expandedDepth` 为早期设计意图，当前未落地为独立 prop（详见 §4 Props 表，以其为准）。勾选态由 `multiple` 单一 prop 驱动是否渲染 checkbox；父子联动解耦用 `checkRelation="unRelated"` 替代 `checkStrictly` 语义；手风琴/按层展开尚无对应 prop。
+
 ## 2. 设计语义
 
 - **节点行（node）**：单行高度 `default` 32px / `small` 28px / `large` 36px，由展开箭头、可选 checkbox、可选 icon、label、可选后缀操作区构成。
@@ -138,14 +140,7 @@ Tree（树形控件）以层级缩进的方式展示具有父子关系的结构�
 
 ### Slots
 
-| 名称 | 作用域参数 | 说明 |
-|---|---|---|
-| `label` | `{ node, level, searchValue, selected, checked }` | 自定义节点标签渲染（搜索高亮可在此处理） |
-| `icon` | `{ node, expanded, isLeaf }` | 自定义节点图标 |
-| `switcher` | `{ node, expanded, loading }` | 自定义展开箭头 |
-| `suffix` | `{ node }` | 节点尾部操作区（如悬浮按钮） |
-| `empty` | — | 自定义空态（优先级低于 `emptyContent` prop） |
-| `dragGhost` | `{ node }` | 自定义拖拽幽灵节点 |
+> 本组件无独立 `<slot>` 通道，均由 Props 表内 Snippet 类型 prop 承担（Svelte 5 无 slot 概念）：节点标签渲染见 `renderLabel`，节点图标见 `icon`，展开箭头见 `expandIcon`，尾部操作区见 `suffix`，空态见 `emptyContent`，拖拽幽灵节点见 `dragGhost`。
 
 ### Methods（组件实例命令式方法）
 

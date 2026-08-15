@@ -3,10 +3,31 @@
   import { treeData } from './_data';
 </script>
 
-<TreeSelect style="width: 300px" size="small" {treeData} placeholder="small" />
+<TreeSelect
+  style="width: 300px"
+  dropdownStyle="max-height: 400px; overflow: auto"
+  {treeData}
+  multiple
+  size="small"
+  placeholder="small"
+/>
 <br />
 <br />
-<TreeSelect style="width: 300px" {treeData} placeholder="default" />
+<TreeSelect
+  style="width: 300px"
+  dropdownStyle="max-height: 400px; overflow: auto"
+  {treeData}
+  multiple
+  size="default"
+  placeholder="default"
+/>
 <br />
 <br />
-<TreeSelect style="width: 300px" size="large" {treeData} placeholder="large" />
+<TreeSelect
+  style="width: 300px"
+  dropdownStyle="max-height: 400px; overflow: auto"
+  {treeData}
+  multiple
+  size="large"
+  placeholder="large"
+/>

@@ -1,38 +1,66 @@
 <script lang="ts">
-  import { Tree, Text } from '@chenzy-design/svelte';
+  import { Tree } from '@chenzy-design/svelte';
   import type { TreeNodeData } from '@chenzy-design/core';
 
   const treeData: TreeNodeData[] = [
     {
-      label: '亚洲',
-      key: 'asia',
+      label: 'Asia',
+      value: 'Asia',
+      key: '0',
       children: [
-        { label: '中国', key: 'china' },
-        { label: '日本', key: 'japan' },
+        {
+          label: 'China',
+          value: 'China',
+          key: '0-0',
+          children: [
+            {
+              label: 'Beijing',
+              value: 'Beijing',
+              key: '0-0-0',
+            },
+            {
+              label: 'Shanghai',
+              value: 'Shanghai',
+              key: '0-0-1',
+            },
+          ],
+        },
+        {
+          label: 'Japan',
+          value: 'Japan',
+          key: '0-1',
+          children: [
+            {
+              label: 'Osaka',
+              value: 'Osaka',
+              key: '0-1-0',
+            },
+          ],
+        },
       ],
     },
-    { label: '北美洲', key: 'na', children: [{ label: '美国', key: 'us' }] },
+    {
+      label: 'North America',
+      value: 'North America',
+      key: '1',
+      children: [
+        {
+          label: 'United States',
+          value: 'United States',
+          key: '1-0',
+        },
+        {
+          label: 'Canada',
+          value: 'Canada',
+          key: '1-1',
+        },
+      ],
+    },
   ];
 </script>
 
-<div style="display:flex; gap:32px; align-items:flex-start">
-  <div style="width:220px">
-    <Text type="tertiary" size="small">blockNode（默认 true）：整行高亮</Text>
-    <Tree
-      style="border: 1px solid var(--cd-color-border); border-radius: 6px"
-      {treeData}
-      defaultExpandAll
-      aria-label="整行高亮树"
-    />
-  </div>
-  <div style="width:220px">
-    <Text type="tertiary" size="small">blockNode=false：仅高亮 label</Text>
-    <Tree
-      style="border: 1px solid var(--cd-color-border); border-radius: 6px"
-      {treeData}
-      blockNode={false}
-      defaultExpandAll
-      aria-label="仅 label 高亮树"
-    />
-  </div>
+<div>
+  <Tree {treeData} defaultValue="Shanghai" blockNode={false} />
+  <br />
+  <Tree {treeData} defaultValue="Shanghai" multiple blockNode={false} />
 </div>

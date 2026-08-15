@@ -41,7 +41,8 @@ describe('TimePicker 交互 e2e（ScrollList 点击选中）', () => {
     // 选中态迁移到 10。
     await expect.element(loc(hour10)).toHaveAttribute('aria-selected', 'true');
 
-    // Esc 关闭面板（面板 keydown 或 useDismiss escape）。
+    // Esc 关闭面板（面板 keydown 或 useDismiss escape）。补齐进出场动画后，关闭时先
+    // 保留 DOM 播放退场动画，animationend 后才 hidden（对齐 Select/Cascader 同构模式）。
     await userEvent.keyboard('{Escape}');
     await expect.poll(() => document.querySelector('[role="dialog"]')?.hasAttribute('hidden')).toBe(true);
   });

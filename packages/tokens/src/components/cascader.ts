@@ -137,4 +137,15 @@ export const cascaderTokens = {
   // —— tag 禁用态背景（组件消费）——
   // 值对齐 Semi：$color-cascader_tag_disabled-bg-default（transparent）。
   'color-cascader-tag-disabled-bg-default': { value: 'transparent', category: 'color', label: 'tag 禁用背景色', usage: '级联选择菜单禁用 Tag 背景颜色' },
+
+  // —— 浮层进出场动画（组件消费）——
+  // Semi Cascader 面板本体是 <Popover> 实例（继承 Popover 的 zoomIn/zoomOut），取值与
+  // Select/Tooltip 那份 $motion-zoom_scale-from:0.8 / opacity 0↔1 一致，命名对齐 select.ts 惯例。
+  'cascader-dropdown-motion-zoom-scale-from': { value: '0.8', category: 'animation', label: '浮层初始缩放', usage: '浮层进场初始缩放（组件消费）' },
+  'cascader-dropdown-motion-zoom-opacity-from': { value: '0', category: 'animation', label: '浮层初始透明度', usage: '浮层进场初始透明度（组件消费）' },
+  'cascader-dropdown-motion-zoom-opacity-to': { value: '1', category: 'animation', label: '浮层最终透明度', usage: '浮层进场最终透明度（组件消费）' },
+  'animation-duration-cascader-dropdown-in': { value: '100ms', category: 'animation', label: '浮层弹出动画时长', usage: '级联选择下拉浮层弹出动画持续时间（组件消费）' },
+  'animation-function-cascader-dropdown-in': { value: 'cubic-bezier(0.215, 0.61, 0.355, 1)', category: 'animation', label: '浮层弹出动画曲线', usage: '级联选择下拉浮层弹出动画插值函数（组件消费）' },
+  'animation-duration-cascader-dropdown-out': { value: '100ms', category: 'animation', label: '浮层收起动画时长', usage: '级联选择下拉浮层收起动画持续时间（组件消费）' },
+  'animation-function-cascader-dropdown-out': { value: 'cubic-bezier(0.215, 0.61, 0.355, 1)', category: 'animation', label: '浮层收起动画曲线', usage: '级联选择下拉浮层收起动画插值函数（组件消费）' },
 } satisfies TokenGroup;

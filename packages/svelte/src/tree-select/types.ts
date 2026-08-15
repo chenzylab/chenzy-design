@@ -4,6 +4,8 @@ export type TreeKey = string | number;
 /** TreeSelect 树形节点数据结构。 */
 export interface TreeNode {
   key: TreeKey;
+  /** 节点的 value（对齐 Semi TreeNodeData.value）。值通道对外优先取此字段，缺省回退 key。 */
+  value?: string | number;
   label: string;
   disabled?: boolean;
   isLeaf?: boolean;

@@ -24,46 +24,48 @@ brief: 树型结构列表。
   import blockNodeSrc from '../../demos/tree/07-block-node.svelte?raw';
   import CustomLabel from '../../demos/tree/08-custom-label.svelte';
   import customLabelSrc from '../../demos/tree/08-custom-label.svelte?raw';
-  import CustomIcon from '../../demos/tree/09-custom-icon.svelte';
-  import customIconSrc from '../../demos/tree/09-custom-icon.svelte?raw';
-  import Directory from '../../demos/tree/10-directory.svelte';
-  import directorySrc from '../../demos/tree/10-directory.svelte?raw';
-  import Disabled from '../../demos/tree/11-disabled.svelte';
-  import disabledSrc from '../../demos/tree/11-disabled.svelte?raw';
-  import CheckRelation from '../../demos/tree/12-check-relation.svelte';
-  import checkRelationSrc from '../../demos/tree/12-check-relation.svelte?raw';
-  import ExpandAll from '../../demos/tree/13-expand-all.svelte';
-  import expandAllSrc from '../../demos/tree/13-expand-all.svelte?raw';
-  import Controlled from '../../demos/tree/14-controlled.svelte';
-  import controlledSrc from '../../demos/tree/14-controlled.svelte?raw';
-  import AutoExpandParent from '../../demos/tree/15-auto-expand-parent.svelte';
-  import autoExpandParentSrc from '../../demos/tree/15-auto-expand-parent.svelte?raw';
-  import ExpandIcon from '../../demos/tree/16-expand-icon.svelte';
-  import expandIconSrc from '../../demos/tree/16-expand-icon.svelte?raw';
-  import ShowLine from '../../demos/tree/17-show-line.svelte';
-  import showLineSrc from '../../demos/tree/17-show-line.svelte?raw';
-  import Virtualized from '../../demos/tree/18-virtualized.svelte';
-  import virtualizedSrc from '../../demos/tree/18-virtualized.svelte?raw';
-  import LoadData from '../../demos/tree/19-load-data.svelte';
-  import loadDataSrc from '../../demos/tree/19-load-data.svelte?raw';
-  import DynamicUpdate from '../../demos/tree/20-dynamic-update.svelte';
-  import dynamicUpdateSrc from '../../demos/tree/20-dynamic-update.svelte?raw';
-  import Draggable from '../../demos/tree/21-draggable.svelte';
-  import draggableSrc from '../../demos/tree/21-draggable.svelte?raw';
-  import FullLabelLeaf from '../../demos/tree/22-full-label-leaf.svelte';
-  import fullLabelLeafSrc from '../../demos/tree/22-full-label-leaf.svelte?raw';
-  import FullLabelSingleLeaf from '../../demos/tree/23-full-label-single-leaf.svelte';
-  import fullLabelSingleLeafSrc from '../../demos/tree/23-full-label-single-leaf.svelte?raw';
-  import FullLabelHighlight from '../../demos/tree/24-full-label-highlight.svelte';
-  import fullLabelHighlightSrc from '../../demos/tree/24-full-label-highlight.svelte?raw';
-  import FieldNames from '../../demos/tree/25-field-names.svelte';
-  import fieldNamesSrc from '../../demos/tree/25-field-names.svelte?raw';
-  import CustomFilter from '../../demos/tree/26-custom-filter.svelte';
-  import customFilterSrc from '../../demos/tree/26-custom-filter.svelte?raw';
-  import SearchControlledExpand from '../../demos/tree/27-search-controlled-expand.svelte';
-  import searchControlledExpandSrc from '../../demos/tree/27-search-controlled-expand.svelte?raw';
-  import DraggableFullLabel from '../../demos/tree/28-draggable-full-label.svelte';
-  import draggableFullLabelSrc from '../../demos/tree/28-draggable-full-label.svelte?raw';
+  import RenderLabelEllipsis from '../../demos/tree/09-render-label-ellipsis.svelte';
+  import renderLabelEllipsisSrc from '../../demos/tree/09-render-label-ellipsis.svelte?raw';
+  import CustomIcon from '../../demos/tree/10-custom-icon.svelte';
+  import customIconSrc from '../../demos/tree/10-custom-icon.svelte?raw';
+  import Directory from '../../demos/tree/11-directory.svelte';
+  import directorySrc from '../../demos/tree/11-directory.svelte?raw';
+  import Disabled from '../../demos/tree/12-disabled.svelte';
+  import disabledSrc from '../../demos/tree/12-disabled.svelte?raw';
+  import CheckRelation from '../../demos/tree/13-check-relation.svelte';
+  import checkRelationSrc from '../../demos/tree/13-check-relation.svelte?raw';
+  import ExpandAll from '../../demos/tree/14-expand-all.svelte';
+  import expandAllSrc from '../../demos/tree/14-expand-all.svelte?raw';
+  import SearchControlledExpand from '../../demos/tree/15-search-controlled-expand.svelte';
+  import searchControlledExpandSrc from '../../demos/tree/15-search-controlled-expand.svelte?raw';
+  import Controlled from '../../demos/tree/16-controlled.svelte';
+  import controlledSrc from '../../demos/tree/16-controlled.svelte?raw';
+  import AutoExpandParent from '../../demos/tree/17-auto-expand-parent.svelte';
+  import autoExpandParentSrc from '../../demos/tree/17-auto-expand-parent.svelte?raw';
+  import ExpandIcon from '../../demos/tree/18-expand-icon.svelte';
+  import expandIconSrc from '../../demos/tree/18-expand-icon.svelte?raw';
+  import ShowLine from '../../demos/tree/19-show-line.svelte';
+  import showLineSrc from '../../demos/tree/19-show-line.svelte?raw';
+  import Virtualized from '../../demos/tree/20-virtualized.svelte';
+  import virtualizedSrc from '../../demos/tree/20-virtualized.svelte?raw';
+  import DynamicUpdate from '../../demos/tree/21-dynamic-update.svelte';
+  import dynamicUpdateSrc from '../../demos/tree/21-dynamic-update.svelte?raw';
+  import LoadData from '../../demos/tree/22-load-data.svelte';
+  import loadDataSrc from '../../demos/tree/22-load-data.svelte?raw';
+  import Draggable from '../../demos/tree/23-draggable.svelte';
+  import draggableSrc from '../../demos/tree/23-draggable.svelte?raw';
+  import FullLabelLeaf from '../../demos/tree/24-full-label-leaf.svelte';
+  import fullLabelLeafSrc from '../../demos/tree/24-full-label-leaf.svelte?raw';
+  import FullLabelSingleLeaf from '../../demos/tree/25-full-label-single-leaf.svelte';
+  import fullLabelSingleLeafSrc from '../../demos/tree/25-full-label-single-leaf.svelte?raw';
+  import FullLabelHighlight from '../../demos/tree/26-full-label-highlight.svelte';
+  import fullLabelHighlightSrc from '../../demos/tree/26-full-label-highlight.svelte?raw';
+  import DraggableFullLabel from '../../demos/tree/27-draggable-full-label.svelte';
+  import draggableFullLabelSrc from '../../demos/tree/27-draggable-full-label.svelte?raw';
+  import FieldNames from '../../demos/tree/28-field-names.svelte';
+  import fieldNamesSrc from '../../demos/tree/28-field-names.svelte?raw';
+  import CustomFilter from '../../demos/tree/29-custom-filter.svelte';
+  import customFilterSrc from '../../demos/tree/29-custom-filter.svelte?raw';
 </script>
 
 ## 代码演示
@@ -92,8 +94,6 @@ import { Tree } from '@chenzy-design/svelte';
 
 <DemoBox code={searchableSrc}><Searchable /></DemoBox>
 
-### 自定义搜索框
-
 设置 `filterTreeNode` 属性开启搜索后，可以通过设置 `searchRender` 自定义搜索框的渲染方法，设置为 `false` 时可以隐藏搜索框。
 
 <DemoBox code={searchRenderSrc}><SearchRender /></DemoBox>
@@ -106,7 +106,7 @@ import { Tree } from '@chenzy-design/svelte';
 
 ### 简单 JSON 格式的数据
 
-可以通过 `treeDataSimpleJson` 传入 JSON 形式的 treeNodes 数据。此时 key-value 键值对中的 key 值将作为 TreeNodeData 的 key 和 label，value 值将作为 TreeNodeData 的 value。
+可以通过 `treeDataSimpleJson` 传入 JSON 形式的 treeNodes 数据。此时 key-value 键值对中的 key 值将作为 TreeNodeData 的 key 和 label，value 值将作为 TreeNodeData 的 value。返回值为包含选中节点的 JSON 数据。
 
 <DemoBox code={simpleJsonSrc}><SimpleJson /></DemoBox>
 
@@ -118,13 +118,19 @@ import { Tree } from '@chenzy-design/svelte';
 
 ### 自定义节点内容
 
-TreeNodeData 的 label 属性支持传入节点来自定义显示的节点内容。你也可以使用 `renderLabel` 来传入自定义的渲染方法，此时搜索值仍为 treeData 中相应的 label 属性。
+`TreeNodeData` 的 label 属性支持传入 Snippet 来自定义显示的节点内容。注意如果设置 `filterTreeNode` 开启搜索，默认是对 label 的值进行搜索，当 label 为 Snippet 时，需要自定义 `filterTreeNode` 的函数来满足搜索需求。
+
+你也可以使用 `renderLabel` 来传入自定义的渲染方法，此时搜索值仍为 treeData 中相应的 label 属性。
 
 <DemoBox code={customLabelSrc}><CustomLabel /></DemoBox>
 
+过长省略：可以使用 `renderLabel` 来实现文本过长省略的效果。
+
+<DemoBox code={renderLabelEllipsisSrc}><RenderLabelEllipsis /></DemoBox>
+
 ### 自定义图标
 
-通过设置 `icon` 属性可添加自定义图标。
+通过设置节点数据的 `icon` 属性可添加节点级自定义图标；也可以设置组件级 `icon`（Snippet 或函数）统一渲染。节点级 `icon` 优先级高于组件级。
 
 <DemoBox code={customIconSrc}><CustomIcon /></DemoBox>
 
@@ -142,6 +148,8 @@ TreeNodeData 的 label 属性支持传入节点来自定义显示的节点内容
 
 ### 节点选中关系
 
+> 版本：>= 2.5.0
+
 多选时，可以使用 `checkRelation` 来设置节点选中关系的类型，可选：`related`（默认）、`unRelated`。当选中关系为 `unRelated`，意味着节点之间的选中互不影响。
 
 <DemoBox code={checkRelationSrc}><CheckRelation /></DemoBox>
@@ -151,6 +159,12 @@ TreeNodeData 的 label 属性支持传入节点来自定义显示的节点内容
 `defaultExpandAll` 和 `expandAll` 均可以设置 Tree 的默认展开/收起状态。二者的区别是，`defaultExpandAll` 只在初始化时生效，而 `expandAll` 不仅会在初始化时生效，当数据发生动态更新时，`expandAll` 也仍然生效。
 
 <DemoBox code={expandAllSrc}><ExpandAll /></DemoBox>
+
+### 开启搜索的展开受控
+
+传入 `expandedKeys` 时即为展开受控组件，可以配合 `onExpand` 使用。当展开受控时，如果开启 `filterTreeNode` 并进行搜索是不会再自动展开节点的，此时，节点的展开完全由 `expandedKeys` 来控制。你可以利用 `onSearch` 的入参 `filteredExpandedKeys` 来实现展开受控时的搜索展开效果。
+
+<DemoBox code={searchControlledExpandSrc}><SearchControlledExpand /></DemoBox>
 
 ### 受控
 
@@ -166,7 +180,7 @@ TreeNodeData 的 label 属性支持传入节点来自定义显示的节点内容
 
 ### 自定义展开 Icon
 
-可以通过 `expandIcon` 自定义展开 Icon，支持传入节点或者函数。
+可以通过 `expandIcon` 自定义展开 Icon，支持传入 Snippet（静态图标）或按展开态条件切换的内容。
 
 <DemoBox code={expandIconSrc}><ExpandIcon /></DemoBox>
 
@@ -188,13 +202,15 @@ TreeNodeData 的 label 属性支持传入节点来自定义显示的节点内容
 
 ### 异步加载数据
 
-通过设置 `loadData` 可以动态加载数据，此时需要在数据中传入 `isLeaf` 标明叶子节点。
+通过设置 `loadData` 可以动态加载数据，此时需要在数据中传入 `isLeaf` 标明叶子节点。`loadData` 返回该节点的子节点数组（由组件内部缓存合并进渲染树，不写回受控 `treeData`）。
 
 <DemoBox code={loadDataSrc}><LoadData /></DemoBox>
 
 ### 可拖拽的 Tree
 
-通过设置 `draggable` 配合 `onDrop` 可以实现 Tree 节点的拖拽。
+通过设置 `draggable` 配合 `onDrop` 可以实现 Tree 节点的拖拽。目前不支持与虚拟化同时使用。
+
+`onDrop` 回调入参 `dropPosition` 为 `'before' | 'inside' | 'after'`，分别表示插入到目标节点之前、成为目标节点子节点、插入到目标节点之后。
 
 <DemoBox code={draggableSrc}><Draggable /></DemoBox>
 
@@ -216,9 +232,15 @@ Tree 组件的 API 支持了大部分的渲染需求，如果有非常特殊的�
 
 <DemoBox code={fullLabelHighlightSrc}><FullLabelHighlight /></DemoBox>
 
+### 可拖拽的高级定制
+
+支持可拖拽（`draggable`）和高级定制（`renderFullLabel`）同时使用。
+
+<DemoBox code={draggableFullLabelSrc}><DraggableFullLabel /></DemoBox>
+
 ### 字段映射
 
-可以通过 `keyMaps` 自定义节点中 key、label、value 的字段。
+可以通过 `keyMaps` 自定义节点中 key、label、value、children 的字段。
 
 <DemoBox code={fieldNamesSrc}><FieldNames /></DemoBox>
 
@@ -227,18 +249,6 @@ Tree 组件的 API 支持了大部分的渲染需求，如果有非常特殊的�
 将 `filterTreeNode` 置为自定义函数，定制你想要的搜索策略。
 
 <DemoBox code={customFilterSrc}><CustomFilter /></DemoBox>
-
-### 开启搜索的展开受控
-
-传入 `expandedKeys` 时即为展开受控组件，可以配合 `onExpand` 使用。当展开受控时，如果开启 `filterTreeNode` 并进行搜索是不会再自动展开节点的，此时，节点的展开完全由 `expandedKeys` 来控制。你可以利用 `onSearch` 的入参 `filteredExpandedKeys` 来实现展开受控时的搜索展开效果。
-
-<DemoBox code={searchControlledExpandSrc}><SearchControlledExpand /></DemoBox>
-
-### 可拖拽的高级定制
-
-支持可拖拽（`draggable`）和高级定制（`renderFullLabel`）同时使用。
-
-<DemoBox code={draggableFullLabelSrc}><DraggableFullLabel /></DemoBox>
 
 ## API 参考
 
@@ -264,15 +274,18 @@ Tree 组件的 API 支持了大部分的渲染需求，如果有非常特殊的�
 | expandAll | 设置是否默认展开所有节点，若后续数据发生改变，展开情况也受此 api 影响 | boolean | false |
 | expandedKeys | （受控）展开的节点，默认展开节点显示其直接子级 | `string[]` | - |
 | expandIcon | 自定义展开图标 | Snippet | - |
-| keyMaps | 自定义节点中 key、label、value 的字段 | object | - |
+| keyMaps | 自定义节点中 key、label、value、children 的字段 | object | - |
 | filterTreeNode | 是否根据输入项进行筛选，默认用 treeNodeFilterProp 的值筛选 | `boolean \| ((input, treeNodeString, data) => boolean)` | false |
-| icon | 自定义图标 | Snippet | - |
+| hideDraggingNode | 是否隐藏正在拖拽的节点的 dragImg | boolean | false |
+| icon | 组件级自定义图标（统一渲染），节点级 `TreeNodeData.icon` 优先级更高 | Snippet | - |
 | labelEllipsis | 是否开启 label 的超出省略，默认虚拟化状态开启 | boolean | `false \| true(虚拟化)` |
 | leafOnly | 多选模式下 onChange 回调入参及展示标签只有叶子节点 | boolean | false |
-| loadData | 异步加载数据，需要返回一个 Promise | `(node?) => Promise<void>` | - |
+| loadData | 异步加载数据，返回该节点的子节点数组 | `(node) => Promise<TreeNodeData[]>` | - |
 | loadedKeys | （受控）已经加载的节点，配合 loadData 使用 | `string[]` | - |
 | motion | 是否开启动画 | boolean | true |
 | multiple | 是否支持多选 | boolean | false |
+| preventScroll | 聚焦时是否阻止浏览器滚动文档，作用于组件内的 focus 方法 | boolean | false |
+| renderDraggingNode | 自定义正在拖拽节点的 dragImg 的 DOM 元素 | `(nodeInstance, node) => HTMLElement` | - |
 | renderFullLabel | 完全自定义 label 的渲染函数 | Snippet | - |
 | renderLabel | 自定义 label 的渲染函数 | Snippet | - |
 | searchClassName | 搜索框的 className 属性 | string | - |
@@ -296,7 +309,7 @@ Tree 组件的 API 支持了大部分的渲染需求，如果有非常特殊的�
 | onDragLeave | onDragLeave 事件回调 | `(dragProps) => void` | - |
 | onDragOver | onDragOver 事件回调 | `(dragProps) => void` | - |
 | onDragStart | onDragStart 事件回调 | `(dragProps) => void` | - |
-| onDrop | onDrop 事件回调 | `(dragProps) => void` | - |
+| onDrop | onDrop 事件回调 | `(info: { dragNode, dropNode, dropPosition }) => void` | - |
 | onExpand | 展示节点时调用 | `(expandedKeys, object) => void` | - |
 | onLoad | 节点加载完毕时触发的回调 | `(loadedKeys, node) => void` | - |
 | onContextMenu | 右键点击的回调 | `(e, node) => void` | - |
@@ -311,7 +324,7 @@ Tree 组件的 API 支持了大部分的渲染需求，如果有非常特殊的�
 | --- | --- | --- | --- |
 | value | 属性值 | `string \| number` | - |
 | label | 展示的文本 | `string \| Snippet` | - |
-| icon | 自定义图标 | Snippet | - |
+| icon | 节点级自定义图标，优先级高于组件级 `icon` | Snippet | - |
 | disabled | 是否禁用 | boolean | false |
 | key | required 且要求唯一 | string | - |
 | isLeaf | 设置节点为叶子节点，在异步加载数据即传入 loadData 时有效 | boolean | - |

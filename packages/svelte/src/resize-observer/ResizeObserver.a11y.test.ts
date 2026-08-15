@@ -68,7 +68,7 @@ describe('ResizeObserver observeParent', () => {
     expect(observedTargets).toContain(wrapper);
   });
 
-  it('observeParent=true 观测父节点而非包裹元素', async () => {
+  it('observeParent=true 同时观测包裹元素与其父节点（严格对齐 Semi，非互斥替代）', async () => {
     observedTargets.length = 0;
     // render 把组件挂到一个由 testing-library 提供的父容器（container 的子节点是 wrapper，
     // wrapper.parentElement 即该容器）。
@@ -78,9 +78,10 @@ describe('ResizeObserver observeParent', () => {
     expect(wrapper).not.toBeNull();
     const parent = wrapper.parentElement;
     expect(parent).not.toBeNull();
-    // 观测的是父节点，不是包裹元素本身。
+    // Semi ReactResizeObserver.observeElement：element 与 element.parentNode 都 observe，
+    // 两个目标共用同一 observer 实例，回调按 entry.target 分别触发。
     expect(observedTargets).toContain(parent);
-    expect(observedTargets).not.toContain(wrapper);
+    expect(observedTargets).toContain(wrapper);
   });
 
   it('observerProperty 透传到 core：width 模式下仅高度变化不回调（对齐 Semi）', async () => {
@@ -145,6 +146,20 @@ describe('ResizeObserver observeParent', () => {
     const { container } = render(ResizeObserver, { props: { observeChild: true } });
     await Promise.resolve();
     const wrapper = container.querySelector('.cd-resize-observer');
+    expect(observedTargets).toContain(wrapper);
+  });
+
+  it('observeChild + observeParent 叠加：同时观测子元素与其父节点', async () => {
+    observedTargets.length = 0;
+    const { container } = render(ResizeObserver, {
+      props: { observeChild: true, observeParent: true, children: childSnippet },
+    });
+    await Promise.resolve();
+    const wrapper = container.querySelector('.cd-resize-observer') as HTMLElement;
+    const child = wrapper.firstElementChild as HTMLElement;
+    expect(child).not.toBeNull();
+    // child.parentElement === wrapper：叠加后应同时观测到子元素与其父节点（即 wrapper）。
+    expect(observedTargets).toContain(child);
     expect(observedTargets).toContain(wrapper);
   });
 

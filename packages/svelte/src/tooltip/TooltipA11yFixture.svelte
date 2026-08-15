@@ -12,6 +12,8 @@
     content?: string;
     trigger?: 'hover' | 'focus' | 'click' | 'custom';
     locale?: string;
+    keepDOM?: boolean;
+    motion?: boolean;
   }
 
   let {
@@ -19,11 +21,13 @@
     content = 'More info',
     trigger = 'custom',
     locale = 'en_US',
+    keepDOM = false,
+    motion = true,
   }: Props = $props();
 </script>
 
 <LocaleProvider {locale}>
-  <Tooltip {visible} {content} {trigger}>
+  <Tooltip {visible} {content} {trigger} {keepDOM} {motion}>
     <button type="button">Hover me</button>
   </Tooltip>
 </LocaleProvider>

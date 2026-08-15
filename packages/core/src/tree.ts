@@ -21,6 +21,12 @@ export interface TreeNodeData {
   label: unknown;
   disabled?: boolean;
   isLeaf?: boolean;
+  /**
+   * 节点级自定义图标（对齐 Semi TreeNodeData.icon: ReactNode）。渲染层按需断言为
+   * Snippet；优先级高于组件级 `icon` prop（对齐 Semi treeNode.tsx renderIcon：
+   * `data.icon` 命中即返回，其次才是组件级 `treeIcon`，与 directory 内置图标无关）。
+   */
+  icon?: unknown;
   children?: TreeNodeData[];
 }
 
@@ -329,14 +335,26 @@ export function collectLeafKeys(
 /**
  * Search filtering: returns the set of node keys to expand so that every node
  * matching `match` is visible (its ancestor chain). The matched keys themselves
- * are returned separately for highlighting.
+ * are returned separately for highlighting. `descendants` holds every descendant
+ * of a matched node (对齐 Semi findDescendantKeys(filteredOptsKeys, ...)：命中节点
+ * 本身可能没有子节点被 match 命中，但 showFilteredOnly 下用户手动展开命中节点时，
+ * 其全部子孙仍需可见，而非仅展示到命中节点为止）。
  */
 export function computeFilteredKeys(
   data: TreeNodeData[],
   match: (node: TreeNodeData) => boolean,
-): { matched: Set<TreeKey>; expand: Set<TreeKey> } {
+): { matched: Set<TreeKey>; expand: Set<TreeKey>; descendants: Set<TreeKey> } {
   const matched = new Set<TreeKey>();
   const expand = new Set<TreeKey>();
+  const descendants = new Set<TreeKey>();
+
+  function collectDescendants(node: TreeNodeData) {
+    if (!node.children) return;
+    for (const child of node.children) {
+      descendants.add(child.key);
+      collectDescendants(child);
+    }
+  }
 
   function walk(node: TreeNodeData, ancestors: TreeKey[]): boolean {
     let childHit = false;
@@ -346,7 +364,10 @@ export function computeFilteredKeys(
       }
     }
     const selfHit = match(node);
-    if (selfHit) matched.add(node.key);
+    if (selfHit) {
+      matched.add(node.key);
+      collectDescendants(node);
+    }
     if (selfHit || childHit) {
       // expand all ancestors so this node is reachable
       for (const a of ancestors) expand.add(a);
@@ -357,7 +378,7 @@ export function computeFilteredKeys(
   }
 
   for (const root of data) walk(root, []);
-  return { matched, expand };
+  return { matched, expand, descendants };
 }
 
 /**
@@ -483,4 +504,65 @@ export function collectCheckedByStrategy(
   };
   walk(data, false);
   return out;
+}
+
+/**
+ * 照搬 Semi `packages/semi-foundation/tree/treeUtil.ts` 的 `getMotionKeys`：
+ *   const getChild = (itemKey) => {
+ *     keyEntities[itemKey].children && keyEntities[itemKey].children.forEach((item) => {
+ *       const { key } = item;
+ *       res.push(key);
+ *       if (expandedKeys.has(key)) getChild(key);
+ *     });
+ *   };
+ *   getChild(eventKey); return res;
+ * 唯一改动：Semi 用预建的 `keyEntities`（key→entity，entity.children 是子 entity 数组）做查找，
+ * 本库 core 未维护该索引（其余函数如 conduct/computeFilteredKeys 均直接对 TreeNodeData[] 递归），
+ * 故用 `findNode` 定位 eventKey 节点后直接遍历其 `children`，递归结构与终止条件逐行对应不变。
+ */
+export function getMotionKeys(
+  eventKey: TreeKey,
+  expandedKeys: ReadonlySet<TreeKey>,
+  data: TreeNodeData[],
+): TreeKey[] {
+  const res: TreeKey[] = [];
+  const target = findNode(data, eventKey);
+  const getChild = (node: TreeNodeData | undefined): void => {
+    node?.children?.forEach((item) => {
+      const { key } = item;
+      res.push(key);
+      if (expandedKeys.has(key)) {
+        getChild(item);
+      }
+    });
+  };
+  getChild(target);
+  return res;
+}
+
+/**
+ * 值通道回退语义（对齐 Semi `treeUtil.getValueOrKey`）：节点声明了 `value` 字段时，
+ * 对外值通道（onChange 抛出值 / 受控 value 展示）优先取 `value`；未声明（`undefined`）
+ * 才回退 `key`。内部选中态索引（expandedKeys/checkedKeys/selectedKeys 等）恒用 `key`，
+ * 与此函数无关——这只管「对外该展示/传出什么」。
+ */
+export function getValueOrKey(node: TreeNodeData): TreeKey {
+  return node.value ?? node.key;
+}
+
+/**
+ * 构建 value → key 反查表（对齐 Tree.svelte 既有 `keyByNodeValue` 用途，供受控
+ * value/defaultValue 传入的是节点 `value` 时反查回内部 `key`）。仅收录声明了 `value`
+ * 字段的节点；未声明的节点本就该继续走 key，无需出现在表里。
+ */
+export function buildValueKeyIndex(data: TreeNodeData[]): Map<string | number, TreeKey> {
+  const map = new Map<string | number, TreeKey>();
+  function walk(nodes: TreeNodeData[]): void {
+    for (const n of nodes) {
+      if (n.value !== undefined) map.set(n.value, n.key);
+      if (n.children) walk(n.children);
+    }
+  }
+  walk(data);
+  return map;
 }

@@ -46,11 +46,15 @@ describe('AutoComplete 键盘 e2e（combobox aria-activedescendant 浮层导航�
     expect(combobox.getAttribute('aria-activedescendant')).toBe(`${listId}-opt-0`);
 
     // 3. Enter 选中当前高亮（opt-0 = Apple），onSelect 写入夹具；浮层关闭。
+    // 补齐进出场动画后，面板关闭时先保留 DOM 播放退场动画，animationend 后才真正
+    // hidden（不再从 DOM 完全移除，对齐 Select/Cascader/TimePicker 同构模式）——
+    // 故断言目标从「元素消失」改为「hidden 属性最终为 true」。
     await userEvent.keyboard('{Enter}');
     const out = document.querySelector('[data-testid="selected"]') as HTMLElement;
     expect(out.textContent).toBe(JSON.stringify('Apple'));
     await vi.waitFor(() => {
-      expect(document.querySelector('[role="listbox"]')).toBeNull();
+      const panel = document.querySelector('.cd-autocomplete-option-list');
+      expect(panel?.className.includes('cd-autocomplete-option-list-hidden')).toBe(true);
     });
     expect(combobox.getAttribute('aria-expanded')).toBe('false');
 
@@ -59,11 +63,14 @@ describe('AutoComplete 键盘 e2e（combobox aria-activedescendant 浮层导航�
     await userEvent.keyboard('{Backspace}{Backspace}{Backspace}{Backspace}{Backspace}');
     await userEvent.keyboard('Ba');
     await vi.waitFor(() => {
-      expect(document.querySelector('[role="listbox"]')).not.toBeNull();
+      const panel = document.querySelector('.cd-autocomplete-option-list');
+      expect(panel).not.toBeNull();
+      expect(panel?.className.includes('cd-autocomplete-option-list-hidden')).toBe(false);
     });
     await userEvent.keyboard('{Escape}');
     await vi.waitFor(() => {
-      expect(document.querySelector('[role="listbox"]')).toBeNull();
+      const panel = document.querySelector('.cd-autocomplete-option-list');
+      expect(panel?.className.includes('cd-autocomplete-option-list-hidden')).toBe(true);
     });
   });
 });

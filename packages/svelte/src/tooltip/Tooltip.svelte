@@ -471,15 +471,42 @@
     return release;
   });
 
-  // --- afterClose：浮层关闭后异步回调，确保动画有机会结束 ---
+  /**
+   * 进/退场动画对齐 Semi CSSAnimation（transitionState:'enter'|'leave' + onAnimationEnd，
+   * 与 Select/Cascader/Dropdown/AutoComplete/TimePicker/Table 同构模式）：关闭时先播放
+   * hide 动画（panelLeaving），animationend 后才真正 hidden（panelHidden）+ 触发
+   * afterClose（对齐 Semi didLeave() 后调用 afterClose，真正等动画结束而非
+   * requestAnimationFrame 近似值）。keepDOM=false（默认）时面板整个从 shouldRender
+   * 卸载，DOM 立即消失，来不及播放退场动画——此时 afterClose 立即触发（无中间态）。
+   */
+  let panelLeaving = $state(false);
+  let panelHidden = $state(true);
+  $effect(() => {
+    if (isOpen) {
+      panelHidden = false;
+      panelLeaving = false;
+    } else if (motionEnabled && keepDOM) {
+      panelLeaving = true;
+    } else {
+      panelHidden = true;
+    }
+  });
   let prevOpenRef = { value: false };
   $effect(() => {
     const current = isOpen;
-    if (prevOpenRef.value && !current) {
-      requestAnimationFrame(() => afterClose?.());
+    if (prevOpenRef.value && !current && !(motionEnabled && keepDOM)) {
+      // 无退场动画路径（motion 关闭 / keepDOM 关闭）：立即触发，afterClose 语义等价于
+      // Semi 的「motion=false 时 CSSAnimation 逻辑上视为 duration:0 动画」。
+      afterClose?.();
     }
     prevOpenRef.value = current;
   });
+  function finalizeClose(): void {
+    if (!panelLeaving) return;
+    panelLeaving = false;
+    panelHidden = true;
+    afterClose?.();
+  }
 
   // 浮层根内联样式：自定义 zIndex 覆盖 token 层级 + transform-origin（transformFromCenter=false
   // 时缩放从浮层自身原点）+ 用户 style 追加。
@@ -632,8 +659,10 @@
       use:floating={{ trigger: anchorEl, placement, autoAdjust: autoAdjustOverflow, offset: mainAxisSpacing, padding: marginPadding, arrowPointAtCenter, over: isOver, onPlacement, getContainer: resolvePopupContainer, open: isOpen, rePosKey, forwardClickToTrigger }}
       class="{prefixCls}-wrapper {showArrowBool ? `${prefixCls}-with-arrow` : ''} {className}"
       class:cd-tooltip-wrapper-show={isOpen}
-      class:cd-tooltip-wrapper-hidden={!isOpen}
-      class:cd-tooltip-wrapper-motion={motionEnabled}
+      class:cd-tooltip-wrapper-hidden={keepDOM ? panelHidden : !isOpen}
+      class:cd-tooltip-wrapper-motion-show={motionEnabled && isOpen}
+      class:cd-tooltip-wrapper-motion-hide={motionEnabled && keepDOM && panelLeaving}
+      onanimationend={finalizeClose}
       onclick={onPopClick}
       onpointerenter={onPopPointerEnter}
       onpointerleave={onPopPointerLeave}
@@ -861,12 +890,20 @@
     transform: translateY(-50%) rotate(180deg);
   }
 
-  /* motion：进出场 zoomIn（对齐 Semi tooltip zoomIn 关键帧 + 100ms cubic-bezier）。
-     用独立 scale 属性（非 transform）做缩放：use:floating 用 transform: translate() 定位，
-     动画走 transform 会覆盖定位把浮层拉到 (0,0)；scale 属性与 transform 正交，二者叠加互不覆盖。 */
-  :global(.cd-tooltip-wrapper-motion) {
+  /*
+   * 进/退场动画对齐 Semi zoomIn/zoomOut（tooltip.scss `-animation-show`/`-animation-hide`）：
+   * scale(0.8→1) + opacity(0→1)，进退场曲线相同。用独立 scale 属性（非 transform）做缩放：
+   * use:floating 用 transform:translate() 定位，动画走 transform 会覆盖定位把浮层拉到 (0,0)；
+   * scale 属性与 transform 正交，二者叠加互不覆盖。退场仅 keepDOM=true 时生效（keepDOM=false
+   * 时面板整个卸载，来不及播放动画，立即消失符合「未要求保留 DOM」的预期，见 script 状态机注释）。
+   */
+  :global(.cd-tooltip-wrapper-motion-show) {
     animation: cd-tooltip-zoom-in var(--cd-animation-duration-tooltip-in)
-      var(--cd-animation-function-tooltip-in) both;
+      var(--cd-animation-function-tooltip-in);
+  }
+  :global(.cd-tooltip-wrapper-motion-hide) {
+    animation: cd-tooltip-zoom-out var(--cd-animation-duration-tooltip-out)
+      var(--cd-animation-function-tooltip-out);
   }
   @keyframes cd-tooltip-zoom-in {
     from {
@@ -881,16 +918,32 @@
       scale: 1;
     }
   }
+  @keyframes cd-tooltip-zoom-out {
+    from {
+      opacity: var(--cd-tooltip-motion-zoom-opacity-to);
+      scale: 1;
+    }
+    60% {
+      opacity: var(--cd-tooltip-motion-zoom-opacity-from);
+      scale: var(--cd-tooltip-motion-zoom-scale-from);
+    }
+    to {
+      opacity: var(--cd-tooltip-motion-zoom-opacity-from);
+      scale: var(--cd-tooltip-motion-zoom-scale-from);
+    }
+  }
 
   /* keepDOM=true 关闭后保留 DOM 但不可见、不可交互、不占位 */
   :global(.cd-tooltip-wrapper-hidden) {
     display: none;
   }
 
-  /* reduced-motion：禁用进场动画 */
+  /* 减少动效：时长归零而非 animation:none——后者不触发 animationend，
+     会让 finalizeClose 永远不被调用，面板卡在展开态无法真正隐藏（keepDOM=true 时）。 */
   @media (prefers-reduced-motion: reduce) {
-    :global(.cd-tooltip-wrapper-motion) {
-      animation: none;
+    :global(.cd-tooltip-wrapper-motion-show),
+    :global(.cd-tooltip-wrapper-motion-hide) {
+      animation-duration: 0.01ms;
     }
   }
 </style>

@@ -4,32 +4,65 @@
 
   const treeData: TreeNodeData[] = [
     {
-      label: '亚洲',
-      key: 'asia',
+      label: 'Asia',
+      value: 'Asia',
+      key: '0',
       children: [
-        { label: '中国', key: 'china', children: [{ label: '北京', key: 'beijing' }] },
-        { label: '日本', key: 'japan' },
+        {
+          label: 'China',
+          value: 'China',
+          key: '0-0',
+          children: [
+            {
+              label: 'Beijing',
+              value: 'Beijing',
+              key: '0-0-0',
+            },
+            {
+              label: 'Shanghai',
+              value: 'Shanghai',
+              key: '0-0-1',
+            },
+          ],
+        },
+        {
+          label: 'Japan',
+          value: 'Japan',
+          key: '0-1',
+          children: [
+            {
+              label: 'Osaka',
+              value: 'Osaka',
+              key: '0-1-0',
+            },
+          ],
+        },
       ],
     },
-    { label: '北美洲', key: 'na', children: [{ label: '美国', key: 'us' }] },
+    {
+      label: 'North America',
+      value: 'North America',
+      key: '1',
+      children: [
+        {
+          label: 'United States',
+          value: 'United States',
+          key: '1-0',
+        },
+        {
+          label: 'Canada',
+          value: 'Canada',
+          key: '1-1',
+        },
+      ],
+    },
   ];
 </script>
 
-<div style="width:260px">
-  <!-- searchRender：自定义搜索框渲染（这里加了自定义 placeholder 与前缀文案） -->
-  <Tree style="width: 260px; height: 420px; border: 1px solid var(--cd-color-border); border-radius: 6px; box-sizing: border-box" {treeData} filterTreeNode defaultExpandAll aria-label="自定义搜索框树">
-    {#snippet searchRender({ value, placeholder, onChange, onClear, showClear })}
-      <Input
-        {value}
-        placeholder={placeholder}
-        {showClear}
-        onInput={onChange}
-        onClear={onClear}
-      >
-        {#snippet prefix()}
-          <span style="padding-inline:4px; color:var(--cd-color-text-2)">搜索</span>
-        {/snippet}
-      </Input>
-    {/snippet}
-  </Tree>
-</div>
+<Tree filterTreeNode {treeData}>
+  {#snippet searchRender({ value, onChange, onClear, showClear })}
+    <Input {value} {showClear} onInput={onChange} onClear={onClear}>
+      {#snippet prefix()}Search{/snippet}
+    </Input>
+  {/snippet}
+</Tree>
