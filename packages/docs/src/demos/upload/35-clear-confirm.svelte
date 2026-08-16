@@ -3,9 +3,9 @@
   import type { UploadFileItem } from '@chenzy-design/svelte';
 
   const seed: UploadFileItem[] = [
-    { uid: 'c-1', name: 'file-a.log', size: 1024, status: 'success' },
-    { uid: 'c-2', name: 'file-b.log', size: 2048, status: 'success' },
-    { uid: 'c-3', name: 'file-c.log', size: 3072, status: 'success' },
+    { uid: 'c-1', name: 'file-a.log', size: '1.0KB', status: 'success' },
+    { uid: 'c-2', name: 'file-b.log', size: '2.0KB', status: 'success' },
+    { uid: 'c-3', name: 'file-c.log', size: '3.0KB', status: 'success' },
   ];
 
   // 批量清空前二次确认：返回 false 阻止清空。

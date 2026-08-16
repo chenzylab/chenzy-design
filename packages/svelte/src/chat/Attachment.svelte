@@ -26,11 +26,13 @@
 
   function realTypeOf(item: UploadFileItem): string {
     const suffix = suffixOf(item.name ?? '');
-    return suffix || (item.file?.type.split('/').pop() ?? '');
+    return suffix || (item.fileInstance?.type.split('/').pop() ?? '');
   }
 
   function isImg(item: UploadFileItem): boolean {
-    return isImageAttachment(item.file ? { name: item.name, fileInstance: item.file } : { name: item.name });
+    return isImageAttachment(
+      item.fileInstance ? { name: item.name, fileInstance: item.fileInstance } : { name: item.name },
+    );
   }
 
   function showProcess(item: UploadFileItem): boolean {

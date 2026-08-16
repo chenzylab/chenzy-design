@@ -4,7 +4,7 @@
 
   let uploadRef = $state<ReturnType<typeof Upload> | undefined>(undefined);
   let fileList = $state<UploadFileItem[]>([
-    { uid: 'i-1', name: 'first.txt', size: 1024, status: 'success' },
+    { uid: 'i-1', name: 'first.txt', size: '1.0KB', status: 'success' },
   ]);
 
   function insertAtFront() {

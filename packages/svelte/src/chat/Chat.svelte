@@ -273,7 +273,7 @@
     }
   });
 
-  // UploadFileItem → core ChatAttachment（file→fileInstance，供 core MIME/后缀图片分流判定）。
+  // UploadFileItem → core ChatAttachment（字段名已同构对齐 Semi：fileInstance/size 等）。
   // exactOptionalPropertyTypes：仅在有值时写入可选字段，不显式赋 undefined。
   function toAttachments(list: UploadFileItem[]): ChatAttachment[] {
     return list.map((item) => {
@@ -284,7 +284,7 @@
         status: item.status,
       };
       if (item.url !== undefined) att.url = item.url;
-      if (item.file !== undefined) att.fileInstance = item.file;
+      if (item.fileInstance !== undefined) att.fileInstance = item.fileInstance;
       return att;
     });
   }

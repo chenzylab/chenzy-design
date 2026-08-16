@@ -14,6 +14,7 @@ export type {
   BeforeUploadProps,
   AfterUploadProps,
   AfterUploadResult,
+  CustomRequestArgs,
   RenderFileItemProps,
   RenderPictureCloseProps,
 } from './types.js';

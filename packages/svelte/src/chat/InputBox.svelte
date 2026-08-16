@@ -66,7 +66,7 @@
   let content = $state('');
   let attachment = $state<UploadFileItem[]>([]);
   let dragActive = $state(false);
-  let uploadApi = $state<{ addFiles: (files: File[]) => void } | undefined>();
+  let uploadApi = $state<{ insert: (files: File[], index?: number) => void } | undefined>();
   let textareaApi = $state<{ focus: () => void } | undefined>();
 
   // 点击输入区容器空白处聚焦文本框（对齐 Semi InputBox.onClick，挂在 -inner 上）。
@@ -147,7 +147,7 @@
     dragDepth = 0;
     dragActive = false;
     const files = e.dataTransfer?.files;
-    if (files && files.length > 0) uploadApi?.addFiles(Array.from(files));
+    if (files && files.length > 0) uploadApi?.insert(Array.from(files));
   }
 
   // 严格对齐 Semi：placeholder 原样透传，**无内置兜底文案**

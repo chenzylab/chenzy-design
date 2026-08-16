@@ -33,8 +33,8 @@ describe('Upload a11y', () => {
 
   it('文件列表（success/uploadFail 项）：删除按钮 locale 可访问名，无 axe violations', async () => {
     const files: UploadFileItem[] = [
-      { uid: 'u1', name: 'doc.pdf', size: 4096, status: 'success', percent: 100 },
-      { uid: 'u2', name: 'big.zip', size: 8192, status: 'uploadFail', error: 'Too large' },
+      { uid: 'u1', name: 'doc.pdf', size: '4.0KB', status: 'success', percent: 100 },
+      { uid: 'u2', name: 'big.zip', size: '8.0KB', status: 'uploadFail', validateMessage: 'Too large' },
     ];
     const { container } = renderFixture({ fileList: files });
     const removeBtns = container.querySelectorAll('.cd-upload-file-card-close');
@@ -48,7 +48,7 @@ describe('Upload a11y', () => {
   // uploading 文件项内嵌 Progress（对齐 Semi renderFile progress），progressbar 有可访问名。
   it('uploading 项：内嵌 Progress 有可访问名，无 axe violations', async () => {
     const files: UploadFileItem[] = [
-      { uid: 'u1', name: 'photo.png', size: 2048, status: 'uploading', percent: 40 },
+      { uid: 'u1', name: 'photo.png', size: '2.0KB', status: 'uploading', percent: 40 },
     ];
     const { container } = renderFixture({ fileList: files });
     expect(container.querySelector('[role="progressbar"]')).not.toBeNull();
