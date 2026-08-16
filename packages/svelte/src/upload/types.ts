@@ -39,7 +39,7 @@ export type UploadDataOrFn = Record<string, string> | ((file: File) => Record<st
 
 /**
  * 文件名超长提示配置（对标 Semi showTooltip）。
- * boolean：true=用原生 title 属性；false=不展示。
+ * boolean：true=用 Tooltip 包裹文件名弹出提示；false=不弹出浮层（对齐 Semi，无 title 兜底）。
  * 对象：type 选 Tooltip/Popover 组件包裹文件名；opts 透传给组件；
  * renderTooltip 完全接管浮层——与 Semi `(content, children) => ReactNode` 语义一致。
  */
@@ -65,27 +65,23 @@ export type UploadFileListTitle =
 export interface UploadFileItem {
   uid: string;
   name: string;
-  size: number;
+  /** 文件体积的格式化展示串（严格对齐 Semi `size: string`，如 "1.2KB"/"3.4MB"，见 core getFileSize）。 */
+  size: string;
   status: UploadStatus;
   percent?: number;
-  /**
-   * 原始 File 对象。对标 Semi `fileInstance`——本仓库统一命名为 `file`，
-   * 二者等价（同一 File 引用）；Semi demo 里读 `fileItem.fileInstance` 的写法请改用 `fileItem.file`。
-   */
-  file?: File;
+  /** 原始 File 对象（对齐 Semi `fileInstance`）。 */
+  fileInstance?: File;
   /**
    * 是否为该项启用内置缩略图预览（对标 Semi preview）。
    * picture 列表中：`preview === true` 或存在 `url` 时读取地址显示缩略图；
    * 显式 `preview === false` 可禁用缩略图（即便有 url 也不预览）。不传时按有无 url 判定（默认预览）。
    */
   preview?: boolean;
-  /** 远程预览地址（picture 列表优先用它，否则由 file 生成 objectURL） */
+  /** 远程预览地址（picture 列表优先用它，否则由 fileInstance 生成 objectURL） */
   url?: string;
-  /** 校验失败时的本地化提示（如大小超限/过小）；status==='validateFail' 时展示 */
-  error?: string;
   /**
-   * 校验/上传信息文案（对标 Semi validateMessage）。与 `error` 等价并存：
-   * 优先展示 `validateMessage`，回退 `error`。供 afterUpload/beforeUpload 回写自定义文案。
+   * 校验/上传信息文案（对标 Semi validateMessage）。status==='validateFail' 时展示。
+   * 供 afterUpload/beforeUpload 回写自定义文案。
    */
   validateMessage?: string;
   /**
@@ -113,7 +109,7 @@ export interface UploadFileItem {
  * - `autoRemove`：true 则自动移除该文件项。
  * - `status`：直接改该项状态（如标 validateFail）。
  * - `validateMessage`：校验文案。
- * - `fileInstance`：替换上传的 File（如压缩后）。
+ * - `fileInstance`：替换上传的 File（如压缩后，对齐 Semi）。
  */
 export interface BeforeUploadObjectResult {
   shouldUpload?: boolean;
@@ -127,6 +123,31 @@ export interface BeforeUploadObjectResult {
 export interface BeforeUploadProps {
   file: UploadFileItem;
   fileList: UploadFileItem[];
+}
+
+/**
+ * customRequest 入参（对标 Semi customRequestArgs）。消费者接管上传时通过
+ * onProgress/onError/onSuccess 把结果回写进组件状态（对齐 Semi post() 里传给
+ * option.customRequest 的完整字段集，而非仅传文件项）。
+ */
+export interface CustomRequestArgs {
+  /** 当前上传字段名（对标 Semi fileName，回退链 name || fileName || fileInstance.name 求值后的结果）。 */
+  fileName: string;
+  /** 用户设置的 props.data（求值后的对象，静态或函数形态均已解析）。 */
+  data: Record<string, unknown>;
+  file: UploadFileItem;
+  /** 原始 File 对象（对标 Semi fileInstance）。 */
+  fileInstance: File;
+  /** 上传进度回调，e 需含 total/loaded（对标 Semi onProgress）。 */
+  onProgress: (e?: { total: number; loaded: number }) => void;
+  /** 上传失败回调（对标 Semi onError）。 */
+  onError: (userXhr?: { status?: number }, e?: Event) => void;
+  /** 上传成功回调，response 为上传成功后的请求结果（对标 Semi onSuccess）。 */
+  onSuccess: (response: unknown, e?: Event) => void;
+  /** 用户设置的 props.withCredentials（对标 Semi withCredentials）。 */
+  withCredentials: boolean;
+  /** 用户设置的 props.action（对标 Semi action）。 */
+  action: string;
 }
 
 /** afterUpload 入参（对标 Semi AfterUploadProps）。 */

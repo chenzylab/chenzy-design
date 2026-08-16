@@ -10,14 +10,14 @@
 
   // picture 上传：含一个初始已上传项（url 预览），便于直接看到缩略图
   let uploadImageVal = $state<UploadFileItem[]>([
-    { uid: 'img-1', name: 'sample.svg', size: 1024, status: 'success', url: demoImageSrc },
+    { uid: 'img-1', name: 'sample.svg', size: '1.0KB', status: 'success', url: demoImageSrc },
   ]);
 
   // beforeUpload 异步校验演示（对齐 Semi：入参 { file, fileList }，拒绝大文件）
   let uploadBeforeVal = $state<UploadFileItem[]>([]);
   async function uploadBefore({ file }: BeforeUploadProps): Promise<boolean> {
     await new Promise((r) => setTimeout(r, 150));
-    return file.size <= 100 * 1024;
+    return (file.fileInstance?.size ?? 0) <= 100 * 1024;
   }
 
   // directory 演示

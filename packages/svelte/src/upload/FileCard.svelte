@@ -97,15 +97,6 @@
     fallbackPreview = false;
   });
 
-  // Semi getFileSize（严格对齐 utils.ts）：<1KB → KB(2dec)；1KB..1MB → KB(1dec)；>=1MB → MB(1dec)。
-  const byteKB = 1024;
-  const byteMB = 1048576;
-  function getFileSize(n: number): string {
-    if (n < byteKB) return `${(n / byteKB).toFixed(2)}KB`;
-    if (n < byteMB) return `${(n / byteKB).toFixed(1)}KB`;
-    return `${(n / byteMB).toFixed(1)}MB`;
-  }
-
   // 归一 showTooltip 到 Typography.Text 的 EllipsisShowTooltip 形态（对齐 Semi ShowTooltip）。
   // boolean 直接透传；对象态透传 type/opts/renderTooltip——三者签名与 Text 一致，renderTooltip
   // 为位置参数 (fullText, trigger)（对齐 Semi (content, children)），直接桥接不降级。
@@ -118,12 +109,9 @@
     return cfg;
   });
 
-  const fileSize = $derived(getFileSize(item.size));
-  // validateMessage 优先级：item.validateMessage → item.error → uploadFail 默认 locale.fail（对齐 Semi）。
+  // validateMessage 优先级：item.validateMessage → uploadFail 默认 locale.fail（对齐 Semi）。
   const validateMessage = $derived(
-    item.validateMessage ??
-      item.error ??
-      (item.status === 'uploadFail' ? loc().t('Upload.fail') : undefined),
+    item.validateMessage ?? (item.status === 'uploadFail' ? loc().t('Upload.fail') : undefined),
   );
 
   // 状态派生（对齐 Semi）。
@@ -256,12 +244,18 @@
     {/if}
 
     {#if showReplaceBtn}
-      <!-- 替换（对齐 Semi picture-file-card-replace）：Tooltip 包裹 + ReplaceSvg。 -->
-      <Tooltip content={loc().t('Upload.replace')} trigger="hover" position="top" showArrow={false}>
-        <div role="button" tabindex="0" aria-label={loc().t('Upload.replace')} class="cd-upload-picture-file-card-replace" onclick={handleReplace} onkeydown={(e) => keydownActivate(e, onReplace)}>
-          {@render replaceSvg()}
-        </div>
-      </Tooltip>
+      <!-- 替换（对齐 Semi picture-file-card-replace）：定位挂在 Tooltip 外层 div 上，避免
+           Tooltip.svelte 给 children 包一层 position:relative 的 .cd-tooltip 容器后，
+           内层元素的 inset-inline-start:50% 百分比基准从卡片（96×96）变成 Tooltip 自身
+           包裹层（尺寸仅贴合文字提示），导致按钮偏出卡片中心（Svelte 无 cloneElement 的
+           结构性代价，同类见 TypographyBase.svelte 同名注释）。 -->
+      <div class="cd-upload-picture-file-card-replace">
+        <Tooltip content={loc().t('Upload.replace')} trigger="hover" position="top" showArrow={false}>
+          <div role="button" tabindex="0" aria-label={loc().t('Upload.replace')} onclick={handleReplace} onkeydown={(e) => keydownActivate(e, onReplace)}>
+            {@render replaceSvg()}
+          </div>
+        </Tooltip>
+      </div>
     {/if}
 
     {#if showPreview}
@@ -327,10 +321,10 @@
       <div class="cd-upload-file-card-info-main-text">
         <Text class="cd-upload-file-card-info-name" ellipsis={{ showTooltip: ellipsisShowTooltip }}>{item.name}</Text>
         <span>
-          <span class="cd-upload-file-card-info-size">{fileSize}</span>
+          <span class="cd-upload-file-card-info-size">{item.size}</span>
           {#if showReplaceBtn}
             <Tooltip content={loc().t('Upload.replace')} trigger="hover" position="top" showArrow={false}>
-              <span class="cd-upload-tooltip-children-wrapper cd-upload-file-card-replace">
+              <span class="cd-upload-tooltip-children-wrapper cd-upload-file-card-info-replace">
                 <Button onclick={handleReplace} type="tertiary" theme="borderless" size="small" aria-label={loc().t('Upload.replace')} icon={directoryIcon} />
               </span>
             </Tooltip>
@@ -429,6 +423,7 @@
     white-space: nowrap;
     display: inline-block;
     font-size: var(--cd-font-size-regular);
+    line-height: var(--cd-line-height-regular);
     font-weight: var(--cd-font-upload-file-card-info-name-fontweight);
     color: var(--cd-color-upload-text);
   }
@@ -451,24 +446,27 @@
   }
   .cd-upload-file-card-info-size {
     font-size: var(--cd-font-size-small);
+    line-height: var(--cd-line-height-small);
     font-weight: var(--cd-font-upload-file-card-info-size-fontweight);
     margin-inline-start: var(--cd-spacing-upload-file-card-info-size-marginleft);
     color: var(--cd-color-upload-assist-text);
     margin-block-start: 1px;
   }
-  .cd-upload-file-card-replace {
+  .cd-upload-file-card-info-replace {
     display: inline-flex;
     margin-inline-start: var(--cd-spacing-tight);
     color: var(--cd-color-text-2);
   }
   .cd-upload-file-card-info-validate-message {
     font-size: var(--cd-font-size-small);
+    line-height: var(--cd-line-height-small);
     display: flex;
     align-items: center;
     color: var(--cd-color-upload-text);
   }
   .cd-upload-file-card-info-retry {
     font-size: var(--cd-font-size-small);
+    line-height: var(--cd-line-height-small);
     color: var(--cd-color-upload-retry-text);
     cursor: pointer;
     margin-inline-start: var(--cd-spacing-upload-file-card-info-retry-marginleft);
@@ -647,5 +645,31 @@
   }
   .cd-upload-picture-file-card-disabled {
     cursor: not-allowed;
+  }
+
+  /* —— RTL（对齐 Semi upload/rtl.scss 的 direction 覆盖作用域）——
+     本库 RTL 触发机制是 global cd-rtl class。正向已用逻辑属性（margin-inline 系/
+     inset-inline 系）的部分靠下面的 direction 覆盖自动镜像；但 retry/replace/
+     preview/progress-circle 四处用 inset-inline-start 50% 加 translate(-50%,-50%)
+     做居中定位——inset-inline-start 随镜像换算成距右边界 50% 后，translateX 仍需退回
+     半个自身宽度才能让元素中心对齐该点，但退回方向变成物理右（正值），故 X 轴符号要
+     由负转正（Y 轴不变），对齐 Semi rtl.scss 同名规则。 */
+  :global(.cd-rtl) .cd-upload-file-card {
+    direction: rtl;
+  }
+  :global(.cd-rtl) .cd-upload-picture-file-card {
+    direction: rtl;
+  }
+  :global(.cd-rtl) .cd-upload-picture-file-card-retry {
+    transform: translate(50%, -50%);
+  }
+  :global(.cd-rtl) .cd-upload-picture-file-card-replace {
+    transform: translate3d(50%, -50%, 0);
+  }
+  :global(.cd-rtl) .cd-upload-picture-file-card-preview {
+    transform: translate3d(50%, -50%, 0);
+  }
+  :global(.cd-rtl) .cd-upload-picture-file-card :global(.cd-progress-circle) {
+    transform: translate(50%, -50%);
   }
 </style>

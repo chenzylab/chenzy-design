@@ -9,10 +9,10 @@
     );
 
   let textVal = $state<UploadFileItem[]>([
-    { uid: 'r-1', name: 'avatar.png', size: 51200, status: 'success' },
+    { uid: 'r-1', name: 'avatar.png', size: '50.0KB', status: 'success' },
   ]);
   let picVal = $state<UploadFileItem[]>([
-    { uid: 'rp-1', name: 'cover.svg', size: 2048, status: 'success', url: demoImageSrc },
+    { uid: 'rp-1', name: 'cover.svg', size: '2.0KB', status: 'success', url: demoImageSrc },
   ]);
 </script>
 

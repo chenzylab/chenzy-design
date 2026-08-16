@@ -70,12 +70,12 @@ Upload 用于将本地文件上传至服务端，支持点击选择与拖拽两�
 | listType | `'list'\|'picture'\|'none'` | `'list'` | 文件列表展示类型（对齐 Semi listType）：list 文本卡片、picture 照片墙、none 不渲染列表 |
 | draggable | `boolean` | `false` | true 渲染拖拽区，false 渲染按钮（对齐 Semi draggable） |
 | action | `string` | `undefined` | 上传地址；有则选文件后自动 XHR 上传 |
-| name | `string` | `'file'` | 表单字段名（对齐 Semi name） |
-| fileName | `string` | `undefined` | 同 name，避免 Form.Upload 中 props 冲突（对齐 Semi fileName）；优先于 name |
+| name | `string` | `undefined` | 表单字段名（对齐 Semi name）。回退链 `name \|\| fileName \|\| fileInstance.name` |
+| fileName | `string` | `undefined` | 同 name，避免 Form.Upload 中 props.name 冲突（对齐 Semi fileName）；name 未传时回退到此 |
 | headers | `Record<string,string> \| ((file: File) => Record<string,string>)` | `undefined` | 额外请求头；静态对象或按当前 file 求值的函数（对齐 Semi headers） |
 | data | `Record<string,string> \| ((file: File) => Record<string,string>)` | `undefined` | 额外表单字段；静态对象或按当前 file 求值的函数（对齐 Semi data） |
 | beforeUpload | `(props: { file, fileList }) => boolean \| BeforeUploadObjectResult \| Promise<...>` | `undefined` | 上传前钩子（对齐 Semi beforeUpload）：入参 { file, fileList }。返回 false 拒绝；true/undefined 上传；返回富对象 BeforeUploadObjectResult（shouldUpload/autoRemove/status/validateMessage/fileInstance）精细控制。支持异步 |
-| customRequest | `(item: UploadFileItem) => void \| Promise<void>` | `undefined` | 自定义上传实现（对齐 Semi customRequest，优先于 action） |
+| customRequest | `(args: CustomRequestArgs) => void \| Promise<void>` | `undefined` | 自定义上传实现（对齐 Semi customRequest，优先于 action）。入参含 fileName/data/file/fileInstance/onProgress/onError/onSuccess/withCredentials/action 完整字段（对齐 Semi customRequestArgs） |
 | afterUpload | `(props: { response, file, fileList }) => AfterUploadResult \| void` | `undefined` | 上传成功后钩子（同步返回）：据返回值改该项 status/validateMessage/name/url 或 autoRemove（对齐 Semi afterUpload） |
 | onChange | `(props: { fileList, currentFile }) => void` | `undefined` | 文件列表变化回调（对齐 Semi onChange，入参 { fileList, currentFile }） |
 | onExceed | `(files: File[]) => void` | `undefined` |  |
@@ -141,9 +141,12 @@ Upload 用于将本地文件上传至服务端，支持点击选择与拖拽两�
 | Method | 类型 | 说明 |
 |---|---|---|
 | `upload` | `() => void` | 手动触发上传（配合 `uploadTrigger='custom'`），批量上传所有 ready 文件。对标 Semi `ref.upload` |
-| `addFiles` | `(fileList: FileList \| File[]) => void` | 命令式添加文件，走完整 accept/limit/校验/上传管线 |
 | `insert` | `(files: File[], index?: number) => void` | 命令式插入文件到指定 `index`（不传则末尾），走完整 accept/limit/校验/上传管线。`limit=1` 时同替换语义。对标 Semi insert |
 | `openFileDialog` | `() => void` | 命令式打开文件选择器（等价点击触发器）。对标 Semi openFileDialog |
+| `clear` | `() => void` | 命令式清空文件列表（对标 Semi `ref.clear`），走 `beforeClear` 钩子 |
+| `remove` | `(fileItem: UploadFileItem) => void` | 命令式移除指定文件项（对标 Semi `ref.remove`，入参为完整文件项对象而非 uid） |
+
+> `addFiles` 已删除（Semi 无对应方法，语义与 `insert` 不传 `index` 完全等价，统一改用 `insert`）。
 
 > renderThumbnail vs previewFile：`previewFile` 只替换缩略图内容（默认操作/信息浮层保留）；`renderThumbnail` 接管整个缩略图区域（含图片本身），二者互斥（renderThumbnail 优先）。
 

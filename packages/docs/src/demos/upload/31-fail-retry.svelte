@@ -13,16 +13,30 @@
   const reportFile = new File(['x'], 'report.pdf', { type: 'application/pdf' });
 
   let textVal = $state<UploadFileItem[]>([
-    { uid: 'fail-1', name: 'report.pdf', size: 204800, status: 'uploadFail', error: '上传失败，请重试', file: reportFile },
-    { uid: 'ok-1', name: 'photo.png', size: 51200, status: 'success' },
+    {
+      uid: 'fail-1',
+      name: 'report.pdf',
+      size: '200.0KB',
+      status: 'uploadFail',
+      validateMessage: '上传失败，请重试',
+      fileInstance: reportFile,
+    },
+    { uid: 'ok-1', name: 'photo.png', size: '50.0KB', status: 'success' },
   ]);
 
-  // pic-fail 带一个占位 File，使失败态的居中重试按钮可渲染（重试需要 item.file）。
+  // pic-fail 带一个占位 File，使失败态的居中重试按钮可渲染（重试需要 item.fileInstance）。
   const placeholderFile = new File(['x'], 'cover.svg', { type: 'image/svg+xml' });
 
   let picVal = $state<UploadFileItem[]>([
-    { uid: 'pic-fail', name: 'cover.svg', size: 2048, status: 'uploadFail', url: demoImageSrc, file: placeholderFile },
-    { uid: 'pic-ok', name: 'ok.svg', size: 2048, status: 'success', url: demoImageSrc },
+    {
+      uid: 'pic-fail',
+      name: 'cover.svg',
+      size: '2.0KB',
+      status: 'uploadFail',
+      url: demoImageSrc,
+      fileInstance: placeholderFile,
+    },
+    { uid: 'pic-ok', name: 'ok.svg', size: '2.0KB', status: 'success', url: demoImageSrc },
   ]);
 </script>
 

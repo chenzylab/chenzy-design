@@ -139,6 +139,7 @@ export {
   type BeforeUploadProps,
   type AfterUploadProps,
   type AfterUploadResult,
+  type CustomRequestArgs,
   type RenderFileItemProps,
   type RenderPictureCloseProps,
 } from './upload/index.js';

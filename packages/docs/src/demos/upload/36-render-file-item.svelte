@@ -10,10 +10,10 @@
     );
 
   let listVal = $state<UploadFileItem[]>([
-    { uid: 'r-1', name: 'report.pdf', size: 4096, status: 'success' },
+    { uid: 'r-1', name: 'report.pdf', size: '4.0KB', status: 'success' },
   ]);
   let picVal = $state<UploadFileItem[]>([
-    { uid: 'p-1', name: 'cover.svg', size: 2048, status: 'success', url: demoImageSrc },
+    { uid: 'p-1', name: 'cover.svg', size: '2.0KB', status: 'success', url: demoImageSrc },
   ]);
 </script>
 
@@ -46,7 +46,7 @@
     onChange={({ fileList }) => (picVal = fileList)}
   >
     {#snippet renderPicInfo(file)}
-      <span>{file.name} · {(file.size / 1024).toFixed(1)}KB</span>
+      <span>{file.name} · {file.size}</span>
     {/snippet}
     <IconPlus size="extra-large" />
   </Upload>

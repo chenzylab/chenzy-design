@@ -1,20 +1,28 @@
 <!--
   Upload — 严格对齐 Semi Design（破坏性重写，无向后兼容）。
+  状态机下沉：文件项 CRUD、校验管线（accept/size/beforeUpload/transformFile）、进度/成功/失败
+  流转、拖拽语义全部委托 core `createUpload()`（packages/core/src/upload/foundation.ts，逐行移植
+  Semi UploadFoundation）。Svelte 层只做：state 持有（runes）、DOM 事件桥接、真实 XHR/customRequest
+  I/O、objectURL 创建/释放、粘贴剪贴板读取、裁切/替换弹层编排——这些是 DOM/框架专属、Semi 原版也放在
+  React 组件层（index.tsx）而非 foundation 的部分。adapter 的 notifyXxx 是纯回调转发（对齐 Semi
+  index.tsx `get adapter()`：`notifyError: (...) => this.props.onError(...)` 这类一一对应写法）。
   受控 prop：fileList / defaultFileList（对齐 Semi）。文件卡片渲染拆到 FileCard.svelte
   （renderPic/renderFile 双分支）。class 命名走 Semi 连字符体系 cd-upload-*。
   真实上传：有 action 且无 customRequest 时选文件后自动 XHR 上传；customRequest 优先。
   listType=picture：照片墙缩略图网格；list：文本卡片列表；none：不渲染列表。
   crop：image/* 文件先进裁切弹窗（Modal + Cropper）。directory：input 加 webkitdirectory。
-  minSize/maxSize：core validateFileSize 校验（KB）；beforeUpload 支持返回富对象控制上传。
+  minSize/maxSize：core checkFileSize 校验（KB）；beforeUpload 支持返回富对象控制上传。
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
   import {
-    useId,
     useLiveAnnouncer,
-    computeUploadPercent,
-    isUploadOk,
+    createUpload,
     validateFileSize,
+    type BaseFileItem,
+    type CustomFile,
+    type UploadAdapter,
+    type XhrError,
   } from '@chenzy-design/core';
   import { useLocale } from '../locale-provider/index.js';
   import { Modal } from '../modal/index.js';
@@ -34,6 +42,7 @@
     BeforeUploadProps,
     AfterUploadProps,
     AfterUploadResult,
+    CustomRequestArgs,
     RenderFileItemProps,
     RenderPictureCloseProps,
   } from './types.js';
@@ -77,9 +86,9 @@
     draggable?: boolean;
     /** 上传地址（对齐 Semi action）；提供且无 customRequest 时自动 XHR 上传。 */
     action?: string;
-    /** 表单字段名（对齐 Semi name），默认 'file'。 */
+    /** 表单字段名（对齐 Semi name）。回退链 name || fileName || fileInstance.name。 */
     name?: string;
-    /** 同 name，避免 Form.Upload 中 props 冲突（对齐 Semi fileName）。优先于 name。 */
+    /** 同 name，避免 Form.Upload 中 props.name 冲突（对齐 Semi fileName）。name 未传时回退到此。 */
     fileName?: string;
     /** 额外请求头（对齐 Semi headers）。静态对象或按当前 file 求值的函数。 */
     headers?: UploadDataOrFn;
@@ -94,7 +103,7 @@
       props: BeforeUploadProps,
     ) => boolean | BeforeUploadObjectResult | Promise<boolean | BeforeUploadObjectResult>;
     /** 自定义上传实现（对齐 Semi customRequest，优先于 action）。 */
-    customRequest?: (item: UploadFileItem) => void | Promise<void>;
+    customRequest?: (args: CustomRequestArgs) => void | Promise<void>;
     /** 上传成功后钩子（对齐 Semi afterUpload），同步返回。 */
     afterUpload?: (props: AfterUploadProps) => AfterUploadResult | void;
     onChange?: (props: { fileList: UploadFileItem[]; currentFile: UploadFileItem }) => void;
@@ -196,7 +205,7 @@
     listType = 'list',
     draggable = false,
     action,
-    name = 'file',
+    name,
     fileName,
     headers,
     data,
@@ -263,8 +272,12 @@
   const announcer = useLiveAnnouncer();
   const announcedBucket = new Map<string, number>();
 
-  // 表单字段名：fileName 优先于 name（对齐 Semi 在 FormData 中 fileName || name）。
-  const fieldName = $derived(fileName ?? name);
+  // 表单字段名回退链（对齐 Semi post() 源码：option.name || option.fileName || fileInstance.name。
+  // 注：Semi 官方 API 表描述 fileName「避免 Form.Upload 中 props.name 冲突」，实践中 Form 场景
+  // name 通常不传，回退链天然落到 fileName；源码字面优先级是 name 先于 fileName。）
+  function fieldNameFor(fileInstance: File): string {
+    return name || fileName || fileInstance.name;
+  }
 
   const isControlled = $derived(fileList !== undefined);
   // 非受控初始值（仅取初始 defaultFileList，后续由内部状态管理）。
@@ -277,7 +290,6 @@
   let inputEl: HTMLInputElement | null = null;
 
   let dragOver = $state(false);
-  let dragEnterTarget: EventTarget | null = null;
 
   const xhrMap = new Map<string, XMLHttpRequest>();
   let mounted = true;
@@ -285,13 +297,36 @@
   const objectUrls = new Map<string, string>();
   const isPicture = $derived(listType === 'picture');
 
+  // replaceIdx：picture/list 替换流程记录的目标 index（对齐 Semi state.replaceIdx），
+  // core 状态机在 handleReplaceChange 里读取。
+  let replaceIdx = -1;
+
+  // ——— core 状态机桥接：UploadFileItem（渲染层字段）与 BaseFileItem（core/Semi 字段）同构，
+  // 全字段名已对齐 Semi（fileInstance/size:string/validateMessage 等），无需转换层。———
+  function toItems(list: UploadFileItem[]): BaseFileItem[] {
+    return list as unknown as BaseFileItem[];
+  }
+  function fromItems(list: BaseFileItem[]): UploadFileItem[] {
+    return list as unknown as UploadFileItem[];
+  }
+
+  function commit(next: BaseFileItem[], currentFile?: BaseFileItem) {
+    const patched = applyPendingSizeMessages(next);
+    const nextItems = fromItems(patched);
+    if (!isControlled) inner = nextItems;
+    onChange?.({
+      fileList: nextItems,
+      currentFile: (currentFile as UploadFileItem | undefined) ?? nextItems[nextItems.length - 1] ?? ({} as UploadFileItem),
+    });
+  }
+
   function previewUrl(item: UploadFileItem): string | undefined {
     if (item.preview === false) return undefined;
     if (item.url) return item.url;
-    if (!item.file) return undefined;
+    if (!item.fileInstance) return undefined;
     let u = objectUrls.get(item.uid);
     if (u === undefined) {
-      u = URL.createObjectURL(item.file);
+      u = URL.createObjectURL(item.fileInstance);
       objectUrls.set(item.uid, u);
     }
     return u;
@@ -299,13 +334,13 @@
   // list 文本卡片预览：仅图片项返回缩略图地址，否则 undefined → 占位。
   function itemThumbUrl(item: UploadFileItem): string | undefined {
     if (item.preview === false) return undefined;
-    const isImage = item.file ? item.file.type.startsWith('image/') : Boolean(item.url);
+    const isImage = item.fileInstance ? item.fileInstance.type.startsWith('image/') : Boolean(item.url);
     if (!isImage) return undefined;
     return previewUrl(item);
   }
   function itemPreviewEnabled(item: UploadFileItem): boolean {
     if (item.preview === false) return false;
-    return item.file ? item.file.type.startsWith('image/') : Boolean(item.url);
+    return item.fileInstance ? item.fileInstance.type.startsWith('image/') : Boolean(item.url);
   }
   function revokeUrl(uid: string) {
     const u = objectUrls.get(uid);
@@ -313,38 +348,6 @@
       URL.revokeObjectURL(u);
       objectUrls.delete(uid);
     }
-  }
-
-  function patchItem(uid: string, patch: Partial<UploadFileItem>) {
-    commit(current.map((it) => (it.uid === uid ? { ...it, ...patch } : it)));
-  }
-
-  // afterUpload（对齐 Semi notifyAfterUpload）：成功后据返回值改该项或自动移除。
-  function applyAfterUpload(uid: string, responseText: string) {
-    if (!afterUpload) return;
-    const item = current.find((it) => it.uid === uid);
-    if (!item) return;
-    let response: unknown = responseText;
-    try {
-      response = JSON.parse(responseText);
-    } catch {
-      response = responseText;
-    }
-    const result = afterUpload({ response, file: item, fileList: current });
-    if (!result) return;
-    if (result.autoRemove) {
-      removeInternal(uid);
-      return;
-    }
-    const patch: Partial<UploadFileItem> = {};
-    if (result.status) patch.status = result.status;
-    if (result.validateMessage !== undefined) patch.validateMessage = result.validateMessage;
-    if (result.name !== undefined) patch.name = result.name;
-    if (result.url !== undefined) {
-      revokeUrl(uid);
-      patch.url = result.url;
-    }
-    if (Object.keys(patch).length > 0) patchItem(uid, patch);
   }
 
   // directory/capture 是非标准 input 属性，命令式 toggle。
@@ -373,7 +376,7 @@
     };
   });
 
-  // 粘贴监听（addOnPasting）。
+  // 粘贴监听（addOnPasting）。crop 开启时先走裁切管线，否则直接进 core handleChange。
   $effect(() => {
     if (!addOnPasting || disabled) return;
     function handlePaste(e: ClipboardEvent) {
@@ -387,7 +390,7 @@
             if (f) files.push(f);
           }
         }
-        if (files.length > 0) addFiles(files);
+        if (files.length > 0) dispatchSelected(files);
       } catch (error) {
         onPastingError?.(error);
       }
@@ -396,7 +399,7 @@
     return () => document.removeEventListener('paste', handlePaste);
   });
 
-  function announceProgress(item: UploadFileItem, percent: number) {
+  function announceProgress(item: BaseFileItem, percent: number) {
     const bucket = Math.floor(percent / 25);
     if (bucket <= 0 || bucket >= 4) return;
     if (announcedBucket.get(item.uid) === bucket) return;
@@ -404,394 +407,250 @@
     announcer.announce(loc().t('Upload.announceUploading', { name: item.name, percent }));
   }
 
-  // XHR 上传单个文件项。
-  function uploadItem(item: UploadFileItem, file: File): Promise<void> {
-    return new Promise<void>((resolve) => {
-      if (customRequest) {
-        void customRequest({ ...item, file });
-        resolve();
-        return;
-      }
-      if (!action) {
-        resolve();
-        return;
-      }
-      const xhr = new XMLHttpRequest();
-      xhrMap.set(item.uid, xhr);
-      patchItem(item.uid, { status: 'uploading', percent: 0 });
-
-      let settled = false;
-      const done = () => {
-        if (settled) return;
-        settled = true;
-        resolve();
-      };
-
-      xhr.upload.onprogress = (e) => {
-        if (e.lengthComputable) {
-          const percent = computeUploadPercent(e.loaded, e.total);
-          patchItem(item.uid, { percent });
-          announceProgress(item, percent);
-          onProgress?.(percent, { ...item, percent }, current);
-        }
-      };
-      xhr.onload = () => {
-        xhrMap.delete(item.uid);
-        announcedBucket.delete(item.uid);
-        if (isUploadOk(xhr.status)) {
-          let response: unknown = xhr.responseText;
-          try {
-            response = JSON.parse(xhr.responseText);
-          } catch {
-            response = xhr.responseText;
-          }
-          patchItem(item.uid, { status: 'success', percent: 100, response });
-          applyAfterUpload(item.uid, xhr.responseText);
-          announcer.announce(loc().t('Upload.announceSuccess', { name: item.name }));
-          onSuccess?.(response, item, current);
-        } else {
-          patchItem(item.uid, { status: 'uploadFail' });
-          announcer.announce(loc().t('Upload.announceError', { name: item.name }), 'assertive');
-          onError?.(new Error('Upload failed'), item, current, xhr);
-        }
-        done();
-      };
-      xhr.onerror = (e) => {
-        xhrMap.delete(item.uid);
-        announcedBucket.delete(item.uid);
-        patchItem(item.uid, { status: 'uploadFail', event: e as Event });
-        announcer.announce(loc().t('Upload.announceError', { name: item.name }), 'assertive');
-        onError?.(new Error('Upload failed'), item, current, xhr);
-        done();
-      };
-      xhr.onabort = () => {
-        xhrMap.delete(item.uid);
-        announcedBucket.delete(item.uid);
-        done();
-      };
-      xhr.ontimeout = () => {
-        xhrMap.delete(item.uid);
-        announcedBucket.delete(item.uid);
-        patchItem(item.uid, { status: 'uploadFail', error: loc().t('Upload.timeoutError') });
-        announcer.announce(loc().t('Upload.timeoutError', { name: item.name }), 'assertive');
-        onError?.(new Error(loc().t('Upload.timeoutError') ?? 'Upload timed out'), item, current, xhr);
-        done();
-      };
-
-      const form = new FormData();
-      form.append(fieldName, file, item.name);
-      const resolvedData = typeof data === 'function' ? data(file) : data;
-      if (resolvedData) {
-        for (const [k, v] of Object.entries(resolvedData)) form.append(k, v);
-      }
-      xhr.open('POST', action);
-      if (timeout > 0) xhr.timeout = timeout;
-      if (withCredentials) xhr.withCredentials = true;
-      const resolvedHeaders = typeof headers === 'function' ? headers(file) : headers;
-      if (resolvedHeaders) {
-        for (const [k, v] of Object.entries(resolvedHeaders)) xhr.setRequestHeader(k, v);
-      }
-      xhr.send(form);
-    });
-  }
-
-  function commit(next: UploadFileItem[], currentFile?: UploadFileItem) {
-    if (!isControlled) inner = next;
-    onChange?.({
-      fileList: next,
-      currentFile: currentFile ?? next[next.length - 1] ?? ({} as UploadFileItem),
-    });
-  }
-
-  function filterByAccept(files: File[]): { accepted: File[]; rejected: File[] } {
-    if (!accept) return { accepted: files, rejected: [] };
-    const acceptList = accept.split(',').map((s) => s.trim().toLowerCase());
-    const accepted: File[] = [];
-    const rejected: File[] = [];
-    for (const f of files) {
-      const ext = '.' + f.name.split('.').pop()!.toLowerCase();
-      const mime = f.type.toLowerCase();
-      const ok = acceptList.some((a) => {
-        if (a.startsWith('.')) return ext === a;
-        if (a.endsWith('/*')) return mime.startsWith(a.slice(0, -1));
-        return mime === a;
-      });
-      if (ok) accepted.push(f);
-      else rejected.push(f);
-    }
-    return { accepted, rejected };
-  }
-
-  function buildItem(file: File): UploadFileItem {
-    const sizeError = validateFileSize(file.size, { minSize, maxSize });
-    const relativePath = (file as File & { webkitRelativePath?: string }).webkitRelativePath;
-    const item: UploadFileItem = {
-      uid: useId('cd-upload'),
-      name: file.name,
-      size: file.size,
-      status: sizeError ? 'validateFail' : 'wait',
-      file,
-    };
-    if (relativePath) item.relativePath = relativePath;
-    if (sizeError) {
-      const limitKB = sizeError === 'max' ? maxSize! : minSize!;
-      item.error =
-        validateMessage ??
-        loc().t(sizeError === 'max' ? 'Upload.sizeError' : 'Upload.minSizeError', {
-          size: formatKB(limitKB),
-        });
-    }
-    return item;
-  }
-
   function formatKB(kb: number): string {
     if (kb >= 1024) return `${(kb / 1024).toFixed(1)}MB`;
     return `${kb}KB`;
   }
 
-  export function addFiles(fileListInput: FileList | File[]) {
-    if (disabled) return;
-    const allFiles = Array.from(fileListInput);
-    if (allFiles.length === 0) return;
-    if (crop) {
-      void runCropPipeline(allFiles);
+  // 校验失败本地化文案：checkFileSize 只判定 true/false（对齐 Semi），min/max 具体原因与
+  // i18n 文案是本仓库既有能力，在此处按 uid 暂存，notifyChange 首次看到该 uid 时写入
+  // validateMessage（buildFileItem 在 notifySizeError 之后才创建 item，需要延迟落地）。
+  const pendingSizeMessages = new Map<string, string>();
+  function stashSizeMessage(file: CustomFile) {
+    if (!file.uid) return;
+    const reason = validateFileSize(file.size, { minSize, maxSize });
+    if (!reason) return;
+    const limitKB = reason === 'max' ? maxSize! : minSize!;
+    pendingSizeMessages.set(
+      file.uid,
+      validateMessage ?? loc().t(reason === 'max' ? 'Upload.sizeError' : 'Upload.minSizeError', { size: formatKB(limitKB) }),
+    );
+  }
+  function applyPendingSizeMessages(list: BaseFileItem[]): BaseFileItem[] {
+    if (pendingSizeMessages.size === 0) return list;
+    let changed = false;
+    const next = list.map((item) => {
+      const msg = pendingSizeMessages.get(item.uid);
+      if (msg === undefined || item.validateMessage !== undefined) return item;
+      changed = true;
+      pendingSizeMessages.delete(item.uid);
+      return { ...item, validateMessage: msg };
+    });
+    return changed ? next : list;
+  }
+
+  // ——— core adapter：notifyXxx 是纯回调转发（对齐 Semi index.tsx get adapter()）；
+  // post/createObjectUrl/releaseObjectUrl 是渲染层独有的 DOM I/O，core 只调不碰。———
+  const adapter: UploadAdapter = {
+    notifyFileSelect: (files) => onFileChange?.(files),
+    notifyError: (error, fileInstance, list, xhr) => {
+      announcer.announce(loc().t('Upload.announceError', { name: fileInstance.name }), 'assertive');
+      onError?.(error, fileInstance as unknown as UploadFileItem, fromItems(list), xhr);
+    },
+    notifySuccess: (body, fileInstance, list) => {
+      announcer.announce(loc().t('Upload.announceSuccess', { name: fileInstance.name }));
+      onSuccess?.(body, fileInstance as unknown as UploadFileItem, fromItems(list));
+    },
+    notifyProgress: (percent, fileInstance, list) => {
+      const item = list.find((it) => it.uid === (fileInstance as CustomFile).uid);
+      if (item) announceProgress(item, percent);
+      onProgress?.(percent, fileInstance as unknown as UploadFileItem, fromItems(list));
+    },
+    notifyRemove: (file, list, fileItem) => onRemove?.(file, fromItems(list), fileItem as unknown as UploadFileItem),
+    notifySizeError: (file, list) => {
+      stashSizeMessage(file);
+      onSizeError?.(file as unknown as UploadFileItem, fromItems(list));
+    },
+    notifyExceed: (files) => onExceed?.(files),
+    notifyBeforeUpload: ({ file, fileList: list }) =>
+      beforeUpload ? beforeUpload({ file: file as unknown as UploadFileItem, fileList: fromItems(list) }) : true,
+    notifyAfterUpload: ({ response, file, fileList: list }) =>
+      afterUpload?.({ response, file: file as unknown as UploadFileItem, fileList: fromItems(list) }) as
+        | AfterUploadResult
+        | undefined,
+    notifyBeforeRemove: (file, list) => (beforeRemove ? beforeRemove(file as unknown as UploadFileItem, fromItems(list)) : true),
+    notifyBeforeClear: (list) => (beforeClear ? beforeClear(fromItems(list)) : true),
+    notifyChange: ({ currentFile, fileList: list }) => commit(list, currentFile),
+    notifyClear: () => onClear?.(),
+    notifyPreviewClick: (file) => onPreviewClick?.(file as unknown as UploadFileItem),
+    notifyDrop: (e, files, list) => onDrop?.(e as DragEvent, files, fromItems(list)),
+    notifyAcceptInvalid: (files) => onAcceptInvalid?.(files),
+    notifyPastingError: (error) => onPastingError?.(error),
+    notifyRetry: (fileItem) => onRetry?.(fileItem as unknown as UploadFileItem),
+    createObjectUrl: (file, uid) => {
+      const u = URL.createObjectURL(file);
+      objectUrls.set(uid, u);
+      return u;
+    },
+    releaseObjectUrl: revokeUrl,
+    releaseAllObjectUrls: () => {
+      for (const u of objectUrls.values()) URL.revokeObjectURL(u);
+      objectUrls.clear();
+    },
+    post: (file, hooks) => postFile(file, hooks),
+  };
+
+  const core = createUpload({
+    adapter,
+    getProps: () => ({
+      disabled,
+      accept,
+      limit,
+      maxSize,
+      minSize,
+      directory,
+      uploadTrigger,
+      transformFile,
+      beforeUpload: Boolean(beforeUpload),
+      afterUpload: Boolean(afterUpload),
+      addOnPasting,
+    }),
+    getState: () => ({ fileList: toItems(current), replaceIdx }),
+    setState: (patch) => {
+      if (patch.fileList !== undefined) {
+        const nextItems = fromItems(patch.fileList);
+        if (!isControlled) inner = nextItems;
+      }
+      if (patch.replaceIdx !== undefined) replaceIdx = patch.replaceIdx;
+    },
+  });
+
+  // 真实 XHR / customRequest 上传单个文件项（DOM I/O，Semi 原版也在 React 层之外的浏览器
+  // API 边界；本仓库 foundation.post 只算调度，实际网络请求经 adapter.post 回到此处）。
+  function postFile(
+    file: BaseFileItem,
+    hooks: {
+      onProgress: (e: { loaded: number; total: number }) => void;
+      onError: (e?: unknown) => void;
+      onSuccess: (body: unknown, e?: unknown) => void;
+    },
+  ): void {
+    const fileInstance = file.fileInstance;
+    if (!fileInstance) return;
+    if (customRequest) {
+      const resolvedData = (typeof data === 'function' ? data(fileInstance) : data) ?? {};
+      void customRequest({
+        fileName: fieldNameFor(fileInstance),
+        data: resolvedData,
+        file: file as unknown as UploadFileItem,
+        fileInstance,
+        onProgress: (e) => {
+          if (e) hooks.onProgress({ loaded: e.loaded, total: e.total });
+        },
+        onError: (userXhr, e) => {
+          const err: XhrError = Object.assign(new Error('Upload failed'), {
+            status: userXhr?.status ?? 0,
+            method: 'POST',
+            url: action ?? '',
+          });
+          hooks.onError(err);
+        },
+        onSuccess: (response) => hooks.onSuccess(response),
+        withCredentials,
+        action: action ?? '',
+      });
       return;
     }
-    addFilesInternal(allFiles);
+    if (!action) return;
+
+    const xhr = new XMLHttpRequest();
+    xhrMap.set(file.uid, xhr);
+
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable) hooks.onProgress({ loaded: e.loaded, total: e.total });
+    };
+    xhr.onload = () => {
+      xhrMap.delete(file.uid);
+      announcedBucket.delete(file.uid);
+      if (xhr.status >= 200 && xhr.status < 300) {
+        let response: unknown = xhr.responseText;
+        try {
+          response = JSON.parse(xhr.responseText);
+        } catch {
+          response = xhr.responseText;
+        }
+        hooks.onSuccess(response);
+      } else {
+        const err: XhrError = Object.assign(new Error('Upload failed'), {
+          status: xhr.status,
+          method: 'POST',
+          url: action,
+        });
+        hooks.onError(err);
+      }
+    };
+    xhr.onerror = () => {
+      xhrMap.delete(file.uid);
+      announcedBucket.delete(file.uid);
+      const err: XhrError = Object.assign(new Error('Upload failed'), { status: xhr.status, method: 'POST', url: action });
+      hooks.onError(err);
+    };
+    xhr.onabort = () => {
+      xhrMap.delete(file.uid);
+      announcedBucket.delete(file.uid);
+    };
+    xhr.ontimeout = () => {
+      xhrMap.delete(file.uid);
+      announcedBucket.delete(file.uid);
+      const err: XhrError = Object.assign(new Error(loc().t('Upload.timeoutError') ?? 'Upload timed out'), {
+        status: xhr.status,
+        method: 'POST',
+        url: action,
+      });
+      hooks.onError(err);
+    };
+
+    const form = new FormData();
+    form.append(fieldNameFor(fileInstance), fileInstance, file.name);
+    const resolvedData = typeof data === 'function' ? data(fileInstance) : data;
+    if (resolvedData) {
+      for (const [k, v] of Object.entries(resolvedData)) form.append(k, v);
+    }
+    xhr.open('POST', action);
+    if (timeout > 0) xhr.timeout = timeout;
+    if (withCredentials) xhr.withCredentials = true;
+    const resolvedHeaders = typeof headers === 'function' ? headers(fileInstance) : headers;
+    if (resolvedHeaders) {
+      for (const [k, v] of Object.entries(resolvedHeaders)) xhr.setRequestHeader(k, v);
+    }
+    xhr.send(form);
   }
 
-  function filterSelected(files: File[], insertLen = 0): { accepted: File[]; replaceOne: boolean } {
-    const { accepted: afterAccept, rejected } = filterByAccept(files);
-    if (rejected.length > 0) onAcceptInvalid?.(rejected);
-    if (afterAccept.length === 0) return { accepted: [], replaceOne: false };
+  // ——— 文件选择入口：crop 拦截在 core.handleChange 之前（对齐 Semi handleCropFiles 在
+  // foundation.handleChange 之前拦截），非裁切文件/裁切完成后交给 core 状态机。———
+  const isImageFile = (f: File) => f.type.startsWith('image/');
 
-    if (limit === 1) {
-      return { accepted: [afterAccept[afterAccept.length - 1]!], replaceOne: true };
-    }
-
-    let accepted = afterAccept;
-    if (limit !== undefined) {
-      const room = limit - current.length - insertLen;
-      if (room <= 0) {
-        onExceed?.(accepted);
-        return { accepted: [], replaceOne: false };
-      }
-      if (accepted.length > room) {
-        onExceed?.(accepted.slice(room));
-        accepted = accepted.slice(0, room);
-      }
-    }
-    return { accepted, replaceOne: false };
-  }
-
-  function dispatchNewItems(newItems: UploadFileItem[], accepted: File[]) {
-    for (const item of newItems) {
-      if (item.status === 'validateFail' && item.file) {
-        const result = validateFileSize(item.file.size, { minSize, maxSize });
-        if (result) onSizeError?.(item, current);
-      }
-    }
-    for (const item of newItems) {
-      if (item.status === 'validateFail' || !item.file) continue;
-      void dispatch(item, item.file, accepted);
-    }
-  }
-
-  function addFilesInternal(fileListInput: FileList | File[]) {
+  function dispatchSelected(files: File[]): void {
     if (disabled) return;
-    const allFiles = Array.from(fileListInput);
-    if (allFiles.length === 0) return;
-
-    const { accepted, replaceOne } = filterSelected(allFiles);
-    if (accepted.length === 0) return;
-
-    onFileChange?.(accepted);
-
-    const newItems = accepted.map(buildItem);
-    if (replaceOne) {
-      for (const it of current) removeInternalResources(it.uid);
-      commit(newItems, newItems[0]);
-    } else {
-      commit([...current, ...newItems], newItems[0]);
+    if (crop) {
+      void runCropPipeline(files);
+      return;
     }
-
-    dispatchNewItems(newItems, accepted);
+    core.handleChange(files);
   }
 
-  // 命令式插入（对齐 Semi insert）。
+  function handleInputChange(e: Event & { currentTarget: HTMLInputElement }) {
+    const fl = e.currentTarget.files;
+    if (fl) dispatchSelected(Array.from(fl));
+    e.currentTarget.value = '';
+  }
+
+  // 命令式插入（对齐 Semi insert）：crop 同样先拦截。
   export function insert(files: File[], index?: number) {
     if (disabled) return;
-    const allFiles = Array.from(files);
-    if (allFiles.length === 0) return;
-
-    const { accepted, replaceOne } = filterSelected(allFiles);
-    if (accepted.length === 0) return;
-
-    onFileChange?.(accepted);
-
-    const newItems = accepted.map(buildItem);
-    if (replaceOne) {
-      for (const it of current) removeInternalResources(it.uid);
-      commit(newItems, newItems[0]);
-    } else {
-      const at = index === undefined ? current.length : Math.max(0, Math.min(index, current.length));
-      const next = [...current];
-      next.splice(at, 0, ...newItems);
-      commit(next, newItems[0]);
-    }
-
-    dispatchNewItems(newItems, accepted);
-  }
-
-  const pendingFiles = new Map<string, File>();
-
-  // beforeUpload 支持返回富对象（对齐 Semi BeforeUploadObjectResult）。
-  async function dispatch(item: UploadFileItem, original: File, _fileListForHook: File[]) {
-    let file = original;
-    if (beforeUpload) {
-      let result: boolean | BeforeUploadObjectResult;
-      // 中间态 validating（对齐 Semi）。
-      patchItem(item.uid, { status: 'validating' });
-      try {
-        result = await beforeUpload({ file: item, fileList: current });
-      } catch (err) {
-        // reject 支持传富对象（对齐 Semi）。
-        if (err && typeof err === 'object') {
-          result = err as BeforeUploadObjectResult;
-          if (result.shouldUpload === undefined) result.shouldUpload = false;
-        } else {
-          result = false;
-        }
-      }
-      if (!mounted) return;
-      if (!current.some((it) => it.uid === item.uid)) return;
-
-      if (result === false) {
-        // 拒绝：标 validateFail（不移除，对齐 Semi 默认 shouldUpload=false 且无 autoRemove）。
-        patchItem(item.uid, { status: 'validateFail' });
-        return;
-      }
-      if (result !== true && typeof result === 'object') {
-        const obj = result;
-        if (obj.autoRemove) {
-          removeInternal(item.uid);
-          return;
-        }
-        const patch: Partial<UploadFileItem> = {};
-        if (obj.status) patch.status = obj.status;
-        if (obj.validateMessage !== undefined) patch.validateMessage = obj.validateMessage;
-        if (obj.fileInstance) {
-          file = obj.fileInstance;
-          patch.name = file.name;
-          patch.size = file.size;
-          patch.file = file;
-        }
-        const shouldUpload = obj.shouldUpload !== false;
-        if (!shouldUpload) {
-          if (!patch.status) patch.status = 'validateFail';
-          patchItem(item.uid, patch);
-          return;
-        }
-        if (Object.keys(patch).length > 0) patchItem(item.uid, patch);
-      }
-    }
-    if (!mounted) return;
-
-    if (transformFile) {
-      file = await transformFile(file);
-      if (!mounted) return;
-      patchItem(item.uid, { name: file.name, size: file.size, file });
-    }
-
-    if (uploadTrigger === 'custom') {
-      patchItem(item.uid, { status: 'wait' });
-      pendingFiles.set(item.uid, file);
+    if (crop) {
+      void runCropPipeline(files, index);
       return;
     }
-
-    void uploadItem(item, file);
+    core.insertFileToList(files, index);
   }
 
   export function upload() {
-    if (disabled) return;
-    for (const it of current) {
-      if (it.status !== 'wait') continue;
-      const file = pendingFiles.get(it.uid) ?? it.file;
-      if (!file) continue;
-      pendingFiles.delete(it.uid);
-      void uploadItem(it, file);
-    }
+    core.manualUpload();
   }
 
-  function removeInternalResources(uid: string) {
-    const xhr = xhrMap.get(uid);
-    if (xhr) {
-      xhr.abort();
-      xhrMap.delete(uid);
-    }
-    revokeUrl(uid);
-    announcedBucket.delete(uid);
-    pendingFiles.delete(uid);
-  }
-
-  function removeInternal(uid: string) {
-    removeInternalResources(uid);
-    commit(current.filter((item) => item.uid !== uid));
-  }
-
-  async function remove(uid: string) {
-    if (disabled) return;
-    const item = current.find((it) => it.uid === uid);
-    if (!item) return;
-    if (beforeRemove) {
-      let allow: boolean;
-      try {
-        allow = await beforeRemove(item, current);
-      } catch {
-        allow = false;
-      }
-      if (allow === false) return;
-      if (!mounted) return;
-      if (!current.some((it) => it.uid === uid)) return;
-    }
-    const nextList = current.filter((it) => it.uid !== uid);
-    removeInternalResources(uid);
-    commit(nextList, item);
-    onRemove?.(item.file, nextList, item);
-  }
-
-  function retryItem(item: UploadFileItem) {
-    onRetry?.(item);
-    if (!item.file) return;
-    commit(
-      current.map((it) => {
-        if (it.uid !== item.uid) return it;
-        const { percent: _p, error: _e, ...rest } = it;
-        return { ...rest, status: 'wait' };
-      }),
-    );
-    void dispatch(item, item.file, [item.file]);
-  }
-
-  async function clearAll() {
-    if (disabled) return;
-    if (beforeClear) {
-      let allow: boolean;
-      try {
-        allow = await beforeClear(current);
-      } catch {
-        allow = false;
-      }
-      if (allow === false) return;
-      if (!mounted) return;
-    }
-    for (const xhr of xhrMap.values()) xhr.abort();
-    xhrMap.clear();
-    for (const u of objectUrls.values()) URL.revokeObjectURL(u);
-    objectUrls.clear();
-    announcedBucket.clear();
-    commit([]);
-    onClear?.();
+  export function openFileDialog() {
+    openPicker();
   }
 
   function openPicker() {
@@ -800,14 +659,39 @@
     inputEl?.click();
   }
 
-  export function openFileDialog() {
-    openPicker();
+  function removeByUid(uid: string) {
+    if (disabled) return;
+    const item = toItems(current).find((it) => it.uid === uid);
+    if (!item) return;
+    const xhr = xhrMap.get(uid);
+    if (xhr) {
+      xhr.abort();
+      xhrMap.delete(uid);
+    }
+    announcedBucket.delete(uid);
+    core.handleRemove(item);
   }
 
-  function handleInputChange(e: Event & { currentTarget: HTMLInputElement }) {
-    const fl = e.currentTarget.files;
-    if (fl) addFiles(fl);
-    e.currentTarget.value = '';
+  /** 命令式移除指定文件项（对齐 Semi ref.remove，入参为完整文件项对象）。 */
+  export function remove(fileItem: UploadFileItem) {
+    removeByUid(fileItem.uid);
+  }
+
+  function retryItem(item: UploadFileItem) {
+    core.retryItem(item as unknown as BaseFileItem);
+  }
+
+  function clearAll() {
+    if (disabled) return;
+    for (const xhr of xhrMap.values()) xhr.abort();
+    xhrMap.clear();
+    announcedBucket.clear();
+    core.handleClear();
+  }
+
+  /** 命令式清空文件列表（对齐 Semi ref.clear），走 beforeClear 钩子。 */
+  export function clear() {
+    clearAll();
   }
 
   // ——— showReplace：替换已上传文件 ———
@@ -817,6 +701,7 @@
   function openReplace(uid: string) {
     if (disabled) return;
     replaceTargetUid = uid;
+    replaceIdx = toItems(current).findIndex((it) => it.uid === uid);
     replaceInputEl?.click();
   }
 
@@ -828,60 +713,29 @@
     if (!fl || fl.length === 0 || !target) return;
     const file = fl[0]!;
     if (disabled) return;
-    if (crop && file.type.startsWith('image/')) {
-      void runReplacePipeline(target, file);
+    if (crop && isImageFile(file)) {
+      void runReplacePipeline(file);
       return;
     }
-    doReplace(target, file);
-  }
-
-  function doReplace(target: string, file: File) {
-    const { accepted, rejected } = filterByAccept([file]);
-    if (rejected.length > 0) onAcceptInvalid?.(rejected);
-    if (accepted.length === 0) return;
-    const chosen = accepted[0]!;
-    removeInternalResources(target);
-    const built = buildItem(chosen);
-    const replaced: UploadFileItem = { ...built, uid: target };
-    commit(current.map((it) => (it.uid === target ? replaced : it)), replaced);
-    onFileChange?.([chosen]);
-    dispatchNewItems([replaced], [chosen]);
-  }
-
-  async function runReplacePipeline(target: string, file: File) {
-    let out: File | null = file;
-    let skip = false;
-    if (beforeCrop) {
-      try {
-        skip = (await beforeCrop(file, [file])) === false;
-      } catch {
-        skip = false;
-      }
-      if (!mounted) return;
-    }
-    if (!skip) {
-      try {
-        out = await cropOne(file);
-      } catch (err) {
-        onCropError?.(err);
-        out = file;
-      }
-    }
-    if (!mounted || !out) return;
-    doReplace(target, out);
+    core.handleReplaceChange([file]);
   }
 
   function handleDragEnter(e: DragEvent) {
-    e.preventDefault();
-    e.stopPropagation();
-    dragEnterTarget = e.currentTarget;
-    if (!disabled) dragOver = true;
+    const result = core.handleDragEnter({
+      currentTarget: e.currentTarget!,
+      preventDefault: () => e.preventDefault(),
+      stopPropagation: () => e.stopPropagation(),
+    });
+    dragOver = result === 'legal';
   }
 
   function handleDragLeave(e: DragEvent) {
-    e.preventDefault();
-    e.stopPropagation();
-    if (dragEnterTarget === e.target) dragOver = false;
+    const shouldClose = core.handleDragLeave({
+      target: e.target!,
+      preventDefault: () => e.preventDefault(),
+      stopPropagation: () => e.stopPropagation(),
+    });
+    if (shouldClose) dragOver = false;
   }
 
   function handleDrop(e: DragEvent) {
@@ -892,8 +746,7 @@
     if (dt?.files && dt.files.length > 0) {
       const files = Array.from(dt.files);
       onDrop?.(e, files, current);
-      const { accepted } = filterByAccept(files);
-      if (accepted.length > 0) addFiles(accepted);
+      dispatchSelected(files);
     }
   }
 
@@ -940,7 +793,9 @@
 
   // 图片墙添加瓦片是否显示（对齐 Semi showAddTriggerInList）。
   const showAddTrigger = $derived(limit ? limit > current.length : true);
-  const showListTitle = $derived(limit !== 1 && current.length > 0);
+  // fileListTitle===false 时不渲染标题区（对齐 Semi fileListTitle 的 ReactNode|函数 二态设计：
+  // false 属于本库扩展的"显式隐藏"语义，无 Semi 源头，但既然声明了该分支就要让它真生效）。
+  const showListTitle = $derived(fileListTitle !== false && limit !== 1 && current.length > 0);
 
   // ——— 裁剪流程 ———
   const cropConfig = $derived<UploadCropProps>(
@@ -954,8 +809,6 @@
   let cropCurrentFile: File | null = null;
   let cropResolve: ((file: File | null) => void) | null = null;
 
-  const isImageFile = (f: File) => f.type.startsWith('image/');
-
   const cropModalTextProps = $derived({
     ...(cropConfig.modalOkText !== undefined ? { okText: cropConfig.modalOkText } : {}),
     ...(cropConfig.modalCancelText !== undefined ? { cancelText: cropConfig.modalCancelText } : {}),
@@ -967,7 +820,7 @@
     ...(cropConfig.zoomStep !== undefined ? { zoomStep: cropConfig.zoomStep } : {}),
   });
 
-  async function runCropPipeline(files: File[]) {
+  async function runCropPipeline(files: File[], insertIndex?: number): Promise<void> {
     const out: File[] = [];
     for (const file of files) {
       if (!mounted) return;
@@ -998,7 +851,30 @@
       }
     }
     if (!mounted) return;
-    if (out.length > 0) addFilesInternal(out);
+    if (out.length > 0) core.insertFileToList(out, insertIndex);
+  }
+
+  async function runReplacePipeline(file: File): Promise<void> {
+    let out: File | null = file;
+    let skip = false;
+    if (beforeCrop) {
+      try {
+        skip = (await beforeCrop(file, [file])) === false;
+      } catch {
+        skip = false;
+      }
+      if (!mounted) return;
+    }
+    if (!skip) {
+      try {
+        out = await cropOne(file);
+      } catch (err) {
+        onCropError?.(err);
+        out = file;
+      }
+    }
+    if (!mounted || !out) return;
+    core.handleReplaceChange([out]);
   }
 
   function cropOne(file: File): Promise<File | null> {
@@ -1074,7 +950,7 @@
       ...(style !== undefined ? { style } : {}),
       ...(picWidth !== undefined ? { picWidth } : {}),
       ...(picHeight !== undefined ? { picHeight } : {}),
-      onRemove: () => remove(item.uid),
+      onRemove: () => removeByUid(item.uid),
       onRetry: () => retryItem(item),
       onReplace: () => openReplace(item.uid),
       ...(onPreviewClick ? { onPreviewClick: () => onPreviewClick(item) } : {}),
@@ -1090,7 +966,7 @@
       showRetry,
       showReplace,
       showPicInfo,
-      onRemove: () => remove(item.uid),
+      onRemove: () => removeByUid(item.uid),
       onRetry: () => retryItem(item),
       onReplace: () => openReplace(item.uid),
       ...(onPreviewClick ? { onPreviewClick: () => onPreviewClick(item) } : {}),
@@ -1296,6 +1172,8 @@
 
 {#if crop}
   <Modal
+    width={600}
+    height={500}
     visible={cropOpen}
     title={cropConfig.modalTitle ?? loc().t('Upload.cropTitle')}
     confirmLoading={cropConfirming}
@@ -1305,6 +1183,7 @@
       if (!o && cropOpen) cancelCrop();
     }}
     {...cropModalTextProps}
+    bodyStyle="height: 400px;"
     {...cropModalProps}
   >
     {#if cropSrc}
@@ -1313,8 +1192,8 @@
           bind:this={cropperRef}
           src={cropSrc}
           shape={cropConfig.shape ?? 'rect'}
-          fill={cropConfig.fill ?? '#fff'}
-          style="width: 100%; height: 320px;"
+          style="width: 100%; height: 100%;"
+          {...(cropConfig.fill !== undefined ? { fill: cropConfig.fill } : {})}
           {...cropperNumProps}
         />
       </div>
@@ -1382,6 +1261,7 @@
   }
   .cd-upload-file-list-title {
     font-size: var(--cd-font-size-small);
+    line-height: var(--cd-line-height-small);
     color: var(--cd-color-upload-assist-text);
     margin-block-end: var(--cd-spacing-upload-title-marginbottom);
   }
@@ -1439,6 +1319,7 @@
   .cd-upload-drag-area-main-text {
     cursor: pointer;
     font-size: var(--cd-font-size-regular);
+    line-height: var(--cd-line-height-regular);
     margin-block-end: var(--cd-spacing-upload-drag-area-main-text-marginbottom);
     color: var(--cd-color-upload-drag-area-main-text-default);
   }
@@ -1451,6 +1332,7 @@
   .cd-upload-drag-area-sub-text {
     cursor: pointer;
     font-size: var(--cd-font-size-small);
+    line-height: var(--cd-line-height-small);
     color: var(--cd-color-upload-drag-area-sub-text-default);
   }
   .cd-upload-drag-area:hover .cd-upload-drag-area-sub-text {
@@ -1461,6 +1343,7 @@
   }
   .cd-upload-drag-area-tips {
     font-size: var(--cd-font-size-small);
+    line-height: var(--cd-line-height-small);
     font-weight: var(--cd-font-upload-drag-area-tips-fontweight);
   }
   .cd-upload-drag-area-tips-legal {
@@ -1513,17 +1396,10 @@
     margin-block: 0;
   }
 
-  /* ============ 校验态 / disabled（对齐 Semi） ============ */
-  .cd-upload-warning .cd-upload-drag-area,
-  .cd-upload-warning .cd-upload-add,
-  .cd-upload-warning .cd-upload-picture-add {
-    border-color: var(--cd-color-warning);
-  }
-  .cd-upload-error .cd-upload-drag-area,
-  .cd-upload-error .cd-upload-add,
-  .cd-upload-error .cd-upload-picture-add {
-    border-color: var(--cd-color-danger);
-  }
+  /* ============ disabled（对齐 Semi） ============ */
+  /* 注：validateStatus 的 error/warning/success/default class 仍挂载在根节点（对齐 Semi
+     DOM class hook），但 Semi upload.scss 对这些 class 无任何样式规则——纯 hook，无视觉
+     效果。本库此前曾自造边框变色样式，已删除对齐 Semi（无源头样式不予保留）。 */
   .cd-upload-disabled {
     cursor: not-allowed;
   }
@@ -1549,5 +1425,14 @@
   }
   .cd-upload-crop-body {
     inline-size: 100%;
+    block-size: 100%;
+  }
+
+  /* —— RTL（对齐 Semi upload/rtl.scss 的 direction 覆盖作用域）——
+     本库 RTL 触发机制是 global cd-rtl class（非 dir 属性，ConfigProvider 只挂 class）。
+     本组件正向已全用逻辑属性（margin-inline 系/inset-inline 系），故镜像靠下面这条
+     direction 覆盖触发浏览器原生逻辑属性重算，无需逐条手写。 */
+  :global(.cd-rtl) .cd-upload {
+    direction: rtl;
   }
 </style>
