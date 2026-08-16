@@ -47,8 +47,6 @@ export interface AnchorContext {
   onLinkFocus: (href: string) => void;
   /** 计算某链接 tabindex（roving 单停靠点）。 */
   getLinkTabindex: (href: string, disabled?: boolean) => 0 | -1;
-  /** 注册链接标题 DOM 节点（激活时据其 offsetTop 定位滑轨条）。 */
-  registerTitleNode: (href: string, node: HTMLElement | null) => void;
   /** raw showTooltip（用于零开销早退判定）。 */
   getShowTooltip: () => AnchorShowTooltip;
 }

@@ -16,14 +16,21 @@
   scroll-spy（红线 #3）：$effect 内命令式监听 getContainer()（缺省 window）的 scroll，
     rAF 节流，事件回调里读 getBoundingClientRect（非 render 期），cleanup 移除监听。
     尺寸/可见性感知：ResizeObserver 观测滚动容器，变化时复用同一套重算。
+
+  状态机分层（对齐 Semi semi-foundation/anchor）：核心决策逻辑（addLink/removeLink/
+  handleScroll/handleClick/_scrollIntoView/_setActiveSlide）委托 core `createAnchor()`
+  （packages/core/src/anchor/foundation.ts，逐行移植自 Semi AnchorFoundation）；本组件
+  只持有 runes state 并经 getState/setState/adapter 桥接，负责 DOM I/O 与渲染。
+  <Anchor.Link> 的 childMap/链接树构建保留在此文件用 `$derived` 实现（组合式声明树，
+  非 Semi 的命令式 setChildMap），比逐行照搬更贴合 Svelte 响应式语义。
 -->
 <script lang="ts" module>
-  export { ANCHOR_COLLECTOR_KEY, ANCHOR_CONTEXT_KEY } from './context.js';
+  export { ANCHOR_COLLECTOR_KEY, ANCHOR_CONTEXT_KEY } from './anchor-context.js';
 </script>
 
 <script lang="ts">
   import type { Snippet } from 'svelte';
-  import { setContext, tick } from 'svelte';
+  import { onMount, setContext, tick } from 'svelte';
   import type {
     AnchorLinkNode,
     AnchorShowTooltip,
@@ -35,15 +42,18 @@
     nextRovingIndex,
     rovingKeyFromEvent,
     createResizeObserver,
+    createAnchor,
+    ANCHOR_MAX_WIDTH,
+    ANCHOR_MAX_HEIGHT,
     type Placement,
+    type AnchorAdapter,
   } from '@chenzy-design/core';
-  import { useLocale } from '../locale-provider/index.js';
   import {
     ANCHOR_COLLECTOR_KEY,
     ANCHOR_CONTEXT_KEY,
     type AnchorCollector,
     type AnchorContext,
-  } from './context.js';
+  } from './anchor-context.js';
 
   interface Props {
     /** 滚动时动态展示下一级锚点（对齐 Semi）；默认 false（全展开）。 */
@@ -81,7 +91,7 @@
     onChange?: (currentLink: string, previousLink: string) => void;
     /** 点击锚点回调（对齐 Semi：event + currentLink href 字符串）。 */
     onClick?: (event: MouseEvent, currentLink: string) => void;
-    /** 根 nav aria-label（对齐 Semi aria-label）；缺省走 locale。 */
+    /** 根 nav aria-label（对齐 Semi aria-label）；缺省 'Side navigation'（对齐 Semi 硬编码，不走 i18n）。 */
     'aria-label'?: string;
     /** 组合式子项（<Anchor.Link>）。 */
     children?: Snippet;
@@ -92,8 +102,8 @@
     class: className,
     defaultAnchor = '',
     getContainer,
-    maxHeight = '750px',
-    maxWidth = '200px',
+    maxHeight = ANCHOR_MAX_HEIGHT,
+    maxWidth = ANCHOR_MAX_WIDTH,
     offsetTop = 0,
     position,
     railTheme = 'primary',
@@ -107,8 +117,6 @@
     'aria-label': ariaLabel,
     children,
   }: Props = $props();
-
-  const loc = useLocale();
 
   // showTooltip 归一化（对齐 Semi）：true→{type:'tooltip'}；false→null（不装）。
   const tip = $derived<AnchorTooltipConfig | null>(
@@ -178,52 +186,6 @@
     return map;
   });
 
-  // --- 受控无（Semi Anchor 无 value prop，仅 defaultAnchor 初值 + 内部 state）---
-  // defaultAnchor 仅取初值（对齐 Semi，运行时改由内部 state 管理），静态读取预期无害。
-  // svelte-ignore state_referenced_locally
-  let activeHref = $state<string>(defaultAnchor);
-  let previousHref = '';
-
-  function setActive(href: string, notify = true) {
-    if (href === activeHref) return;
-    const prev = activeHref;
-    activeHref = href;
-    previousHref = prev;
-    if (notify) onChange?.(href, prev);
-  }
-
-  // getContainer 参照系（对齐 Semi getContainerBoundingTop）。
-  function resolveContainer(): HTMLElement | Window {
-    const c = getContainer?.();
-    return c ?? window;
-  }
-  function getReferenceTop(): number {
-    const c = resolveContainer();
-    return 'getBoundingClientRect' in c ? c.getBoundingClientRect().top : 0;
-  }
-
-  // 命令式算当前激活 href（对齐 Semi handleScroll：取最后一个越过阈值的 section）。
-  function computeActiveHref(): string {
-    const refTop = getReferenceTop();
-    let best = '';
-    let bestTop = -Infinity;
-    for (const link of flatLinks) {
-      let el: Element | null = null;
-      try {
-        el = document.querySelector(link.href);
-      } catch {
-        el = null;
-      }
-      if (!el) continue;
-      const top = el.getBoundingClientRect().top - refTop - offsetTop;
-      if (top < 0 && top > bestTop) {
-        bestTop = top;
-        best = link.href;
-      }
-    }
-    return best;
-  }
-
   function prefersReducedMotion(): boolean {
     return (
       typeof window !== 'undefined' &&
@@ -231,20 +193,107 @@
     );
   }
 
-  // --- scroll-spy（红线 #3）：$effect 内命令式监听 + rAF 节流 ---
-  let clickLock = false;
+  // --- foundation 桥接（对齐 Semi AnchorFoundation：state 由渲染层持有 runes，经
+  //     getState/setState 桥接，core `createAnchor` 只算不碰 DOM）---
+  // defaultAnchor 仅取初值（对齐 Semi，运行时改由内部 state 管理），静态读取预期无害。
+  // svelte-ignore state_referenced_locally
+  let activeHref = $state<string>(defaultAnchor);
+  let previousHref = '';
+  let clickLink = $state(false);
+  let slideBarTop = $state(0);
+  let scrollHeight = $state('100%');
+
+  // links 数组（对齐 Semi state.links，由每个 <Link> componentDidMount/WillUnmount 增删）：
+  // 本库 <Anchor.Link> 是组合式声明树，links 直接从已收集的 flatLinks 派生（$derived），
+  // 语义等价「当前渲染树的 href 集合」，比命令式挂载回调更贴合 runes 响应式风格。
+  const registeredLinks = $derived<string[]>(flatLinks.map((l) => l.href));
+
+  function resolveContainer(): HTMLElement | Window {
+    const c = getContainer?.();
+    return c ?? window;
+  }
+
+  const foundation = createAnchor({
+    getProps: () => ({
+      offsetTop,
+      targetOffset: targetOffset || offsetTop,
+      scrollMotion,
+      onChange,
+      onClick: undefined,
+    }),
+    getState: () => ({
+      activeLink: activeHref,
+      links: registeredLinks,
+      clickLink,
+      scrollHeight,
+      slideBarTop: `${slideBarTop}px`,
+    }),
+    setState: (patch) => {
+      if (patch.activeLink !== undefined) {
+        previousHref = activeHref;
+        activeHref = patch.activeLink;
+      }
+      if (patch.clickLink !== undefined) clickLink = patch.clickLink;
+      if (patch.scrollHeight !== undefined) scrollHeight = patch.scrollHeight;
+      if (patch.slideBarTop !== undefined) slideBarTop = parseFloat(patch.slideBarTop) || 0;
+    },
+    adapter: {
+      getContainer: resolveContainer,
+      getContainerBoundingTop: () => {
+        const c = resolveContainer();
+        return 'getBoundingClientRect' in c ? c.getBoundingClientRect().top : 0;
+      },
+      getLinksBoundingTop: () => {
+        const c = resolveContainer();
+        const containerTop = 'getBoundingClientRect' in c ? c.getBoundingClientRect().top : 0;
+        return registeredLinks.map((link) => {
+          let node: Element | null = null;
+          try {
+            node = document.querySelector(link);
+          } catch {
+            node = null;
+          }
+          return node ? node.getBoundingClientRect().top - containerTop - offsetTop : -Infinity;
+        });
+      },
+      getAnchorNode: (selector) => rootEl?.querySelector<HTMLElement>(selector) ?? null,
+      getContentNode: (selector) => {
+        try {
+          return document.querySelector<HTMLElement>(selector);
+        } catch {
+          return null;
+        }
+      },
+      scrollIntoView: (targetNode, offset, smooth) => {
+        const behavior = smooth && !prefersReducedMotion() ? 'smooth' : 'auto';
+        const c = getContainer?.();
+        if (c && 'getBoundingClientRect' in c) {
+          const delta =
+            targetNode.getBoundingClientRect().top - c.getBoundingClientRect().top - offset;
+          c.scrollTo({ top: c.scrollTop + delta, behavior });
+        } else {
+          const top = targetNode.getBoundingClientRect().top + window.scrollY - offset;
+          window.scrollTo({ top, behavior });
+        }
+      },
+      notifyChange: (currentLink, prevLink) => onChange?.(currentLink, prevLink),
+      notifyClick: (e, link) => {
+        if (e) onClick?.(e as MouseEvent, link);
+      },
+    } satisfies AnchorAdapter,
+  });
+
+  // --- scroll-spy（红线 #3）：$effect 内命令式监听 + rAF 节流（对齐 Semi throttle(handleScroll, 100)）---
   $effect(() => {
     if (typeof window === 'undefined') return;
     const target = resolveContainer();
     let frame = 0;
 
     function onScroll() {
-      if (clickLock) return;
       if (frame) return;
       frame = requestAnimationFrame(() => {
         frame = 0;
-        const href = computeActiveHref();
-        if (href) setActive(href);
+        foundation.handleScroll();
       });
     }
 
@@ -268,36 +317,10 @@
   });
 
   // 点击 / Space 激活主体：滚动 + setActive + notifyClick（对齐 Semi handleClick + _scrollIntoView）。
-  function scrollToHref(href: string) {
-    let el: Element | null = null;
-    try {
-      el = document.querySelector(href);
-    } catch {
-      el = null;
-    }
-    if (!el) return;
-    const smooth = scrollMotion && !prefersReducedMotion();
-    const offset = targetOffset || offsetTop;
-    const c = getContainer?.();
-    if (c && 'getBoundingClientRect' in c) {
-      const delta =
-        el.getBoundingClientRect().top - c.getBoundingClientRect().top - offset;
-      c.scrollTo({ top: c.scrollTop + delta, behavior: smooth ? 'smooth' : 'auto' });
-    } else {
-      const top = el.getBoundingClientRect().top + window.scrollY - offset;
-      window.scrollTo({ top, behavior: smooth ? 'smooth' : 'auto' });
-    }
-  }
-
   function activate(href: string, e?: MouseEvent) {
-    setActive(href);
-    // 点击后短暂锁 scroll-spy，避免平滑滚动过程覆盖点击选中（对齐 Semi clickLink）。
-    clickLock = true;
-    setTimeout(() => {
-      clickLock = false;
-    }, 200);
-    scrollToHref(href);
-    if (e) onClick?.(e, href);
+    foundation.handleClick(e, href);
+    // 点击后短暂解锁 scroll-spy（对齐 Semi debounce(handleClickLink, 100)：滚动停止 100ms 后解锁）。
+    setTimeout(() => foundation.handleClickLink(), 100);
   }
 
   // --- roving tabindex（a11y §6）：链接列表单一 Tab 停靠点 ---
@@ -345,33 +368,17 @@
     }
   }
 
-  // --- 滑轨条定位（对齐 Semi _setActiveSlide：激活链接标题 offsetTop → slideBarTop）---
-  const titleNodes = new Map<string, HTMLElement>();
-  let slideBarTop = $state(0);
-  let scrollHeight = $state('100%');
-
-  function registerTitleNode(href: string, node: HTMLElement | null) {
-    if (node) titleNodes.set(href, node);
-    else titleNodes.delete(href);
-  }
-
-  // 激活变更 / 链接树变更时重算滑轨条位置与滑轨高度。
+  // 链接树变更时重算滑轨高度（对齐 Semi updateScrollHeight：links 变更触发 setScrollHeight）。
   $effect(() => {
-    void activeHref;
     void linkTree;
-    void tick().then(() => {
-      const node = titleNodes.get(activeHref);
-      slideBarTop = node ? node.offsetTop : 0;
-      const wrapper = rootEl?.querySelector<HTMLElement>('.cd-anchor-link-wrapper');
-      if (wrapper) scrollHeight = `${wrapper.scrollHeight}px`;
-    });
+    void tick().then(() => foundation.setScrollHeight());
   });
 
-  // defaultAnchor 初始滚动（对齐 Semi componentDidMount：handleClick(null, defaultAnchor, false)）。
-  $effect(() => {
-    if (defaultAnchor) {
-      void tick().then(() => scrollToHref(defaultAnchor));
-    }
+  // 挂载时初始化滑轨高度 + defaultAnchor 初始滚动（对齐 Semi componentDidMount：
+  // setScrollHeight() + Boolean(defaultAnchor) && handleClick(null, defaultAnchor, false)）。
+  onMount(() => {
+    foundation.setScrollHeight();
+    if (defaultAnchor) foundation.handleClick(undefined, defaultAnchor, false);
   });
 
   // 拆分 position 供浮层（Popover 用 side+align；Tooltip 用整串）。
@@ -394,7 +401,6 @@
       focusedHref = href;
     },
     getLinkTabindex: linkTabindex,
-    registerTitleNode,
     getShowTooltip: () => showTooltip,
   };
   setContext<AnchorContext>(ANCHOR_CONTEXT_KEY, ctx);
@@ -419,7 +425,7 @@
   bind:this={rootEl}
   class="cd-anchor cd-anchor-size-{size} {className ?? ''}"
   style={rootStyle}
-  aria-label={ariaLabel ?? loc().t('Anchor.ariaLabel')}
+  aria-label={ariaLabel || 'Side navigation'}
 >
   <div
     aria-hidden="true"

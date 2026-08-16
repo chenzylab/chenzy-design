@@ -90,7 +90,12 @@ export const meta = {
       default: 'undefined',
       desc: '点击锚点回调（对齐 Semi：event + href 字符串）',
     },
-    { name: 'aria-label', type: 'string', default: 'undefined', desc: '根 nav aria-label（缺省走 locale）' },
+    {
+      name: 'aria-label',
+      type: 'string',
+      default: "'Side navigation'",
+      desc: '根 nav aria-label（对齐 Semi 硬编码英文缺省值，不走 i18n）',
+    },
   ],
   subComponents: [
     {

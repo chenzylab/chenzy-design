@@ -300,9 +300,6 @@ export const zh_CN: Locale = {
     ariaLabel: '面包屑',
     moreLabel: '展开其余 {count} 项',
   },
-  Anchor: {
-    ariaLabel: '页面导航',
-  },
   Steps: {
     navAriaLabel: '步骤导航',
     stepLabel: '步骤 {index}',
