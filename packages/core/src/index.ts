@@ -418,6 +418,22 @@ export {
   PROGRESS_COEFFICIENT,
 } from './upload/index.js';
 export {
+  createAnchor,
+  type AnchorFoundation,
+  type AnchorAdapter,
+  type AnchorFoundationProps,
+  type AnchorFoundationState,
+  createAnchorLink,
+  type AnchorLinkFoundation,
+  type AnchorLinkAdapter,
+  ANCHOR_PREFIX,
+  ANCHOR_SIZE,
+  ANCHOR_SLIDE_COLOR,
+  ANCHOR_MAX_WIDTH,
+  ANCHOR_MAX_HEIGHT,
+  ANCHOR_POSITION_SET,
+} from './anchor/index.js';
+export {
   collapsibleShouldRender,
   collapsibleCollapsedHeight,
   type CollapsibleRenderInput,

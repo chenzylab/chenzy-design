@@ -31,6 +31,8 @@ brief: 创建超链接导航栏。
   import tooltipSrc from '../../demos/anchor/10-tooltip.svelte?raw';
   import TooltipPosition from '../../demos/anchor/11-tooltip-position.svelte';
   import tooltipPositionSrc from '../../demos/anchor/11-tooltip-position.svelte?raw';
+  import MaxHeight from '../../demos/anchor/12-max-height.svelte';
+  import maxHeightSrc from '../../demos/anchor/12-max-height.svelte?raw';
 </script>
 
 ## 代码演示
@@ -95,6 +97,12 @@ Anchor 设置 `showTooltip` 可以在 Link 超出最大宽度时显示 Link 的�
 Anchor 设置 `position` 可以设置 Tooltip 的显示位置。它仅在 `showTooltip` 为 `true` 时起作用。
 
 <DemoBox code={tooltipPositionSrc}><TooltipPosition /></DemoBox>
+
+### 最大高度
+
+设置 `maxHeight` 可以控制 Anchor 的高度，超出时组件自身滚动显示。
+
+<DemoBox code={maxHeightSrc}><MaxHeight /></DemoBox>
 
 ## API 参考
 

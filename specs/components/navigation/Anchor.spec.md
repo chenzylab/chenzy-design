@@ -31,17 +31,47 @@ Anchor（锚点导航）用于在长页面内提供章节级目录与快速跳�
 
 属于「有交互/键盘/a11y/滚动监听逻辑」的组件，采用 headless 分层。
 
-- **@chenzy-design/core · `createAnchor`**：
-  - 维护链接注册表（link id → target selector/element、level、disabled）。
-  - scroll-spy 引擎：用 `IntersectionObserver` 观察所有 target；在多个相交时按「距容器顶部 + offsetTop 最近且 ≥ 阈值」决策唯一 active，避免抖动；提供 `bounds` 容差。
-  - 滚动调度：`scrollTo(id)` 计算目标 top - offsetTop，按 `prefers-reduced-motion` 选择 `behavior: smooth | auto`，写入 hash（可选）。
-  - 受控协调：合并外部 `value` 与内部 spy 结果，发 `change`。
-  - 复用 core 原语：`useId`（生成 link/region 关联 id）、`useRovingTabindex`（链接列表方向键移动焦点）、`useLiveAnnouncer`（可选播报当前章节，默认关闭）。
-  - 不依赖 DOM 渲染，暴露 `getLinkProps/getRootProps/getInkStyle/registerLink/scrollTo` 与 store（`activeId`、`inkRect`）。
-- **@chenzy-design/svelte · `Anchor` / `AnchorLink`**：
-  - 消费 `createAnchor` store，渲染 DOM、绑定事件、计算滑块 `transform`。
-  - `AnchorLink` 通过 context 向上注册自身（`href`/`title`/`disabled`），支持插槽嵌套实现多级。
-  - 处理 `affix`（sticky）与自定义 `getContainer`。
+文件拆分逐一对齐 Semi（`packages/core/src/upload/` 之后第二个逐行移植特例；本库
+`component-authoring` skill 约定的默认惯例是单文件 `create<Component>.ts`，此组件
+显式例外以镜像 Semi `semi-foundation/anchor` 的多文件结构）：
+
+- **@chenzy-design/core · `packages/core/src/anchor/`**：
+  - `foundation.ts` · `createAnchor()`：逐行移植 Semi `AnchorFoundation`
+    （`semi-foundation/anchor/foundation.ts`）。纯函数状态机：`addLink`/`removeLink`
+    维护链接注册表；`handleScroll` 做 scroll-spy 决策（取最后一个越过阈值 `top<0` 的
+    link，与 Semi 语义一致，非 IntersectionObserver）；`handleClick`/
+    `scrollIntoViewByLink` 对应 Semi `handleClick`/`_scrollIntoView`；
+    `setActiveSlide`/`setScrollHeight` 对应 Semi `_setActiveSlide`/`setScrollHeight`。
+    所有 DOM I/O（`querySelector`、`getBoundingClientRect`、滚动、事件绑定）经
+    `AnchorAdapter` 注入；state 由渲染层用 Svelte runes 持有，经 `getState`/`setState`
+    桥接，与 `upload/foundation.ts` 同构。
+  - `linkFoundation.ts` · `createAnchorLink()`：逐行移植 Semi `LinkFoundation`
+    （`semi-foundation/anchor/linkFoundation.ts`）：`handleAddLink`/
+    `handleUpdateLink`/`handleRemoveLink`。
+  - `constants.ts`：对齐 Semi `semi-foundation/anchor/constants.ts`
+    （`ANCHOR_PREFIX`/`ANCHOR_SIZE`/`ANCHOR_SLIDE_COLOR`/`ANCHOR_MAX_WIDTH`/
+    `ANCHOR_MAX_HEIGHT`/`ANCHOR_POSITION_SET`；本库 core 主入口是扁平命名空间，
+    加 `ANCHOR_` 前缀避免与其他组件同名常量冲突，Semi 原名无此前缀）。
+  - **未复刻部分**：Semi `_getLinkToMap`/`setChildMap`（childMap 构建）未搬入
+    `foundation.ts`——本库 `<Anchor.Link>` 是组合式声明树（非 Semi 的 React
+    `children` prop 命令式遍历），链接树天然是 Svelte `$derived` 状态，由
+    `Anchor.svelte` 内联的响应式 `buildChildMap` 派生，比逐行照搬命令式调用更贴合
+    runes 语义。
+- **@chenzy-design/svelte · `packages/svelte/src/anchor/`**：
+  - `Anchor.svelte` / `AnchorLink.svelte`：消费 `createAnchor()`/`createAnchorLink()`，
+    持有 runes state（`activeHref`/`clickLink`/`slideBarTop`/`scrollHeight`），
+    经 adapter 回调做 DOM I/O，渲染 DOM、绑定事件、计算滑块位置。scroll-spy 用
+    `$effect` 命令式监听 `getContainer()`（缺省 `window`）的 `scroll` 事件，
+    rAF 节流；`ResizeObserver` 观测滚动容器变化复用同一套重算。
+  - `anchor-context.ts`（对齐 Semi `semi-ui/anchor/anchor-context.ts` 命名）：
+    同时承载两类上下文——`AnchorCollector`（组合式子项注册收集器，Svelte 特有，
+    Semi 无对应物，因 React 用 `children` prop + `cloneElement` 命令式遍历树，
+    Svelte 无等价机制）与 `AnchorContext`（对齐 Semi `AnchorContextType` 字段：
+    `activeLink`/`showTooltip`/`position`/`childMap`/`autoCollapse`/`size`/
+    `onClick` 等）。
+  - `AnchorLink.svelte` 通过 `AnchorCollector` 向上注册自身（`href`/`title`/
+    `disabled`），支持插槽嵌套实现多级；无 `affix`/hash 同步（Semi 本身也无此
+    能力，非本库缺失）。
 - 复用：`useScrollLock`/`useFocusTrap`/`useDismiss` 不适用（无浮层），不引入。
 
 ## 4. API

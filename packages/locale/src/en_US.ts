@@ -299,9 +299,6 @@ export const en_US: Locale = {
     ariaLabel: 'Breadcrumb',
     moreLabel: 'Show {count} more',
   },
-  Anchor: {
-    ariaLabel: 'Page navigation',
-  },
   Steps: {
     navAriaLabel: 'Steps',
     stepLabel: 'Step {index}',

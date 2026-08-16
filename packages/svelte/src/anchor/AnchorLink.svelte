@@ -18,7 +18,7 @@
     getAnchorContext,
     ANCHOR_COLLECTOR_KEY,
     type AnchorCollector,
-  } from './context.js';
+  } from './anchor-context.js';
   import type { AnchorLinkNode } from './types.js';
   import Text from '../typography/Text.svelte';
   import Tooltip from '../tooltip/Tooltip.svelte';
@@ -109,18 +109,10 @@
 
   // 缩进（对齐 Semi paddingLeft: 8 * level）。
   const indentStyle = $derived(`padding-inline-start:${8 * level}px`);
-
-  let titleNode = $state<HTMLElement | null>(null);
-  // 注册标题 DOM 供 Anchor 定位滑轨条（激活链接 offsetTop）。
-  $effect(() => {
-    ctx?.registerTitleNode(href, titleNode);
-    return () => ctx?.registerTitleNode(href, null);
-  });
 </script>
 
 <div class="cd-anchor-link {className ?? ''}" {style} role="listitem">
   <div
-    bind:this={titleNode}
     role="link"
     tabindex={tabindex}
     data-anchor-href={href}
@@ -169,9 +161,6 @@
 </div>
 
 <style>
-  .cd-anchor-link {
-    position: relative;
-  }
   .cd-anchor-link-title {
     cursor: pointer;
     color: var(--cd-color-anchor-title-text-default);

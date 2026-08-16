@@ -431,9 +431,6 @@ export interface Locale {
     /** uses {count} */
     moreLabel: string;
   };
-  Anchor: {
-    ariaLabel: string;
-  };
   Steps: {
     /** nav 类型外层 <nav> 的 aria-label */
     navAriaLabel: string;
