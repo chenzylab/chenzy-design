@@ -257,6 +257,7 @@
         });
       },
       getAnchorNode: (selector) => rootEl?.querySelector<HTMLElement>(selector) ?? null,
+      flush: () => tick(),
       getContentNode: (selector) => {
         try {
           return document.querySelector<HTMLElement>(selector);
