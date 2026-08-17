@@ -23,6 +23,12 @@ export interface AnchorAdapter {
   getLinksBoundingTop: () => number[];
   /** 在 Anchor 根节点范围内查找元素（对齐 Semi getAnchorNode：#anchorID selector）。 */
   getAnchorNode: (selector: string) => HTMLElement | null;
+  /**
+   * 等待一次渲染刷新完成（对齐 Semi `setState(update, callback)`：callback 在 DOM 已按新
+   * state 提交后执行）。Svelte `$state` 赋值是异步批处理，`setActiveSlide` 若在赋值后同步
+   * 查询 `.active` 节点会读到刷新前的旧 DOM，故需先 await 一次 flush。
+   */
+  flush: () => Promise<void>;
   /** 查找滚动目标节点（对齐 Semi getContentNode：document.querySelector(href)）。 */
   getContentNode: (selector: string) => HTMLElement | null;
   /** 执行滚动（对齐 Semi scrollIntoView 内的 behavior 回调：滚动最内层可滚容器）。 */
@@ -83,7 +89,9 @@ export function createAnchor(options: {
     const { onChange } = getProps();
     if (activeLink !== link) {
       setState({ activeLink: link });
-      setActiveSlide();
+      // 对齐 Semi setState(update, callback)：先等 DOM 按新 activeLink 提交完成，
+      // 再查 .active 节点算 offsetTop，否则读到刷新前的旧节点（见 spec §8）。
+      void adapter.flush().then(setActiveSlide);
       if (onChange && shouldNotify) {
         adapter.notifyChange(link, prevLink);
       }

@@ -3,22 +3,22 @@
   import { Anchor, Text } from '@chenzy-design/svelte';
 
   const sections = [
-    { id: 'b-basic', label: '基本示例' },
-    { id: 'b-comp', label: '组件' },
-    { id: 'b-lang', label: '设计语言' },
-    { id: 'b-material', label: '物料平台' },
-    { id: 'b-theme', label: '主题商店' },
+    { id: 'b-基本示例', label: '基本示例' },
+    { id: 'b-组件', label: '组件' },
+    { id: 'b-设计语言', label: '设计语言' },
+    { id: 'b-物料平台', label: '物料平台' },
+    { id: 'b-主题商店', label: '主题商店' },
   ];
   let scrollBox = $state<HTMLElement | null>(null);
 </script>
 
 <div style="display: flex; gap: 24px; align-items: flex-start">
   <Anchor maxWidth={160} getContainer={() => scrollBox}>
-    <Anchor.Link href="#b-basic" title="基本示例" />
-    <Anchor.Link href="#b-comp" title="组件" />
-    <Anchor.Link href="#b-lang" title="设计语言" />
-    <Anchor.Link href="#b-material" title="物料平台" />
-    <Anchor.Link href="#b-theme" title="主题商店" />
+    <Anchor.Link href="#b-基本示例" title="基本示例" />
+    <Anchor.Link href="#b-组件" title="组件" />
+    <Anchor.Link href="#b-设计语言" title="设计语言" />
+    <Anchor.Link href="#b-物料平台" title="物料平台" />
+    <Anchor.Link href="#b-主题商店" title="主题商店" />
   </Anchor>
   <div
     bind:this={scrollBox}
