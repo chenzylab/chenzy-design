@@ -87,6 +87,14 @@
     motion?: boolean;
     /** 下拉弹层外层样式类名（对齐 Semi className，作用于 div.cd-dropdown）。 */
     className?: string;
+    /**
+     * 触发器包裹 span（.cd-dropdown-trigger）的内联样式。此库始终以 span 包裹触发器
+     * （Svelte 无 React cloneElement 等价机制，Semi 借此把 trigger 语义直接合并进 children
+     * 本身、无额外包裹层），span 默认 inline-block 会让内部无自身宽度声明的子内容（如撑满
+     * 父级的导航子标题）塌缩到内容固有宽度，此时可用该 prop 覆盖 display/width 撑满（对齐
+     * Tooltip triggerStyle 同款口子，见 tooltip-trigger-wrapper-shrinks-use-triggerstyle）。
+     */
+    triggerStyle?: string;
     /** 下拉菜单根元素类名（对齐 Semi contentClassName，作用于 div.cd-dropdown-content）。 */
     contentClassName?: string;
     /** 弹出层内联样式（对齐 Semi style，作用于 div.cd-dropdown-content；勿含 position/transform）。 */
@@ -131,6 +139,7 @@
     zIndex: zIndexProp,
     motion: motionProp,
     className,
+    triggerStyle,
     contentClassName,
     style: contentStyle,
     showTick: showTickProp,
@@ -604,6 +613,7 @@
 <span
   class="cd-dropdown-trigger"
   class:cd-dropdown-trigger-nested={isNested}
+  style={triggerStyle || undefined}
   id={triggerId}
   bind:this={rootEl}
   use:triggerAria={{ open: isOpen, controls: menuId, nested: isNested }}

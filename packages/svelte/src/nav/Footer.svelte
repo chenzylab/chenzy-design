@@ -102,7 +102,6 @@
     flex: 0 0 auto;
     /* 侧边（vertical）态左右内边距 8px（对齐 Semi $spacing-navigation_vertical_footer-paddingLeft/Right）。 */
     padding: var(--cd-spacing-navigation-footer-paddingy) var(--cd-spacing-navigation-vertical-footer-paddingx);
-    border-block-start: 1px solid var(--cd-color-navigation-border-default);
     color: var(--cd-color-navigation-footer-icon-default);
   }
 </style>

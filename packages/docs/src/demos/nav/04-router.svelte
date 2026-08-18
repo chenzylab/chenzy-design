@@ -39,6 +39,4 @@
   </a>
 {/snippet}
 
-<div style="width: 240px; border: 1px solid var(--cd-color-border); border-radius: 8px; overflow: hidden;">
-  <Nav mode="vertical" defaultSelectedKeys={['home']} {items} renderWrapper={wrapper} />
-</div>
+<Nav mode="vertical" defaultSelectedKeys={['home']} {items} renderWrapper={wrapper} />

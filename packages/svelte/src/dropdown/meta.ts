@@ -24,6 +24,7 @@ export const meta = {
     { name: 'zIndex', type: 'number', default: '1050', desc: '弹出层 z-index（对齐 Semi zIndex）' },
     { name: 'motion', type: 'boolean', default: 'true', desc: '下拉动画开关（对齐 Semi motion）' },
     { name: 'className', type: 'string', default: 'undefined', desc: '下拉弹层外层样式类名（作用于 div.cd-dropdown，对齐 Semi className）' },
+    { name: 'triggerStyle', type: 'string', default: 'undefined', desc: '触发器包裹 span（.cd-dropdown-trigger）的内联样式（本库扩展，Semi 无——cloneElement 免包裹，无需此口子）。用于覆盖默认 inline-block 撑满无自身宽度声明的子内容' },
     { name: 'contentClassName', type: 'string', default: 'undefined', desc: '下拉菜单根元素类名（作用于 div.cd-dropdown-content，对齐 Semi contentClassName）' },
     { name: 'style', type: 'string', default: 'undefined', desc: '弹出层内联样式（作用于 div.cd-dropdown-content，对齐 Semi style）' },
     { name: 'showTick', type: 'boolean', default: 'false', desc: '自动在 active 的 Dropdown.Item 左侧展示对勾（对齐 Semi showTick）' },

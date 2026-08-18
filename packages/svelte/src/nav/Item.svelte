@@ -26,6 +26,14 @@
     indent?: boolean;
     /** 当前项嵌套层级（对齐 Semi level）；limitIndent=false 时用于自定义缩进位置。 */
     level?: number;
+    /** 外部覆盖 tabIndex（对齐 Semi Item tabIndex，默认 0）。 */
+    tabIndex?: number;
+    /** 自定义 toggle 箭头（对齐 Semi Item toggleIcon）。 */
+    toggleIcon?: Snippet;
+    /** 折叠态 tooltip 显示延迟 ms（覆盖 Nav 级，对齐 Semi Item tooltipShowDelay）。 */
+    tooltipShowDelay?: number;
+    /** 折叠态 tooltip 隐藏延迟 ms（覆盖 Nav 级，对齐 Semi Item tooltipHideDelay）。 */
+    tooltipHideDelay?: number;
     /** 项级点击回调（富载荷对齐 Semi）。 */
     onClick?: (data: NavClickData) => void;
     /** 项级鼠标移入回调。 */
@@ -43,6 +51,10 @@
     linkOptions,
     indent,
     level,
+    tabIndex,
+    toggleIcon,
+    tooltipShowDelay,
+    tooltipHideDelay,
     onClick,
     onMouseEnter,
     onMouseLeave,
@@ -62,6 +74,10 @@
       ...(linkOptions !== undefined ? { linkOptions } : {}),
       ...(indent !== undefined ? { indent } : {}),
       ...(level !== undefined ? { level } : {}),
+      ...(tabIndex !== undefined ? { tabIndex } : {}),
+      ...(toggleIcon !== undefined ? { toggleIcon } : {}),
+      ...(tooltipShowDelay !== undefined ? { tooltipShowDelay } : {}),
+      ...(tooltipHideDelay !== undefined ? { tooltipHideDelay } : {}),
       ...(onClick !== undefined ? { onClick } : {}),
       ...(onMouseEnter !== undefined ? { onMouseEnter } : {}),
       ...(onMouseLeave !== undefined ? { onMouseLeave } : {}),
