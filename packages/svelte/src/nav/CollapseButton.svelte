@@ -66,7 +66,7 @@
   .cd-nav-collapse-btn {
     display: flex;
     align-items: center;
-    inline-size: 100%;
+    width: 100%;
   }
   .cd-nav-collapse-wrapper {
     display: inline-flex;

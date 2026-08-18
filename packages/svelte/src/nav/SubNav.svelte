@@ -26,6 +26,8 @@
     maxHeight?: number;
     /** 子导航是否展开（对齐 Semi Sub.isOpen）。 */
     isOpen?: boolean;
+    /** 单项自定义展开箭头（覆盖 Nav 级 expandIcon，对齐 Semi Sub expandIcon）。 */
+    expandIcon?: Snippet;
     /** 透传给该子导航浮层 Dropdown 的属性（对齐 Semi dropdownProps）。 */
     dropdownProps?: NavDropdownProps;
     /** 透传给该子导航浮层 Dropdown 的内联样式（对齐 Semi dropdownStyle）。 */
@@ -47,6 +49,7 @@
     level,
     maxHeight = 999,
     isOpen,
+    expandIcon,
     dropdownProps,
     dropdownStyle,
     onMouseEnter,
@@ -70,6 +73,7 @@
     ...(indent !== undefined ? { indent } : {}),
     ...(level !== undefined ? { level } : {}),
     ...(isOpen !== undefined ? { isOpen } : {}),
+    ...(expandIcon !== undefined ? { expandIcon } : {}),
     ...(dropdownProps !== undefined ? { dropdownProps } : {}),
     ...(dropdownStyle !== undefined ? { dropdownStyle } : {}),
     ...(onMouseEnter !== undefined ? { onMouseEnter } : {}),

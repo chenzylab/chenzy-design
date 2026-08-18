@@ -108,19 +108,22 @@
 
 <style>
   .cd-nav-header {
-    display: flex;
+    display: inline-flex;
     align-items: center;
-    gap: var(--cd-spacing-navigation-header-logo-marginright);
-    height: var(--cd-height-navigation-horizontal-header);
+    box-sizing: border-box;
     flex: 0 0 auto;
     overflow: hidden;
   }
-  /* 顶部导航：左右内边距 24px（对齐 Semi $spacing-navigation_horizontal-paddingLeft）。 */
+  /* 顶部导航：header 容器右外边距（对齐 Semi .cd-nav-horizontal .cd-nav-header { width:inherit; margin-right:... }），非 padding。 */
   .cd-nav-header-horizontal {
-    padding-inline: var(--cd-spacing-navigation-horizontal-paddingleft);
+    width: inherit;
+    margin-right: var(--cd-spacing-navigation-horizontal-header-logo-marginright);
   }
-  /* 侧边导航：左内边距按 Semi 公式派生使 Logo 与折叠态图标居中对齐，右为 tight。 */
+  /* 侧边导航：上下内边距固定，左内边距按 Semi 公式派生使 Logo 与折叠态图标居中对齐，右为 tight。 */
   .cd-nav-header-vertical {
+    width: 100%;
+    padding-top: var(--cd-spacing-navigation-header-paddingtop);
+    padding-bottom: var(--cd-spacing-navigation-header-paddingbottom);
     padding-left: var(--cd-spacing-navigation-vertical-header-paddingleft);
     padding-right: var(--cd-spacing-navigation-vertical-header-paddingright);
   }
@@ -128,11 +131,11 @@
   .cd-nav-header-vertical.cd-nav-header-collapsed {
     padding-left: var(--cd-spacing-navigation-vertical-header-collapsed-paddingleft);
     padding-right: var(--cd-spacing-navigation-vertical-header-collapsed-paddingright);
+    transition: padding var(--cd-motion-duration-fast) var(--cd-motion-ease-standard);
   }
   .cd-nav-header-link {
     display: inline-flex;
     align-items: center;
-    gap: var(--cd-spacing-navigation-header-logo-marginright);
     color: inherit;
     text-decoration: none;
   }
@@ -140,11 +143,23 @@
     display: inline-flex;
     align-items: center;
     flex: 0 0 auto;
+    margin-left: var(--cd-spacing-navigation-header-logo-marginleft);
+    margin-right: var(--cd-spacing-navigation-header-logo-marginright);
+  }
+  .cd-nav-header-logo :global(img),
+  .cd-nav-header-logo :global(svg) {
+    width: var(--cd-width-navigation-header-logo);
+    height: var(--cd-height-navigation-header-logo);
+    object-fit: scale-down;
   }
   .cd-nav-header-text {
     font-size: var(--cd-font-size-navigation-header-text);
     font-weight: var(--cd-font-navigation-header-item-fontweight);
+    display: inline-flex;
     white-space: nowrap;
+    text-overflow: ellipsis;
     color: var(--cd-color-navigation-header-text-default);
+    transition: opacity var(--cd-motion-duration-slow) var(--cd-motion-ease-standard);
+    opacity: 1;
   }
 </style>

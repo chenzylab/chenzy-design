@@ -250,10 +250,36 @@
 
   // ---------- 展开态（受控/非受控）----------
   const isOpenControlled = $derived(openKeys !== undefined);
-  const innerOpen = new SvelteSet<NavKey>(untrack(() => defaultOpenKeys ?? []));
+  // 未显式传 openKeys/defaultOpenKeys 时，vertical 模式下用初始 selectedKeys 的祖先子导航
+  // 作展开态种子（对齐 Semi foundation.ts getWillOpenKeys 在 constructor 阶段的一次性计算）。
+  const initialAutoOpen = untrack((): NavKey[] => {
+    if (defaultOpenKeys !== undefined || mode !== MODE_VERTICAL) return [];
+    const base = isSelectControlled ? (selectedKeys ?? []) : [...innerSelected];
+    return collectAncestorKeys(resolvedItems, base);
+  });
+  const innerOpen = new SvelteSet<NavKey>(untrack(() => defaultOpenKeys ?? initialAutoOpen));
   const currentOpen = $derived<ReadonlySet<NavKey>>(
     isOpenControlled ? new Set(openKeys) : innerOpen,
   );
+  // 受控 selectedKeys 变化时，一次性把新命中项的祖先子导航合并进展开 state（对齐 Semi
+  // componentDidUpdate：仅 selectedKeys prop 真正变化时重算，写入后即为普通可变 state，
+  // 用户之后可自由折叠，不会被重新拉回——这是修复"祖先子导航折叠不起来"的关键：
+  // 不能用 $derived 对 currentOpen 持续取并集，那样每次渲染都会把手动关闭的项重新塞回去）。
+  let prevSelectedKeysForAutoOpen: readonly NavKey[] | undefined = untrack(() => selectedKeys);
+  $effect(() => {
+    const nextSelectedKeys = selectedKeys;
+    if (
+      openKeys === undefined &&
+      defaultOpenKeys === undefined &&
+      mode === MODE_VERTICAL &&
+      nextSelectedKeys !== undefined &&
+      nextSelectedKeys !== prevSelectedKeysForAutoOpen
+    ) {
+      const ancestors = collectAncestorKeys(resolvedItems, nextSelectedKeys);
+      ancestors.forEach((k) => innerOpen.add(k));
+    }
+    prevSelectedKeysForAutoOpen = nextSelectedKeys;
+  });
   // openKeys 受控 = openKeys 受控 且 vertical 且未折叠（对齐 Semi openKeysIsControlled）。
   // 浮层 SubNav 据此在受控时用 trigger='custom' + visible。
   const openKeysIsControlled = $derived(
@@ -456,7 +482,7 @@
 </div>
 
 <style>
-  /* 容器：垂直侧边导航（默认）。对齐 Semi navigation.scss。 */
+  /* 容器：垂直侧边导航（默认）。对齐 Semi navigation.scss（物理属性，逐条镜像）。 */
   .cd-nav {
     box-sizing: border-box;
     display: inline-flex;
@@ -464,17 +490,18 @@
     outline: none;
     overflow: hidden;
     margin: 0;
-    padding-inline: var(--cd-spacing-navigation-paddingx);
+    padding-left: var(--cd-spacing-navigation-paddingx);
+    padding-right: var(--cd-spacing-navigation-paddingx);
     user-select: none;
-    border-inline-end: var(--cd-width-navigation-border) solid var(--cd-color-navigation-border-default);
+    border-right: var(--cd-width-navigation-border) solid var(--cd-color-navigation-border-default);
     background: var(--cd-color-navigation-bg-default);
     /* 注意：不过渡 width——在两个 var() 长度间过渡 Chromium 会卡死在起始值不收敛，
-       导致折叠后宽度停在展开态。折叠为即时切换（功能优先）。 */
+       导致折叠后宽度停在展开态。折叠为即时切换（功能优先，Semi 同时过渡 padding/width）。 */
     transition: padding var(--cd-motion-duration-fast) var(--cd-motion-ease-standard);
   }
   .cd-nav-inner {
-    inline-size: 100%;
-    block-size: 100%;
+    width: 100%;
+    height: 100%;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
@@ -483,21 +510,22 @@
   /* 折叠态：容器收窄到图标轨宽度。 */
   .cd-nav-collapsed {
     width: var(--cd-width-navigation-container-collapsed);
-    padding-inline: var(--cd-spacing-navigation-collapsed-paddingx);
+    padding-left: var(--cd-spacing-navigation-collapsed-paddingx);
+    padding-right: var(--cd-spacing-navigation-collapsed-paddingx);
   }
 
   .cd-nav-header-list-outer {
-    block-size: 100%;
+    height: 100%;
     display: flex;
     flex-direction: column;
-    min-block-size: 0;
+    min-height: 0;
   }
   .cd-nav-list-wrapper {
-    padding-block-start: var(--cd-spacing-navigation-list-wrapper-paddingtop);
+    padding-top: var(--cd-spacing-navigation-list-wrapper-paddingtop);
     overflow-y: auto;
     overflow-x: hidden;
     flex: 1 1 auto;
-    min-block-size: 0;
+    min-height: 0;
   }
   .cd-nav-list {
     margin: 0;
@@ -507,11 +535,12 @@
 
   /* 水平顶部导航。 */
   .cd-nav-horizontal {
-    inline-size: 100%;
-    block-size: var(--cd-height-navigation-horizontal-header);
-    border-inline-end: none;
-    border-block-end: var(--cd-width-navigation-border) solid var(--cd-color-navigation-border-default);
-    padding-inline: var(--cd-spacing-navigation-horizontal-paddingleft);
+    width: 100%;
+    height: var(--cd-height-navigation-horizontal-header);
+    border-right: none;
+    border-bottom: var(--cd-width-navigation-border) solid var(--cd-color-navigation-border-default);
+    padding-left: var(--cd-spacing-navigation-horizontal-paddingleft);
+    padding-right: var(--cd-spacing-navigation-horizontal-paddingright);
   }
   .cd-nav-horizontal .cd-nav-inner {
     flex-direction: row;
@@ -519,27 +548,94 @@
   .cd-nav-horizontal .cd-nav-header-list-outer {
     flex-direction: row;
     align-items: center;
-    block-size: auto;
+    height: auto;
   }
   .cd-nav-horizontal .cd-nav-list-wrapper {
-    padding-block-start: 0;
+    padding-top: 0;
     overflow: visible;
   }
   .cd-nav-horizontal .cd-nav-list {
     display: inline-flex;
     align-items: center;
   }
+  /* 顶部导航菜单项：非最后一项右外边距（对齐 Semi .cd-nav-horizontal .cd-nav-list .cd-nav-item:not(:last-of-type)）。 */
+  .cd-nav-horizontal .cd-nav-list :global(.cd-nav-item:not(:last-of-type)) {
+    margin-right: var(--cd-spacing-navigation-horizontal-item-not-last-marginright);
+  }
   /* 顶部导航 footer：无分割线、右内边距归 0（对齐 Semi navigation.scss horizontal .footer）。 */
   .cd-nav-horizontal :global(.cd-nav-footer) {
-    border-block-start: none;
-    padding-inline-end: 0;
+    border-top: none;
+    padding-right: 0;
   }
 
   /* —— RTL（对齐 Semi navigation/rtl.scss）——
-     只需声明方向：本库 Nav 的内边距与右侧分隔边框**已全部用逻辑属性**
-     （padding-inline / border-inline-end），RTL 下自己就翻，
-     不像 Semi 那样要写 `border-right:0; border-left:...` 掰回来。 */
+     物理属性下方向不会自动镜像，需按 Semi rtl.scss 逐条覆盖。 */
   :global(.cd-rtl) .cd-nav {
     direction: rtl;
+    border-right: 0;
+    border-left: var(--cd-width-navigation-border) solid var(--cd-color-navigation-border-default);
+  }
+
+  /* 一级/子级图标 margin 镜像（对齐 Semi &-item-icon:first-child / :last-child）。 */
+  :global(.cd-rtl) .cd-nav :global(.cd-nav-item-icon:first-child) {
+    margin-right: 0;
+    margin-left: var(--cd-width-navigation-icon-text-between);
+  }
+  :global(.cd-rtl) .cd-nav :global(.cd-nav-item-icon:last-child) {
+    margin-left: 0;
+    margin-right: auto;
+  }
+  /* 内联子导航：无图标项文字缩进镜像到右侧（对齐 Semi &-sub .-item > .-item-text:first-child）。 */
+  :global(.cd-rtl) .cd-nav :global(.cd-nav-sub) :global(.cd-nav-item) > :global(.cd-nav-item-text:first-child) {
+    margin-left: auto;
+    margin-right: calc(
+      var(--cd-spacing-base-tight) + var(--cd-width-navigation-icon-left) +
+        var(--cd-width-navigation-icon-text-between)
+    );
+  }
+  :global(.cd-rtl) .cd-nav :global(.cd-nav-sub) :global(.cd-nav-item)
+    > :global(.cd-nav-item-icon:first-child) {
+    margin-right: var(--cd-width-navigation-icon-text-between);
+  }
+
+  /* header 容器 + logo margin 镜像（对齐 Semi &-header-logo）。 */
+  :global(.cd-rtl) .cd-nav :global(.cd-nav-header-logo) {
+    margin-left: var(--cd-spacing-navigation-header-logo-marginright);
+    margin-right: var(--cd-spacing-navigation-header-logo-marginleft);
+  }
+  :global(.cd-rtl) .cd-nav-collapsed :global(.cd-nav-header-logo) {
+    margin-right: auto;
+    margin-left: 0;
+  }
+
+  /* 侧边导航 header 内边距镜像（对齐 Semi &-vertical &-header；本库 vertical 无根类，靠 header 自身 -vertical 类定位）。 */
+  :global(.cd-rtl) .cd-nav :global(.cd-nav-header-vertical) {
+    padding-right: var(--cd-spacing-navigation-vertical-header-paddingleft);
+    padding-left: var(--cd-spacing-navigation-vertical-header-paddingright);
+  }
+  :global(.cd-rtl) .cd-nav :global(.cd-nav-header-vertical.cd-nav-header-collapsed) {
+    padding-right: var(--cd-spacing-navigation-vertical-header-collapsed-paddingleft);
+    padding-left: var(--cd-spacing-navigation-vertical-header-collapsed-paddingright);
+  }
+
+  /* 顶部导航容器：方向 + 描边 + 内边距镜像。 */
+  :global(.cd-rtl) .cd-nav-horizontal {
+    direction: rtl;
+    border-left: none;
+    border-right: none;
+    padding-left: var(--cd-spacing-navigation-horizontal-paddingright);
+    padding-right: var(--cd-spacing-navigation-horizontal-paddingleft);
+  }
+  :global(.cd-rtl) .cd-nav-horizontal :global(.cd-nav-header) {
+    margin-right: auto;
+    margin-left: var(--cd-spacing-navigation-horizontal-header-logo-marginright);
+  }
+  :global(.cd-rtl) .cd-nav-horizontal .cd-nav-list :global(.cd-nav-item:not(:last-of-type)) {
+    margin-right: auto;
+    margin-left: var(--cd-spacing-navigation-horizontal-item-not-last-marginright);
+  }
+  :global(.cd-rtl) .cd-nav-horizontal :global(.cd-nav-footer) {
+    padding-right: 0;
+    padding-left: 0;
   }
 </style>

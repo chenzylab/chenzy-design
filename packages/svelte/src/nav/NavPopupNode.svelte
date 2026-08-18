@@ -98,14 +98,14 @@
     display: inline-flex;
     align-items: center;
     color: var(--cd-color-navigation-iteml1-icon-default);
-    margin-inline-end: var(--cd-width-navigation-icon-text-between);
-    min-inline-size: var(--cd-width-navigation-icon-left-minwidth);
+    margin-right: var(--cd-width-navigation-icon-text-between);
+    min-width: var(--cd-width-navigation-icon-left-minwidth);
   }
   .cd-nav-item-icon-toggle-right {
     display: inline-flex;
     align-items: center;
-    margin-inline-start: auto;
-    padding-inline-start: var(--cd-width-navigation-icon-text-between);
+    margin-left: auto;
+    padding-left: var(--cd-width-navigation-icon-text-between);
     color: var(--cd-color-navigation-iteml1-icon-default);
   }
   .cd-nav-item-text {

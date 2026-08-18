@@ -15,6 +15,8 @@
   import { hasSubNav, normalizeNavItems } from './nav-foundation.js';
   import NavSubPopup from './NavSubPopup.svelte';
   import Self from './NavItemRender.svelte';
+  import Tooltip from '../tooltip/Tooltip.svelte';
+  import { DEFAULT_TOOLTIP_HIDE_DELAY, DEFAULT_TOOLTIP_SHOW_DELAY } from './constants.js';
 
   interface Props {
     item: NavItemDef;
@@ -91,22 +93,36 @@
     class:cd-nav-icon-rotate-180={open && !popupMode}
     aria-hidden="true"
   >
-    {#if ctx.expandIcon}
+    {#if popupMode && inSubNav}
+      <!-- 浮层内嵌子导航：向右箭头（对齐 Semi IconChevronRight，忽略 expandIcon 覆盖）。
+           toggle 箭头对齐 Semi iconSize='default'=16px（非 info 图标位的 'large'=20px）。 -->
+      <IconChevronRight size="default" aria-hidden="true" />
+    {:else if item.expandIcon}
+      <!-- Sub 单项覆盖箭头优先于 Nav 级（对齐 Semi Sub.expandIcon）。 -->
+      {@render item.expandIcon()}
+    {:else if ctx.expandIcon}
       {@render ctx.expandIcon()}
-    {:else if popupMode && inSubNav}
-      <!-- 浮层内嵌子导航：向右箭头（对齐 Semi IconChevronRight） -->
-      <IconChevronRight size="small" aria-hidden="true" />
     {:else}
       <!-- 展开箭头：向下（内联/浮层顶层，对齐 Semi IconChevronDown）；open 内联态由外层 <i> rotate 180° -->
-      <IconChevronDown size="small" aria-hidden="true" />
+      <IconChevronDown size="default" aria-hidden="true" />
     {/if}
   </i>
+{/snippet}
+
+<!-- 叶子项自定义 toggle 图标（对齐 Semi Item.toggleIcon，非展开语义，纯装饰位）。 -->
+{#snippet leafToggleIcon()}
+  {#if item.toggleIcon}
+    <i class="cd-nav-item-icon cd-nav-item-icon-toggle-{ctx.toggleIconPosition}" aria-hidden="true">
+      {@render item.toggleIcon()}
+    </i>
+  {/if}
 {/snippet}
 
 <!-- 叶子/子导航标题的内部内容（图标 + 文案 + toggle 箭头）。 -->
 {#snippet innerContent(withToggle: boolean)}
   {@render placeholders()}
   {#if withToggle && ctx.toggleIconPosition === 'left'}{@render toggleArrow()}{/if}
+  {#if !withToggle && item.toggleIcon && ctx.toggleIconPosition === 'left'}{@render leafToggleIcon()}{/if}
   {#if item.icon}
     <i class="cd-nav-item-icon cd-nav-item-icon-info" aria-hidden="true">{@render item.icon()}</i>
   {:else if ctx.renderIcon && !withToggle}
@@ -121,6 +137,7 @@
     {#if typeof item.text === 'string'}{item.text}{:else}{@render item.text()}{/if}
   </span>
   {#if withToggle && ctx.toggleIconPosition === 'right'}{@render toggleArrow()}{/if}
+  {#if !withToggle && item.toggleIcon && ctx.toggleIconPosition === 'right'}{@render leafToggleIcon()}{/if}
 {/snippet}
 
 <!-- 叶子项内容：含 link 时包 <a>（Semi Item.tsx；叶子直挂内容，无 item-inner 包裹）。 -->
@@ -183,7 +200,8 @@
   {/if}
 {:else}
   <!-- 叶子项：li[role=menuitem]（对齐 Semi Item.tsx:283-286，选中靠 -selected class，无 aria-current）。
-       含 link 时走原生链接键序；无 link 时以 tabindex + Enter/Space 支持键盘激活。 -->
+       含 link 时走原生链接键序；无 link 时以 tabindex + Enter/Space 支持键盘激活。
+       tabindex 支持外部覆盖（对齐 Semi Item tabIndex，默认 0）。 -->
   {#snippet leaf()}
     <li
       class="cd-nav-item cd-nav-item-normal"
@@ -191,7 +209,7 @@
       class:cd-nav-item-disabled={itemDisabled}
       class:cd-nav-item-has-link={item.link !== undefined}
       role="menuitem"
-      tabindex={itemDisabled ? -1 : 0}
+      tabindex={itemDisabled ? -1 : (item.tabIndex ?? 0)}
       aria-disabled={itemDisabled || undefined}
       onclick={onLeafClick}
       onkeydown={(e) => {
@@ -206,24 +224,41 @@
       {@render leafInner()}
     </li>
   {/snippet}
+  <!-- 折叠态顶层叶子项：Tooltip 提示文案（对齐 Semi Item.wrapTooltip，isCollapsed && !isInSubNav && !isSubNav）。 -->
+  {#snippet leafMaybeTooltip()}
+    {#if ctx.mode === 'vertical' && ctx.collapsed && !inSubNav}
+      <Tooltip
+        content={item.text}
+        position="right"
+        trigger="hover"
+        triggerStyle="display: block; width: 100%;"
+        mouseEnterDelay={item.tooltipShowDelay ?? ctx.tooltipShowDelay ?? DEFAULT_TOOLTIP_SHOW_DELAY}
+        mouseLeaveDelay={item.tooltipHideDelay ?? ctx.tooltipHideDelay ?? DEFAULT_TOOLTIP_HIDE_DELAY}
+      >
+        {@render leaf()}
+      </Tooltip>
+    {:else}
+      {@render leaf()}
+    {/if}
+  {/snippet}
   {#if ctx.renderWrapper}
-    {@render ctx.renderWrapper({ item, isSubNav: false, isInSubNav: inSubNav, props: item, children: leaf })}
+    {@render ctx.renderWrapper({ item, isSubNav: false, isInSubNav: inSubNav, props: item, children: leafMaybeTooltip })}
   {:else}
-    {@render leaf()}
+    {@render leafMaybeTooltip()}
   {/if}
 {/if}
 
 <style>
-  /* 导航项 / 子导航标题公共盒模型。对齐 Semi navigation.scss。 */
+  /* 导航项 / 子导航标题公共盒模型。对齐 Semi navigation.scss（物理属性）。 */
   .cd-nav-item,
   .cd-nav-sub-title {
     box-sizing: border-box;
     display: flex;
     cursor: pointer;
-    inline-size: 100%;
+    width: 100%;
     border-radius: var(--cd-width-navigation-item-borderradius);
     padding: var(--cd-spacing-navigation-item-paddingy) var(--cd-spacing-navigation-item-paddingx);
-    margin-block-end: var(--cd-spacing-navigation-item-marginbottom);
+    margin-bottom: var(--cd-spacing-navigation-item-marginbottom);
     font-size: var(--cd-font-size-regular);
     color: var(--cd-color-navigation-iteml1-text-default);
     /* 背景切换无动画（对齐 Semi $transition_duration-navigation_itemL1-bg = transition_duration-none）。 */
@@ -232,20 +267,21 @@
   .cd-nav-sub-wrap {
     display: block;
     padding: 0;
-    margin-block-end: 0;
+    margin-bottom: 0;
     border-radius: 0;
   }
   .cd-nav-sub-title {
     align-items: center;
-    block-size: var(--cd-height-navigation-item-base);
-    margin-block-end: var(--cd-spacing-navigation-item-marginbottom);
+    height: var(--cd-height-navigation-item-base);
+    /* 对齐 Semi $spacing-navigation_sub_title-marginBottom = 0，独立于普通项的 item-marginbottom。 */
+    margin-bottom: var(--cd-spacing-navigation-sub-title-marginbottom);
     font-weight: var(--cd-font-weight-bold);
   }
 
   .cd-nav-item-inner {
     display: flex;
     align-items: center;
-    inline-size: 100%;
+    width: 100%;
     flex: 0 0 auto;
   }
   .cd-nav-item-text {
@@ -261,7 +297,7 @@
   }
   .cd-nav-item-link {
     display: flex;
-    inline-size: 100%;
+    width: 100%;
     align-items: center;
     color: inherit;
     text-decoration: none;
@@ -273,20 +309,22 @@
     display: inline-flex;
     align-items: center;
     color: var(--cd-color-navigation-iteml1-icon-default);
-    margin-inline-end: var(--cd-width-navigation-icon-text-between);
-    min-inline-size: var(--cd-width-navigation-icon-left-minwidth);
+    margin-right: var(--cd-width-navigation-icon-text-between);
+    margin-left: 0;
+    min-width: var(--cd-width-navigation-icon-left-minwidth);
   }
   .cd-nav-item-icon-toggle-left {
     display: inline-flex;
     align-items: center;
     color: var(--cd-color-navigation-iteml1-icon-default);
-    margin-inline-end: var(--cd-width-navigation-icon-text-between);
+    margin-right: var(--cd-width-navigation-icon-text-between);
+    min-width: var(--cd-width-navigation-icon-left-minwidth);
   }
   .cd-nav-item-icon-toggle-right {
     display: inline-flex;
     align-items: center;
     color: var(--cd-color-navigation-iteml1-icon-default);
-    margin-inline-start: auto;
+    margin-left: auto;
   }
   .cd-nav-icon-rotate-180 {
     transition: transform var(--cd-motion-duration-mid) var(--cd-motion-ease-standard);
@@ -352,7 +390,7 @@
   /* 子级项无图标时文字左缩进补偿，与有图标项对齐（对齐 Semi `-sub .-item-text:first-child` margin-left
      = $spacing-base-tight + $width-navigation_icon_left + $width-navigation_icon_text_between）。 */
   .cd-nav-sub .cd-nav-item-text:first-child {
-    margin-inline-start: calc(
+    margin-left: calc(
       var(--cd-spacing-base-tight) + var(--cd-width-navigation-icon-left) +
         var(--cd-width-navigation-icon-text-between)
     );
@@ -379,6 +417,15 @@
     }
   }
 
+  /* 折叠态叶子项 Tooltip 内层触发 span（.cd-tooltip-trigger）无官方 style 口子（外层已用
+     triggerStyle 撑满，见 tooltip-trigger-wrapper-shrinks-use-triggerstyle 记忆：两层
+     inline-block 包裹需分别处理），此处 :global(:has()) 精确定位「直接子级是 nav 叶子 li」
+     的触发 span，不影响其余 Tooltip 用法。 */
+  :global(.cd-tooltip-trigger:has(> .cd-nav-item-normal)) {
+    display: block;
+    width: 100%;
+  }
+
   /* 折叠态：隐藏文案与 toggle 箭头，仅留信息图标。
      用 display:none 而非 opacity+width:0——文案 span 是 inline，inline-size 对其无效，
      残留宽度会把居中的图标挤偏。 */
@@ -395,16 +442,16 @@
     justify-content: center;
   }
   :global(.cd-nav-collapsed) .cd-nav-item-icon-info {
-    margin-inline-end: 0;
-    min-inline-size: 0;
+    margin-right: 0;
+    min-width: 0;
   }
 
-  /* 水平模式：一级项无背景、仅文字深浅区分选中（对齐 Semi horizontal）。 */
+  /* 水平模式：一级项无背景、仅文字深浅区分选中（对齐 Semi horizontal）。
+     非最后一项右外边距由 Nav.svelte 的 .cd-nav-horizontal .cd-nav-list .cd-nav-item:not(:last-of-type) 承担。 */
   :global(.cd-nav-horizontal) .cd-nav-item,
   :global(.cd-nav-horizontal) .cd-nav-sub-title {
-    inline-size: auto;
-    margin-block-end: 0;
-    margin-inline-end: var(--cd-spacing-navigation-item-paddingx);
+    width: auto;
+    margin-bottom: 0;
     color: var(--cd-color-navigation-horizontal-iteml1-text-default);
   }
   :global(.cd-nav-horizontal) .cd-nav-item-normal:hover:not(.cd-nav-item-selected) {

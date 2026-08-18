@@ -1,10 +1,12 @@
 <script lang="ts">
   import { Nav, Avatar, Dropdown, Layout, Breadcrumb, Skeleton, SkeletonParagraph } from '@chenzy-design/svelte';
-  import { IconSemiLogo, IconBytedanceLogo, IconApps, IconCalendar, IconList, IconSetting } from '@chenzy-design/icons';
+  import { IconSemiLogo, IconBytedanceLogo } from '@chenzy-design/icons';
+  import { IconBadge, IconTreeSelect, IconBreadcrumb, IconSteps } from '@chenzy-design/icons-lab';
 
   const { Header, Footer, Sider, Content } = Layout;
 
   // 顶部水平导航：审批管理带二级子菜单、任务平台带子菜单；footer 用 Dropdown + Avatar 组合。
+  // 图标对齐 Semi 文档「水平加垂直」示例（icons-lab 具名图标）。
   const topItems = [
     { itemKey: 'user', text: '用户管理', icon: iconUser },
     { itemKey: 'union', text: '活动管理', icon: iconUnion },
@@ -58,10 +60,10 @@
 </script>
 
 {#snippet logo()}<IconSemiLogo style="height:36px; font-size:36px" />{/snippet}
-{#snippet iconUser()}<IconApps />{/snippet}
-{#snippet iconUnion()}<IconCalendar />{/snippet}
-{#snippet iconApprove()}<IconList />{/snippet}
-{#snippet iconJob()}<IconSetting />{/snippet}
+{#snippet iconUser()}<IconBadge />{/snippet}
+{#snippet iconUnion()}<IconTreeSelect />{/snippet}
+{#snippet iconApprove()}<IconBreadcrumb />{/snippet}
+{#snippet iconJob()}<IconSteps />{/snippet}
 
 {#snippet footerNav()}
   <Dropdown position="bottomEnd">

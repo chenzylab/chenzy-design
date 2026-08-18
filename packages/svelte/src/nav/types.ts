@@ -30,6 +30,14 @@ export interface NavItemDef {
   level?: number;
   /** 是否保留左侧 Icon 占位（对齐 Semi indent）。 */
   indent?: boolean;
+  /** 外部覆盖 tabIndex（对齐 Semi Item tabIndex，默认 0；配合外部路由库改写 tab 序）。 */
+  tabIndex?: number;
+  /** 自定义 toggle 箭头（叶子项一般不用，对齐 Semi Item toggleIcon）。 */
+  toggleIcon?: Snippet;
+  /** 折叠态 tooltip 显示延迟 ms（覆盖 Nav 级 tooltipShowDelay，对齐 Semi Item tooltipShowDelay）。 */
+  tooltipShowDelay?: number;
+  /** 折叠态 tooltip 隐藏延迟 ms（覆盖 Nav 级 tooltipHideDelay，对齐 Semi Item tooltipHideDelay）。 */
+  tooltipHideDelay?: number;
   /** 项级点击回调（叶子项，富载荷对齐 Semi）。 */
   onClick?: (data: NavClickData) => void;
   /** 项级鼠标移入回调。 */
@@ -42,6 +50,8 @@ export interface NavItemDef {
   maxHeight?: number;
   /** 子导航是否展开（对齐 Semi Sub.isOpen，非受控展开配合）。 */
   isOpen?: boolean;
+  /** 子导航单项自定义展开箭头（覆盖 Nav 级 expandIcon，对齐 Semi Sub expandIcon）。 */
+  expandIcon?: Snippet;
   /** 透传给该子导航浮层 Dropdown 的属性（对齐 Semi Sub dropdownProps）。 */
   dropdownProps?: NavDropdownProps;
   /** 透传给该子导航浮层 Dropdown 的内联样式（对齐 Semi Sub dropdownStyle）。 */
