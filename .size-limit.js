@@ -192,11 +192,15 @@ const components = [
   // pageSizeOpts 动态选项 + Select size-changer、quickJumper、preventPageChangeOnPageSizeChange
   // 换页重算策略、showTotal 页数化）。纯功能增长；同类导航组件 anchor 4.5 / breadcrumb 4.8 / tabs 7.3。
   ['pagination', '{ Pagination }', '5.1 KB'],
-  // 4.5 KB → 6 KB：破坏性重写为组合式 API（<Steps><Steps.Step/></Steps>，对齐 Semi/本库 Timeline/Tabs），
+  // 4.5 KB → 6 KB → 6.7 KB：破坏性重写为组合式 API（<Steps><Steps.Step/></Steps>，对齐 Semi/本库 Timeline/Tabs），
   // 新增独立 Step 子组件 + context 收集 + DOM class 层级镜像 Semi（三型 container/left/content/title/
   // title-text/description/icon/number-icon 全套选择器）+ nav 型 IconChevronRight 分隔图标。
-  // 实测 baseline 5.57 KB，纯架构/功能增长；同类导航组件 anchor 4.5 / breadcrumb 4.8 / pagination 5.1 / tabs 7.3。
-  ['steps', '{ Steps }', '6 KB'],
+  // 6 KB → 6.7 KB：严格按 Semi 文件结构拆分为 6 个独立文件（BasicStep/BasicSteps/FillStep/FillSteps/
+  // NavStep/NavSteps + Steps/Step 纯分发器），状态推断逻辑（stepNumber/status/active/done/next-error）
+  // 按用户决策在三型各自内联实现（非抽共享函数，逐行对应 Semi 三份 useMemo）；fill 型引入 Grid Row/Col
+  // 依赖复刻 Semi 的等分栅格结构。实测 baseline 6.64 KB，纯架构/对齐度增长；
+  // 同类导航组件 anchor 4.5 / breadcrumb 4.8 / pagination 5.1 / tabs 7.3。
+  ['steps', '{ Steps }', '6.7 KB'],
   // 7.3 KB → 8 KB：全面对齐 Semi 引入的真实新功能（slash 型、left 垂直位置、
   // collapsible 滚动折叠含 auto 自动溢出检测、more 收纳下拉、closable 可关闭、
   // renderArrow/renderTabBar 自定义、动态增删）。实测 baseline 7.75 KB，纯功能增长。

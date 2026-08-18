@@ -19,8 +19,11 @@
  *  - 字面量（px / % / 9999px / transparent / 32px / em）保留。
  *  - 组件 token 名（color-steps-* / width-steps-* …）与 alias / global 层不同名，
  *    var() 无自引用死循环。
- *  - Semi 的 transition_*-none / transform_scale-small 系动效占位（全为 none / 无缩放），
- *    渲染无实际效果，本层不复刻这些占位 token，避免引入无消费的中间变量。
+ *  - animation.scss 的 transition_*-none / transform_scale-small 系动效占位对齐 button/
+ *    breadcrumb/rating 等组件范式：duration→var(--cd-motion-duration-none)、
+ *    function→var(--cd-motion-ease-in)、delay→var(--cd-motion-delay-none)、
+ *    transform scale→var(--cd-motion-scale-none)。默认值均为 0（无动画），但作为
+ *    DSM 可配置钩子存在——用户改这些全局别名后 Steps 的状态切换过渡会真实生效。
  */
 import type { TokenGroup } from './token-def.js';
 
@@ -128,4 +131,16 @@ export const stepsTokens = {
   'font-steps-item-left-lineheight': { value: '32px', category: 'font', label: 'fill 序号行高', usage: 'fill 型左侧图标内部文本行高' },
   'font-steps-nav-item-title-fontweight': { value: 'var(--cd-font-weight-regular)', category: 'font', label: '导航标题字重', usage: '导航型步骤条标题文本字重 - 默认态' },
   'font-steps-nav-item-title-active-fontweight': { value: '600', category: 'font', label: '导航标题字重-激活', usage: '导航型步骤条标题文本字重 - 激活态' },
+
+  // —— Transition / Transform（对齐 Semi steps/animation.scss）——
+  'transition-duration-steps-item-title-text': { value: 'var(--cd-motion-duration-none)', category: 'animation', label: '标题文本过渡时长', usage: '步骤条标题文本颜色-动画持续时间' },
+  'transition-function-steps-item-title-text': { value: 'var(--cd-motion-ease-in)', category: 'animation', label: '标题文本过渡曲线', usage: '步骤条标题文本颜色-过渡曲线' },
+  'transition-delay-steps-item-title-text': { value: 'var(--cd-motion-delay-none)', category: 'animation', label: '标题文本过渡延迟', usage: '步骤条标题文本颜色-延迟时间' },
+  'transition-duration-steps-item-title-icon': { value: 'var(--cd-motion-duration-none)', category: 'animation', label: '图标过渡时长', usage: '步骤条图标颜色-动画持续时间' },
+  'transition-function-steps-item-title-icon': { value: 'var(--cd-motion-ease-in)', category: 'animation', label: '图标过渡曲线', usage: '步骤条图标颜色-过渡曲线' },
+  'transition-delay-steps-item-title-icon': { value: 'var(--cd-motion-delay-none)', category: 'animation', label: '图标过渡延迟', usage: '步骤条图标颜色-延迟时间' },
+  'transition-duration-steps-item-backgroundcolor': { value: 'var(--cd-motion-duration-none)', category: 'animation', label: '背景色过渡时长', usage: '步骤条 item 背景色-动画持续时间' },
+  'transition-function-steps-item-backgroundcolor': { value: 'var(--cd-motion-ease-in)', category: 'animation', label: '背景色过渡曲线', usage: '步骤条 item 背景色-过渡曲线' },
+  'transition-delay-steps-item-backgroundcolor': { value: 'var(--cd-motion-delay-none)', category: 'animation', label: '背景色过渡延迟', usage: '步骤条 item 背景色-延迟时间' },
+  'transform-scale-step-item': { value: 'var(--cd-motion-scale-none)', category: 'animation', label: 'item 缩放', usage: '步骤条 item 交互缩放（默认无缩放）' },
 } satisfies TokenGroup;

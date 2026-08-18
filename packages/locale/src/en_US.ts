@@ -291,17 +291,6 @@ export const en_US: Locale = {
     ariaLabel: 'Breadcrumb',
     moreLabel: 'Show {count} more',
   },
-  Steps: {
-    navAriaLabel: 'Steps',
-    stepLabel: 'Step {index}',
-    ofTotal: ' of {total}',
-    statusSeparator: ', ',
-    statusWait: 'Waiting',
-    statusProcess: 'In progress',
-    statusFinish: 'Completed',
-    statusError: 'Error',
-    statusWarning: 'Warning',
-  },
   ColorPicker: {
     saturation: 'Saturation and brightness',
     hue: 'Hue',
