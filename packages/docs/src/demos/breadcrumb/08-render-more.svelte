@@ -1,25 +1,12 @@
 <script lang="ts">
-  import { Breadcrumb, Popover } from '@chenzy-design/svelte';
-  import { IconMore } from '@chenzy-design/icons';
+  import { Breadcrumb } from '@chenzy-design/svelte';
+  import RenderMore from './RenderMoreCustom.svelte';
 
-  const separator = '-'; // 用于拼接 restItem 数组项的分隔符
   const routes = ['首页', '当层级很多的时候', '又一层', '再一层', '上上一层', '上一层', '详情页'];
 </script>
 
-<!-- 若想为省略号区域自定义其他形式的渲染，可使用 renderMore()（对齐 Semi）。 -->
-<Breadcrumb {routes} onClick={(item, e) => console.log(item, e)}>
-  {#snippet renderMore(restItem)}
-    <Popover showArrow style="padding:12px" trigger="click">
-      {#snippet content()}
-        <span>
-          {#each restItem as item, idx (idx)}
-            {item.route.name ?? ''}{#if idx !== restItem.length - 1}<span
-                style="color:var(--cd-color-text-2); margin-right:6px">{separator}</span
-              >{/if}
-          {/each}
-        </span>
-      {/snippet}
-      <IconMore />
-    </Popover>
-  {/snippet}
-</Breadcrumb>
+<!-- renderMore 为组件引用直传（非 Snippet），经 props.restItems 取被折叠路由列表（对齐 Semi renderMore(restItem)）。
+     仅 routes 数据驱动模式下 restItems 才有完整数据：声明式 <Breadcrumb.Item> 子组件模式下父组件无法
+     取得子组件内部的路由数据（Svelte 无 React.Children.toArray 等价能力，见 Item.svelte 头注释），
+     restItems 恒为空数组，renderMore/moreType='popover' 内容会渲染为空——已知限制，见 meta.ts。 -->
+<Breadcrumb {routes} renderMore={RenderMore} onClick={(item, e) => console.log(item, e)} />

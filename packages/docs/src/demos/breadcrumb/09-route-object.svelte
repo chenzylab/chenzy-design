@@ -4,15 +4,13 @@
   import type { BreadcrumbRoute } from '@chenzy-design/svelte';
 
   // route 对象数组（对齐 Semi Route: { name, path, href, icon }）与纯字符串可混用；字符串即 name。
+  // icon 为组件引用直传（非 Snippet）。
   const objectRoutes: Array<BreadcrumbRoute | string> = [
-    { path: '/', href: '#', icon: home },
-    { path: '/breadcrumb', href: '#', name: 'breadcrumb', icon: article },
+    { path: '/', href: '#', icon: IconHome },
+    { path: '/breadcrumb', href: '#', name: 'breadcrumb', icon: IconArticle },
     'with icon',
   ];
 </script>
-
-{#snippet home()}<IconHome size="small" />{/snippet}
-{#snippet article()}<IconArticle size="small" />{/snippet}
 
 <div>
   <Breadcrumb routes={['Semi-ui', 'Breadcrumb', 'Default']} />

@@ -1,8 +1,9 @@
 <!--
   仅供 Breadcrumb.kbd.test.ts（browser project）使用的折叠 disclosure 键盘 e2e 夹具。
-  maxItemCount=3 + 5 个路由 → 中间折叠为 … 触发器；moreType='popover' 使其成为
-  click 触发的 disclosure：折叠触发器经 Popover 包裹（cd-tooltip-trigger 承载 role=button
-  + aria-haspopup + aria-expanded），Enter/Space 展开浮层菜单（role=menu，portal 到 body）。
+  maxItemCount=3 + 5 个路由 → 中间折叠为 … 触发器（role=button + tabindex=0，对齐 Semi
+  handleCollapse）。Enter 键盘激活「就地展开全部项」（对齐 Semi handleExpand，与 moreType
+  无关）；moreType='popover' 只影响触发器内部渲染内容（额外叠加 hover 展开的 Popover 预览，
+  见 Breadcrumb.svelte moreContent snippet）。
 -->
 <script lang="ts">
   import { LocaleProvider } from '../locale-provider/index.js';

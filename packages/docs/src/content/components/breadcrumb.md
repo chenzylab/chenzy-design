@@ -80,6 +80,8 @@ import { Breadcrumb } from '@chenzy-design/svelte';
 
 <DemoBox code={renderMoreSrc}><RenderMore /></DemoBox>
 
+> `renderMore` 与 `moveType="popover"` 的折叠内容依赖父组件持有完整路由数据：仅 `routes` 数据驱动模式下 `restItems` 才有值；声明式 `<Breadcrumb.Item>` 子组件写法下父组件无法取得子组件内部数据（Svelte 无 React `Children.toArray` 等价能力），`restItems` 恒为空数组，折叠浮层内容会渲染为空。
+
 ### 路由对象
 
 Breadcrumb 支持通过 routes 传入路由对象 `route: { name, path, href, icon }` 或字符串组成的数组。可以配合 renderItem 来渲染节点。通过这样实现的 Breadcrumb 同样会进行截断处理。
@@ -103,10 +105,10 @@ Breadcrumb 支持通过 routes 传入路由对象 `route: { name, path, href, ic
 | compact | 显示尺寸，是否紧凑 | boolean | true |
 | maxItemCount | 超出多少个进行自动折叠 | number | 4 |
 | moreType | 内置的 ... 区域的渲染类型，可选值为 `default`、`popover` | string | `default` |
-| renderItem | 自定义链接函数，配合 routes 使用 | `(route: Route) => Snippet` | - |
-| renderMore | 自定义 ... 区域的渲染 | `Snippet<[restItem]>` | - |
+| renderItem | 自定义路由项渲染组件，配合 routes 使用；组件引用直传，经 `props.route` 取数据 | `Component<{route: Route}>` | - |
+| renderMore | 自定义 ... 区域的渲染组件；组件引用直传，经 `props.restItems` 取被折叠项列表 | `Component<{restItems: Array<{route: Route; index: number}>}>` | - |
 | routes | router 的路由信息，由路由对象或字符串组成的数组 | `Array<Route \| string>` | - |
-| separator | 自定义的分隔符 | string \| Snippet | `/` |
+| separator | 自定义的分隔符，字符串或组件引用直传（如 `separator={IconArrowRight}`） | string \| Component | `/` |
 | showTooltip | 是否展示 Tooltip 及相关配置：width，溢出宽度；ellipsisPos，截断方式（从中间/末尾截断）；opts，透传给 Tooltip 的属性 | `boolean \| ShowTooltipProps` | `{ width: 150, ellipsisPos: 'end' }` |
 | style | 内联样式 | string | - |
 | onClick | 单击事件 | `(item: Route, e: Event) => void` | - |
@@ -116,8 +118,8 @@ Breadcrumb 支持通过 routes 传入路由对象 `route: { name, path, href, ic
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
 | href | 链接的目的地 | string | - |
-| icon | 标签的显示图标 | Snippet | - |
-| separator | 分隔符，可以覆盖父级的分隔符 | string \| Snippet | - |
+| icon | 标签的显示图标，组件引用直传（如 `icon={IconHome}`） | Component | - |
+| separator | 分隔符，可以覆盖父级的分隔符 | string | - |
 | noLink | 移除 hover 和 active 的样式 | boolean | false |
 | onClick | 单击事件 | `(item: Route, e: Event) => void` | - |
 
@@ -126,7 +128,7 @@ Breadcrumb 支持通过 routes 传入路由对象 `route: { name, path, href, ic
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
 | href | 链接目的地 | string | - |
-| icon | 标签的显示图标 | Snippet | - |
+| icon | 标签的显示图标，组件引用直传 | Component | - |
 | name | 路由名 | string | - |
 | path | 路由路径 | string | - |
 

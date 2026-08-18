@@ -1,13 +1,15 @@
 /**
  * Component tokens for Breadcrumb（M3 Navigation）。全量对齐 Semi Design
- * （semi-foundation/breadcrumb/variables.scss 16 个），并升级为带元数据的 TokenDef
- * 结构以支持 DSM。值为 var() 引用我们的 alias / global token，或字面量。
- * 末尾保留 chenzy-design Breadcrumb / BreadcrumbItem 实际消费的补充 token
- *（原名，Semi 无 / 命名差异；组件消费），并复用上方 Semi 对齐 token 的值。
+ * （semi-foundation/breadcrumb/variables.scss 16 个 + animation.scss 4 个），
+ * 升级为带元数据的 TokenDef 结构以支持 DSM。值为 var() 引用我们的 alias / global token。
  *
  * 注：Semi kebab 化后 `$spacing-*`→`var(--cd-spacing-*)`，`--semi-color-*`→`var(--cd-color-*)`，
- * `$font-weight-*`→`var(--cd-font-weight-*)`，`$font-size-*`→`var(--cd-font-size-*)`。
+ * `$font-weight-*`→`var(--cd-font-weight-*)`，`$font-size-*`→`var(--cd-font-size-*)`，
+ * `--semi-transition_duration-none`→`var(--cd-motion-duration-none)`（对齐库内其它组件
+ * transition token 的命名与取值先例，如 anchor/button/autocomplete）。
  * 键名保留 Semi 语义（default/active/separator/restItem），emit 为 --cd-color-breadcrumb-*。
+ * Breadcrumb.svelte / Item.svelte 直接消费本文件产出的 --cd-{category}-breadcrumb-* 变量，
+ * 无额外自造短名 wrapper token。
  */
 import type { TokenGroup } from './token-def.js';
 
@@ -42,19 +44,9 @@ export const breadcrumbTokens = {
   'font-breadcrumb-compact-fontsize': { value: 'var(--cd-font-size-small)', category: 'font', label: '字号 - 紧凑', usage: '面包屑文字大小 - 紧凑' },
   'font-breadcrumb-loose-fontsize': { value: 'var(--cd-font-size-regular)', category: 'font', label: '字号 - 宽松', usage: '面包屑文字大小 - 宽松' },
 
-  // —— chenzy-design Breadcrumb / BreadcrumbItem 实际消费的补充 token（组件消费，值均复用上方 Semi 对齐 token） ——
-  // 链接三态对齐 Semi：常态灰(text-2) → hover 链接蓝(link) → active 深蓝(link-hover)。
-  'breadcrumb-color': { value: 'var(--cd-color-breadcrumb-default-text-default)', category: 'color', label: '默认文字色', usage: '面包屑根文字颜色（组件消费）' },
-  'breadcrumb-color-link': { value: 'var(--cd-color-breadcrumb-default-text-default)', category: 'color', label: '链接文字色 - 常态', usage: '可点击项文字颜色 - 常态（对齐 Semi item 常态灰，组件消费）' },
-  'breadcrumb-color-link-hover': { value: 'var(--cd-color-breadcrumb-default-text-hover)', category: 'color', label: '链接文字色 - 悬浮', usage: '可点击项文字颜色 - 悬浮（对齐 Semi item-link:hover，组件消费）' },
-  'breadcrumb-color-link-active': { value: 'var(--cd-color-breadcrumb-default-text-active)', category: 'color', label: '链接文字色 - 按下', usage: '可点击项文字颜色 - 按下（对齐 Semi item-link:active，组件消费）' },
-  'breadcrumb-color-active': { value: 'var(--cd-color-breadcrumb-active-text-default)', category: 'color', label: '当前页文字色', usage: '当前页 / 选中项文字颜色（组件消费）' },
-  'breadcrumb-restitem-color': { value: 'var(--cd-color-breadcrumb-restitem-text-default)', category: 'color', label: '折叠项文字色', usage: '折叠 … 触发器 / restItem 文字颜色（对齐 Semi restItem，组件消费）' },
-  'breadcrumb-active-weight': { value: 'var(--cd-font-breadcrumb-active-fontweight)', category: 'font', label: '当前页字重', usage: '当前页 / 选中项字重（组件消费）' },
-  'breadcrumb-separator-color': { value: 'var(--cd-color-breadcrumb-sepearator-default-icon-default)', category: 'color', label: '分割符颜色', usage: '分割符颜色（组件消费）' },
-  'breadcrumb-gap': { value: 'var(--cd-spacing-breadcrumb-restitem-marginright)', category: 'spacing', label: '项间距', usage: '面包屑项间距（组件消费）' },
-  // 尺寸对齐 Semi：仅 compact 布尔驱动。loose(=!compact) 用 loose 字号(regular)，compact 用 compact 字号(small)。
-  'breadcrumb-font-size': { value: 'var(--cd-font-breadcrumb-loose-fontsize)', category: 'font', label: '宽松字号', usage: '面包屑宽松模式字号（!compact，对齐 Semi loose=regular，组件消费）' },
-  'breadcrumb-font-size-compact': { value: 'var(--cd-font-breadcrumb-compact-fontsize)', category: 'font', label: '紧凑字号', usage: '面包屑紧凑模式字号（compact，对齐 Semi compact=small，组件消费）' },
-  'breadcrumb-item-max-width': { value: '12em', category: 'width', label: '截断项最大宽度', usage: 'showTooltip 截断项最大宽度（组件消费）' },
+  // —— 过渡/变换（Semi animation.scss，面包屑文字 hover 过渡） ——
+  'transition-duration-breadcrumb-link-text': { value: 'var(--cd-motion-duration-none)', category: 'animation', label: '文字过渡时长', usage: '面包屑文字-文字-动画持续时间' },
+  'transition-function-breadcrumb-link-text': { value: 'var(--cd-motion-ease-in)', category: 'animation', label: '文字过渡曲线', usage: '面包屑文字-文字-过渡曲线' },
+  'transition-delay-breadcrumb-link-text': { value: 'var(--cd-motion-duration-none)', category: 'animation', label: '文字过渡延迟', usage: '面包屑文字-文字-延迟时间' },
+  'transform-scale-breadcrumb-link-text': { value: 'var(--cd-motion-scale-none)', category: 'animation', label: '文字缩放', usage: '面包屑文字-放大' },
 } satisfies TokenGroup;

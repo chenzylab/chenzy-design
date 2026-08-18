@@ -3,6 +3,7 @@
   import { IconArrowRight } from '@chenzy-design/icons';
 </script>
 
+<!-- separator 支持字符串或组件引用直传（非 Snippet，如 separator={IconArrowRight}）。 -->
 <div>
   <Breadcrumb separator=">">
     <Breadcrumb.Item>Semi-ui</Breadcrumb.Item>
@@ -10,8 +11,7 @@
     <Breadcrumb.Item>Default</Breadcrumb.Item>
   </Breadcrumb>
   <br />
-  <Breadcrumb>
-    {#snippet separator()}<IconArrowRight size="small" />{/snippet}
+  <Breadcrumb separator={IconArrowRight}>
     <Breadcrumb.Item>Semi-ui</Breadcrumb.Item>
     <Breadcrumb.Item>Breadcrumb</Breadcrumb.Item>
     <Breadcrumb.Item>Default</Breadcrumb.Item>
