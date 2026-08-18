@@ -180,7 +180,47 @@
   let truncatedText = $state<string | null>(null);
   let preciseFullText = '';
 
+  /**
+   * 对齐 Semi typography/base.tsx compareSingleRow：用 Range.getBoundingClientRect 测内容
+   * 真实（亚像素）宽度，逐子节点求和，与 clientWidth-padding（content-box 宽度）比较。
+   * 不能用 el.scrollWidth/clientWidth 整数比较代替——两者是 CSSOM 取整属性，文本刚好贴合
+   * 容器宽度时（如 43.6px 内容 vs 43.4px 容器，取整后都是 43/44px）会把真实的亚像素溢出
+   * 洗掉，导致 truncated 判为 false、showTooltip 永不触发（见 core ellipsis.ts isOverflowing
+   * 注释里的既有分析——这次要补的是"用什么单位测量"，不是比较逻辑本身）。
+   * 仅用于驱动 truncated 判断（showTooltip 等场景），不用于 CSS 视觉截断本身（那部分交给
+   * text-overflow:ellipsis，不需要精确测量）。
+   */
+  function measureContentWidth(el: HTMLElement): { content: number; area: number } | null {
+    if (typeof document === 'undefined' || !document.createRange) return null;
+    const range = document.createRange();
+    // jsdom 等测试环境的 Range 不实现 getBoundingClientRect（真实浏览器都支持），
+    // 缺失时回退 null，调用方据此退回整数 scrollWidth/clientWidth 测量。
+    if (typeof range.getBoundingClientRect !== 'function') return null;
+    const cs = window.getComputedStyle(el);
+    const paddingLeft = parseFloat(cs.paddingLeft) || 0;
+    const paddingRight = parseFloat(cs.paddingRight) || 0;
+    const area = Math.max(0, el.clientWidth - paddingLeft - paddingRight);
+    let content = 0;
+    for (const node of el.childNodes) {
+      range.selectNodeContents(node);
+      content += range.getBoundingClientRect().width;
+    }
+    range.detach();
+    return { content, area };
+  }
+
   let probe: HTMLSpanElement | null = null;
+  /**
+   * 对齐 Semi typography/util.tsx getRenderText：测量必须在与 hostEl 完全解耦的独立
+   * 容器里进行，不能直接读 hostEl 自身的 clientWidth 作为可用宽度上限。needsPreciseTruncate
+   * 路径下 hostEl 保持 display:inline（-overflow-ellipsis 的 display:block 只在
+   * canCssEllipsis 快路径才加），宽度由内容自然撑开——一旦某次测量把内容误判为需要
+   * 截断成很窄的候选，hostEl 自身宽度跟着变窄，下次测量读到的宽度也随之变窄，
+   * 形成自我强化、永远无法恢复的死循环（真实复现过：Breadcrumb pos:'middle' 场景
+   * 最终稳定在只剩省略号）。Semi 的解法是用一个独立 measure 容器复刻 hostEl 的
+   * computed style，width:auto 时改用测量前的 offsetWidth 钉死宽度，之后所有候选
+   * 只在这个独立容器里试，不影响、不依赖 hostEl 本身。probe 复用同一思路。
+   */
   function measurePreciseNow(): void {
     const el = hostEl;
     if (!el || typeof window === 'undefined') return;
@@ -209,7 +249,12 @@
     probe.style.font = cs.font;
     probe.style.letterSpacing = cs.letterSpacing;
     probe.style.fontWeight = cs.fontWeight;
-    const containerWidth = el.clientWidth;
+    // 可用宽度上限：优先 max-width（Item.svelte 等消费方显式设置的稳定值，对齐
+    // Semi width:auto 分支用 offsetWidth 钉死宽度的用意——都是为了拿到一个不受
+    // 后续内容动态回写影响的稳定基准）；否则退回 el 当前 clientWidth 作为一次性
+    // 兜底快照（仅用于计算，不会像旧实现那样每次都重新读取已被污染的宽度）。
+    const maxWidthPx = parseFloat(cs.maxWidth);
+    const containerWidth = Number.isFinite(maxWidthPx) && maxWidthPx > 0 ? maxWidthPx : el.clientWidth;
     const p = probe;
     const next = fitTruncatedText(full, initPos, (candidate) => {
       p.textContent = candidate;
@@ -230,11 +275,15 @@
         measurePreciseNow();
         return;
       }
+      // 单行场景用 Range 精确测量宽度（对齐 Semi compareSingleRow），避免整数
+      // scrollWidth/clientWidth 取整洗掉亚像素溢出（见 measureContentWidth 注释）。
+      // 多行场景高度维度保持整数 scrollHeight/clientHeight（Semi 同样是整数高度比较）。
+      const widths = measureRows <= 1 ? measureContentWidth(el) : null;
       ellipsisApi.measure({
         scrollHeight: el.scrollHeight,
         clientHeight: el.clientHeight,
-        scrollWidth: el.scrollWidth,
-        clientWidth: el.clientWidth,
+        scrollWidth: widths ? widths.content : el.scrollWidth,
+        clientWidth: widths ? widths.area : el.clientWidth,
         rows: measureRows,
       });
     };
@@ -694,13 +743,23 @@
   }
   /*
     showTooltip 模式下 Text 被 Tooltip/Popover 包裹（Svelte 无 cloneElement，需要真实
-    wrapper span 承载事件，Semi/React 没有这层）。Popover 内部也是复用 Tooltip 渲染同一套
-    .cd-tooltip/.cd-tooltip-trigger 结构，故只需覆盖一套类名。外层 .cd-tooltip 已用
-    triggerStyle 撑满，但 Tooltip 组件未暴露内层 .cd-tooltip-trigger 的等价 prop——它
-    默认 inline-block + width:auto（shrink-to-fit），当 Text 依赖 flex:1 分配宽度时
-    （如 Upload 文件名）会与外层 flex 容器的宽度传导断开，永久塌陷为 0。
-    见 memory: tooltip-trigger-wrapper-shrinks-use-triggerstyle。
-    两层包裹的完整覆盖规则见下方 .cd-tooltip:has(...) 复合选择器（外层+内层一起处理）。
+    wrapper span 承载事件，Semi/React 没有这层）。外层 .cd-tooltip 已用 triggerStyle
+    （TypographyBase 传 "display:block; inline-size:100%"）撑满；内层 .cd-tooltip-trigger
+    默认 inline-block + width:auto（shrink-to-fit）。
+
+    此处曾有一条全局 :has() 规则试图把两层都强制 display:flex 来"撑满宽度"，已删除——
+    经全库排查（Upload/VideoProgress/TagInput/AnchorLink 等全部 showTooltip 消费方）
+    确认没有任何组件真正依赖它：真正需要撑满宽度的消费方（Upload 文件名、VideoProgress
+    进度条、TagInput 内容）都已各自写了精确限定到自己 class 的局部规则（如
+    `.cd-tooltip-trigger > .cd-upload-file-card-info-name { inline-size:100% }`），
+    不改 display（保持 block/inline-block，非 flex）。而这条全局 flex 规则有害：
+    display:flex 会把容器变成 flex 格式化上下文，其直接子元素被 CSS 规范"blockify"成
+    display:block，破坏了 Typography 省略号截断依赖 inline-block shrink-to-fit 做宽度
+    溢出判断的逻辑——在 Breadcrumb 场景复现为真实 bug：未溢出的短文本因被 blockify，
+    容器宽度直接等于内容宽度（不可能判定溢出），showTooltip 永远不触发；AnchorLink 同样
+    受害但恰好被自身的 nowrap+ellipsis 掩盖未被察觉。
+    需要"撑满宽度"的新消费方应参照 Upload/VideoProgress 写精确限定到自己 class 的局部
+    规则（display:block + width:100%，不要用 flex），不要指望这里有全局兜底。
   */
 
   :global(.cd-typography-ellipsis-expand) {
@@ -711,23 +770,6 @@
   }
   :global(.cd-typography-ellipsis-expand:hover) {
     color: var(--cd-color-typography-link-text-hover);
-  }
-
-  /* showTooltip 两层包裹（.cd-tooltip 外层 + .cd-tooltip-trigger 内层）都要作为所在 flex
-     容器的普通 flex-item 参与空间分配（flex:1 1 auto + min-inline-size:0），而非固定
-     width/max-width:100%——固定 100% 只在该 flex 行只有这一个子项时安全，一旦有兄弟元素
-     （如 Tree renderLabel 里 Text 旁边的按钮）就会独占整行宽度，把兄弟挤出可视区域。 */
-  :global(.cd-tooltip:has(> .cd-tooltip-trigger > .cd-typography-ellipsis-single-line)),
-  :global(.cd-tooltip:has(> .cd-tooltip-trigger > .cd-typography-ellipsis-multiple-line)) {
-    display: flex;
-    flex: 1 1 auto;
-    min-inline-size: 0;
-  }
-  :global(.cd-tooltip:has(> .cd-tooltip-trigger > .cd-typography-ellipsis-single-line) > .cd-tooltip-trigger),
-  :global(.cd-tooltip:has(> .cd-tooltip-trigger > .cd-typography-ellipsis-multiple-line) > .cd-tooltip-trigger) {
-    display: flex;
-    flex: 1 1 auto;
-    min-inline-size: 0;
   }
 
   /* ══ Copyable（对齐 typography.scss action-copy / action-copied）══ */
