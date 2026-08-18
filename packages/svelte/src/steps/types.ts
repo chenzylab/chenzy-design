@@ -3,20 +3,18 @@ import type { Snippet } from 'svelte';
 export type StepStatus = 'wait' | 'process' | 'finish' | 'error' | 'warning';
 
 /**
- * <Steps.Step> 子项 props，对齐 Semi Steps.Step（step.tsx）。
- * title/description/icon 支持 string 或 Snippet（对齐 Semi ReactNode）。
+ * <Steps.Step> 子项 props——顶层分发器用的联合形状，实际渲染的字段集合由父
+ * <Steps> 的 type 决定（nav 型不使用 description/icon/status，对齐 Semi
+ * BasicStepProps/FillStepProps/NavStepProps 的差异化字段集合）。
  */
 export interface StepProps {
   /** 标题（对齐 Semi title）。 */
   title?: string | Snippet;
-  /** 步骤描述，可选（对齐 Semi description）。 */
+  /** 步骤描述，可选（对齐 Semi description；nav 型无此字段）。 */
   description?: string | Snippet;
-  /**
-   * 自定义该步图标：字符串（emoji/文本）或 Snippet。提供时替代默认序号/✓/✕/⚠。
-   * 对齐 Semi Steps.Step 的 icon（每步独立）。
-   */
+  /** 自定义该步图标（对齐 Semi icon；nav 型无此字段）。 */
   icon?: string | Snippet;
-  /** 显式覆盖该步状态；不传时由 Steps 的 current 推断（对齐 Semi status）。 */
+  /** 显式覆盖该步状态（对齐 Semi status；nav 型无此字段）。 */
   status?: StepStatus;
   /** 该步根节点类名（对齐 Semi Steps.Step 的 className）。 */
   class?: string;

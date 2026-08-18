@@ -12,7 +12,7 @@
 
   <Text type="tertiary">nav 迷你尺寸：</Text>
   <div style="display: flex; justify-content: center;">
-    <Steps type="nav" size="small" current={1}>
+    <Steps type="nav" size="small" current={1} style="margin: auto;" onChange={(i) => console.log(i)}>
       <Steps.Step title="注册账号" />
       <Steps.Step title="这个项目的文字比较多多多多" />
       <Steps.Step title="产品用途" />

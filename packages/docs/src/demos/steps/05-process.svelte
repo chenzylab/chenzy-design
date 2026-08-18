@@ -27,7 +27,7 @@
       <Button type="primary" onclick={() => console.log('Processing complete!')}>Done</Button>
     {/if}
     {#if current > 0}
-      <Button onclick={prev}>Previous</Button>
+      <Button style="margin-left: 8px;" onclick={prev}>Previous</Button>
     {/if}
   </div>
 </div>

@@ -6,15 +6,14 @@ export const meta = {
   name: 'Steps',
   category: 'navigation',
   description:
-    '步骤条，引导用户按流程完成任务。组合式 API（<Steps><Steps.Step/></Steps>），严格对齐 Semi Design：支持横向/纵向、fill/basic/nav 三型、迷你尺寸、每步独立图标/状态、连接线开关（hasLine）与 onChange 切换。',
+    '步骤条，引导用户按流程完成任务。组合式 API（<Steps><Steps.Step/></Steps>），严格全量对齐 Semi Design：文件结构（basicStep/basicSteps/fillStep/fillSteps/navStep/navSteps）、物理属性 CSS、具名图标、fill 型 Row/Col 栅格与三型差异化 props 边界均逐一对齐；纯受控 current（无 defaultCurrent）。',
   props: [
-    { name: 'current', type: 'number', default: 'undefined', desc: '受控当前步（从 0 计数）' },
-    { name: 'defaultCurrent', type: 'number', default: '0', desc: '非受控初始当前步' },
+    { name: 'current', type: 'number', default: '0', desc: '受控当前步（从 0 计数），Semi 纯受控无非受控便利 API' },
     {
       name: 'direction',
       type: "'horizontal'|'vertical'",
       default: 'horizontal',
-      desc: '步骤条方向',
+      desc: '步骤条方向（fill/basic 型生效；nav 型固定横向，无此 prop）',
     },
     {
       name: 'type',
@@ -26,15 +25,15 @@ export const meta = {
       name: 'status',
       type: "'wait'|'process'|'finish'|'error'|'warning'",
       default: 'process',
-      desc: '当前步状态',
+      desc: '当前步状态（fill/basic 型生效；nav 型无状态概念，无此 prop）',
     },
-    { name: 'size', type: "'small'|'default'", default: 'default', desc: '尺寸（basic/nav 型生效）' },
+    { name: 'size', type: "'small'|'default'", default: 'default', desc: '尺寸（basic/nav 型生效；fill 型无 size prop）' },
     { name: 'initial', type: 'number', default: '0', desc: '起始序号偏移' },
     {
       name: 'hasLine',
       type: 'boolean',
       default: 'true',
-      desc: 'basic 型是否显示连接线（对齐 Semi hasLine）',
+      desc: 'basic 型是否显示连接线（对齐 Semi hasLine；fill/nav 型无此 prop）',
     },
     {
       name: 'onChange',
@@ -47,21 +46,28 @@ export const meta = {
     { name: 'aria-label', type: 'string', default: 'undefined', desc: '容器 aria-label（对齐 Semi aria-label）' },
     { name: 'children', type: 'Snippet', default: 'undefined', desc: '内嵌 <Steps.Step> 列表' },
   ],
-  // <Steps.Step> 子组件 props（对齐 Semi Steps.Step）。
+  // <Steps.Step> 子组件 props——实际生效字段集合按父 type 收窄（对齐 Semi
+  // BasicStepProps/FillStepProps/NavStepProps）：nav 型仅 title/class/style/role/
+  // aria-label/onClick/onKeyDown 生效，description/icon/status 不生效。
   stepProps: [
     { name: 'title', type: 'string | Snippet', default: 'undefined', desc: '步骤标题' },
-    { name: 'description', type: 'string | Snippet', default: 'undefined', desc: '步骤描述（次要信息）' },
+    {
+      name: 'description',
+      type: 'string | Snippet',
+      default: 'undefined',
+      desc: '步骤描述（次要信息）；仅 fill/basic 型生效，nav 型无此字段',
+    },
     {
       name: 'status',
       type: "'wait'|'process'|'finish'|'error'|'warning'",
       default: 'undefined',
-      desc: '显式覆盖该步状态；不传时由 current 推断',
+      desc: '显式覆盖该步状态；不传时由 current 推断；仅 fill/basic 型生效，nav 型无此字段',
     },
     {
       name: 'icon',
       type: 'string | Snippet',
       default: 'undefined',
-      desc: '该步自定义图标（字符串或 Snippet），替代默认序号/✓/✕/⚠（对齐 Semi Steps.Step.icon）',
+      desc: '该步自定义图标（字符串或 Snippet），替代默认序号/✓/✕/⚠；仅 fill/basic 型生效，nav 型无此字段',
     },
     { name: 'aria-label', type: 'string', default: 'undefined', desc: '该步 aria-label（对齐 Semi Steps.Step.aria-label）' },
     { name: 'role', type: 'string', default: 'undefined', desc: '该步 role（对齐 Semi Steps.Step.role）' },
@@ -77,23 +83,22 @@ export const meta = {
       name: 'onKeyDown',
       type: '(e: KeyboardEvent) => void',
       default: 'undefined',
-      desc: '该步键盘按下回调（对齐 Semi Steps.Step.onKeyDown）',
+      desc: '该步键盘按下回调（对齐 Semi Steps.Step.onKeyDown，仅 Enter 键触发）',
     },
   ],
   a11y: {
-    role: 'list',
-    keyboard: ['Tab', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End', 'Enter', 'Space'],
+    role: 'none',
+    keyboard: ['Tab', 'Enter'],
     notes: [
-      'ol/li 结构',
-      '可点击（fill/basic + onChange）时每步为原生 button，roving tabindex 单 Tab 停靠点',
-      '当前步 aria-current=step',
-      '图标 ✓/✕/⚠ 用 aria-hidden；状态靠视觉隐藏文本（.cd-sr-only）与 aria-current 表达（WCAG 1.4.1）',
-      '连接线 aria-hidden=true；nav 型外包 nav[aria-label]',
+      'div 结构（严格对齐 Semi，无 ol/li 列表语义、无 nav 地标包裹）',
+      '可点击（fill/basic + onChange）时每步 tabIndex=0 + onKeyDown 处理 Enter；非原生 button，不处理 Space（对齐 Semi）',
+      '每步固定 aria-current="step"（对齐 Semi，不区分是否为当前步）',
+      '连接线为纯装饰性伪元素（::after），不生成额外 DOM',
     ],
   },
-  // Component token 全量对齐 Semi steps/variables.scss（Color/Width/Height/Spacing/Radius/Font
-  // 六族，共 84 个）。组件直接消费这些 --cd-*-steps-*，无中间语义变量。
-  // 见 packages/tokens/src/components/steps.ts。
+  // Component token 全量对齐 Semi steps/variables.scss + animation.scss（Color/Width/
+  // Height/Spacing/Radius/Font/Transition/Transform 八族）。组件直接消费这些
+  // --cd-*-steps-*，无中间语义变量。见 packages/tokens/src/components/steps.ts。
   tokens: [
     // —— Color ——
     '--cd-color-steps-bg-active',
@@ -194,9 +199,18 @@ export const meta = {
     '--cd-font-steps-item-title-fontweight',
     '--cd-font-steps-nav-item-title-active-fontweight',
     '--cd-font-steps-nav-item-title-fontweight',
+    // —— Transition / Transform（对齐 Semi steps/animation.scss）——
+    '--cd-transition-duration-steps-item-title-text',
+    '--cd-transition-function-steps-item-title-text',
+    '--cd-transition-delay-steps-item-title-text',
+    '--cd-transition-duration-steps-item-title-icon',
+    '--cd-transition-function-steps-item-title-icon',
+    '--cd-transition-delay-steps-item-title-icon',
+    '--cd-transition-duration-steps-item-backgroundcolor',
+    '--cd-transition-function-steps-item-backgroundcolor',
+    '--cd-transition-delay-steps-item-backgroundcolor',
+    '--cd-transform-scale-step-item',
     // —— 全局/别名（结构性消费）——
-    '--cd-focus-ring',
-    '--cd-border-radius-small',
     '--cd-spacing-base',
     '--cd-font-size-small',
   ],

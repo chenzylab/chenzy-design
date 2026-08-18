@@ -105,11 +105,11 @@ import { Steps } from '@chenzy-design/svelte';
 | --- | --- | --- | --- |
 | class | 类名 | string | - |
 | current | 指定当前步骤，从 0 开始记数。在子 Step 元素中，可以通过 `status` 属性覆盖状态 | number | 0 |
-| direction | 指定步骤条方向，支持水平（`horizontal`）和竖直（`vertical`） | string | horizontal |
-| hasLine | 步骤条类型为 basic 时，可控制是否显示连接线 | boolean | true |
+| direction | 指定步骤条方向，支持水平（`horizontal`）和竖直（`vertical`）；`nav` 型无此参数 | string | horizontal |
+| hasLine | 步骤条类型为 basic 时，可控制是否显示连接线；`fill`/`nav` 型无此参数 | boolean | true |
 | initial | 起始序号，从 0 开始记数 | number | 0 |
-| status | 指定当前步骤的状态，可选 `wait`、`process`、`finish`、`error`、`warning` | string | process |
-| size | 对于简单步骤条和导航步骤条，可选尺寸，值为 `small`、`default` | string | `default` |
+| status | 指定当前步骤的状态，可选 `wait`、`process`、`finish`、`error`、`warning`；`nav` 型无此参数 | string | process |
+| size | 可选尺寸，值为 `small`、`default`；`basic`/`nav` 型生效，`fill` 型无此参数 | string | `default` |
 | style | 样式 | string | - |
 | type | 步骤条类型，可选 `fill`、`basic`、`nav` | string | fill |
 | onChange | 改变步骤条的回调 | `(index: number) => void` | - |
@@ -122,21 +122,22 @@ import { Steps } from '@chenzy-design/svelte';
 | --- | --- | --- | --- |
 | aria-label | 容器 aria-label | string | - |
 | class | 类名 | string | - |
-| description | 步骤的详情描述，可选 | string \| Snippet | - |
-| icon | 步骤图标的类型，可选 | string \| Snippet | - |
+| description | 步骤的详情描述，可选；仅 `fill`/`basic` 型生效，`nav` 型不支持此参数 | string \| Snippet | - |
+| icon | 步骤图标的类型，可选；仅 `fill`/`basic` 型生效，`nav` 型不支持此参数 | string \| Snippet | - |
 | role | 容器 role | string | - |
-| status | 指定状态。不配置时会使用 Steps 的 `current` 自动指定状态。可选：`wait`、`process`、`finish`、`error`、`warning` | string | wait |
+| status | 指定状态。不配置时会使用 Steps 的 `current` 自动指定状态。可选：`wait`、`process`、`finish`、`error`、`warning`；仅 `fill`/`basic` 型生效，`nav` 型不支持此参数 | string | wait |
 | style | 样式 | string | - |
 | title | 标题 | string \| Snippet | - |
 | onClick | 点击回调 | function | - |
-| onKeyDown | 回车事件回调 | function | - |
+| onKeyDown | 回车事件回调（仅 Enter 键触发） | function | - |
 
 ## 无障碍
 
 ### ARIA
 
 - Steps、Step 组件支持传入 `aria-label` 属性，来表示 Steps 和 Step 的描述。
-- Step 组件具有 `aria-current="step"` 属性，表示这是步骤条内的一步。
+- Step 组件固定具有 `aria-current="step"` 属性（不区分是否为当前步，对齐 Semi）。
+- 可点击（`fill`/`basic` 型 + `onChange`）时每步 `tabIndex=0`，通过 `Enter` 键触发切换（对齐 Semi，非原生按钮语义，不处理 `Space` 键）。
 
 ## 文案规范
 
