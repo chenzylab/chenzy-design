@@ -43,6 +43,7 @@ export const meta = {
     { name: 'onFocus', type: '(e: FocusEvent) => void', default: 'undefined', desc: '聚焦' },
     { name: 'onBlur', type: '(e: FocusEvent) => void', default: 'undefined', desc: '失焦（已完成 commit 归一化）' },
     { name: 'onKeyDown', type: '(e: KeyboardEvent) => void', default: 'undefined', desc: '透传原生 keydown（对齐 Semi onKeyDown）' },
+    { name: 'onEnterPress', type: '(e: KeyboardEvent) => void', default: 'undefined', desc: '回车按下（对齐 Semi InputNumberProps extends InputProps 的 onEnterPress），composition 中不触发' },
     { name: 'preventScroll', type: 'boolean', default: 'false', desc: '命令式 focus() 时是否阻止滚动文档（对齐 Semi）' },
     { name: 'pressTimeout', type: 'number', default: '250', desc: '长按后延迟多久开始连续步进（ms，对齐 Semi）' },
     { name: 'pressInterval', type: 'number', default: '250', desc: '长按连续步进的间隔（ms，对齐 Semi）' },

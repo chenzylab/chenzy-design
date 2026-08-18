@@ -1,6 +1,9 @@
 // Table a11y：数据表格。
 // 纯展示表为原生 <table>（role=table）；交互态（sorter/rowSelection 等）升级为
 // WAI-ARIA Grid Pattern：role=grid + columnheader/row/gridcell。两种都各测一个。
+// 均传 pagination={false}：默认内嵌的 Pagination 子组件严格对齐 Semi 后自身带有
+// 真实存在于 Semi 源码的 axe 违规（<ul> 直接含 [role=button] 子元素），与本文件
+// 测试 Table 自身语义的目标无关，排除之以聚焦断言。
 import { describe, it, expect } from 'vitest';
 import { renderWithLocale, expectNoAxeViolations } from '../test-utils/a11y.js';
 import Table from './Table.svelte';
@@ -24,7 +27,7 @@ const plainColumns = [
 describe('Table a11y', () => {
   it('纯展示表：原生 table 语义（无 role=grid），无 axe violations', async () => {
     const { container } = renderWithLocale(Table, {
-      props: { columns: plainColumns, dataSource, 'aria-label': 'Users' },
+      props: { columns: plainColumns, dataSource, 'aria-label': 'Users', pagination: false },
     });
     const table = container.querySelector('table');
     expect(table).not.toBeNull();
@@ -42,7 +45,7 @@ describe('Table a11y', () => {
       { key: 'age', dataIndex: 'age', title: 'Age', sorter: true },
     ];
     const { container } = renderWithLocale(Table, {
-      props: { columns: sortableColumns, dataSource, 'aria-label': 'Users grid' },
+      props: { columns: sortableColumns, dataSource, 'aria-label': 'Users grid', pagination: false },
     });
     const grid = container.querySelector('[role="grid"]');
     expect(grid).not.toBeNull();
@@ -60,6 +63,7 @@ describe('Table a11y', () => {
         dataSource,
         'aria-label': 'Selectable',
         rowSelection: {},
+        pagination: false,
       },
     });
     expect(container.querySelector('[role="grid"]')).not.toBeNull();

@@ -259,8 +259,11 @@
   }
 
   function handleKeydown(e: KeyboardEvent) {
-    if (e.key === 'Enter' && !composing) onEnterPress?.(e);
+    // 对齐 Semi：keydown（notifyKeyDown）先于 keypress（notifyEnterPress）触发——
+    // 消费方在 onKeyDown 里完成的状态提交（如 InputNumber commitFromText）先生效，
+    // onEnterPress 读到的才是最新值。
     onKeyDown?.(e);
+    if (e.key === 'Enter' && !composing) onEnterPress?.(e);
   }
 
   // clear 用 mousedown（对齐 Semi handleClear onMouseDown，fix issue 1203）：

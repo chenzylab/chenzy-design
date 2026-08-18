@@ -106,8 +106,8 @@ describe('Select 键盘 e2e（aria-activedescendant 浮层导航）', () => {
 
     const code = document.querySelector('[data-testid="code"]') as HTMLElement;
     expect(code.textContent).toBe('zh_CN');
-    // 中文语言包下 Pagination 的 showTotal 文案
-    expect(document.body.textContent).toContain('共');
+    // 中文语言包下 Pagination 的 showTotal 文案（对齐 Semi「总页数：{total}」）
+    expect(document.body.textContent).toContain('总页数');
 
     const combobox = document.querySelector('[role="combobox"]') as HTMLElement;
     await userEvent.click(combobox);
@@ -117,8 +117,8 @@ describe('Select 键盘 e2e（aria-activedescendant 浮层导航）', () => {
     await userEvent.click(en);
 
     expect(code.textContent).toBe('en_US');
-    // 切到英文后 Pagination 文案应变成英文（证明 Provider 子树真的重渲染）
-    expect(document.body.textContent).toContain('pages in total');
+    // 切到英文后 Pagination 文案应变成英文（证明 Provider 子树真的重渲染；对齐 Semi「Total pages: {total}」）
+    expect(document.body.textContent).toContain('Total pages');
   });
 
   // prefix 传字符串（对齐 Semi ReactNode）时正常渲染，不影响触发器点击。

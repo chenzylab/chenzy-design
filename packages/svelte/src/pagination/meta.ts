@@ -18,8 +18,8 @@ export const meta = {
     { name: 'onPageChange', type: '(currentPage: number) => void', default: 'undefined', desc: '仅页码变化回调（对齐 Semi）' },
     { name: 'onPageSizeChange', type: '(newPageSize: number) => void', default: 'undefined', desc: '每页容量变化回调（对齐 Semi）' },
     { name: 'onChange', type: '(currentPage: number, pageSize: number) => void', default: 'undefined', desc: '页码或每页容量变化回调（对齐 Semi）' },
-    { name: 'prevText', type: 'string | Snippet', default: 'undefined', desc: '上一页内容；缺省显示 ‹（对齐 Semi prevText）' },
-    { name: 'nextText', type: 'string | Snippet', default: 'undefined', desc: '下一页内容；缺省显示 ›（对齐 Semi nextText）' },
+    { name: 'prevText', type: 'string | Snippet', default: 'undefined', desc: '上一页内容；缺省显示 IconChevronLeft（对齐 Semi prevText）' },
+    { name: 'nextText', type: 'string | Snippet', default: 'undefined', desc: '下一页内容；缺省显示 IconChevronRight（对齐 Semi nextText）' },
     { name: 'showSizeChanger', type: 'boolean', default: 'false', desc: '显示每页条数选择器；size=small 时不生效（对齐 Semi）' },
     { name: 'showQuickJumper', type: 'boolean', default: 'false', desc: '显示快速跳页输入（越界静默钳制，非数字忽略；对齐 Semi）' },
     { name: 'popoverZIndex', type: 'number', default: '1030', desc: '浮层 z-index（对齐 Semi），透传 Select/Popover' },
@@ -32,13 +32,13 @@ export const meta = {
     { name: 'preventPageChangeOnPageSizeChange', type: 'boolean', default: 'false', desc: '切换 pageSize 时阻止自动调整 currentPage（对齐 Semi）' },
   ],
   a11y: {
-    role: 'navigation',
-    keyboard: ['Tab', 'Enter', 'Space', 'ArrowLeft', 'ArrowRight', 'Home', 'End'],
+    role: 'list',
+    keyboard: [],
     notes: [
-      'nav[aria-label] 包裹；页码列表 ul/li，页码为 li 内 <button>，当前页 aria-current=page',
-      '页码组 roving tabindex：仅当前/聚焦页 tabindex=0，方向键漫游移动焦点不切页，Enter/Space 切页',
-      '上一页/下一页在边界原生 disabled 且移出 Tab 序列',
-      '省略号可 hover 弹出隐藏页码（disabled 时降级为 aria-hidden 静态 …）',
+      '严格对齐 Semi：根节点 <ul>（default）/ <div>（small），无 nav 地标；页码/上一页/下一页为 li[role=button]',
+      '硬编码英文 aria-label（"Previous"/"Next"/"Page size selector"/"Page X"/"More"），不走 locale；当前页 aria-current=page',
+      '无 roving tabindex、无键盘导航（Semi handleKeyDown 为空实现，页码仅可鼠标点击）',
+      '省略号可 hover 弹出隐藏页码',
     ],
   },
   tokens: [
@@ -84,11 +84,9 @@ export const meta = {
     '--cd-font-pagination-item-fontweight',
     '--cd-font-pagination-item-active-fontweight',
     '--cd-font-pagination-quickjump-fontweight',
-    // 直引 alias / global（Semi 无对应组件 token）
-    '--cd-focus-ring',
-    '--cd-spacing-tight',
+    // 直引 alias / global（Semi scss 用字面量 transition，本库走 motion token；无对应组件 token）
     '--cd-motion-duration-fast',
     '--cd-motion-ease-standard',
-    // 每页条数下拉复用 Select（--cd-select-*）；hover 弹层复用 Popover
+    // 每页条数下拉复用 Select（--cd-select-*）；hover 弹层复用 Popover；跳页输入复用 InputNumber
   ],
 } as const;
