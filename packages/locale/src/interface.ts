@@ -37,26 +37,14 @@ export interface Locale {
     /** over-limit live announcement, uses {over} */
     overLimitAnnounce: string;
   };
+  /** 严格对齐 Semi locale：仅 4 个 key（Semi Pagination 的 aria-label 等均为硬编码英文，不走 locale）。 */
   Pagination: {
-    /** uses {total} placeholder */
-    total: string;
-    ariaLabel: string;
-    prevPage: string;
-    nextPage: string;
-    /** uses {page} */
-    pageLabel: string;
     /** uses {size} */
     pageSize: string;
-    /** showSizeChanger 内置 Select 的可访问名 */
-    itemsPerPage: string;
+    /** uses {total} placeholder */
+    total: string;
     jumpTo: string;
     page: string;
-    /** 省略号项的可访问名（对齐 Semi aria-label="More"） */
-    more: string;
-    /** live-region 翻页播报，uses {page} and {count} */
-    pageChangeAnnounce: string;
-    /** live-region 每页条数变更播报，uses {size} and {page} */
-    pageSizeChangeAnnounce: string;
   };
   Table: {
     emptyText: string;

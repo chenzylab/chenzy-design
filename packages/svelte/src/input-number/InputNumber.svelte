@@ -83,6 +83,8 @@
     onBlur?: (e: FocusEvent) => void;
     /** 透传原生 keydown（对齐 Semi onKeyDown）。 */
     onKeyDown?: (e: KeyboardEvent) => void;
+    /** 回车按下（对齐 Semi InputNumberProps extends InputProps 的 onEnterPress）。composition 中不触发。 */
+    onEnterPress?: (e: KeyboardEvent) => void;
     /** 点击「+」按钮回调（对齐 Semi onUpClick，携带步进后值与鼠标事件）。 */
     onUpClick?: (value: number | null, e: MouseEvent) => void;
     /** 点击「-」按钮回调（对齐 Semi onDownClick，携带步进后值与鼠标事件）。 */
@@ -160,6 +162,7 @@
     onFocus,
     onBlur,
     onKeyDown,
+    onEnterPress,
     onUpClick,
     onDownClick,
     borderless = false,
@@ -555,6 +558,7 @@
     onChange={handleInputChange}
     onClear={handleClear}
     onKeyDown={handleKeydown}
+    {...onEnterPress !== undefined ? { onEnterPress } : {}}
     onFocus={handleFocus}
     onBlur={handleBlur}
     {affixIsIcon}

@@ -127,6 +127,10 @@ import { Pagination } from '@chenzy-design/svelte';
 
 ### ARIA
 
-- 根容器 `<nav aria-label>`，页码列表使用 `<ul>` / `<li>`，当前页加 `aria-current="page"`。
-- 「上一页」/「下一页」为 `<button>`，边界态加 `aria-disabled` + `disabled`；省略号项 `aria-hidden="true"`。
-- 键盘：`←` / `→` 在页码项间移动焦点，`Home` / `End` 跳首 / 末，`Enter` / `Space` 激活翻页。
+- `aria-label`：描述组件内页码、前一页、后一页等元素的标签。
+- `aria-current`：指向当前页的页码元素。
+
+## FAQ
+
+- **为什么 `hoverShowPageSelect` / 省略号弹层最多只展示 1,000,000 条页码？**
+  因为创建列表时，浏览器对 `Array.from()` 创建数组的大小存在限制；同时为了兼顾开销，设定了 `1,000,000` 这个阈值。

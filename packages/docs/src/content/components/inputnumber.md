@@ -149,6 +149,7 @@ import { InputNumber } from '@chenzy-design/svelte';
 | onBlur | 失去焦点时的回调 | `(e: FocusEvent) => void` | - | |
 | onChange | 变化回调 | `(value: number \| string \| null, e?: Event) => void` | - | |
 | onDownClick | 点击「-」按钮回调 | `(value: number \| null, e: MouseEvent) => void` | - | |
+| onEnterPress | 回车按下回调（composition 中不触发） | `(e: KeyboardEvent) => void` | - | |
 | onFocus | 获得焦点时的回调 | `(e: FocusEvent) => void` | - | |
 | onNumberChange | 数字变化回调 | `(value: number \| null, e?: Event) => void` | - | |
 | onUpClick | 点击「+」按钮回调 | `(value: number \| null, e: MouseEvent) => void` | - | |

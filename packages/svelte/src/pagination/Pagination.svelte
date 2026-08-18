@@ -5,9 +5,11 @@
   页码折叠严格镜像 Semi `_updatePageList`（core semiPageList 纯函数）；越界钳制、
   快速跳页解析走 @chenzy-design/core。省略号 hover 弹出隐藏页码列表（对齐 Semi Popover）。
   受控 currentPage/pageSize 永不回写，仅经回调上报（红线 #1）。
-  文案走 locale-provider 上下文；页码为原始数字（对齐 Semi，不做 Intl 本地化）。
-  a11y：nav[aria-label] 包裹；页码 li 内 <button> + roving tabindex + 方向键漫游，
-  当前页 aria-current=page；省略号 aria-hidden。
+  文案走 locale-provider 上下文（仅 Semi 4 个 key：pageSize/total/jumpTo/page）；
+  页码为原始数字（对齐 Semi，不做 Intl 本地化）。
+  a11y 严格对齐 Semi：<li role="button" aria-disabled>，硬编码英文 aria-label
+  （"Previous"/"Next"/"Page size selector"/"Page X"/"More"），无 roving tabindex、
+  无 LiveAnnouncer、无键盘导航（Semi handleKeyDown 为空实现）。
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
@@ -17,14 +19,12 @@
     clampPageSize,
     parseJumpInput,
     semiPageList,
-    nextRovingIndex,
-    rovingKeyFromEvent,
-    useLiveAnnouncer,
   } from '@chenzy-design/core';
   import { useLocale } from '../locale-provider/index.js';
   import { Select } from '../select/index.js';
-  import { Input } from '../input/index.js';
+  import { InputNumber } from '../input-number/index.js';
   import { Popover } from '../popover/index.js';
+  import { IconChevronLeft, IconChevronRight } from '@chenzy-design/icons';
 
   // 对齐 Semi popoverPosition（PopoverPosition = Position，透传 Popover/Select position）
   type PopoverPosition =
@@ -115,8 +115,6 @@
   }: Props = $props();
 
   const loc = useLocale();
-  // 单例 live region（polite）：翻页 / pageSize 变更播报给屏幕阅读器。命令式写入在事件回调里。
-  const announcer = useLiveAnnouncer();
 
   const isSmall = $derived(size === 'small');
   // small 模式下 showSizeChanger 不生效（对齐 Semi）
@@ -183,9 +181,6 @@
     if (!isControlled && nextPage !== inner) inner = nextPage;
     if (nextPage !== prevPage) onPageChange?.(nextPage);
     onChange?.(nextPage, nextSize);
-    announcer.announce(
-      loc().t('Pagination.pageSizeChangeAnnounce', { size: nextSize, page: nextPage }),
-    );
   }
 
   // 快速跳页：解析输入，越界静默钳入 [1, pageCount]；非数字/空输入忽略。
@@ -262,100 +257,82 @@
     if (!isControlled) inner = next;
     onPageChange?.(next);
     onChange?.(next, currentSize);
-    announcer.announce(
-      loc().t('Pagination.pageChangeAnnounce', { page: next, count: pageCount }),
-    );
   }
 
   // showTotal 显示总页数（对齐 Semi：Math.ceil(total/pageSize)）。
   const totalText = $derived(loc().t('Pagination.total', { total: pageCount }));
-
-  // --- roving tabindex（页码 button，红线 #2/#3）---
-  const pageValues = $derived(
-    pageData.pageList.filter((c): c is number => typeof c === 'number'),
-  );
-  let listEl = $state<HTMLElement | null>(null);
-  let focusedPage = $state<number | null>(null);
-
-  function pageTabindex(value: number): 0 | -1 {
-    const stop = focusedPage ?? current;
-    return value === stop ? 0 : -1;
-  }
-
-  function onPageKeydown(e: KeyboardEvent, value: number) {
-    const intent = rovingKeyFromEvent(e.key);
-    if (!intent) return;
-    e.preventDefault();
-    const vals = pageValues;
-    const idx = vals.indexOf(value);
-    const nextIdx = nextRovingIndex(idx, vals.length, intent, false);
-    const nextVal = vals[nextIdx];
-    if (nextVal !== undefined) {
-      focusedPage = nextVal;
-      listEl?.querySelector<HTMLElement>(`[data-page="${nextVal}"]`)?.focus();
-    }
-  }
 </script>
 
 {#snippet prevBtn()}
-  <li class="cd-page-item-wrap">
-    <button
-      type="button"
-      class="cd-page-item cd-page-prev"
-      disabled={disabled || isFirst}
-      aria-label={loc().t('Pagination.prevPage')}
-      onclick={() => goto(current - 1)}
-    >{#if prevText}{#if typeof prevText === 'function'}{@render prevText()}{:else}{prevText}{/if}{:else}‹{/if}</button>
-  </li>
+  <li
+    role="button"
+    aria-disabled={disabled || isFirst}
+    aria-label="Previous"
+    class="cd-page-item cd-page-prev"
+    class:cd-page-item-disabled={disabled || isFirst}
+    onclick={() => !(disabled || isFirst) && goto(current - 1)}
+  >{#if prevText}{#if typeof prevText === 'function'}{@render prevText()}{:else}{prevText}{/if}{:else}<IconChevronLeft size="large" />{/if}</li>
 {/snippet}
 
 {#snippet nextBtn()}
-  <li class="cd-page-item-wrap">
-    <button
-      type="button"
-      class="cd-page-item cd-page-next"
-      disabled={disabled || isLast}
-      aria-label={loc().t('Pagination.nextPage')}
-      onclick={() => goto(current + 1)}
-    >{#if nextText}{#if typeof nextText === 'function'}{@render nextText()}{:else}{nextText}{/if}{:else}›{/if}</button>
-  </li>
+  <li
+    role="button"
+    aria-disabled={disabled || isLast}
+    aria-label="Next"
+    class="cd-page-item cd-page-next"
+    class:cd-page-item-disabled={disabled || isLast}
+    onclick={() => !(disabled || isLast) && goto(current + 1)}
+  >{#if nextText}{#if typeof nextText === 'function'}{@render nextText()}{:else}{nextText}{/if}{:else}<IconChevronRight size="large" />{/if}</li>
+{/snippet}
+
+{#snippet pageSizeSwitch()}
+  {#if effectiveShowSizeChanger}
+    <div class="cd-page-switch">
+      <Select
+        {size}
+        {disabled}
+        clickToHide
+        aria-label="Page size selector"
+        position={sizeChangerPlacement}
+        dropdownClassName="cd-page-select-dropdown"
+        optionList={sizeOptions}
+        value={currentSize}
+        zIndex={popoverZIndex}
+        onChange={(v) => changePageSize(Number(v))}
+      />
+    </div>
+  {/if}
 {/snippet}
 
 {#snippet quickJumper()}
   {#if showQuickJumper}
-    <span
+    <div
       class="cd-page-quickjump"
       class:cd-page-quickjump-disabled={disabled || pageCount === 1}
     >
-      <span class="cd-page-quickjump-label">{loc().t('Pagination.jumpTo')}</span>
-      <span class="cd-page-quickjump-input">
-        <Input
-          {size}
-          disabled={disabled || pageCount === 1}
-          aria-label={loc().t('Pagination.jumpTo')}
-          value={jumpValue}
-          onInput={(v) => (jumpValue = v)}
-          onEnterPress={jump}
-        />
-      </span>
-      {#if loc().t('Pagination.page')}
-        <span class="cd-page-quickjump-suffix">{loc().t('Pagination.page')}</span>
-      {/if}
-    </span>
+      <span>{loc().t('Pagination.jumpTo')}</span>
+      <InputNumber
+        class="cd-page-quickjump-input-number"
+        value={jumpValue === '' ? null : Number(jumpValue)}
+        hideButtons
+        disabled={disabled || pageCount === 1}
+        onBlur={jump}
+        onEnterPress={jump}
+        onChange={(v) => (jumpValue = v == null ? '' : String(v))}
+      />
+      <span>{loc().t('Pagination.page')}</span>
+    </div>
   {/if}
 {/snippet}
 
 {#snippet restList(nums: number[])}
-  <div class="cd-page-rest-list" role="listbox" aria-label={loc().t('Pagination.ariaLabel')}>
+  <div class="cd-page-rest-list">
     {#each nums as n (n)}
       <div
+        role="listitem"
         class="cd-page-rest-item"
-        role="option"
-        aria-selected={n === current}
-        aria-label={loc().t('Pagination.pageLabel', { page: n })}
+        aria-label={`${n}`}
         onclick={() => goto(n)}
-        onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), goto(n))}
-        tabindex="-1"
       >{n}</div>
     {/each}
   </div>
@@ -363,113 +340,73 @@
 
 {#if !hidden}
   {#if isSmall}
-    <nav class={cls} {style} aria-label={loc().t('Pagination.ariaLabel')}>
-      <ul class="cd-page-list" bind:this={listEl}>
-        {@render prevBtn()}
-        {#if hoverShowPageSelect && !disabled}
-          <!-- Popover 渲染为 span，须包在 <li> 内保持 <ul> 合法子；触发器内容用 span（非 li）。 -->
-          <li class="cd-page-item-wrap">
-            <Popover position={popoverSide} trigger="hover" showArrow={false} zIndex={popoverZIndex}>
-              {#snippet content()}{@render restList(allPageNumbers)}{/snippet}
-              <span class="cd-page-item cd-page-item-small">
-                {current}/{pageCount}
-              </span>
-            </Popover>
-          </li>
-        {:else}
-          <li class="cd-page-item-wrap">
-            <span class="cd-page-item cd-page-item-small">
-              {current}/{pageCount}
-            </span>
-          </li>
-        {/if}
-        {@render nextBtn()}
-      </ul>
+    <div class={cls} {style}>
+      {@render prevBtn()}
+      {#if hoverShowPageSelect && !disabled}
+        <Popover position={popoverSide} trigger="hover" showArrow={false} zIndex={popoverZIndex}>
+          {#snippet content()}{@render restList(allPageNumbers)}{/snippet}
+          <div class="cd-page-item cd-page-item-small">{current}/{pageCount} </div>
+        </Popover>
+      {:else}
+        <div class="cd-page-item cd-page-item-small">{current}/{pageCount} </div>
+      {/if}
+      {@render nextBtn()}
       {@render quickJumper()}
-    </nav>
+    </div>
   {:else}
-    <nav class={cls} {style} aria-label={loc().t('Pagination.ariaLabel')}>
+    <ul class={cls} {style}>
       {#if showTotal}
         <span class="cd-page-total">{totalText}</span>
       {/if}
-
-      <ul class="cd-page-list" bind:this={listEl}>
-        {@render prevBtn()}
-        {#each pageData.pageList as cell, i (typeof cell === 'number' ? `p-${cell}` : `e-${i}`)}
-          {#if cell === '...'}
-            {#if disabled}
-              <li class="cd-page-item-wrap" aria-hidden="true">
-                <span class="cd-page-item cd-page-item-rest">…</span>
-              </li>
-            {:else}
-              <!-- 省略号 hover 弹出隐藏页码列表（对齐 Semi renderRestPageList）：
-                   i<3 用左侧隐藏页，否则右侧隐藏页。 -->
-              <li class="cd-page-item-wrap">
-                <Popover
-                  position={popoverPosition.startsWith('top') ? 'top' : 'bottom'}
-                  trigger="hover"
-                  showArrow={false}
-                  zIndex={popoverZIndex}
-                >
-                  {#snippet content()}{@render restList(i < 3 ? pageData.restLeft : pageData.restRight)}{/snippet}
-                  <span
-                    class="cd-page-item cd-page-item-rest"
-                    aria-label={loc().t('Pagination.more')}
-                  >…</span>
-                </Popover>
-              </li>
-            {/if}
+      {@render prevBtn()}
+      {#each pageData.pageList as cell, i (typeof cell === 'number' ? `p-${cell}` : `e-${i}`)}
+        {#if cell === '...'}
+          {#if disabled}
+            <li aria-label="More" aria-current={false} class="cd-page-item">…</li>
           {:else}
-            <li class="cd-page-item-wrap">
-              <button
-                type="button"
-                class="cd-page-item cd-page-item"
-                class:cd-page-item-active={cell === current}
-                aria-current={cell === current ? 'page' : undefined}
-                aria-label={loc().t('Pagination.pageLabel', { page: cell })}
-                data-page={cell}
-                {disabled}
-                tabindex={disabled ? -1 : pageTabindex(cell)}
-                onclick={() => goto(cell)}
-                onfocus={() => (focusedPage = cell)}
-                onkeydown={(e) => onPageKeydown(e, cell)}
-              >{cell}</button>
-            </li>
+            <!-- 省略号 hover 弹出隐藏页码列表（对齐 Semi renderRestPageList）：
+                 i<3 用左侧隐藏页，否则右侧隐藏页。 -->
+            <Popover
+              position={popoverPosition.startsWith('top') ? 'top' : 'bottom'}
+              trigger="hover"
+              showArrow={false}
+              zIndex={popoverZIndex}
+            >
+              {#snippet content()}{@render restList(i < 3 ? pageData.restLeft : pageData.restRight)}{/snippet}
+              <li aria-label="More" aria-current={false} class="cd-page-item">…</li>
+            </Popover>
           {/if}
-        {/each}
-        {@render nextBtn()}
-      </ul>
-
-      {#if effectiveShowSizeChanger}
-        <span
-          class="cd-page-switch"
-          style={popoverZIndex != null ? `--cd-select-dropdown-z:${popoverZIndex}` : undefined}
-        >
-          <Select
-            {size}
-            {disabled}
-            clickToHide
-            aria-label={loc().t('Pagination.itemsPerPage')}
-            position={sizeChangerPlacement}
-            optionList={sizeOptions}
-            value={currentSize}
-            onChange={(v) => changePageSize(Number(v))}
-          />
-        </span>
-      {/if}
-
+        {:else}
+          <li
+            class="cd-page-item"
+            class:cd-page-item-active={cell === current}
+            class:cd-page-item-all-disabled={disabled}
+            class:cd-page-item-all-disabled-active={cell === current && disabled}
+            aria-current={cell === current ? 'page' : false}
+            aria-label={`Page ${cell}`}
+            onclick={() => !disabled && goto(cell)}
+          >{cell}</li>
+        {/if}
+      {/each}
+      {@render nextBtn()}
+      {@render pageSizeSwitch()}
       {@render quickJumper()}
-    </nav>
+    </ul>
   {/if}
 {/if}
 
 <style>
   .cd-page {
     display: flex;
-    align-items: center;
+    list-style: none;
     padding: var(--cd-spacing-pagination-padding);
+    align-items: center;
+    margin-block: 0;
+  }
+  .cd-page-small {
+    font-weight: var(--cd-font-pagination-small-fontweight);
     color: var(--cd-color-pagination-text-default);
-    font-weight: var(--cd-font-pagination-item-fontweight);
+    padding: var(--cd-spacing-pagination-small-paddingy) var(--cd-spacing-pagination-small-paddingx);
   }
   .cd-page-disabled {
     cursor: not-allowed;
@@ -477,155 +414,142 @@
   .cd-page-disabled .cd-page-total {
     color: var(--cd-color-pagination-item-text-disabled);
   }
-  .cd-page-list {
-    display: flex;
-    align-items: center;
-    margin: 0;
-    padding: 0;
-    list-style: none;
-  }
-  .cd-page-item-wrap {
-    display: flex;
-    align-items: center;
-  }
   .cd-page-item {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-sizing: border-box;
     min-inline-size: var(--cd-width-pagination-item-minwidth);
+    border: var(--cd-width-pagination-item-border) solid var(--cd-color-pagination-item-border-default);
+    cursor: pointer;
+    user-select: none;
     block-size: var(--cd-height-pagination-item);
     margin-inline-start: var(--cd-spacing-pagination-item-marginleft);
     margin-inline-end: var(--cd-spacing-pagination-item-marginright);
-    padding-inline: var(--cd-spacing-tight);
-    border: var(--cd-width-pagination-item-border) solid var(--cd-color-pagination-item-border-default);
-    border-radius: var(--cd-radius-pagination-item);
-    background: var(--cd-color-pagination-item-bg-default);
-    color: var(--cd-color-pagination-item-text-default);
-    font: inherit;
     font-weight: var(--cd-font-pagination-item-fontweight);
+    color: var(--cd-color-pagination-item-text-default);
+    border-radius: var(--cd-radius-pagination-item);
     text-align: center;
-    cursor: pointer;
-    user-select: none;
+    line-height: var(--cd-height-pagination-item);
+    display: flex;
+    align-items: center;
+    justify-content: center;
     transition: background-color var(--cd-motion-duration-fast) var(--cd-motion-ease-standard),
       color var(--cd-motion-duration-fast) var(--cd-motion-ease-standard);
   }
-  .cd-page-item:hover:not(:disabled):not(.cd-page-item-disabled):not(.cd-page-item-active) {
-    background: var(--cd-color-pagination-item-bg-hover);
-    color: var(--cd-color-pagination-item-text-hover);
+  .cd-page-item:hover {
     border-color: var(--cd-color-pagination-item-border-hover);
+    background-color: var(--cd-color-pagination-item-bg-hover);
+    color: var(--cd-color-pagination-item-text-hover);
   }
-  .cd-page-item:active:not(:disabled):not(.cd-page-item-disabled):not(.cd-page-item-active) {
-    background: var(--cd-color-pagination-item-bg-active);
-    color: var(--cd-color-pagination-item-text-active);
+  .cd-page-item:active {
     border-color: var(--cd-color-pagination-item-border-active);
+    background-color: var(--cd-color-pagination-item-bg-active);
+    color: var(--cd-color-pagination-item-text-active);
   }
   .cd-page-item-active {
-    background: var(--cd-color-pagination-item-bg-selected);
-    color: var(--cd-color-pagination-item-text-selected);
     border-color: var(--cd-color-pagination-item-border-selected);
+    color: var(--cd-color-pagination-item-text-selected);
     font-weight: var(--cd-font-pagination-item-active-fontweight);
+    background-color: var(--cd-color-pagination-item-bg-selected);
   }
   .cd-page-item-active:hover {
-    background: var(--cd-color-pagination-item-bg-selected);
-    color: var(--cd-color-pagination-item-text-selected);
     border-color: var(--cd-color-pagination-item-border-selected);
+    color: var(--cd-color-pagination-item-text-selected);
+    background-color: var(--cd-color-pagination-item-bg-selected);
   }
-  .cd-page-item:focus-visible {
-    outline: none;
-    box-shadow: var(--cd-focus-ring);
-  }
-  /* prev/next 为图标态，消费 icon token（对齐 Semi $color-pagination_item-icon-*） */
-  .cd-page-prev,
-  .cd-page-next {
-    color: var(--cd-color-pagination-item-icon-default);
-  }
-  /* 禁用态：button 原生 :disabled（页码/prev/next）+ 整体禁用容器类。 */
-  .cd-page-item:disabled,
   .cd-page-item-disabled {
-    cursor: not-allowed;
-    color: var(--cd-color-pagination-item-text-disabled);
-    background: var(--cd-color-pagination-item-bg-disabled);
     border-color: var(--cd-color-pagination-item-border-disabled);
-  }
-  .cd-page-prev:disabled,
-  .cd-page-next:disabled {
-    color: var(--cd-color-pagination-item-icon-disabled);
-  }
-  /* 整体 disabled 时的当前页：选中禁用背景 + 禁用文字（对齐 Semi item-all-disabled-active） */
-  .cd-page-disabled .cd-page-item-active:disabled {
-    background: var(--cd-color-pagination-item-bg-selected-disabled);
     color: var(--cd-color-pagination-item-text-disabled);
+    background-color: var(--cd-color-pagination-item-bg-disabled);
+    cursor: not-allowed;
   }
-  .cd-page-item-rest {
-    cursor: default;
-  }
-  .cd-page-item-rest:hover {
-    background: var(--cd-color-pagination-item-bg-default);
-    color: var(--cd-color-pagination-item-text-default);
-  }
-  .cd-page-switch {
-    display: inline-flex;
-    user-select: none;
-  }
-  .cd-page-quickjump {
-    display: inline-flex;
-    align-items: center;
-    flex-shrink: 0;
-    margin-inline-start: var(--cd-spacing-pagination-quickjump-marginleft);
-    color: var(--cd-color-pagination-item-text-default);
-    font-weight: var(--cd-font-pagination-quickjump-fontweight);
-  }
-  .cd-page-quickjump-disabled {
-    color: var(--cd-color-pagination-quickjump-text-disabled);
-  }
-  .cd-page-quickjump-input {
-    inline-size: var(--cd-width-pagination-quickjump-input-width);
-    margin-inline-start: var(--cd-spacing-pagination-quickjump-input-marginleft);
-    margin-inline-end: var(--cd-spacing-pagination-quickjump-input-marginright);
-  }
-  /* small 布局：字重走 small token（对齐 Semi page-small），字号仍为正文字号。 */
-  .cd-page-small {
-    font-weight: var(--cd-font-pagination-small-fontweight);
-    padding: var(--cd-spacing-pagination-small-paddingy) var(--cd-spacing-pagination-small-paddingx);
+  .cd-page-item-disabled:hover {
+    background-color: transparent;
   }
   .cd-page-item-small {
     min-inline-size: var(--cd-width-pagination-item-small-minwidth);
     margin: var(--cd-spacing-pagination-item-small-margin);
   }
-  /* hover 弹层列表：白卡片 + 圆角 + 阴影由 Popover 提供，页码列表居中于卡片内。
+  .cd-page-item-all-disabled {
+    border-color: var(--cd-color-pagination-item-border-disabled);
+    color: var(--cd-color-pagination-item-text-disabled);
+    background-color: var(--cd-color-pagination-item-bg-disabled);
+    cursor: not-allowed;
+  }
+  .cd-page-item-all-disabled:hover {
+    background-color: transparent;
+    color: var(--cd-color-pagination-item-text-disabled);
+  }
+  .cd-page-item-all-disabled-active {
+    background-color: var(--cd-color-pagination-item-bg-selected-disabled);
+    font-weight: var(--cd-font-pagination-item-active-fontweight);
+  }
+  .cd-page-item-all-disabled-active:hover {
+    background-color: var(--cd-color-pagination-item-bg-selected-disabled);
+  }
+  .cd-page-total {
+    color: var(--cd-color-pagination-text-default);
+  }
+  .cd-page-prev,
+  .cd-page-next {
+    color: var(--cd-color-pagination-item-icon-default);
+    cursor: pointer;
+  }
+  .cd-page-prev.cd-page-item-disabled,
+  .cd-page-next.cd-page-item-disabled {
+    color: var(--cd-color-pagination-item-icon-disabled);
+    cursor: not-allowed;
+  }
+  .cd-page-quickjump {
+    margin-inline-start: var(--cd-spacing-pagination-quickjump-marginleft);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    color: var(--cd-color-pagination-item-text-default);
+    font-weight: var(--cd-font-pagination-quickjump-fontweight);
+  }
+  .cd-page-quickjump :global(.cd-page-quickjump-input-number) {
+    max-inline-size: var(--cd-width-pagination-quickjump-input-width);
+    margin-inline-start: var(--cd-spacing-pagination-quickjump-input-marginleft);
+    margin-inline-end: var(--cd-spacing-pagination-quickjump-input-marginright);
+  }
+  .cd-page-quickjump-disabled {
+    color: var(--cd-color-pagination-quickjump-text-disabled);
+  }
+  .cd-page-switch {
+    user-select: none;
+  }
+  /* hover 弹层列表：Popover 提供白卡片 + 圆角 + 阴影，页码列表居中于卡片内。
+     固定宽度 78px（对齐 Semi renderRestPageList 的 react-window width={78}）；
      超过 5 项纵向滚动（对齐 Semi rest-list itemHeight*5）。 */
   .cd-page-rest-list {
-    min-inline-size: 2.5rem;
-    max-block-size: calc(var(--cd-height-pagination-item) * 5);
+    inline-size: 78px;
     padding-block-start: var(--cd-spacing-pagination-reset-list-paddingtop);
     padding-block-end: var(--cd-spacing-pagination-reset-list-paddingbottom);
+    max-block-size: calc(var(--cd-height-pagination-item) * 5);
     overflow-y: auto;
   }
   .cd-page-rest-item {
+    block-size: var(--cd-height-pagination-item);
+    line-height: var(--cd-height-pagination-item);
     display: flex;
-    align-items: center;
     justify-content: center;
     box-sizing: border-box;
-    block-size: var(--cd-height-pagination-item);
-    color: var(--cd-color-pagination-item-text-default);
     cursor: pointer;
   }
   .cd-page-rest-item:hover {
-    background: var(--cd-color-pagination-item-bg-hover);
-    color: var(--cd-color-pagination-item-text-hover);
+    background-color: var(--cd-color-pagination-item-bg-hover);
   }
   .cd-page-rest-item:active {
-    background: var(--cd-color-pagination-item-bg-active);
-    color: var(--cd-color-pagination-item-text-active);
-  }
-  .cd-page-rest-item[aria-selected='true'] {
-    color: var(--cd-color-pagination-item-text-selected);
-    font-weight: var(--cd-font-pagination-item-active-fontweight);
+    background-color: var(--cd-color-pagination-item-bg-active);
   }
   @media (prefers-reduced-motion: reduce) {
     .cd-page-item {
       transition: none;
     }
+  }
+  /* RTL（对齐 Semi pagination/rtl.scss）：margin 由 margin-inline-start/end 逻辑属性自动镜像；
+     prev/next 图标额外水平翻转。 */
+  :global(.cd-rtl) .cd-page-prev,
+  :global(.cd-rtl) .cd-page-next {
+    transform: scaleX(-1);
   }
 </style>

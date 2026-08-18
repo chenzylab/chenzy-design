@@ -218,11 +218,12 @@
   }
 
   function handleKeydown(e: KeyboardEvent) {
+    // 对齐 Semi：keydown（notifyKeyDown）先于 keypress（notifyEnterPress）触发。
+    onKeyDown?.(e);
     if (e.key === 'Enter' && !composing) {
       onEnterPress?.(e);
       onPressEnter?.(e);
     }
-    onKeyDown?.(e);
   }
 
   // clear 用 onclick（对齐 Semi textarea handleClear onClick）：textarea clearbtn 始终渲染、
