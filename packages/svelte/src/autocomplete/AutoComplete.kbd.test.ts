@@ -40,10 +40,18 @@ describe('AutoComplete 键盘 e2e（combobox aria-activedescendant 浮层导航�
     expect(combobox.getAttribute('aria-activedescendant')).toBe(`${listId}-opt-0`);
 
     // 2. ↓ 移到 opt-1，↑ 回 opt-0。
+    // activedescendant 由按键触发的响应式状态更新写入 DOM，跨一次渲染周期；CI 共享
+    // runner 资源紧张时这个延迟会被放大，裸同步断言曾在 CI 上偶发读到更新前的旧值
+    // （本地资源宽裕下几乎瞬间完成，不会复现）。改用 vi.waitFor 轮询，对齐上方
+    // listbox 打开/下方面板隐藏断言已用的等待模式。
     await userEvent.keyboard('{ArrowDown}');
-    expect(combobox.getAttribute('aria-activedescendant')).toBe(`${listId}-opt-1`);
+    await vi.waitFor(() => {
+      expect(combobox.getAttribute('aria-activedescendant')).toBe(`${listId}-opt-1`);
+    });
     await userEvent.keyboard('{ArrowUp}');
-    expect(combobox.getAttribute('aria-activedescendant')).toBe(`${listId}-opt-0`);
+    await vi.waitFor(() => {
+      expect(combobox.getAttribute('aria-activedescendant')).toBe(`${listId}-opt-0`);
+    });
 
     // 3. Enter 选中当前高亮（opt-0 = Apple），onSelect 写入夹具；浮层关闭。
     // 补齐进出场动画后，面板关闭时先保留 DOM 播放退场动画，animationend 后才真正
