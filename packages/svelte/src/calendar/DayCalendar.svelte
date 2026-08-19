@@ -7,11 +7,7 @@
   import type { Snippet } from 'svelte';
   import {
     getDailyEvents,
-    parseSpanEvents,
-    allDayEventMap,
-    calcRowHeight,
     parseEvents,
-    addDaysLocal,
     isSameDay,
     isWeekend,
     type CalendarEvent,
@@ -73,13 +69,11 @@
   );
   const slotTimeFmt = $derived(new Intl.DateTimeFormat(localeCode, { hour: '2-digit', minute: '2-digit' }));
 
-  // --- 全天/跨天事件桶 ---
-  const allDayBucket = $derived(allDayEventMap(events));
-  const spanEvents = $derived(parseSpanEvents(allDayBucket, anchor, addDaysLocal(anchor, 1)));
-  const allDayRows = $derived(Math.max(1, calcRowHeight(spanEvents)));
-
-  const dayBucket = $derived(parseEvents(events).day);
-  const positioned = $derived(getDailyEvents(dayBucket, anchor).day);
+  // --- 当天事件（对齐 Semi getParseDailyEvents：day 走绝对定位时间轴，allDay 是普通 <li> 列表，
+  //     按 date 过滤当天命中项，不像 week/range 的全天区那样走 span 绝对定位布局）---
+  const parsedEvents = $derived(parseEvents(events));
+  const positioned = $derived(getDailyEvents(parsedEvents.day, anchor).day);
+  const allDayList = $derived(parsedEvents.allDay.filter((e) => isSameDay(e.date, anchor)));
 
   const eventByKey = $derived.by(() => {
     const m = new Map<CalendarEvent['key'], CalendarEvent>();
@@ -125,11 +119,6 @@
     return typeof c === 'string' ? c : '';
   }
 
-  // 全天条样式（对齐 Semi renderAllDayEvents：left/width%, top:${topInd}em）。
-  function spanStyle(ev: (typeof spanEvents)[number]): string {
-    return `left:${ev.leftPos * 100}%;width:${ev.width * 100}%;top:${ev.topInd}em;`;
-  }
-
   const sizePx = (v: number | string | undefined) =>
     v === undefined ? undefined : typeof v === 'number' ? `${v}px` : v;
 
@@ -157,8 +146,10 @@
 <div class={['cd-calendar-day', className]} bind:this={rootEl} style={rootStyle}>
   <div class="cd-calendar-day-sticky-top">
     {#if header}{@render header()}{/if}
-    <!-- 全天区（对齐 Semi renderAllDay：div.all-day > ul.tag.all-day-tag.sticky-left + div.all-day-content > ul.event-items） -->
-    <div class="cd-calendar-all-day" style:height={allDayEventsRender ? undefined : `${allDayRows}em`}>
+    <!-- 全天区（对齐 Semi renderAllDay：div.all-day > ul.tag.all-day-tag.sticky-left + div.all-day-content > ul.event-items）。
+         注意：Semi dayCalendar.renderAllDay 不设 style height——高度纯靠内容撑起（tag span line-height:26px +
+         content min-height:26px），不像 week/range 视图那样按 allDayRows 用 em 换算多行高度。 -->
+    <div class="cd-calendar-all-day">
       <ul class="cd-calendar-tag cd-calendar-all-day-tag cd-calendar-day-sticky-left">
         <span>{loc().t('Calendar.allDay')}</span>
       </ul>
@@ -168,9 +159,10 @@
           {@const rendered = allDayEventsRender(events)}
           {#if rendered}{@render rendered()}{/if}
         {:else}
+          <!-- 对齐 Semi renderAllDayEvents：普通 <li> 流式列表，非绝对定位（那是 week/range 全天区的做法）。 -->
           <ul class="cd-calendar-event-items">
-            {#each spanEvents as ev (ev.key)}
-              <li class="cd-calendar-event-item cd-calendar-event-allday" style={spanStyle(ev)}>
+            {#each allDayList as ev, ind (ev.key ?? ind)}
+              <li class="cd-calendar-event-item cd-calendar-event-allday">
                 {@render eventContent(origEvent(ev.key, ev.children))}
               </li>
             {/each}
@@ -264,10 +256,9 @@
     min-height: var(--cd-calendar-height-allday);
     min-width: calc(var(--cd-calendar-col-count, 1) * var(--cd-calendar-width-day-grid));
   }
+  /* 对齐 Semi .calendar-day .all-day .event-items { width:100% }：普通流式列表，非绝对定位
+     （绝对定位 span 布局是 week/range 全天区的做法，day 视图没有）。 */
   .cd-calendar-all-day .cd-calendar-event-items {
-    position: absolute;
-    left: 0;
-    right: 0;
     width: 100%;
   }
 
@@ -281,14 +272,8 @@
   .cd-calendar-event-item {
     overflow: hidden;
   }
-  /* 对齐 Semi .event-allday { position:absolute; & > * { font-size-regular } } */
-  .cd-calendar-event-allday {
-    position: absolute;
-    height: var(--cd-calendar-height-allday);
-  }
-  .cd-calendar-event-allday > :global(*) {
-    font-size: var(--cd-font-size-regular);
-  }
+  /* day 视图全天条：普通流式 li，无 position/height（Semi day 段没有 .event-allday 专属规则，
+     不像 week 段的 .calendar-week .all-day .event-allday { position:absolute } ）。 */
 
   /* 滚动区容器高度（对齐 Semi -scroll-wrapper：100% - 表头/全天区高，约束滚动区不撑破容器） */
   .cd-calendar-day-scroll-wrapper {
