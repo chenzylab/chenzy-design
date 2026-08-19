@@ -501,6 +501,11 @@
   /* 「还有 N 项」（对齐 Semi .month-event-card-wrapper：右下角，可点击） */
   .cd-calendar-month-event-card-wrapper {
     font-size: var(--cd-font-size-small);
+    /* 显式 line-height：切断从 Popover/Tooltip 外层 .cd-tooltip 继承来的 line-height:0
+       （Tooltip.svelte 给 trigger=custom 的 wrapper 归零 line-height 消除 inline-block 基线坑，
+       但 display:contents 只让盒子在布局树消失，不阻断 CSS 继承，line-height:0 仍会传给这里，
+       导致 12px 文字被压成 2px 高的一条细缝，视觉上像是被裁切/发虚）。 */
+    line-height: normal;
     display: block;
     position: absolute;
     right: var(--cd-calendar-spacing-month-event-card-wrapper-right);
