@@ -155,9 +155,9 @@ export const meta = {
     },
     {
       name: 'onLoad',
-      type: "(loadedKeys: string[], info: { event: 'load'; node: TreeNodeData }) => void",
+      type: '(loadedKeys: Set<TreeKey>, node: TreeNodeData) => void',
       default: 'undefined',
-      desc: '异步加载完成回调',
+      desc: '异步加载完成回调（对齐 Semi：第一参是已加载 key 的 Set，第二参为节点对象）',
     },
     {
       name: 'draggable',
@@ -234,18 +234,6 @@ export const meta = {
       default: 'undefined',
       desc: '自定义展开/收起图标（对齐 Semi expandIcon）；参数含节点、展开态与加载态',
     },
-    {
-      name: 'suffix',
-      type: 'Snippet<[{ node: TreeNodeData }]>',
-      default: 'undefined',
-      desc: '节点尾部操作区（渲染在 label 右侧）',
-    },
-    {
-      name: 'dragGhost',
-      type: 'Snippet<[{ node: TreeNodeData }]>',
-      default: 'undefined',
-      desc: '自定义拖拽幽灵节点',
-    },
   ],
   events: [
     { name: 'onChange', desc: '选中变更：单选回选中 key（或节点对象），多选回选中 key 数组' },
@@ -259,10 +247,8 @@ export const meta = {
     { name: 'searchRender', desc: '自定义搜索框：SearchRenderContext（value/placeholder/onChange/onClear/showClear/disabled）' },
     { name: 'icon', desc: '自定义节点图标：{ node, expanded, isLeaf }' },
     { name: 'expandIcon', desc: '自定义展开图标：{ node, expanded, loading }' },
-    { name: 'suffix', desc: '节点尾部操作区：{ node }' },
   ],
   methods: [
-    { name: 'focus', desc: '命令式聚焦树容器（尊重 preventScroll）' },
     { name: 'search', desc: '命令式触发搜索（对齐 Semi）：(value: string) => void，配合 searchRender=false' },
     { name: 'scrollTo', desc: '虚拟化滚动到节点（对齐 Semi）：({ key, align? }) => void' },
   ],
@@ -307,8 +293,6 @@ export const meta = {
     '--cd-width-tree-option-line',
     // 补充档（Semi 无对应；行高/字号/焦点环/下拉节点 padding）
     '--cd-tree-node-height',
-    '--cd-tree-node-height-small',
-    '--cd-tree-node-height-large',
     '--cd-tree-row-height',
     '--cd-tree-node-font-size',
     '--cd-tree-focus-ring',

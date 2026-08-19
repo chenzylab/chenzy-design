@@ -263,7 +263,10 @@ const components = [
   // padding-left 公式、拖拽 draggable/ondrag* 六事件透传、drag-over 三态插入线/高亮框
   // class 拼接（此前完全空白，renderFullLabel + draggable 组合下点击箭头无法折叠、
   // 拖拽看不到任何插入位置提示），实测 11.99 KB，预算按实测校准。
-  ['tree', '{ Tree }', '12.1 KB'],
+  // 2026-08-19 严格全量对齐 Semi：补齐 RTL 镜像（rtl.scss 逐条规则 + fullLabel 20 层缩进
+  // 双向镜像）、拖拽盒模型结构对齐（内外层 padding 拆分 + border-left 占位 + 真实 border
+  // 插入线替代 ::after/box-shadow），实测 12.12 KB，预算按实测校准。
+  ['tree', '{ Tree }', '12.2 KB'],
   ['user-guide', '{ UserGuide }', '5.5 KB'],
   ['virtual-list', '{ VirtualList }', '2.65 KB'],
   // show · 富媒体（P0-P2）—— 预算按实测 +~15% 校准（见各 spec §9）。

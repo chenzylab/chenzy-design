@@ -365,7 +365,24 @@
   const userStyleNormalized = $derived(
     userStyle && !userStyle.trim().endsWith(';') ? `${userStyle};` : userStyle,
   );
-  const hostStyle = $derived(`${inlineWeight}${ellipsisStyle}${userStyleNormalized}`);
+  /*
+   * showTooltip 模式下 Tooltip/Popover 的 trigger wrapper 默认 `display:block;
+   * inline-size:100%` 撑满（本库因无 cloneElement 引入的额外一层，见下方样式区块说明）。
+   * 用户通过 `style` prop 传入的宽度类声明（如 `width: calc(100% - 48px)`，
+   * 09-render-label-ellipsis demo 场景）本该只生效一次、作用于最终渲染宽度——Semi 用
+   * cloneElement 直接把已带完整 style 的元素传给 Tooltip 无此问题，本库这层额外 wrapper
+   * 若不追加用户样式，会导致外层恒撑满 100%、用户设置的收窄宽度只在内层生效但视觉被
+   * 外层覆盖（真机复现：Button 被挤出容器不可见）；但若内外层都套用户原始声明，
+   * 内层的 % 基准已是外层收窄后的宽度，会被二次扣减（真机复现：内层比预期更窄）。
+   * 故 showTooltip 时用户样式只放在外层 trigger（triggerStyle），内层改用 100% 撑满
+   * 已收窄的外层，不重复应用用户原始声明。
+   */
+  const triggerStyle = $derived(`display:block; inline-size:100%;${userStyleNormalized}`);
+  const hostStyle = $derived(
+    isInteractive && showTooltip
+      ? `${inlineWeight}${ellipsisStyle}inline-size:100%;`
+      : `${inlineWeight}${ellipsisStyle}${userStyleNormalized}`,
+  );
 
   const isTruncated = $derived(
     needsPreciseTruncate ? truncatedText !== null : truncated === true,
@@ -488,7 +505,7 @@
         .filter(Boolean)
         .join(';')}
       disabled={!tooltipEnabled}
-      triggerStyle="display:block; inline-size:100%"
+      {triggerStyle}
     >
       {@render hostNode()}
     </Popover>
@@ -508,7 +525,7 @@
         .filter(Boolean)
         .join(';')}
       disabled={!tooltipEnabled}
-      triggerStyle="display:block; inline-size:100%"
+      {triggerStyle}
     >
       {@render hostNode()}
     </Tooltip>
@@ -760,7 +777,20 @@
     受害但恰好被自身的 nowrap+ellipsis 掩盖未被察觉。
     需要"撑满宽度"的新消费方应参照 Upload/VideoProgress 写精确限定到自己 class 的局部
     规则（display:block + width:100%，不要用 flex），不要指望这里有全局兜底。
+
+    Typography 自身正是这样一个消费方：用户可通过 `style` prop 给 Text/Paragraph 传自定义
+    宽度（如 Tree renderLabel 场景 `width: calc(100% - 48px)` 配合旁置按钮），该宽度已被
+    triggerStyle 追加到外层 .cd-tooltip（对齐 hostStyle 逻辑），但中间 .cd-tooltip-trigger
+    仍是 shrink-to-fit，不会把外层收窄的宽度传给内层 .cd-typography——撑满必须发生在
+    .cd-tooltip-trigger 自身（父级不撑满，子级设 width:100% 也是相对父级未撑满的宽度算，
+    无效），故规则须落在 .cd-tooltip-trigger 本身而非其子元素，局部限定到含 .cd-typography
+    子元素的场景，不影响其他 showTooltip 消费方（真机复现：仅约束 .cd-typography 自身时，
+    中间层依旧 224px 未收窄，文字仍溢出容器、旁置按钮被挤出可视区域）。
   */
+  :global(.cd-tooltip-trigger:has(> .cd-typography)) {
+    display: block;
+    width: 100%;
+  }
 
   :global(.cd-typography-ellipsis-expand) {
     display: inline;

@@ -204,8 +204,8 @@
      */
     labelEllipsis?: boolean;
     /**
-     * 聚焦组件内节点时是否阻止浏览器滚动文档（对齐 Semi `preventScroll`，作用于内部 focus 调用）。
-     * 默认 false（聚焦时按需滚动至可见）。
+     * 对齐 Semi `preventScroll`：作用于内部搜索框聚焦时是否阻止浏览器滚动文档。
+     * Semi 该参数当前无实际触发路径（源码保留声明但未被调用），本库同步保留 prop 声明对齐 API 表面。
      */
     preventScroll?: boolean;
     /** 显示层级连接线（父子引导线，对齐 Semi `showLine`）。默认 false。 */
@@ -274,8 +274,9 @@
      * 已在集合内的节点展开时不再触发 loadData。配合 loadData 使用；不传则由组件内部维护加载态。
      */
     loadedKeys?: TreeKey[];
-    /** 异步加载完成回调 */
-    onLoad?: (loadedKeys: string[], info: { event: 'load'; node: TreeNodeData }) => void;
+    /** 异步加载完成回调（对齐 Semi `onLoad(loadedKeys?: Set<string>, treeNode?: TreeNodeData)`：
+     * 第一参是已加载 key 的 Set（非数组），第二参直接是节点对象（非包一层 info）。 */
+    onLoad?: (loadedKeys: Set<TreeKey>, node: TreeNodeData) => void;
     /** 启用 HTML5 拖拽排序：节点可拖动改变层级/顺序。默认 false（行为不变） */
     draggable?: boolean;
     /**
@@ -343,10 +344,6 @@
     icon?: Snippet<[{ node: TreeNodeData; expanded: boolean; isLeaf: boolean }]>;
     /** 自定义展开/收起箭头；参数含节点、展开态与加载态 */
     expandIcon?: Snippet<[{ node: TreeNodeData; expanded: boolean; loading: boolean }]>;
-    /** 节点尾部操作区（渲染在 label 右侧） */
-    suffix?: Snippet<[{ node: TreeNodeData }]>;
-    /** 自定义拖拽幽灵节点 */
-    dragGhost?: Snippet<[{ node: TreeNodeData }]>;
   }
 
   let {
@@ -410,8 +407,6 @@
     renderFullLabel,
     icon,
     expandIcon,
-    suffix,
-    dragGhost,
   }: Props = $props();
 
   // directory 目录树：默认整行块 + 点击整行展开（expandAction 未显式指定时按 'click'）。
@@ -546,7 +541,7 @@
     } finally {
       loadingKeys.delete(node.key);
       loadedKeys.add(node.key);
-      onLoad?.([...loadedKeys].map(String), { event: 'load', node: toOrig(node) });
+      onLoad?.(new Set(loadedKeys), toOrig(node));
     }
   }
 
@@ -762,17 +757,8 @@
   const VIRTUAL_OVERSCAN = 4;
   // viewport 元素普通引用（bind:this），不参与响应式几何读取。
   let viewportEl = $state<HTMLDivElement | null>(null);
-  // 非虚拟化时的 role=tree 容器引用，供命令式 focus() 使用（preventScroll 传递给此处）。
+  // 非虚拟化时的 role=tree 容器引用。
   let listEl = $state<HTMLDivElement | null>(null);
-
-  /**
-   * 命令式聚焦树容器（对齐 Semi 组件内 focus 方法）。
-   * 尊重 preventScroll：为 true 时聚焦不触发浏览器滚动文档。可经组件实例调用。
-   */
-  export function focus(): void {
-    const el = viewportEl ?? listEl;
-    el?.focus({ preventScroll });
-  }
 
   /**
    * 命令式触发搜索（对齐 Semi `search` 方法）。写入内部搜索词并触发过滤/回调。
@@ -1506,12 +1492,6 @@
     get expandIcon() {
       return expandIcon;
     },
-    get suffix() {
-      return suffix;
-    },
-    get dragGhost() {
-      return dragGhost;
-    },
     onNodeClick: (node) => onRowClick(node),
     onNodeExpand: (node) => toggleExpand(node),
     onNodeCheck: (node) => emitCheck(node),
@@ -1664,12 +1644,6 @@
     /* 通过 style prop 设 height 时生效：容器不溢出，由列表区自身滚动 */
     overflow: hidden;
   }
-  .cd-tree-small {
-    --cd-tree-row-height: var(--cd-tree-node-height-small);
-  }
-  .cd-tree-large {
-    --cd-tree-row-height: var(--cd-tree-node-height-large);
-  }
   .cd-tree-disabled {
     color: var(--cd-color-tree-option-disabled-text-default);
   }
@@ -1732,4 +1706,18 @@
       transition: none;
     }
   }
+
+  /* —— RTL（对齐 Semi tree/rtl.scss，`.semi-rtl .semi-tree { direction: rtl }` 作用域下
+     手写镜像覆盖物理属性）。本库 RTL 触发机制是 `:global(.cd-rtl) .cd-<comp>`（非 [dir=rtl]/:dir()，
+     ConfigProvider 只挂 class 不设 dir 属性，见 scripts/check-rtl-scope.mjs）。 */
+  :global(.cd-rtl) .cd-tree {
+    direction: rtl;
+  }
+  :global(.cd-rtl) .cd-tree-option-list {
+    direction: rtl;
+  }
+  /* expand-icon / empty-icon 的 margin-right→margin-left 镜像（rtl.scss L16-20）、
+     .cd-tree-option 首层缩进左右互换（L21-24）、行内旋转角度镜像（L37-41）随行内容一起
+     挪到 treeNode.svelte（Semi rtl.scss 对应段落也是嵌在 `.tree-option-list` 选择器内，
+     职责归属跟随渲染归属）。 */
 </style>

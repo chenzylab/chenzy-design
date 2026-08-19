@@ -69,9 +69,7 @@ export const treeTokens = {
   //   搜索框边框复用 Input），属本库补充；组件消费。
   // ============================================================
   'tree-node-height': { value: '32px', category: 'height', label: '行高', usage: '树行高 - 默认（本库补充；Semi 无行高 token）' },
-  'tree-node-height-small': { value: '28px', category: 'height', label: '行高-小', usage: '树行高 - 小尺寸（本库补充）' },
-  'tree-node-height-large': { value: '36px', category: 'height', label: '行高-大', usage: '树行高 - 大尺寸（本库补充）' },
-  'tree-row-height': { value: 'var(--cd-tree-node-height)', category: 'height', label: '当前行高', usage: '当前尺寸行高基线（组件按 size 覆盖为 small/large）' },
+  'tree-row-height': { value: 'var(--cd-tree-node-height)', category: 'height', label: '当前行高', usage: '当前行高基线' },
   'tree-node-font-size': { value: 'var(--cd-font-size-regular)', category: 'font', label: '文字字号', usage: '树选项文字字号（对齐 Semi font-size-regular 14px）' },
   'tree-focus-ring': { value: 'var(--cd-color-primary)', category: 'color', label: '焦点环色', usage: '键盘焦点环颜色（本库补充；Semi 无键盘 roving 焦点环）' },
   // 下拉面板节点水平内边距：TreeSelect / Cascader 下拉行复用（Semi tree 选项无独立水平 padding
