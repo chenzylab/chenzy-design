@@ -1,14 +1,11 @@
 <script lang="ts">
-  import { AvatarGroup } from '@chenzy-design/svelte';
-
-  // Svelte 里折叠走数据驱动 items（与 Semi children+maxCount 等价）
-  const items = [
-    { color: 'red' as const, alt: 'Lisa LeBlanc', content: 'LL' },
-    { alt: 'Caroline Xiao', content: 'CX' },
-    { color: 'amber' as const, alt: 'Rafal Matin', content: 'RM' },
-    { alt: 'Zank Lance', content: 'ZL' },
-    { alt: 'Youself Zhang', content: 'YZ' },
-  ];
+  import { Avatar, AvatarGroup } from '@chenzy-design/svelte';
 </script>
 
-<AvatarGroup {items} maxCount={3} />
+<AvatarGroup maxCount={3}>
+  <Avatar color="red" alt="Lisa LeBlanc">LL</Avatar>
+  <Avatar alt="Caroline Xiao">CX</Avatar>
+  <Avatar color="amber" alt="Rafal Matin">RM</Avatar>
+  <Avatar style="color:#f56a00;background-color:#fde3cf" alt="Zank Lance">ZL</Avatar>
+  <Avatar style="background-color:#87d068" alt="Youself Zhang">YZ</Avatar>
+</AvatarGroup>

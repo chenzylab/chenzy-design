@@ -210,7 +210,7 @@ export type {
   AvatarBorder,
   AvatarTopSlot,
   AvatarBottomSlot,
-  AvatarGroupItem,
+  AvatarGroupMember,
 } from './avatar/index.js';
 export { Badge, badgeMeta } from './badge/index.js';
 export { Card, CardGroup, cardMeta, cardGroupMeta } from './card/index.js';

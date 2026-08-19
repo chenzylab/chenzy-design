@@ -115,7 +115,11 @@
           >
             <span style="white-space:nowrap;">基于 {source.length} 个搜索来源</span>
             <span style="flex-shrink:0;">
-              <AvatarGroup size="extra-extra-small" items={source.map((s) => ({ src: s.avatar }))} />
+              <AvatarGroup size="extra-extra-small">
+                {#each source as s (s.url)}
+                  <Avatar src={s.avatar} />
+                {/each}
+              </AvatarGroup>
             </span>
           </button>
         {:else}

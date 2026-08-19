@@ -1,31 +1,37 @@
 <script lang="ts">
   import { Avatar, AvatarGroup, Popover } from '@chenzy-design/svelte';
-
-  const items = [
-    { color: 'red' as const, alt: 'Lisa LeBlanc', content: 'LL' },
-    { alt: 'Caroline Xiao', content: 'CX' },
-    { color: 'amber' as const, alt: 'Rafal Matin', content: 'RM' },
-    { alt: 'Zank Lance', content: 'ZL' },
-    { alt: 'Youself Zhang', content: 'YZ' },
-  ];
 </script>
 
 <!-- renderMore 自定义「+N」溢出头像，可结合 Popover 展开剩余成员 -->
-<AvatarGroup {items} maxCount={3}>
-  {#snippet renderMore({ restNumber, restAvatars })}
-    <Popover trigger="click">
+<AvatarGroup maxCount={3}>
+  <Avatar color="red" alt="Lisa LeBlanc">LL</Avatar>
+  <Avatar alt="Caroline Xiao">CX</Avatar>
+  <Avatar color="amber" alt="Rafal Matin">RM</Avatar>
+  <Avatar style="color:#f56a00;background-color:#fde3cf" alt="Zank Lance">ZL</Avatar>
+  <Avatar style="background-color:#87d068" alt="Youself Zhang">YZ</Avatar>
+  {#snippet renderMore(restNumber, restAvatars)}
+    <Popover
+      autoAdjustOverflow={false}
+      position="bottomRight"
+      style="padding: 12px 8px; padding-bottom: 0;"
+    >
       <Avatar>{`+${restNumber}`}</Avatar>
       {#snippet content()}
-        <div style="padding:8px;display:flex;flex-direction:column;gap:8px;">
-          {#each restAvatars as a (a.alt)}
-            <div style="display:flex;align-items:center;gap:8px;">
-              <Avatar size="extra-small" color={a.color} alt={a.alt}
-                >{a.content}</Avatar
-              >
-              <span style="font-size:14px;">{a.alt}</span>
-            </div>
-          {/each}
-        </div>
+        {#each restAvatars as a, index (index)}
+          <div style="padding-bottom:12px;">
+            <Avatar
+              size="extra-small"
+              color={a.color}
+              src={a.src}
+              srcSet={a.srcSet}
+              style={a.style}
+              alt={a.alt}
+            >
+              {#snippet children()}{@render a.content?.()}{/snippet}
+            </Avatar>
+            <span style="margin-left:8px;font-size:14px;">这是段文字描述</span>
+          </div>
+        {/each}
       {/snippet}
     </Popover>
   {/snippet}

@@ -9,6 +9,11 @@ import AvatarGroupComposableFixture from './AvatarGroupComposableFixture.svelte'
 // 文字头像内容用 children 传入（对齐 Semi：children 即文字，无独立 text prop）。
 const textChildren = (s: string) => createRawSnippet(() => ({ render: () => `<span>${s}</span>` }));
 
+// Avatar 根节点恒定带 role="listitem"（对齐 Semi index.tsx 的 <span role='listitem'>，
+// 不论是否处于 AvatarGroup/role="list" 语境）。脱离 list 语境单独渲染时 axe 会报
+// aria-required-parent——这是 Semi 本身接受的已知 trade-off，非本库回归，禁用该规则。
+const AVATAR_STANDALONE_AXE_OPTIONS = { disableRules: ['aria-required-parent'] };
+
 describe('Avatar a11y', () => {
   it('图片头像：img 带 alt，无 axe violations', async () => {
     const { container } = renderWithLocale(Avatar, {
@@ -16,7 +21,7 @@ describe('Avatar a11y', () => {
     });
     const img = container.querySelector('img');
     expect(img?.getAttribute('alt')).toBe('Jane Doe');
-    await expectNoAxeViolations(container);
+    await expectNoAxeViolations(container, AVATAR_STANDALONE_AXE_OPTIONS);
   });
 
   it('文字头像：内部 label role=img + aria-label，无 axe violations', async () => {
@@ -26,7 +31,7 @@ describe('Avatar a11y', () => {
     const label = container.querySelector('.cd-avatar-label');
     expect(label?.getAttribute('role')).toBe('img');
     expect(label?.getAttribute('aria-label')).toBe('Kim Lee');
-    await expectNoAxeViolations(container);
+    await expectNoAxeViolations(container, AVATAR_STANDALONE_AXE_OPTIONS);
   });
 
   it('可交互（onClick）：文字头像 label 可聚焦（tabindex=0，对齐 Semi），无 axe violations', async () => {
@@ -37,7 +42,7 @@ describe('Avatar a11y', () => {
     expect(label?.getAttribute('tabindex')).toBe('0');
     // clickable 时 aria-label 带前缀（对齐 Semi `clickable Avatar: ...`）
     expect(label?.getAttribute('aria-label')).toBe('clickable Avatar: Settings');
-    await expectNoAxeViolations(container);
+    await expectNoAxeViolations(container, AVATAR_STANDALONE_AXE_OPTIONS);
   });
 });
 

@@ -1,17 +1,21 @@
 <script lang="ts">
-  import { AvatarGroup } from '@chenzy-design/svelte';
-
-  const items = [
-    { color: 'red' as const, alt: 'Lisa LeBlanc', content: 'LL' },
-    { alt: 'Caroline Xiao', content: 'CX' },
-    { color: 'amber' as const, alt: 'Rafal Matin', content: 'RM' },
-    { alt: 'Zank Lance', content: 'ZL' },
-    { alt: 'Youself Zhang', content: 'YZ' },
-  ];
+  import { Avatar, AvatarGroup } from '@chenzy-design/svelte';
 </script>
 
 <!-- overlapFrom 控制层叠压盖方向：start=前压后，end=后压前 -->
 <div style="display: flex; flex-direction: column; gap: 16px;">
-  <AvatarGroup {items} overlapFrom="start" />
-  <AvatarGroup {items} overlapFrom="end" />
+  <AvatarGroup overlapFrom="start">
+    <Avatar color="red" alt="Lisa LeBlanc">LL</Avatar>
+    <Avatar alt="Caroline Xiao">CX</Avatar>
+    <Avatar color="amber" alt="Rafal Matin">RM</Avatar>
+    <Avatar style="color:#f56a00;background-color:#fde3cf" alt="Zank Lance">ZL</Avatar>
+    <Avatar style="background-color:#87d068" alt="Youself Zhang">YZ</Avatar>
+  </AvatarGroup>
+  <AvatarGroup overlapFrom="end">
+    <Avatar color="red" alt="Lisa LeBlanc">LL</Avatar>
+    <Avatar alt="Caroline Xiao">CX</Avatar>
+    <Avatar color="amber" alt="Rafal Matin">RM</Avatar>
+    <Avatar style="color:#f56a00;background-color:#fde3cf" alt="Zank Lance">ZL</Avatar>
+    <Avatar style="background-color:#87d068" alt="Youself Zhang">YZ</Avatar>
+  </AvatarGroup>
 </div>
