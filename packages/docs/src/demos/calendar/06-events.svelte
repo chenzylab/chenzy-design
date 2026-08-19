@@ -68,7 +68,7 @@
 <style>
   .evt {
     box-sizing: border-box;
-    block-size: 100%;
+    height: 100%;
     overflow: hidden;
     border-radius: 3px;
   }

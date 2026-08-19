@@ -99,6 +99,14 @@ export const calendarTokens = {
   'calendar-spacing-header-info-date-margin-top': { value: '4px', category: 'spacing', label: '卡片头日期上间距', usage: 'Semi $spacing-calendar_header_info_date-marginTop（+N 卡片头日期 marginTop）' },
   // $spacing-calendar_body-padingX（保留 Semi 拼写 pading）
   'calendar-spacing-body-pading-x': { value: '16px', category: 'spacing', label: '卡片体左右间距', usage: 'Semi $spacing-calendar_body-padingX（+N 卡片 body 左右 padding）' },
+  // $spacing-calendar_month_event_card_content-paddingY / -paddingX
+  'calendar-spacing-month-event-card-content-padding-y': { value: '12px', category: 'spacing', label: '卡片内容区上下间距', usage: 'Semi $spacing-calendar_month_event_card_content-paddingY（+N 卡片 content 上下 padding）' },
+  'calendar-spacing-month-event-card-content-padding-x': { value: '0', category: 'spacing', label: '卡片内容区左右间距', usage: 'Semi $spacing-calendar_month_event_card_content-paddingX（+N 卡片 content 左右 padding）' },
+  // $spacing-calendar_header-marginY / -marginX
+  'calendar-spacing-header-margin-y': { value: '12px', category: 'spacing', label: '卡片头上下外边距', usage: 'Semi $spacing-calendar_header-marginY（+N 卡片 header margin 上下）' },
+  'calendar-spacing-header-margin-x': { value: '20px', category: 'spacing', label: '卡片头左右外边距', usage: 'Semi $spacing-calendar_header-marginX（+N 卡片 header margin 左右）' },
+  // $spacing-calendar_month_event_card_close-marginRight
+  'calendar-spacing-month-event-card-close-margin-right': { value: '-4px', category: 'spacing', label: '卡片关闭按钮右外边距', usage: 'Semi $spacing-calendar_month_event_card_close-marginRight（+N 卡片关闭按钮 marginRight，负值贴边）' },
 
   // ============================ Z-index（$z-calendar_*）============================
   // $z-calendar_stickyTop

@@ -32,8 +32,10 @@
     type PositionedSpanEvent,
     type WeekStartsOn,
   } from '@chenzy-design/core';
+  import { IconClose } from '@chenzy-design/icons';
   import { useLocale } from '../locale-provider/index.js';
   import { Popover } from '../popover/index.js';
+  import { IconButton } from '../iconbutton/index.js';
   import TimeCol from './TimeCol.svelte';
   import {
     MONTH_CONTENT_PADDING,
@@ -220,6 +222,13 @@
   const monthItemLimit = $derived(
     monthWeekH > 0 ? Math.max(0, Math.ceil((monthWeekH - MONTH_CONTENT_PADDING) / MONTH_CONTENT_HEIGHT)) : 2,
   );
+
+  // 「还有 N 项」卡片开合状态（对齐 Semi showCard：key=date.toString()，同时只开一张）。
+  let openCardKey = $state<string | null>(null);
+  function closeCard(e: Event, key: string) {
+    if (openCardKey === key) openCardKey = null;
+    onClose?.(e);
+  }
 
   // 月视图星期表头（用第一周的日期生成本地化星期名）。
   const monthHeaderWeekdays = $derived.by<{ name: string; weekend: boolean }[]>(() => {
@@ -547,10 +556,11 @@
                     {/if}
                   {/snippet}
                   {#if remaining > 0}
+                    {@const cardKey = cell.date.toString()}
                     <Popover
-                      trigger="click"
+                      trigger="custom"
                       position="bottom"
-                      onVisibleChange={(open) => { if (!open) onClose?.(new Event('close')); }}
+                      visible={openCardKey === cardKey}
                     >
                       <!-- svelte-ignore a11y_no_noninteractive_element_to_interactive_role -->
                       <li
@@ -568,7 +578,7 @@
                         <!-- svelte-ignore a11y_no_static_element_interactions -->
                         <div
                           class="cd-calendar-month-event-card-wrapper"
-                          onclick={(e) => { e.stopPropagation(); onMoreClick?.(e, cell.date, remaining); }}
+                          onclick={(e) => { e.stopPropagation(); openCardKey = cardKey; onMoreClick?.(e, cell.date, remaining); }}
                         >{loc().t('Calendar.remaining', { count: remaining })}</div>
                         {#if dateGridRender}
                           {@const extra = dateGridRender(cell.date.toString(), cell.date)}
@@ -577,18 +587,30 @@
                       </li>
                       {#snippet content()}
                         <div class="cd-calendar-month-event-card">
-                          <div class="cd-calendar-month-event-card-header">
-                            <div class="cd-calendar-month-event-card-header-info">
-                              <div class="cd-calendar-month-event-card-header-info-weekday">{weekdayLongFmt.format(cell.date)}</div>
-                              <div class="cd-calendar-month-event-card-header-info-date">{dayString(cell.date)}</div>
+                          <div class="cd-calendar-month-event-card-content">
+                            <div class="cd-calendar-month-event-card-header">
+                              <div class="cd-calendar-month-event-card-header-info">
+                                <div class="cd-calendar-month-event-card-header-info-weekday">{weekdayLongFmt.format(cell.date)}</div>
+                                <div class="cd-calendar-month-event-card-header-info-date">{dayString(cell.date)}</div>
+                              </div>
+                              <IconButton
+                                class="cd-calendar-month-event-card-close"
+                                type="tertiary"
+                                theme="borderless"
+                                size="small"
+                                aria-label={loc().t('Calendar.close')}
+                                onclick={(e) => closeCard(e, cardKey)}
+                              >
+                                {#snippet icon()}<IconClose />{/snippet}
+                              </IconButton>
                             </div>
-                          </div>
-                          <div class="cd-calendar-month-event-card-body">
-                            <ul class="cd-calendar-month-event-card-list">
-                              {#each all as ev (ev.key)}
-                                <li>{@render eventContent(origEvent(ev.key, ev.children))}</li>
-                              {/each}
-                            </ul>
+                            <div class="cd-calendar-month-event-card-body">
+                              <ul class="cd-calendar-month-event-card-list">
+                                {#each all as ev (ev.key)}
+                                  <li>{@render eventContent(origEvent(ev.key, ev.children))}</li>
+                                {/each}
+                              </ul>
+                            </div>
                           </div>
                         </div>
                       {/snippet}
@@ -640,13 +662,14 @@
     list-style: none;
   }
 
-  /* sticky 顶部（对齐 Semi -sticky-top） */
+  /* sticky 顶部（对齐 Semi -sticky-top：物理属性 top/left/right） */
   .cd-calendar-day-sticky-top,
   .cd-calendar-week-sticky-top,
   .cd-calendar-month-sticky-top {
     position: sticky;
-    inset-block-start: 0;
-    inset-inline: 0;
+    top: 0;
+    left: 0;
+    right: 0;
     z-index: var(--cd-calendar-z-stickytop);
     background: var(--cd-calendar-color-sticky-bg);
   }
@@ -702,11 +725,11 @@
     display: grid;
   }
 
-  /* sticky 左列（时间列 / tag 列，对齐 Semi -sticky-left） */
+  /* sticky 左列（时间列 / tag 列，对齐 Semi -sticky-left：物理属性 left，RTL 单独覆盖） */
   .cd-calendar-day-sticky-left,
   .cd-calendar-week-sticky-left {
     position: sticky;
-    inset-inline-start: 0;
+    left: 0;
     z-index: var(--cd-calendar-z-stickyleft);
     background: var(--cd-calendar-color-sticky-bg);
   }
@@ -770,7 +793,8 @@
   }
   .cd-calendar-all-day .cd-calendar-event-items {
     position: absolute;
-    inset-inline: 0;
+    left: 0;
+    right: 0;
     width: 100%;
   }
 
@@ -1046,7 +1070,8 @@
     bottom: 0;
     z-index: var(--cd-calendar-z-item);
     padding-top: var(--cd-calendar-spacing-month-event-card-wrapper-padding-top);
-    padding-inline: 2px;
+    padding-left: 2px;
+    padding-right: 2px;
     color: var(--cd-calendar-color-day-text-default);
     background: var(--cd-color-bg-2);
     border-radius: var(--cd-border-radius-small, 3px);
@@ -1057,13 +1082,22 @@
     text-decoration: underline;
   }
 
-  /* +N 卡片（对齐 Semi .month-event-card / -header-info / -body / -list） */
+  /* +N 卡片（对齐 Semi .month-event-card / -content / -header / -header-info / -body / -list） */
   .cd-calendar-month-event-card {
     width: var(--cd-calendar-width-card);
     max-width: 100%;
   }
+  .cd-calendar-month-event-card-content {
+    padding: var(--cd-calendar-spacing-month-event-card-content-padding-y) var(--cd-calendar-spacing-month-event-card-content-padding-x);
+  }
+  .cd-calendar-month-event-card-header {
+    display: flex;
+    flex-direction: row;
+    margin: var(--cd-calendar-spacing-header-margin-y) var(--cd-calendar-spacing-header-margin-x);
+  }
   .cd-calendar-month-event-card-header-info {
     display: flex;
+    flex: 1;
     flex-direction: column;
     align-items: center;
   }
@@ -1076,6 +1110,10 @@
     font-size: var(--cd-font-size-header, 1.5rem);
     font-weight: 600;
     margin-top: var(--cd-calendar-spacing-header-info-date-margin-top);
+  }
+  /* 关闭按钮（对齐 Semi .month-event-card-close：-4px 右外边距，与 header-info 反向抵消视觉留白） */
+  .cd-calendar-month-event-card :global(.cd-calendar-month-event-card-close) {
+    margin-right: var(--cd-calendar-spacing-month-event-card-close-margin-right);
   }
   .cd-calendar-month-event-card-body {
     padding: 0 var(--cd-calendar-spacing-body-pading-x);
@@ -1090,13 +1128,19 @@
   }
 
   /* —— RTL（逐条对齐 Semi calendar/rtl.scss）——
-     只覆盖**逻辑属性管不到**的那几类：text-align、物理 border 左右、
-     以及左右取值不对称的 padding/margin。
-     sticky 列本库已用 `inset-inline-start`，RTL 下自己会翻，故不重复写 left/right。 */
+     本组件全部用物理属性（left/right/border-right 等，对齐 Semi calendar.scss），
+     故 RTL 下逐条显式覆盖为镜像值，不依赖逻辑属性自动翻转。 */
   :global(.cd-rtl) .cd-calendar-day,
   :global(.cd-rtl) .cd-calendar-week,
   :global(.cd-rtl) .cd-calendar-month {
     direction: rtl;
+  }
+
+  /* sticky 左列翻到右侧（对齐 Semi rtl.scss &-sticky-left { left:auto; right:0 }） */
+  :global(.cd-rtl) .cd-calendar-day-sticky-left,
+  :global(.cd-rtl) .cd-calendar-week-sticky-left {
+    left: auto;
+    right: 0;
   }
 
   /* 全天标签列 / 月份标签列：右对齐 + 右内边距 → RTL 整体翻到左侧 */
@@ -1129,5 +1173,38 @@
     .cd-calendar-grid-content
     .cd-calendar-grid-skeleton li {
     border-left: 0;
+  }
+
+  /* 月视图：星期表头 / 日格骨架文字与竖线翻边（对齐 Semi rtl.scss .month-grid-row/-skeleton） */
+  :global(.cd-rtl) .cd-calendar-month-grid-row li,
+  :global(.cd-rtl) .cd-calendar-month-skeleton li {
+    text-align: left;
+    padding-right: 0;
+    padding-left: var(--cd-calendar-spacing-skeletion-grid-row-li-padding-right);
+  }
+  :global(.cd-rtl) .cd-calendar-month-grid-row li span,
+  :global(.cd-rtl) .cd-calendar-month-skeleton li span {
+    text-align: left;
+  }
+  :global(.cd-rtl) .cd-calendar-month-skeleton li {
+    border-right: 0;
+    border-left: 1px solid var(--cd-calendar-color-day-border);
+  }
+  :global(.cd-rtl) .cd-calendar-month-skeleton li:last-child {
+    border-left: none;
+  }
+  /* 「还有 N 项」/ 日期数字：右上/右下 → 左上/左下（对齐 Semi rtl.scss .month-event-card-wrapper / .month-date） */
+  :global(.cd-rtl) .cd-calendar-month-event-card-wrapper {
+    right: auto;
+    left: var(--cd-calendar-spacing-month-event-card-wrapper-right);
+  }
+  :global(.cd-rtl) .cd-calendar-month-date {
+    right: auto;
+    left: var(--cd-calendar-spacing-month-date-right);
+  }
+  /* +N 卡片关闭按钮：右外边距 → 左外边距（对齐 Semi rtl.scss .month-event-card-close） */
+  :global(.cd-rtl) .cd-calendar-month-event-card-close {
+    margin-right: 0;
+    margin-left: var(--cd-calendar-spacing-month-event-card-close-margin-right);
   }
 </style>

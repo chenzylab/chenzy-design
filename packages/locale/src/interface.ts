@@ -145,6 +145,11 @@ export interface Locale {
      * **英文为空串**——中文显示「7月 1日」，英文只显示「Jul 1」。
      */
     datestring: string;
+    /**
+     * 月视图「+N」卡片关闭按钮无障碍名。Semi 该按钮无 aria-label（a11y 缺口）；
+     * 本库 IconButton 纯图标按钮强制要求 aria-label，故补此文案键而非留空。
+     */
+    close: string;
   };
   Tree: {
     emptyText: string;

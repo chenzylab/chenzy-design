@@ -28,12 +28,12 @@
 </div>
 
 <style>
-  /* sticky 左列（对齐 Semi -sticky-left）。父组件的同名规则管不到本组件根节点
+  /* sticky 左列（对齐 Semi -sticky-left，物理属性 left）。父组件的同名规则管不到本组件根节点
      （Svelte scoped 类不跨组件），故这里自带一份；全天 tag 列那份仍在 Calendar.svelte。 */
   .cd-calendar-day-sticky-left,
   .cd-calendar-week-sticky-left {
     position: sticky;
-    inset-inline-start: 0;
+    left: 0;
     z-index: var(--cd-calendar-z-stickyleft);
     background: var(--cd-calendar-color-sticky-bg);
   }
@@ -73,7 +73,12 @@
   }
 
   /* —— RTL（对齐 Semi calendar/rtl.scss 的 .calendar-time 段）——
-     时间列整体翻到右侧：内边距、数字对齐方向、items 的 auto 外边距三处都要换边。 */
+     时间列整体翻到右侧：sticky 位置、内边距、数字对齐方向、items 的 auto 外边距四处都要换边。 */
+  :global(.cd-rtl) .cd-calendar-day-sticky-left,
+  :global(.cd-rtl) .cd-calendar-week-sticky-left {
+    left: auto;
+    right: 0;
+  }
   :global(.cd-rtl) .cd-calendar-time {
     padding-right: 0;
     padding-left: var(--cd-calendar-spacing-time-padding-right);
