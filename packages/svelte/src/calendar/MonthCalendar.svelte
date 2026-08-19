@@ -464,11 +464,16 @@
   .cd-calendar-month-skeleton .cd-calendar-month-same {
     color: var(--cd-calendar-color-date-text-default);
   }
-  /* 日期数字（对齐 Semi .month-date：绝对定位右上，today-date 圆标） */
+  /* 日期数字（对齐 Semi .month-date：绝对定位右上，today-date 圆标）。
+     显式 line-height：同「+N」文案一样，会从 Popover/Tooltip 外层 .cd-tooltip 继承 line-height:0
+     （trigger=custom 消除 inline-block 基线坑用；display:contents 只让盒子在布局树消失，不阻断
+     CSS 继承），未设置自身 line-height 时外层 span 高度塌缩成 0，数字视觉位置整体上移、被
+     <li> 的 overflow:hidden 从中间裁掉上半部分——只有 remaining>0（被 Popover 包裹）的格子会受影响。 */
   .cd-calendar-month-date {
     position: absolute;
     right: var(--cd-calendar-spacing-month-date-right);
     z-index: var(--cd-calendar-z-line);
+    line-height: normal;
   }
   .cd-calendar-today .cd-calendar-month-date .cd-calendar-today-date {
     display: inline-flex;
