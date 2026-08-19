@@ -98,16 +98,33 @@
 
   // ---------- 组合式折叠：向 AvatarGroup 注册自身序号（对齐 Semi React.Children 切片）----------
   // 组开启 maxCount 时，序号 >= maxCount 的成员自身不渲染，由组统一渲染「+N」溢出头像。
-  // 声明时读取一次即可（成员顺序在挂载期固定），故静态读取 alt。
-  // children 是 Snippet 无法取文本，溢出头像的无障碍文案以 alt 为准（对齐 Semi finalAlt 取 alt）。
+  // 声明时读取一次即可（成员顺序在挂载期固定），故静态读取 alt/color/src/srcSet/style 快照
+  // + children snippet 引用本身，供组 renderMore 时重渲染（对齐 Semi
+  // React.cloneElement(avatar, {size}) 保留原 children 语义；Svelte snippet 不能被
+  // 内省取出文字，但可以在别处用 {@render member.content?.()} 原样重新渲染同一份内容）。
   // 组自身渲染的「+N」溢出头像（class 含 cd-avatar-item-more）不参与注册，否则污染成员计数。
   // svelte-ignore state_referenced_locally
   const isMoreAvatar = (className ?? '').includes('cd-avatar-item-more');
   // svelte-ignore state_referenced_locally
   const groupIndex =
-    group?.register && !isMoreAvatar ? group.register(alt !== undefined ? { alt } : {}) : -1;
+    group?.register && !isMoreAvatar
+      ? group.register({
+          ...(alt !== undefined ? { alt } : {}),
+          ...(color !== undefined ? { color } : {}),
+          ...(src !== undefined ? { src } : {}),
+          ...(srcSet !== undefined ? { srcSet } : {}),
+          ...(styleProp !== undefined ? { style: styleProp } : {}),
+          ...(children !== undefined ? { content: children } : {}),
+        })
+      : -1;
   const collapsedByGroup = $derived(
     groupIndex >= 0 && !!group?.isCollapsing?.() && !!group?.isHidden?.(groupIndex),
+  );
+  // 组内层叠 z-index 类（对齐 Semi item-start-N/item-end-N，css 里 @for 0..20 生成）。
+  const groupZIndexClass = $derived(
+    groupIndex >= 0
+      ? `cd-avatar-item-${group?.getOverlapFrom?.() === 'end' ? 'end' : 'start'}-${groupIndex}`
+      : undefined,
   );
 
   // 图片加载失败 → 降级文字/children。
@@ -194,6 +211,7 @@
       isImg && 'cd-avatar-image',
       focusVisible && 'cd-avatar-focus',
       contentMotion && 'cd-avatar-animated',
+      groupZIndexClass,
       className,
     ]
       .filter(Boolean)
@@ -271,11 +289,12 @@
 
 {#snippet avatarEl()}
   <!-- 根元素点击/hover 转发（对齐 Semi；键盘由内部可聚焦 img/label 承担） -->
-  <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
+  <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions, a11y_no_noninteractive_element_interactions -->
   <span
     bind:this={avatarNode}
     class={avatarCls}
     style={isWrap ? undefined : customStyle || undefined}
+    role="listitem"
     onclick={isWrap ? undefined : onClick}
     onmouseenter={isWrap ? undefined : handleEnter}
     onmouseleave={isWrap ? undefined : handleLeave}

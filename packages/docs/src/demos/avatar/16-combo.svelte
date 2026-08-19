@@ -1,22 +1,13 @@
 <script lang="ts">
   import { Avatar } from '@chenzy-design/svelte';
+  import { IconPlus } from '@chenzy-design/icons';
 
   const src = 'https://api.dicebear.com/7.x/avataaars/svg?seed=live';
 </script>
 
 <!-- 组合效果：图片头像 + border 呼吸动画 + contentMotion + 顶部直播气泡 + 底部圆形图标（对齐 Semi 抖音直播头像） -->
 {#snippet plusIcon()}
-  <svg
-    width="1em"
-    height="1em"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    stroke-width="3"
-    stroke-linecap="round"
-  >
-    <path d="M12 5v14M5 12h14" />
-  </svg>
+  <IconPlus />
 {/snippet}
 
 <Avatar

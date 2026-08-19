@@ -116,7 +116,7 @@ Avatar 支持 `onClick`、`onMouseEnter`、`onMouseLeave`。其中 `hover` 状�
 
 <DemoBox code={groupSrc}><Group /></DemoBox>
 
-可以通过 `maxCount` 设置展示的头像数量，超出部分折叠为「+N」。组合式子 `<Avatar>` 与数据驱动的 `items` 两种写法都支持折叠。
+可以通过 `maxCount` 设置展示的头像数量，超出部分折叠为「+N」。
 
 <DemoBox code={groupMaxSrc}><GroupMax /></DemoBox>
 
@@ -158,18 +158,17 @@ Avatar 支持 `onClick`、`onMouseEnter`、`onMouseLeave`。其中 `hover` 状�
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
-| items | 数据驱动的成员数组（与组合式 children 等价的另一种写法，同样支持 `maxCount` 折叠） | AvatarGroupItem[] | - |
 | maxCount | 最大数量限制，超出后显示 +N | number | - |
 | overlapFrom | 设置头像覆盖方向，支持 `start`、`end` | string | `start` |
-| renderMore | 自定义渲染 more 标签，参数 `{ restNumber, restAvatars }` | Snippet | - |
+| renderMore | 自定义渲染 more 标签，参数 `(restNumber, restAvatars)` | Snippet | - |
 | shape | 指定头像的形状，支持 `circle`、`square` | string | `circle` |
 | size | 设置头像的大小，同 Avatar 的 `size` | string | `medium` |
-| children | 不用 `items` 时自由传入的头像（不折叠） | Snippet | - |
+| children | 组内头像子元素 | Snippet | - |
 
 ## Accessibility
 
 - Avatar 一般不用于操作，不需要被获取焦点。但当 Avatar 可以被点击操作时（如页面右上角的头像）需要被聚焦，并响应键盘 `Enter` 事件。
 - 当 Avatar 与其他组件结合使用时，需要同时检查该组件的可访问性指南。
 - Avatar 的 `alt` 属性可以被屏幕阅读器读取，使用头像组件时，请使用 `alt` 属性解释头像的内容。
-- 文字或图标型 Avatar 添加 `role="img"` 并设置 `aria-label` 描述内容，纯装饰型加 `aria-hidden="true"`。
-- AvatarGroup 根容器使用 `role="group"` 并配置 `aria-label`；组内使用 roving tabindex 管理键盘焦点。
+- 文字或图标型 Avatar 添加 `role="img"` 并设置 `aria-label` 描述内容。
+- Avatar 根节点恒定带 `role="listitem"`；AvatarGroup 根容器使用 `role="list"`（对齐 Semi）。

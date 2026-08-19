@@ -63,21 +63,20 @@ export const meta = {
   subComponents: [
     {
       name: 'AvatarGroup',
-      usage: '<Avatar.Group> 层叠排列多个头像；items+maxCount 折叠出「+N」溢出头像',
-      desc: '把多个头像层叠排列。可用 items 数据驱动(配合 maxCount 折叠)，或用 children 自由传入 <Avatar>。组级 shape/size 经 context 强制下发(对齐 Semi cloneElement)。',
+      usage: '<Avatar.Group> 层叠排列多个 <Avatar> 子元素；maxCount 折叠出「+N」溢出头像',
+      desc: '把多个头像层叠排列(对齐 Semi children + maxCount)。组级 shape/size 经 context 强制下发(对齐 Semi cloneElement)。',
       props: [
-        { name: 'items', type: 'AvatarGroupItem[]', default: 'undefined', desc: '数据驱动成员；启用 maxCount 折叠' },
         { name: 'maxCount', type: 'number', default: 'undefined', desc: '最多显示 N 个，其余折叠为「+N」' },
         { name: 'shape', type: "'circle'|'square'", default: "'circle'", desc: '组级形状，强制下发给子头像' },
         { name: 'size', type: 'AvatarSizeEnum | number', default: "'medium'", desc: '组级尺寸，强制下发给子头像' },
         { name: 'overlapFrom', type: "'start'|'end'", default: "'start'", desc: '层叠压盖方向：start=前压后，end=后压前' },
         {
           name: 'renderMore',
-          type: 'Snippet<[{ restNumber: number; restAvatars: AvatarGroupItem[] }]>',
+          type: 'Snippet<[number, AvatarGroupMember[]]>',
           default: 'undefined',
-          desc: '自定义「+N」溢出头像渲染',
+          desc: '自定义「+N」溢出头像渲染，参数为 (restNumber, restAvatars)（对齐 Semi renderMore(restNumber, restAvatars)）',
         },
-        { name: 'children', type: 'Snippet', default: 'undefined', desc: '不用 items 时自由传入的头像' },
+        { name: 'children', type: 'Snippet', default: 'undefined', desc: '组内头像子元素' },
       ],
     },
   ],
@@ -158,7 +157,7 @@ export const meta = {
     },
     {
       title: '头像组折叠',
-      code: '<Avatar.Group maxCount={3} items={[{content:"陈"},{content:"李"},{content:"王"},{content:"赵"}]} />',
+      code: '<Avatar.Group maxCount={3}><Avatar alt="陈">陈</Avatar><Avatar alt="李">李</Avatar><Avatar alt="王">王</Avatar><Avatar alt="赵">赵</Avatar></Avatar.Group>',
     },
     {
       title: '头像组自由排列',

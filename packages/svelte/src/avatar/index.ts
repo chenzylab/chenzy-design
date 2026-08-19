@@ -16,5 +16,5 @@ export type {
   AvatarTopSlot,
   AvatarBottomSlot,
   AvatarGroupContext,
+  AvatarGroupMember,
 } from './context.js';
-export type { AvatarGroupItem } from './AvatarGroup.svelte';

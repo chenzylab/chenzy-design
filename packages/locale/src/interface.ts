@@ -72,12 +72,6 @@ export interface Locale {
     /** 分页 range 文案（对齐 Semi pageText），uses {currentStart} {currentEnd} {total} */
     pageText: string;
   };
-  Avatar: {
-    /** AvatarGroup 折叠 +N 头像的可访问名，uses {count} */
-    moreAlt: string;
-    /** AvatarGroup 容器可访问名 */
-    groupLabel: string;
-  };
   Spin: {
     loading: string;
   };

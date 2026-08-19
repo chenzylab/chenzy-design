@@ -40,10 +40,6 @@ export const en_US: Locale = {
     rowCount: '{count} rows',
     pageText: 'Showing {currentStart} - {currentEnd} of {total}',
   },
-  Avatar: {
-    moreAlt: '{count} more',
-    groupLabel: 'Avatar group',
-  },
   Spin: {
     loading: 'Loading',
   },

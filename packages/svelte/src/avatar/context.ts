@@ -1,4 +1,4 @@
-import { getContext, setContext } from 'svelte';
+import { getContext, setContext, type Snippet } from 'svelte';
 
 export type AvatarShape = 'circle' | 'square';
 // 7 档尺寸，1:1 对齐 Semi strings.SIZE。
@@ -73,12 +73,25 @@ export interface AvatarGroupContext {
   isCollapsing?: () => boolean;
   /** 该序号是否应被折叠隐藏。 */
   isHidden?: (index: number) => boolean;
+  /** 层叠压盖方向（对齐 Semi item-start-N/item-end-N 类名，子 Avatar 据此选类）。 */
+  getOverlapFrom?: () => AvatarOverlapFrom;
 }
 
-/** 组合式成员注册描述符（供组渲染「+N」时读取 alt/内容做无障碍文案）。 */
+/**
+ * 组合式成员注册描述符（供组渲染「+N」时读取 alt 做无障碍文案，renderMore 时供业务重渲染）。
+ * content 是该 Avatar 自己的 children snippet 引用（非提取出的文本）：Svelte snippet
+ * 无法被内省取出文字（不像 React children 是可读的 vnode），但同一个 snippet 可以在
+ * 不同位置重复 {@render}——故直接把子 Avatar 的 children 原样透传给 renderMore，
+ * 让业务在溢出列表里用 `{@render member.content?.()}` 还原出与组内一致的头像内容
+ * （对齐 Semi React.cloneElement(avatar,{size}) 保留原 children 的语义）。
+ */
 export interface AvatarGroupMember {
   alt?: string;
-  content?: string;
+  color?: AvatarColor;
+  src?: string;
+  srcSet?: string;
+  style?: string;
+  content?: Snippet;
 }
 
 const KEY = Symbol('cd-avatar-group');

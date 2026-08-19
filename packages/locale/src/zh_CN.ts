@@ -41,10 +41,6 @@ export const zh_CN: Locale = {
     rowCount: '{count} 行',
     pageText: '显示第 {currentStart} 条-第 {currentEnd} 条，共 {total} 条',
   },
-  Avatar: {
-    moreAlt: '还有 {count} 个',
-    groupLabel: '头像组',
-  },
   Spin: {
     loading: '加载中',
   },
