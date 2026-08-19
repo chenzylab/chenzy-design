@@ -10,12 +10,13 @@
 {/snippet}
 
 <div style="width: 60%; min-width: 320px;">
-  <!-- more 传对象：count 控制收入数量，render 自定义触发器，dropdownProps 透传下拉参数。 -->
+  <!-- more 传对象：count 控制收入数量，render 自定义触发器，dropdownProps 透传下拉参数
+       （对齐 Semi：trigger 改点击展开、position 定位方向都可透传给内置的「更多」Dropdown）。 -->
   <Tabs
     type="card"
     activeKey={active}
     onChange={(k) => (active = k)}
-    more={{ count: 4, render: moreTrigger, dropdownProps: { position: 'bottomEnd' } }}
+    more={{ count: 4, render: moreTrigger, dropdownProps: { trigger: 'click', position: 'bottomEnd' } }}
   >
     {#each keys as i (i)}
       <TabPane tab={`Tab-${i}`} itemKey={`Tab-${i}`}>Content of card tab {i}</TabPane>

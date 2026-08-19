@@ -108,10 +108,14 @@
   oncontextmenu={disabled ? undefined : onContextMenu}
 >
   {#if showTick}
-    <!-- 对勾恒占位：active 显示实色勾，否则透明勾保持宽度一致（对齐 Semi IconTick 占位机制） -->
+    <!-- 对勾恒占位：active 显示实色勾，否则透明勾保持宽度一致（严格对齐 Semi
+         `<IconTick style={{ color: 'transparent' }}/>`：非激活态用内联 style 直接
+         盖 color，不走 CSS class——内联样式优先级恒高于外部类，不受跨组件 scoped CSS
+         chunk 加载顺序影响，此前用 class 覆盖曾因顺序不确定导致勾未被正确隐藏）。 -->
     <IconTick
       size="small"
-      class={`cd-dropdown-item-tick${active ? '' : ' cd-dropdown-item-tick-hidden'}`}
+      class="cd-dropdown-item-tick"
+      style={active ? '' : 'color: transparent;'}
       aria-hidden="true"
     />
   {/if}
@@ -145,15 +149,15 @@
     background-color: var(--cd-color-dropdown-item-bg-hover);
     outline: 0;
   }
-  /* 对勾（IconTick 等价）：宽度对齐 icon 尺寸 + 右侧留白让位内容 */
-  .cd-dropdown-item-tick {
+  /* 对勾（IconTick 等价）：宽度对齐 icon 尺寸 + 右侧留白让位内容。
+     :global 必须——class 透传给 IconTick 渲染出的元素只带 Icon.svelte 自己的 scoped hash，
+     不带本组件的 hash，不加 :global 这条规则的编译选择器永远选不中该元素（真机验证过：
+     margin-right 计算值恒为 0px，此前误判为缓存/构建问题，根因其实是这个）。 */
+  :global(.cd-dropdown-item-tick) {
     flex-shrink: 0;
     width: var(--cd-size-dropdown-icon-width);
     height: var(--cd-size-dropdown-icon-height);
     margin-right: var(--cd-spacing-dropdown-icon-marginright);
-  }
-  .cd-dropdown-item-tick-hidden {
-    color: transparent;
   }
   /* icon 容器：对齐 Semi .semi-dropdown-item-icon（inline-flex + margin-right:tight） */
   .cd-dropdown-item-icon {

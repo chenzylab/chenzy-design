@@ -71,7 +71,7 @@ describe('Tabs 键盘 e2e（horizontal roving + 手动激活，对齐 Semi）', 
 
     // 4. Tab 离开 tablist：单停靠点 → 焦点先到选中面板（history 已激活），再 Tab 到 after 按钮。
     await userEvent.keyboard('{Enter}');
-    const panel = baseElement.querySelector('[role="tabpanel"]:not([hidden])') as HTMLElement;
+    const panel = baseElement.querySelector('[role="tabpanel"][aria-hidden="false"]') as HTMLElement;
     await userEvent.tab();
     await expect.element(loc(panel)).toHaveFocus();
     const after = baseElement.querySelector('[data-testid="after"]') as HTMLElement;

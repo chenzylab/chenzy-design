@@ -3,7 +3,8 @@
 
   let count = $state(8);
   const tabs = $derived(Array.from({ length: count }, (_, i) => i));
-  let active = $state<string | number>('0');
+  let activeUnbound = $state<string | number>('0');
+  let activeNarrow = $state<string | number>('0');
 </script>
 
 <div>
@@ -13,10 +14,20 @@
     <span style="color: var(--cd-color-text-2);">当前 Tab 数量：{count}</span>
   </div>
 
-  <!-- collapsible="auto"：自动检测溢出——溢出才显示切换箭头，容器变宽/标签变少能全显时自动退出。 -->
+  <!-- collapsible="auto"：自动检测溢出——溢出才显示切换箭头，容器变宽/标签变少能全显时自动退出。
+       两组对照（对齐 Semi）：不限宽容器演示「变宽后自动退出折叠」；固定 400px 窄容器演示「持续折叠」。 -->
+  <div style="border: 1px solid var(--cd-color-border); padding: 12px; margin-bottom: 16px;">
+    <p style="margin: 0 0 8px; color: var(--cd-color-text-2); font-size: 12px;">collapsible="auto" - 自动检测溢出</p>
+    <Tabs type="card" collapsible="auto" activeKey={activeUnbound} onChange={(k) => (activeUnbound = k)}>
+      {#each tabs as i (i)}
+        <TabPane tab={`Tab-${i + 1}`} itemKey={`${i}`}>Content of Tab {i + 1}</TabPane>
+      {/each}
+    </Tabs>
+  </div>
+
   <div style="border: 1px solid var(--cd-color-border); padding: 12px; max-width: 400px;">
-    <p style="margin: 0 0 8px; color: var(--cd-color-text-2); font-size: 12px;">固定宽度 400px 容器</p>
-    <Tabs type="card" collapsible="auto" activeKey={active} onChange={(k) => (active = k)}>
+    <p style="margin: 0 0 8px; color: var(--cd-color-text-2); font-size: 12px;">固定宽度 400px，测试较窄容器</p>
+    <Tabs type="card" collapsible="auto" activeKey={activeNarrow} onChange={(k) => (activeNarrow = k)}>
       {#each tabs as i (i)}
         <TabPane tab={`Tab-${i + 1}`} itemKey={`${i}`}>Content of Tab {i + 1}</TabPane>
       {/each}

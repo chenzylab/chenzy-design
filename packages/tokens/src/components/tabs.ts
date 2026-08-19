@@ -78,6 +78,13 @@ export const tabsTokens = {
   'radius-tabs-tab-card-left': { value: 'var(--cd-border-radius-small) 0 0 var(--cd-border-radius-small)', category: 'radius', label: '垂直卡片式圆角', usage: '垂直卡片式页签四向圆角' },
   'radius-tabs-tab-button': { value: 'var(--cd-border-radius-small)', category: 'radius', label: '按钮式圆角', usage: '按钮式页签圆角' },
 
+  // ======== 面板切换动画（对齐 Semi semi-foundation/tabs/animation.scss）========
+  'motion-duration-tabs-pane-show': { value: '200ms', category: 'animation', label: '面板展示动画时长', usage: 'tabPanel 的展示动画持续时间' },
+  'motion-ease-tabs-pane-show': { value: 'ease-in-out', category: 'animation', label: '面板展示动画曲线', usage: 'tabPanel 的展示动画曲线' },
+  'motion-opacity-tabs-pane-show-from': { value: '0', category: 'animation', label: '面板展示动画起始透明度', usage: 'tabPanel 的动画开始时透明度' },
+  'motion-translate-tabs-pane-left-show': { value: '60px', category: 'animation', label: '左侧展示位移', usage: '左侧展示时 tabPanel 的水平偏移值' },
+  'motion-translate-tabs-pane-right-show': { value: '-60px', category: 'animation', label: '右侧展示位移', usage: '右侧展示时 tabPanel 的水平偏移值（同值复用于 topShow/bottomShow 的垂直偏移，对齐 Semi）' },
+
   // ======== 折叠箭头 / 附加操作 / 图标间距 ========
   'spacing-tabs-tab-pane-arrow': { value: '8px', category: 'spacing', label: '折叠箭头内边距', usage: '滚动折叠箭头内边距' },
   'spacing-tabs-bar-extra-paddingy': { value: '0px', category: 'spacing', label: '附加操作垂直内边距', usage: '附加操作垂直内边距' },
@@ -114,6 +121,7 @@ export const tabsTokens = {
   'spacing-tabs-content-paddingy': { value: '5px', category: 'spacing', label: '内容区垂直内边距', usage: '页签内容区垂直方向内边距' },
   'spacing-tabs-content-paddingx': { value: '0', category: 'spacing', label: '内容区水平内边距', usage: '页签内容区水平方向内边距' },
   'spacing-tabs-content-left-paddingx': { value: '5px', category: 'spacing', label: '垂直内容区水平内边距', usage: '垂直页签内容区水平方向内边距' },
+  'spacing-tabs-content-left-paddingy': { value: '0', category: 'spacing', label: '垂直内容区垂直内边距', usage: '垂直页签内容区垂直方向内边距' },
 
   // ======== card 内/外边距 ========
   'spacing-tabs-bar-card-tab-paddingy': { value: 'var(--cd-spacing-tight)', category: 'spacing', label: '卡片式垂直内边距', usage: '卡片式页签垂直内边距' },

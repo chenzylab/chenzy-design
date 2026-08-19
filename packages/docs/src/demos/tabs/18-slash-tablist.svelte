@@ -1,9 +1,7 @@
 <script lang="ts">
   import { Tabs, type PlainTab } from '@chenzy-design/svelte';
 
-  // 数据驱动：传 tabList 数组定义标签，内容由 children 单节点按 activeKey 渲染
-  // （对齐 Semi：使用 tabList 时每次只渲染当前传入的节点）。结构对齐 Semi 原 demo：
-  // contentList 按索引取值、onTabClick(key, type) 命名。
+  // 同块3（card+tabList）结构，仅 type 换成 slash（对齐 Semi 两块同构示例）。
   const contentList = ['文档', '快速起步', '帮助'];
   const tabList: PlainTab[] = [
     { tab: '文档', itemKey: '1' },
@@ -18,6 +16,6 @@
   }
 </script>
 
-<Tabs type="card" {tabList} onChange={(k) => onTabClick(k, 'key')}>
+<Tabs type="slash" {tabList} onChange={(k) => onTabClick(k, 'key')}>
   {contentList[Number(key) - 1]}
 </Tabs>

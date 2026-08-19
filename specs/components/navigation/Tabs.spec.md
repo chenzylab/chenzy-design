@@ -61,12 +61,12 @@ Tabs（标签页）用于在同一区域内组织并切换多组对等内容，�
 | tabPosition | `'top'\|'left'` | `top` | 标签栏位置：top 水平 / left 垂直（对齐 Semi；slash 仅 top） |
 | lazyRender | `boolean` | `false` | 懒渲染：仅当面板激活过才挂载进 DOM（对齐 Semi） |
 | keepDOM | `boolean` | `true` | 使用 TabPane 写法时是否渲染隐藏面板的 DOM（对齐 Semi） |
-| tabList | `TabItem[]` | `undefined` | 数据驱动标签定义；不传则从子 <Tabs.Pane> 的 tab/itemKey/icon/disabled/closable 纯声明式自动收集。TabItem 支持 icon?: Snippet（标签文字前渲染的图标） |
+| tabList | `PlainTab[]` | `undefined` | 数据驱动标签定义；不传则从子 <Tabs.Pane> 的 tab/itemKey/icon/disabled/closable 纯声明式自动收集。PlainTab 支持 icon?: Snippet（标签文字前渲染的图标） |
 | closable | `boolean` | `false` | 全局可关闭（单项可覆盖） |
 | collapsible | `boolean \| 'auto'` | `false` | 滚动折叠（对齐 Semi）：true 溢出时显示前/后切换箭头；auto 自动检测溢出再决定是否折叠（仅横向生效） |
 | more | `number \| { count?: number; render?: Snippet; dropdownProps?: object }` | `undefined` | 把末尾若干标签收进「更多」下拉（对齐 Semi）：数字简写或对象形式（count/render/dropdownProps） |
 | arrowPosition | `'start'\|'end'\|'both'` | `both` | collapsible 折叠模式中前/后切换箭头位置 |
-| renderArrow | `Snippet<[{ type: 'start'\|'end'; onClick: () => void }]>` | `undefined` | collapsible 折叠模式下自定义前/后切换箭头 |
+| renderArrow | `Snippet<[{ type: 'start'\|'end'; items: PlainTab[]; onClick: () => void; defaultNode: Snippet }]>` | `undefined` | collapsible 折叠模式下自定义前/后切换箭头（对齐 Semi 四参数签名：items/pos/handleArrowClick/defaultNode） |
 | showRestInDropdown | `boolean` | `true` | more 收纳模式是否在下拉中展示收起 tabs |
 | dropdownProps | `{ start?: object; end?: object }` | `undefined` | 折叠模式下透传下拉参数（对齐 Semi）：start=前箭头下拉，end=末尾「更多」下拉 |
 | onVisibleTabsChange | `(visibleTabKeys: (string\|number)[]) => void` | `undefined` | dropdown 模式下溢出项变化时回调，携带当前可见 tab keys |
@@ -82,18 +82,35 @@ Tabs（标签页）用于在同一区域内组织并切换多组对等内容，�
 | onChange | `(key: string\|number) => void` | `undefined` |  |
 | onTabClose | `(key: string\|number) => void` | `undefined` |  |
 | onTabClick | `(key: string\|number, event: MouseEvent) => void` | `undefined` | 标签被点击触发（含已选中标签，未必触发 onChange；disabled 拦截前发出，可用于埋点） |
-| renderTabBar | `Snippet<[TabItem[], string\|number\|undefined, (key) => void]>` | `undefined` | 自定义整个标签栏渲染（接收 tab 列表、当前激活 key、切换回调 setActive）；传入时跳过内置标签栏与溢出处理，面板内容仍按 activeKey 显隐 |
+| renderTabBar | `Snippet<[PlainTab[], string\|number\|undefined, (key) => void]>` | `undefined` | 自定义整个标签栏渲染（接收 tab 列表、当前激活 key、切换回调 setActive）；传入时跳过内置标签栏与溢出处理，面板内容仍按 activeKey 显隐 |
 | children | `Snippet` | `undefined` | 声明式 TabPane 内容（<Tabs.Pane>），<Tabs.Pane> 支持 icon?: Snippet（标签文字前渲染的图标） |
 
 **Tabs.TabPane Props**
 
 | Prop | 类型 | 默认值 | 说明 |
 |---|---|---|---|
-| `itemKey` | `string \| number` | 必填 | 唯一 key，对应 `value` |
-| `tab` | `string \| Snippet` | — | 标签标题（文本或自定义内容） |
+| `itemKey` | `string \| number` | 必填 | 唯一 key，对应 `activeKey` |
+| `tab` | `string` | — | 标签标题文字 |
 | `icon` | `Snippet` | — | 标签前置图标 |
 | `disabled` | `boolean` | `false` | 禁用该标签 |
 | `closable` | `boolean` | 继承 | 覆盖全局可关闭 |
+
+**Tabs.TabItem Props**（对齐 Semi `Tabs.TabItem` 独立导出，供 `renderTabBar` 自定义标签栏或第三方拖拽库复用官方标签样式）
+
+| Prop | 类型 | 默认值 | 说明 |
+|---|---|---|---|
+| `itemKey` | `string \| number` | 必填 | 标签 key |
+| `tab` | `string` | — | 标签文字 |
+| `icon` | `Snippet` | — | 标签前置图标 |
+| `size` | `'small'\|'medium'\|'large'` | 必填 | 尺寸档，与所属 Tabs 一致 |
+| `type` | `'line'\|'card'\|'button'\|'slash'` | 必填 | 视觉风格，与所属 Tabs 一致 |
+| `tabPosition` | `'top'\|'left'` | 必填 | 标签栏位置，与所属 Tabs 一致 |
+| `selected` | `boolean` | 必填 | 是否为激活态 |
+| `closable` | `boolean` | `false` | 是否显示关闭叉 |
+| `disabled` | `boolean` | `false` | 是否禁用 |
+| `class` / `style` | `string` | `undefined` | 根节点透传（供拖拽库注入 transform） |
+| `ref` | `HTMLDivElement \| null`（bindable） | `null` | 根节点 DOM 引用（对齐 Semi forwardRef，供 dnd-kit 等库的 setNodeRef 使用） |
+| `onClick` / `onTabKeyDown` / `deleteTabItem` | function | `undefined` | 独立使用时可选；由内置 Tabs 消费时必传 |
 
 ### Events
 
@@ -146,7 +163,7 @@ Tabs（标签页）用于在同一区域内组织并切换多组对等内容，�
 - `Tab`：从 tablist 焦点（仅选中标签为 tab-stop，roving tabindex）跳到当前面板。
 - `←/→`（horizontal）或 `↑/↓`（vertical）：在标签间移动焦点；`auto` 模式移动即激活，`manual` 模式仅移动焦点，需 `Enter`/`Space` 激活。
 - `Home` / `End`：聚焦首 / 末个可用标签。
-- 关闭叉：`Delete` 在聚焦标签上触发 `on:close`（可选增强）；关闭后焦点移至相邻标签。
+- `closable` 标签聚焦后按 `Backspace` / `Delete` 触发 `onTabClose`；关闭后焦点转移到后一个标签（末项则转前一个）。
 - 方向键跳过 `disabled` 标签。
 
 **焦点管理**
