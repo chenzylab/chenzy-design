@@ -43,6 +43,7 @@
     itemKey,
     visibleItemRenderer,
     overflowRenderer,
+    overflowRenderDirection = 'both',
     onOverflow,
     onIntersect,
     onVisibleStateChange,
@@ -66,11 +67,24 @@
     /** 可见项渲染模板（对齐 Semi visibleItemRenderer，Svelte 用 Snippet） */
     visibleItemRenderer?: Snippet<[T, number]>;
     /**
-     * 溢出项渲染模板（对齐 Semi overflowRenderer，Svelte 用 Snippet）。
-     * collapse 模式收到全部溢出项；scroll 模式收到 [头部溢出项, 尾部溢出项] 二元组，
-     * 需分别在两端渲染（与 Semi overflowRenderer 返回数组一致）。
+     * 溢出项渲染模板。语义对齐 Semi：Semi `overflowRenderer(overflow)` 单次调用收到
+     * `[头部溢出, 尾部溢出]` 二元数组，TabBar 用 `.map((item, index) => index===0?'start':'end')`
+     * 按下标（非内容）判定方向，因为 OverflowList 自己把 overflow[0]/overflow[1] 分别
+     * unshift/push 到 DOM 两端。Svelte snippet 渲染是声明式插入点，无法让一次 {@render}
+     * 的输出分裂到两处 DOM 位置，故此处改为按 DOM 位置各调用一次，改用显式 pos 参数
+     * 传递「这是头部还是尾部」这一在 Semi 里由数组下标天然携带的信息——不能让调用方
+     * 反过来靠 items 内容猜方向：items 为空时（如已滚动到底，尾部溢出为空）无从判断，
+     * 曾用内容猜测导致退化情况判反方向（真实翻过车：末尾箭头误判成 start 渲成左箭头）。
      */
-    overflowRenderer?: Snippet<[T[]]>;
+    overflowRenderer?: Snippet<[T[], 'start' | 'end']>;
+    /**
+     * scroll 模式两个溢出渲染节点（头/尾）的排列位置（对齐 Semi overflowRenderDirection，
+     * Tabs 用，未对外文档化的内部 prop）：'both'（默认）头在最左尾在最右分居两端；
+     * 'start' 头尾节点都堆到滚动视口最左侧；'end' 都堆到最右侧。只影响 DOM 排列位置，
+     * 不影响是否渲染——两个节点始终都渲染（对齐 Semi list.unshift/push 顺序重排，而非
+     * 条件渲染）。
+     */
+    overflowRenderDirection?: 'both' | 'start' | 'end';
     /** collapse 模式溢出项变化回调 */
     onOverflow?: (overflowItems: T[]) => void;
     /** scroll 模式相交状态回调 */
@@ -388,29 +402,45 @@
   });
 </script>
 
+{#snippet scrollWrapperContent()}
+  <div
+    class={['cd-overflow-list-scroll-wrapper', wrapperClass].filter(Boolean).join(' ')}
+    style={wrapperStyle}
+    bind:this={scrollerEl}
+  >
+    {#each items as item, idx (getItemKey(item, idx))}
+      <div use:observeScrollItem={String(getItemKey(item, idx))}>
+        {#if visibleItemRenderer}{@render visibleItemRenderer(item, idx)}{/if}
+      </div>
+    {/each}
+  </div>
+{/snippet}
+
 {#if isScroll}
-  <!-- scroll 模式：可见层为可横向滚动 wrapper；溢出项二元组分渲两端。 -->
+  <!-- scroll 模式：可见层为可横向滚动 wrapper；溢出项二元组分渲两端。
+       overflowRenderDirection 对齐 Semi：不是「只渲染一端」，是把头/尾两个节点整体
+       挪到同一侧（both 头左尾右分居两端 / start 头尾都堆最左 / end 头尾都堆最右）。 -->
   <div class={rootCls} style={rootStyle} bind:this={containerEl}>
-    {#if overflowRenderer}{@render overflowRenderer(scrollOverflow[0])}{/if}
-    <div
-      class={['cd-overflow-list-scroll-wrapper', wrapperClass].filter(Boolean).join(' ')}
-      style={wrapperStyle}
-      bind:this={scrollerEl}
-    >
-      {#each items as item, idx (getItemKey(item, idx))}
-        <div use:observeScrollItem={String(getItemKey(item, idx))}>
-          {#if visibleItemRenderer}{@render visibleItemRenderer(item, idx)}{/if}
-        </div>
-      {/each}
-    </div>
-    {#if overflowRenderer}{@render overflowRenderer(scrollOverflow[1])}{/if}
+    {#if overflowRenderDirection === 'both'}
+      {#if overflowRenderer}{@render overflowRenderer(scrollOverflow[0], 'start')}{/if}
+      {@render scrollWrapperContent()}
+      {#if overflowRenderer}{@render overflowRenderer(scrollOverflow[1], 'end')}{/if}
+    {:else if overflowRenderDirection === 'start'}
+      {#if overflowRenderer}{@render overflowRenderer(scrollOverflow[0], 'start')}{/if}
+      {#if overflowRenderer}{@render overflowRenderer(scrollOverflow[1], 'end')}{/if}
+      {@render scrollWrapperContent()}
+    {:else}
+      {@render scrollWrapperContent()}
+      {#if overflowRenderer}{@render overflowRenderer(scrollOverflow[0], 'start')}{/if}
+      {#if overflowRenderer}{@render overflowRenderer(scrollOverflow[1], 'end')}{/if}
+    {/if}
   </div>
 {:else}
   <!-- collapse 模式：折叠方向决定 overflow 节点渲染在头部还是尾部。 -->
   <div class={rootCls} style={rootStyle} bind:this={containerEl}>
     {#if collapseFrom === 'start' && collapseOverflow.length > 0 && overflowRenderer}
       <div class="cd-overflow-list-overflow" use:measureOverflow>
-        {@render overflowRenderer(collapseOverflow)}
+        {@render overflowRenderer(collapseOverflow, 'start')}
       </div>
     {/if}
     {#each collapseVisible as item, idx (getItemKey(item, idx))}
@@ -420,7 +450,7 @@
     {/each}
     {#if collapseFrom === 'end' && collapseOverflow.length > 0 && overflowRenderer}
       <div class="cd-overflow-list-overflow" use:measureOverflow>
-        {@render overflowRenderer(collapseOverflow)}
+        {@render overflowRenderer(collapseOverflow, 'end')}
       </div>
     {/if}
   </div>

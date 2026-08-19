@@ -1,17 +1,24 @@
 <script lang="ts">
-  import { Tabs, sortable, arrayMove } from '@chenzy-design/svelte';
-  import type { TabItem } from '@chenzy-design/svelte';
+  import { Tabs, TabItem, sortable, arrayMove } from '@chenzy-design/svelte';
+  import { IconFile, IconGlobe, IconLive, IconEdit } from '@chenzy-design/icons';
+  import type { PlainTab } from '@chenzy-design/svelte';
 
-  // 拖拽排序：复用本库 sortable action（core dnd-kit 思路，与 Table 拖拽同源）——
-  // 拖拽全程只叠加 CSS transform 不改 DOM，松手时 arrayMove 更新顺序（长度守恒零丢项）。
-  // 水平标签栏用 axis:'x'（sortable 支持横/纵两轴）；用数据驱动 tabList 承载
+  // 拖拽排序：复用本库 sortable action（core dnd-kit 思路，与 Table 拖拽同源）+ 真实
+  // TabItem 组件渲染标签外观（对齐 Semi demo「直接复用 Tabs.TabItem，保留官方样式」的思路，
+  // 含 icon 透传）。拖拽全程只叠加 CSS transform 不改 DOM，松手时 arrayMove 更新顺序（长度
+  // 守恒零丢项）。水平标签栏用 axis:'x'（sortable 支持横/纵两轴）；用数据驱动 tabList 承载
   // （tabList 顺序随数组变，声明式 TabPane 的 mount 顺序收集无法随 keyed 重排更新）。
-  // 对齐 Semi「renderTabBar 结合拖拽库」思路，改用本库自建 sortable 零第三方依赖。
-  let panes = $state<TabItem[]>([
-    { itemKey: '1', tab: '文档' },
-    { itemKey: '2', tab: '快速起步' },
-    { itemKey: '3', tab: '帮助' },
-    { itemKey: '4', tab: '更新日志' },
+  interface PaneMeta {
+    itemKey: string;
+    tab: string;
+    iconKey: 'file' | 'globe' | 'live' | 'edit';
+  }
+
+  let panes = $state<PaneMeta[]>([
+    { itemKey: '1', tab: '文档', iconKey: 'file' },
+    { itemKey: '2', tab: '快速起步', iconKey: 'globe' },
+    { itemKey: '3', tab: '幻灯片', iconKey: 'live' },
+    { itemKey: '4', tab: '表单', iconKey: 'edit' },
   ]);
   let active = $state<string | number>('1');
 
@@ -21,46 +28,49 @@
   const contentOf: Record<string, string> = {
     '1': '文档内容',
     '2': '快速起步内容',
-    '3': '帮助内容',
-    '4': '更新日志内容',
+    '3': '幻灯片内容',
+    '4': '表单内容',
   };
 </script>
 
+{#snippet iconFile()}<IconFile />{/snippet}
+{#snippet iconGlobe()}<IconGlobe />{/snippet}
+{#snippet iconLive()}<IconLive />{/snippet}
+{#snippet iconEdit()}<IconEdit />{/snippet}
+
 {#snippet renderBar(
-  list: TabItem[],
+  list: PlainTab[],
   activeKey: string | number | undefined,
   setActive: (k: string | number) => void,
 )}
+  {@const iconMap = { file: iconFile, globe: iconGlobe, live: iconLive, edit: iconEdit }}
   <div
+    class="cd-tabs-bar cd-tabs-bar-line cd-tabs-bar-top"
+    role="tablist"
     use:sortable={{ axis: 'x', getItemCount: () => list.length, onReorder }}
-    style="display:flex; gap:4px; margin-bottom:12px; border-bottom:1px solid var(--cd-color-border)"
   >
     {#each list as item (item.itemKey)}
-      <div
-        role="tab"
-        tabindex="0"
-        data-sortable-item
-        aria-selected={activeKey === item.itemKey}
-        onclick={() => setActive(item.itemKey)}
-        onkeydown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            setActive(item.itemKey);
-          }
-        }}
-        style="padding:8px 16px; cursor:grab; user-select:none; white-space:nowrap; border-bottom:2px solid {activeKey ===
-        item.itemKey
-          ? 'var(--cd-color-primary)'
-          : 'transparent'}; color:{activeKey === item.itemKey
-          ? 'var(--cd-color-primary)'
-          : 'var(--cd-color-text-1)'}"
-      >
-        {item.tab}
-      </div>
+      {@const meta = panes.find((p) => p.itemKey === item.itemKey)}
+      <TabItem
+        itemKey={item.itemKey}
+        tab={item.tab}
+        icon={meta ? iconMap[meta.iconKey] : undefined}
+        selected={activeKey === item.itemKey}
+        size="large"
+        type="line"
+        tabPosition="top"
+        style="cursor: grab;"
+        onClick={(key) => setActive(key)}
+      />
     {/each}
   </div>
 {/snippet}
 
-<Tabs tabList={panes} activeKey={active} onChange={(k) => (active = k)} renderTabBar={renderBar}>
+<Tabs
+  tabList={panes.map((p) => ({ itemKey: p.itemKey, tab: p.tab }))}
+  activeKey={active}
+  onChange={(k) => (active = k)}
+  renderTabBar={renderBar}
+>
   {contentOf[active] ?? ''}
 </Tabs>

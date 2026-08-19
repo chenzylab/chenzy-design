@@ -153,7 +153,7 @@ export {
 } from './breadcrumb/index.js';
 export { Pagination, paginationMeta } from './pagination/index.js';
 export { Steps, Step, stepsMeta, type StepProps, type StepStatus } from './steps/index.js';
-export { Tabs, TabPane, tabsMeta, type TabItem } from './tabs/index.js';
+export { Tabs, TabPane, TabItem, tabsMeta, type PlainTab, type TabsProps, type TabPaneProps } from './tabs/index.js';
 export {
   Dropdown,
   DropdownMenu,

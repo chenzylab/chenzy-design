@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
-  import { Table, Tabs, type TabItem } from '@chenzy-design/svelte';
+  import { Table, Tabs, type PlainTab } from '@chenzy-design/svelte';
   import { locale } from '$lib/locale.svelte';
   import { t } from '$lib/i18n';
   // 数据源：tokens 包构建产出的结构化 manifest（从 TS token 源直接生成，
@@ -49,7 +49,7 @@
     CATEGORY_ORDER.filter((c) => scoped.some((tk) => tk.category === c)),
   );
 
-  const tabList = $derived<TabItem[]>(categories.map((c) => ({ tab: c, itemKey: c })));
+  const tabList = $derived<PlainTab[]>(categories.map((c) => ({ tab: c, itemKey: c })));
 
   // 用户点选的类别（null = 跟随默认）。effective 类别从 categories 派生，
   // 避免在 $effect 内写 $state：切换组件时 picked 若失效自动回落到首个类别。

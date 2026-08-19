@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Tabs, TabPane, Button } from '@chenzy-design/svelte';
+  import { Tabs, TabPane, ButtonGroup, Button } from '@chenzy-design/svelte';
 
   interface Pane {
     title: string;
@@ -29,10 +29,10 @@
 </script>
 
 {#snippet extra()}
-  <div style="display: flex; gap: 8px;">
-    <Button size="small" onclick={add}>新增</Button>
-    <Button size="small" onclick={remove}>删除</Button>
-  </div>
+  <ButtonGroup>
+    <Button onclick={add}>新增</Button>
+    <Button onclick={remove}>删除</Button>
+  </ButtonGroup>
 {/snippet}
 
 <!-- 动态更新：通过绑定事件增删标签页。 -->

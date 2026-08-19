@@ -204,7 +204,13 @@ const components = [
   // 7.3 KB → 8 KB：全面对齐 Semi 引入的真实新功能（slash 型、left 垂直位置、
   // collapsible 滚动折叠含 auto 自动溢出检测、more 收纳下拉、closable 可关闭、
   // renderArrow/renderTabBar 自定义、动态增删）。实测 baseline 7.75 KB，纯功能增长。
-  ['tabs', '{ TabPane }', '8 KB'],
+  // 8 KB → 8.7 KB：严格按 Semi 文件结构拆分为 TabBar/TabItem/TabPane/interface/tabs-context
+  // 独立文件（对齐 Semi packages/semi-ui/tabs 拆分），TabItem 改为独立导出组件（供
+  // renderTabBar + 拖拽排序等场景复用官方标签外观）；collapsible 滚动折叠改为复用
+  // OverflowList（严格镜像 Semi 算法，替换此前自造的测量逻辑）；renderArrow 补全四参数
+  // 签名（items/defaultNode，对齐 Semi）；arrowPosition 补上真实的两端排列逻辑（此前
+  // 声明未使用）。实测 baseline 8.7 KB，纯架构对齐 + 功能补全增长。
+  ['tabs', '{ TabPane }', '8.8 KB'],
   // other
   ['back-top', '{ BackTop }', '1.7 KB'],
   ['hotkeys', '{ HotKeys }', '1.85 KB'],

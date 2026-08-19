@@ -22,9 +22,9 @@ export const meta = {
     { name: 'keepDOM', type: 'boolean', default: 'true', desc: '使用 TabPane 写法时是否渲染隐藏面板的 DOM（对齐 Semi）' },
     {
       name: 'tabList',
-      type: 'TabItem[]',
+      type: 'PlainTab[]',
       default: 'undefined',
-      desc: '数据驱动标签定义；不传则从子 <Tabs.Pane> 的 tab/itemKey/icon/disabled/closable 纯声明式自动收集。TabItem 支持 icon?: Snippet（标签文字前渲染的图标）',
+      desc: '数据驱动标签定义；不传则从子 <Tabs.Pane> 的 tab/itemKey/icon/disabled/closable 纯声明式自动收集。PlainTab 支持 icon?: Snippet（标签文字前渲染的图标）',
     },
     { name: 'closable', type: 'boolean', default: 'false', desc: '全局可关闭（单项可覆盖）' },
     {
@@ -47,9 +47,9 @@ export const meta = {
     },
     {
       name: 'renderArrow',
-      type: "Snippet<[{ type: 'start'|'end'; onClick: () => void }]>",
+      type: "Snippet<[{ type: 'start'|'end'; items: PlainTab[]; onClick: () => void; defaultNode: Snippet }]>",
       default: 'undefined',
-      desc: 'collapsible 折叠模式下自定义前/后切换箭头',
+      desc: 'collapsible 折叠模式下自定义前/后切换箭头（对齐 Semi 四参数签名）：items 该端溢出的标签列表，onClick 默认点击行为（滚动到相邻标签），defaultNode 内置默认箭头渲染',
     },
     {
       name: 'showRestInDropdown',
@@ -133,7 +133,7 @@ export const meta = {
     },
     {
       name: 'renderTabBar',
-      type: 'Snippet<[TabItem[], string|number|undefined, (key) => void]>',
+      type: 'Snippet<[PlainTab[], string|number|undefined, (key) => void]>',
       default: 'undefined',
       desc: '自定义整个标签栏渲染（接收 tab 列表、当前激活 key、切换回调 setActive）；传入时跳过内置标签栏与溢出处理，面板内容仍按 activeKey 显隐',
     },
@@ -141,12 +141,13 @@ export const meta = {
   ],
   a11y: {
     role: 'tablist',
-    keyboard: ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End', 'Enter', 'Space'],
+    keyboard: ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End', 'Enter', 'Space', 'Backspace', 'Delete'],
     notes: [
       'tablist 内每个标签为 role=tab，aria-selected 标记激活，aria-controls 关联面板',
       'roving tabindex：仅激活标签 tabindex=0，其余 -1',
       '对齐 Semi 手动激活：方向键仅移动焦点，Enter/Space 或点击才激活对应面板',
       '面板 role=tabpanel；关闭叉为带 aria-label 的原生 button',
+      'closable 标签聚焦后 Backspace/Delete 关闭；关闭后焦点转移到后一个标签（末项则转前一个）',
       '标签溢出时出现前/后滚动箭头（带 aria-label，tabindex=-1 不入 Tab 序），激活标签自动滚到可视区',
       'more 收纳时溢出标签收进末尾「更多」下拉（aria-haspopup=menu，带 aria-label），激活标签始终保持可见',
       'renderTabBar 自定义标签栏时由调用方负责无障碍语义（role=tab/aria-selected 等）',
@@ -182,11 +183,14 @@ export const meta = {
     '--cd-spacing-tabs-bar-line-tab-medium-paddingtop', '--cd-spacing-tabs-bar-line-tab-medium-paddingbottom',
     '--cd-spacing-tabs-bar-line-tab-left-padding', '--cd-spacing-tabs-bar-line-tab-left-small-padding', '--cd-spacing-tabs-bar-line-tab-left-medium-padding',
     '--cd-spacing-tabs-bar-slash-tab-paddingy', '--cd-spacing-tabs-bar-slash-tab-paddingx', '--cd-spacing-tabs-bar-slash-marginright', '--cd-spacing-tabs-bar-slash-line-marginleft', '--cd-spacing-tabs-bar-slash-line-marginy',
-    '--cd-spacing-tabs-content-paddingy', '--cd-spacing-tabs-content-paddingx', '--cd-spacing-tabs-content-left-paddingx',
+    '--cd-spacing-tabs-content-paddingy', '--cd-spacing-tabs-content-paddingx', '--cd-spacing-tabs-content-left-paddingx', '--cd-spacing-tabs-content-left-paddingy',
     '--cd-spacing-tabs-bar-card-tab-marginright', '--cd-spacing-tabs-bar-card-tab-paddingy', '--cd-spacing-tabs-bar-card-tab-paddingx', '--cd-spacing-tabs-bar-card-tab-active-paddingbottom', '--cd-spacing-tabs-bar-card-tab-left-marginbottom',
     '--cd-spacing-tabs-bar-button-tab-marginright', '--cd-spacing-tabs-bar-button-tab-marginbottom', '--cd-spacing-tabs-bar-button-tab-paddingy', '--cd-spacing-tabs-bar-button-tab-paddingx',
     // —— 圆角 ——
     '--cd-radius-tabs-tab-card', '--cd-radius-tabs-tab-card-left', '--cd-radius-tabs-tab-button',
+    // —— 面板切换动画 ——
+    '--cd-motion-duration-tabs-pane-show', '--cd-motion-ease-tabs-pane-show', '--cd-motion-opacity-tabs-pane-show-from',
+    '--cd-motion-translate-tabs-pane-left-show', '--cd-motion-translate-tabs-pane-right-show',
     // —— 全局别名 ——
     '--cd-focus-ring', '--cd-border-radius-small',
   ],

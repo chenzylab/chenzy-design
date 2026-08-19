@@ -27,9 +27,9 @@
   <div>
     <p style="color: var(--cd-color-text-2); font-size: 12px; margin: 0 0 8px;">button（按钮式）</p>
     <Tabs type="button" activeKey={btnActive} onChange={(k) => (btnActive = k)}>
-      <TabPane tab="日" itemKey="1">按日查看</TabPane>
-      <TabPane tab="周" itemKey="2">按周查看</TabPane>
-      <TabPane tab="月" itemKey="3">按月查看</TabPane>
+      <TabPane tab="文档" itemKey="1">文档内容</TabPane>
+      <TabPane tab="快速起步" itemKey="2">快速起步内容</TabPane>
+      <TabPane tab="帮助" itemKey="3">帮助内容</TabPane>
     </Tabs>
   </div>
   <div>

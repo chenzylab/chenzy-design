@@ -12,8 +12,12 @@ brief: 选项卡切换组件，用于让用户在不同的视图中进行切换�
   import basicSrc from '../../demos/tabs/01-basic.svelte?raw';
   import Type from '../../demos/tabs/02-type.svelte';
   import typeSrc from '../../demos/tabs/02-type.svelte?raw';
+  import ButtonType from '../../demos/tabs/03-button.svelte';
+  import buttonTypeSrc from '../../demos/tabs/03-button.svelte?raw';
   import TabList from '../../demos/tabs/17-tablist.svelte';
   import tabListSrc from '../../demos/tabs/17-tablist.svelte?raw';
+  import SlashTabList from '../../demos/tabs/18-slash-tablist.svelte';
+  import slashTabListSrc from '../../demos/tabs/18-slash-tablist.svelte?raw';
   import Icon from '../../demos/tabs/04-icon.svelte';
   import iconSrc from '../../demos/tabs/04-icon.svelte?raw';
   import More from '../../demos/tabs/05-more.svelte';
@@ -65,9 +69,17 @@ import { Tabs, TabPane } from '@chenzy-design/svelte';
 
 <DemoBox code={typeSrc}><Type /></DemoBox>
 
-`tabList` 数据驱动方式：
+button 类型：
+
+<DemoBox code={buttonTypeSrc}><ButtonType /></DemoBox>
+
+`tabList` 数据驱动方式（card 类型）：
 
 <DemoBox code={tabListSrc}><TabList /></DemoBox>
+
+`tabList` 数据驱动方式（slash 类型）：
+
+<DemoBox code={slashTabListSrc}><SlashTabList /></DemoBox>
 
 ### 带图标的
 
@@ -97,7 +109,7 @@ import { Tabs, TabPane } from '@chenzy-design/svelte';
 
 <DemoBox code={collapsibleSrc}><Collapsible /></DemoBox>
 
-**自定义滚动箭头渲染**：通过 `renderArrow` 修改滚动折叠模式下左右切换箭头的渲染。
+**自定义滚动箭头渲染**：通过 `renderArrow` 修改滚动折叠模式下左右切换箭头的渲染，入参为 `{ type, items, onClick, defaultNode }`——`type` 前/后、`items` 该端溢出的标签列表、`onClick` 默认点击行为（滚动到相邻标签）、`defaultNode` 内置默认箭头渲染（可在自定义内容基础上叠加）。
 
 <DemoBox code={renderArrowSrc}><RenderArrow /></DemoBox>
 
@@ -164,18 +176,18 @@ import { Tabs, TabPane } from '@chenzy-design/svelte';
 | dropdownProps | 折叠模式下透传参数到下拉菜单的 Dropdown 组件 | `{ start: DropdownProps, end: DropdownProps }` | - |
 | visibleTabsStyle | 整体滚动区域 Style | string | - |
 | contentStyle | 内容区域外层样式对象 | string | - |
-| defaultActiveKey | 初始化选中的 tab 页的 key 值 | string | - |
+| defaultActiveKey | 初始化选中的 tab 页的 key 值 | string | 首个标签 |
 | keepDOM | 使用 TabPane 写法时是否渲染隐藏面板的 DOM 结构 | boolean | true |
 | lazyRender | 懒渲染，仅当面板激活过才被渲染在 DOM 树中 | boolean | false |
 | more | 将一部分 Tab 渲染到下拉菜单中 | `number \| { count, render, dropdownProps }` | - |
 | renderTabBar | 用于二次封装标签栏，可配合拖拽实现标签排序 | `Snippet<[list, activeKey, setActive]>` | - |
-| renderArrow | 折叠滚动模式下，自定义左右切换箭头如何渲染 | `Snippet<[{ type, onClick }]>` | - |
+| renderArrow | 折叠滚动模式下，自定义左右切换箭头如何渲染 | `Snippet<[{ type, items, onClick, defaultNode }]>` | - |
 | preventScroll | 指示浏览器是否应滚动文档以显示新聚焦的元素 | boolean | - |
 | showRestInDropdown | 是否将收起的 Tab 展示在下拉菜单中（仅 collapsible 为 true 时生效） | boolean | true |
 | size | 大小，提供 `large`、`medium`、`small` | string | `large` |
 | style | 样式对象 | string | - |
 | tabBarExtraContent | 用于扩展标签栏的内容 | Snippet | - |
-| tabList | 标签页对象组成的数组（支持 itemKey、tab、icon） | `TabItem[]` | - |
+| tabList | 标签页对象组成的数组（支持 itemKey、tab、icon） | `PlainTab[]` | - |
 | tabPaneMotion | 是否使用动画切换 tabs | boolean | true |
 | tabPosition | tab 的位置，支持 `top`（水平）、`left`（垂直） | string | `top` |
 | type | 标签栏的样式，可选 `line`、`card`、`button`、`slash` | string | `line` |
@@ -196,20 +208,63 @@ import { Tabs, TabPane } from '@chenzy-design/svelte';
 | tab | 标签页栏显示文字 | string \| Snippet | - |
 | closable | 允许关闭 tab | boolean | false |
 
+### TabItem
+
+独立导出的标签渲染组件（对齐 Semi `Tabs.TabItem`），供 `renderTabBar` 自定义标签栏或结合第三方拖拽库（如拖拽排序示例）复用官方标签外观。
+
+| 属性 | 说明 | 类型 | 默认值 |
+| --- | --- | --- | --- |
+| itemKey | 标签 key | string \| number | 必填 |
+| tab | 标签文字 | string | - |
+| icon | 标签前置图标 | Snippet | - |
+| size | 尺寸档，与所属 Tabs 一致 | `'small' \| 'medium' \| 'large'` | 必填 |
+| type | 视觉风格，与所属 Tabs 一致 | `'line' \| 'card' \| 'button' \| 'slash'` | 必填 |
+| tabPosition | 标签栏位置，与所属 Tabs 一致 | `'top' \| 'left'` | 必填 |
+| selected | 是否为激活态 | boolean | 必填 |
+| closable | 是否显示关闭叉 | boolean | false |
+| disabled | 是否禁用 | boolean | false |
+| class / style | 根节点透传（供拖拽库注入 transform） | string | - |
+| ref | 根节点 DOM 引用（bindable，供 dnd-kit 等库的 setNodeRef 使用） | HTMLDivElement \| null | null |
+| onClick / onTabKeyDown / deleteTabItem | 事件回调；独立使用时可选，由内置 Tabs 消费时必传 | function | - |
+
 ## 无障碍
 
 ### ARIA
 
 - 标签栏容器 `role="tablist"`，每个标签 `role="tab"`，内容面板 `role="tabpanel"`。
-- 激活标签设 `aria-selected="true"`，标签通过 `aria-controls` 关联其面板，面板通过 `aria-labelledby` 关联其标签。
+- `aria-orientation` 表明标签栏方向：`tabPosition="left"` 时为 `vertical`，`tabPosition="top"` 时为 `horizontal`。
+- `aria-disabled`：标签禁用时对应 `true`。
+- `aria-selected`：表明标签是否被选中。
+- `aria-controls`：指向该标签所控制的面板。
+- `aria-labelledby`：指向设置该面板标签的元素。
 
 ### 键盘和焦点
 
-- `Tab` 键进入标签栏后，用 `Left/Right`（水平）或 `Up/Down`（垂直）在标签间移动焦点。
-- `Home` / `End` 跳到首个 / 末个标签。
-- `Enter` / `Space` 激活聚焦的标签。
+WAI-ARIA: https://www.w3.org/WAI/ARIA/apg/patterns/tabpanel/
+
+- 标签可以被获取到焦点，但禁用的标签除外（roving tabindex：仅激活标签 `tabindex=0`，其余 `-1`）。
+- 键盘用户可以使用 `Tab` 键，将焦点移动到已被选中的标签元素对应的面板上。
+- 当焦点位于水平标签列表中的标签元素上时，使用 `左右箭头` 切换焦点（不改变激活态）。
+- 当焦点位于垂直标签列表中的标签元素上时，使用 `上下箭头` 切换焦点（不改变激活态）。
+- 当焦点位于未被激活的标签元素上时，使用 `Space` 或 `Enter` 键激活该标签。
+- `Home` / `End` 跳到首个 / 末个标签（仅移动焦点，不激活）：
+  - Mac 用户可用 `fn` + `左箭头` 跳到首个标签、`fn` + `右箭头` 跳到末个标签；
+  - Windows 用户直接用 `Home` / `End`。
+- 当标签允许被关闭（`closable`）时：
+  - 聚焦标签后按 `Backspace` 或 `Delete` 键关闭该标签；
+  - 关闭后焦点转移到被关闭标签的后一个标签；若被关闭的是末项，则转移到前一个标签。
 
 ## 文案规范
 
 - 标签文字应简洁明确，反映其面板内容主题。
 - 使用句子大小写书写，避免过长导致截断。
+
+## FAQ
+
+- **为什么在 Tabs 中使用 Typography 的省略 ellipsis 失效？**
+
+  因为 Tabs 渲染 TabPane 时，默认会全部挂载并用 `display: none` 隐藏未激活面板，此时这些子组件无法获取到正确的宽度或高度值。建议开启 `lazyRender`，或将 `keepDOM` 设为 `false`。
+
+- **为什么在 Tabs 中使用依赖布局测量的组件（如 Collapse/Resizable Table）时高度或宽度值不对？**
+
+  原因同上；另外如果动画不是必需的，也可以设置 `tabPaneMotion={false}` 关闭切换动画。
