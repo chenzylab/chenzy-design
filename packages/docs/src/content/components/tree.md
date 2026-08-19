@@ -284,7 +284,7 @@ Tree 组件的 API 支持了大部分的渲染需求，如果有非常特殊的�
 | loadedKeys | （受控）已经加载的节点，配合 loadData 使用 | `string[]` | - |
 | motion | 是否开启动画 | boolean | true |
 | multiple | 是否支持多选 | boolean | false |
-| preventScroll | 聚焦时是否阻止浏览器滚动文档，作用于组件内的 focus 方法 | boolean | false |
+| preventScroll | 聚焦时是否阻止浏览器滚动文档，作用于组件内搜索框的聚焦 | boolean | false |
 | renderDraggingNode | 自定义正在拖拽节点的 dragImg 的 DOM 元素 | `(nodeInstance, node) => HTMLElement` | - |
 | renderFullLabel | 完全自定义 label 的渲染函数 | Snippet | - |
 | renderLabel | 自定义 label 的渲染函数 | Snippet | - |

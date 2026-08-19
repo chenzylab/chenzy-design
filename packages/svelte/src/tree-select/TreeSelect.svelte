@@ -1482,8 +1482,6 @@
           >
         : undefined;
     },
-    suffix: undefined,
-    dragGhost: undefined,
     onNodeClick: (node) => handleRowClick(node),
     onNodeExpand: (node) => toggleExpand(node),
     onNodeCheck: (node) => toggleCheckNode(node),

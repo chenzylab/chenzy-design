@@ -67,17 +67,13 @@
 
   // renderFullLabel 场景的缩进：对齐 Semi tree.scss `@for $i from 1 through 20` 生成的
   // `.tree-option.tree-option-fullLabel-level-#{$i}` 层级 padding-left 公式
-  // （levelPaddingLeft * (i-1) + level1PaddingLeft，i = flat.level+1）。Semi 用 SCSS 循环
-  // 生成 20 条全局 class 规则即可命中调用方渲染的 DOM；Svelte 没有等价的循环生成 CSS 能力，
-  // 且 renderFullLabel 的 snippet 由 demo 侧组件渲染，不在 treeNode.svelte 的 scoped CSS
-  // 作用域内（scoped hash 只打给模板内写死的元素），class 选择器天然打不到。用内联 style
-  // 计算这一行的 padding-left 数值直接跨作用域生效，等价于 Semi 的逐层级 class 规则。
-  const fullLabelPaddingLeft = $derived(
-    `calc(var(--cd-spacing-tree-option-level-padding-left) * ${flat.level} + var(--cd-spacing-tree-option-level1-padding-left))`,
-  );
-  const fullLabelStyle = $derived(
-    [rowStyle, `padding-left: ${fullLabelPaddingLeft}`].filter(Boolean).join('; '),
-  );
+  // （levelPaddingLeft * (i-1) + level1PaddingLeft，i = flat.level+1）。这里改用与 Semi 同构的
+  // 纯 CSS class 循环规则（见下方 style 区块 `.cd-tree-option-fullLabel-level-N`），而非内联 style：
+  // renderFullLabel 的 snippet 渲染到调用方（demo）组件里，不在本组件 scoped CSS 作用域内，
+  // 但 `:global()` 选择器能跨作用域命中（同构下方 `:global(.cd-tree-option-drag-over)` 的桥接写法），
+  // 且只有走 class 才能被 RTL 的 `:global(.cd-rtl) .cd-tree-option-fullLabel-level-N` 规则覆盖镜像
+  // （padding-left→padding-right）；内联 style 优先级高于 CSS class，RTL 覆盖规则会被内联值压制。
+  const fullLabelStyle = $derived(rowStyle);
 
   function onClick(e: MouseEvent): void {
     ctx.onNodeClick(node, e);
@@ -194,9 +190,7 @@
     class:cd-tree-option-active={active}
     class:cd-tree-option-block={ctx.blockNode}
     class:cd-tree-option-draggable={dragging}
-    class:cd-tree-option-drag-over-gap-top={isDropTarget && dropPos === 'before'}
     class:cd-tree-option-drag-over={isDropTarget && dropPos === 'inside'}
-    class:cd-tree-option-drag-over-gap-bottom={isDropTarget && dropPos === 'after'}
     role="treeitem"
     draggable={ctx.draggable && !disabled ? true : undefined}
     tabindex={-1}
@@ -312,7 +306,12 @@
       </span>
     {/if}
 
-    <span class="cd-tree-option-label" class:cd-tree-option-ellipsis={ellipsis}>
+    <span
+      class="cd-tree-option-label"
+      class:cd-tree-option-ellipsis={ellipsis}
+      class:cd-tree-option-drag-over-gap-top={isDropTarget && dropPos === 'before'}
+      class:cd-tree-option-drag-over-gap-bottom={isDropTarget && dropPos === 'after'}
+    >
       {#if ctx.renderLabel}
         {@render ctx.renderLabel({ node, level: flat.level, searchValue: searchWord, selected, checked })}
       {:else if filtered && searchWord && typeof node.label === 'string'}
@@ -322,17 +321,6 @@
       {:else}{node.label}{/if}
     </span>
 
-    {#if ctx.suffix}
-      <span class="cd-tree-option-suffix">
-        {@render ctx.suffix({ node })}
-      </span>
-    {/if}
-
-    {#if ctx.dragGhost && dragging}
-      <span class="cd-tree-drag-ghost" aria-hidden="true">
-        {@render ctx.dragGhost({ node })}
-      </span>
-    {/if}
   </div>
 {/if}
 
@@ -404,42 +392,58 @@
   }
 
   /* --- 拖拽排序：被拖节点半透明 + 插入指示线 / 内部高亮 --- */
-  /* 可拖拽行的内边距（对齐 Semi $spacing-tree_option_draggable-paddingY 2 / paddingX 0） */
+  /* 可拖拽行结构（对齐 Semi tree.scss `&-draggable` + `li.tree-option-draggable.tree-option`
+     覆写块）：外层 `[draggable='true']` 归零上下 padding + border-left 占位（避免插入线出现时
+     整行因 border 宽度变化产生 2px 抖动，Semi 源注释 `//margin-top: -border` 佐证这层占位的
+     防抖动用途）；内层 `.cd-tree-option-label` 单独承担 draggablePaddingY/X（Semi 里 X=0，
+     不叠加 level1-padding-left——此前本库外层直接改 padding、无内外层拆分，公式也叠加了
+     level1，与 Semi 源不符）；插入线（gap-top/bottom）与「成为子节点」态（drag-over）都用真实
+     border 而非 ::after/box-shadow，占用盒模型空间（对齐 Semi，此前用 ::after 绝对定位/
+     box-shadow inset 不占空间，真机测量行间距与 Semi 不一致）。 */
   .cd-tree-option[draggable='true'] {
+    box-sizing: border-box;
+    padding-top: 0;
+    padding-bottom: 0;
+    border-left: var(--cd-width-tree-option-draggable-border) solid transparent;
+  }
+  .cd-tree-option[draggable='true'] .cd-tree-option-label {
+    box-sizing: border-box;
     padding-top: var(--cd-spacing-tree-option-draggable-padding-y);
     padding-bottom: var(--cd-spacing-tree-option-draggable-padding-y);
-    padding-right: calc(
-      var(--cd-spacing-tree-option-level1-padding-left) +
-        var(--cd-spacing-tree-option-draggable-padding-x)
-    );
+    padding-left: var(--cd-spacing-tree-option-draggable-padding-x);
+    padding-right: var(--cd-spacing-tree-option-draggable-padding-x);
+    border-top: var(--cd-width-tree-option-draggable-border) solid transparent;
+    border-bottom: var(--cd-width-tree-option-draggable-border) solid transparent;
   }
   .cd-tree-option-draggable {
     opacity: 0.5;
   }
-  /* before/after 用 ::after 画一条插入指示线（不影响布局，子元素不接收 drag 事件） */
-  .cd-tree-option-drag-over-gap-top::after,
-  .cd-tree-option-drag-over-gap-bottom::after {
-    content: '';
-    position: absolute;
-    left: 0;
-    right: 0;
-    height: var(--cd-width-tree-option-draggable-border);
-    background: var(--cd-color-tree-option-draggable-insert-border-default);
-    border-radius: 1px;
-    pointer-events: none;
+  /* 特异性须不低于上方 `[draggable='true'] .cd-tree-option-label`（0-1-2）的 transparent 占位
+     规则，否则插入线颜色被压制成透明（真机验证发现：单独 .cd-tree-option-drag-over-gap-top
+     特异性 0-1-0 更低，border-top 宽度对但颜色不生效）。 */
+  .cd-tree-option[draggable='true'] .cd-tree-option-drag-over-gap-top {
+    border-top: var(--cd-width-tree-option-draggable-border) solid
+      var(--cd-color-tree-option-draggable-insert-border-default);
   }
-  .cd-tree-option-drag-over-gap-top::after {
-    top: -1px;
+  .cd-tree-option[draggable='true'] .cd-tree-option-drag-over-gap-bottom {
+    border-bottom: var(--cd-width-tree-option-draggable-border) solid
+      var(--cd-color-tree-option-draggable-insert-border-default);
   }
-  .cd-tree-option-drag-over-gap-bottom::after {
-    bottom: -1px;
+  /* inside：成为子节点 → 整行 border 高亮框（对齐 Semi `&-drag-over.tree-option-draggable`：
+     真实 border 占位，非 box-shadow）。选择器用 [draggable='true'] 而非 .cd-tree-option-draggable
+     class——本库该 class 语义是「当前正被拖拽的源节点」（class:cd-tree-option-draggable={dragging}，
+     dragging=拖拽源本身，非拖拽能力），与 Semi `-draggable`（拖拽能力级，命中所有非 disabled 可拖拽
+     节点）不同；drag-over 态命中的是拖入的目标行，几乎不会与拖拽源重合，若用该 class 复合选择器会
+     导致整行高亮框永远不生效。语义对齐能力级的是模板上的 `draggable` 属性本身。
+     :global() 包裹：cd-tree-option-drag-over 同样通过 fullLabelClassName 字符串跨作用域传给
+     renderFullLabel 调用方渲染，理由同上方 .cd-tree-option 基础布局规则的 :global() 说明。 */
+  :global(.cd-tree-option-drag-over[draggable='true']) {
+    border: var(--cd-width-tree-option-draggable-border) solid
+      var(--cd-color-tree-option-draggable-insert-border-default);
   }
-  /* inside：成为子节点 → 整行高亮框。:global() 包裹：cd-tree-option-drag-over 同样通过
-     fullLabelClassName 字符串跨作用域传给 renderFullLabel 调用方渲染，理由同上方 .cd-tree-option
-     基础布局规则的 :global() 说明。 */
-  :global(.cd-tree-option-drag-over) {
-    background: var(--cd-color-tree-option-bg-hover);
-    box-shadow: inset 0 0 0 1px var(--cd-color-tree-option-draggable-insert-border-default);
+  :global(.cd-tree-option-drag-over[draggable='true'] .cd-tree-option-label) {
+    border-top: 0;
+    border-bottom: 0;
   }
   /* renderFullLabel 场景的插入线（对齐 Semi &-fullLabel-draggable 组合选择器 border-top/bottom
      方案）：用户自定义渲染的根节点不保证有稳定的 position:relative 容器可画 ::after 绝对定位
@@ -586,21 +590,6 @@
     text-overflow: ellipsis;
   }
 
-  .cd-tree-option-suffix {
-    display: inline-flex;
-    align-items: center;
-    flex: 0 0 auto;
-    margin-left: var(--cd-spacing-extra-tight);
-  }
-
-  /* 拖拽幽灵节点：绝对定位在节点外屏幕外，由浏览器 setDragImage 拾取（或 CSS 隐藏） */
-  .cd-tree-drag-ghost {
-    position: absolute;
-    left: -9999px;
-    top: 0;
-    pointer-events: none;
-  }
-
   /* 搜索命中高亮：class 注入到 Highlight 子组件内部的 mark，需 :global 穿透 scoped CSS。
      对齐 Semi：primary 文字 + bold + 无独立背景（inherit）。 */
   .cd-tree-option-label :global(.cd-tree-option-highlight) {
@@ -609,4 +598,193 @@
     background: inherit;
     font-weight: var(--cd-font-tree-option-highlight-weight);
   }
+
+  /* renderFullLabel 层级缩进（对齐 Semi tree.scss `@for $i from 1 through 20` 循环生成的
+     `.tree-option.tree-option-fullLabel-level-#{$i}` 规则：levelPaddingLeft*(i-1)+level1PaddingLeft）。
+     :global() 桥接：这个 class 打在调用方（demo）组件渲染的根节点上，不在本组件 scoped 作用域内，
+     理由同上方 .cd-tree-option-drag-over 等桥接规则。用纯 CSS 而非内联 style 实现，
+     才能被下方 RTL 覆盖规则命中（内联 style 优先级高于 class，会压制 CSS 覆盖）。 */
+  :global(.cd-tree-option-fullLabel-level-1) {
+    padding-left: var(--cd-spacing-tree-option-level1-padding-left);
+  }
+  :global(.cd-tree-option-fullLabel-level-2) {
+    padding-left: calc(var(--cd-spacing-tree-option-level-padding-left) * 1 + var(--cd-spacing-tree-option-level1-padding-left));
+  }
+  :global(.cd-tree-option-fullLabel-level-3) {
+    padding-left: calc(var(--cd-spacing-tree-option-level-padding-left) * 2 + var(--cd-spacing-tree-option-level1-padding-left));
+  }
+  :global(.cd-tree-option-fullLabel-level-4) {
+    padding-left: calc(var(--cd-spacing-tree-option-level-padding-left) * 3 + var(--cd-spacing-tree-option-level1-padding-left));
+  }
+  :global(.cd-tree-option-fullLabel-level-5) {
+    padding-left: calc(var(--cd-spacing-tree-option-level-padding-left) * 4 + var(--cd-spacing-tree-option-level1-padding-left));
+  }
+  :global(.cd-tree-option-fullLabel-level-6) {
+    padding-left: calc(var(--cd-spacing-tree-option-level-padding-left) * 5 + var(--cd-spacing-tree-option-level1-padding-left));
+  }
+  :global(.cd-tree-option-fullLabel-level-7) {
+    padding-left: calc(var(--cd-spacing-tree-option-level-padding-left) * 6 + var(--cd-spacing-tree-option-level1-padding-left));
+  }
+  :global(.cd-tree-option-fullLabel-level-8) {
+    padding-left: calc(var(--cd-spacing-tree-option-level-padding-left) * 7 + var(--cd-spacing-tree-option-level1-padding-left));
+  }
+  :global(.cd-tree-option-fullLabel-level-9) {
+    padding-left: calc(var(--cd-spacing-tree-option-level-padding-left) * 8 + var(--cd-spacing-tree-option-level1-padding-left));
+  }
+  :global(.cd-tree-option-fullLabel-level-10) {
+    padding-left: calc(var(--cd-spacing-tree-option-level-padding-left) * 9 + var(--cd-spacing-tree-option-level1-padding-left));
+  }
+  :global(.cd-tree-option-fullLabel-level-11) {
+    padding-left: calc(var(--cd-spacing-tree-option-level-padding-left) * 10 + var(--cd-spacing-tree-option-level1-padding-left));
+  }
+  :global(.cd-tree-option-fullLabel-level-12) {
+    padding-left: calc(var(--cd-spacing-tree-option-level-padding-left) * 11 + var(--cd-spacing-tree-option-level1-padding-left));
+  }
+  :global(.cd-tree-option-fullLabel-level-13) {
+    padding-left: calc(var(--cd-spacing-tree-option-level-padding-left) * 12 + var(--cd-spacing-tree-option-level1-padding-left));
+  }
+  :global(.cd-tree-option-fullLabel-level-14) {
+    padding-left: calc(var(--cd-spacing-tree-option-level-padding-left) * 13 + var(--cd-spacing-tree-option-level1-padding-left));
+  }
+  :global(.cd-tree-option-fullLabel-level-15) {
+    padding-left: calc(var(--cd-spacing-tree-option-level-padding-left) * 14 + var(--cd-spacing-tree-option-level1-padding-left));
+  }
+  :global(.cd-tree-option-fullLabel-level-16) {
+    padding-left: calc(var(--cd-spacing-tree-option-level-padding-left) * 15 + var(--cd-spacing-tree-option-level1-padding-left));
+  }
+  :global(.cd-tree-option-fullLabel-level-17) {
+    padding-left: calc(var(--cd-spacing-tree-option-level-padding-left) * 16 + var(--cd-spacing-tree-option-level1-padding-left));
+  }
+  :global(.cd-tree-option-fullLabel-level-18) {
+    padding-left: calc(var(--cd-spacing-tree-option-level-padding-left) * 17 + var(--cd-spacing-tree-option-level1-padding-left));
+  }
+  :global(.cd-tree-option-fullLabel-level-19) {
+    padding-left: calc(var(--cd-spacing-tree-option-level-padding-left) * 18 + var(--cd-spacing-tree-option-level1-padding-left));
+  }
+  :global(.cd-tree-option-fullLabel-level-20) {
+    padding-left: calc(var(--cd-spacing-tree-option-level-padding-left) * 19 + var(--cd-spacing-tree-option-level1-padding-left));
+  }
+  /* —— RTL（对齐 Semi tree/rtl.scss，逐条镜像；触发机制 :global(.cd-rtl) .cd-<comp>，
+     理由同 Tree.svelte 顶部 RTL 段落说明）。 */
+  /* expand-icon / empty-icon margin-right→margin-left（rtl.scss L16-20）。 */
+  :global(.cd-rtl) .cd-tree-option-expand-icon,
+  :global(.cd-rtl) .cd-tree-option-empty-icon {
+    margin-right: 0;
+    margin-left: var(--cd-spacing-tree-icon-margin-right);
+  }
+  /* .cd-tree-option 首层缩进左右互换（rtl.scss L21-24）。 */
+  :global(.cd-rtl) .cd-tree-option {
+    padding-left: 0;
+    padding-right: var(--cd-spacing-tree-option-level1-padding-left);
+  }
+  /* label 内图标 / checkbox margin-right→margin-left（rtl.scss L25-34）。 */
+  :global(.cd-rtl) .cd-tree-option-item-icon:not(:empty),
+  :global(.cd-rtl) .cd-tree-option-checkbox {
+    margin-right: 0;
+    margin-left: var(--cd-spacing-tree-label-with-icon-margin-right);
+  }
+  /* 收起态旋转角度镜像（rtl.scss L37-41：LTR 270deg→RTL 90deg）。本库无 Semi 的父级
+     `&-collapsed` 状态类结构，收起/展开直接靠 .cd-tree-option-expand-icon（默认收起态，
+     LTR 用等价角 -90deg）与 .cd-tree-option-expand-icon-open（展开态）二元切换，
+     故镜像也落在这两个已有类上，而非 Semi 的父级选择器。 */
+  :global(.cd-rtl) .cd-tree-option-expand-icon {
+    transform: rotate(90deg);
+  }
+  :global(.cd-rtl) .cd-tree-option-expand-icon-open {
+    transform: rotate(0deg);
+  }
+  :global(.cd-rtl) .cd-tree-option-switcher-leaf-line,
+  :global(.cd-rtl) .cd-tree-option-empty-icon {
+    transform: none;
+  }
+  /* rtl.scss L46-49（.tree-option-label-empty padding 镜像）不搬：Semi 该规则对应
+     renderEmptyNode() 的 <li class="tree-label tree-label-empty">（整树 emptyContent 展示态），
+     本库对应结构是 Tree.svelte 的 .cd-tree-empty（text-align:center 居中文案），无对应的
+     tree-label/tree-label-empty class 与 padding-left 布局逻辑；且 Semi 源值 `padding-left: auto`
+     本身是无效值（fork 盘点已确认），镜像后也无真实视觉产出，判定为无对应结构可镜像，不搬。 */
+  /* showLine 叶子连接线容器 margin 镜像（rtl.scss L56-60）：Semi 独立的 `&-switcher` 容器职责
+     已合并进 .cd-tree-option-expand-icon（见 C3 说明），已被上方 expand-icon 规则覆盖，不重复声明。 */
+
+  /* fullLabel 20 层缩进 RTL 镜像（rtl.scss L44-49 `@for` 循环，padding-left:0 + 同公式 padding-right）。 */
+  :global(.cd-rtl .cd-tree-option-fullLabel-level-1) {
+    padding-left: 0;
+    padding-right: var(--cd-spacing-tree-option-level1-padding-left);
+  }
+  :global(.cd-rtl .cd-tree-option-fullLabel-level-2) {
+    padding-left: 0;
+    padding-right: calc(var(--cd-spacing-tree-option-level-padding-left) * 1 + var(--cd-spacing-tree-option-level1-padding-left));
+  }
+  :global(.cd-rtl .cd-tree-option-fullLabel-level-3) {
+    padding-left: 0;
+    padding-right: calc(var(--cd-spacing-tree-option-level-padding-left) * 2 + var(--cd-spacing-tree-option-level1-padding-left));
+  }
+  :global(.cd-rtl .cd-tree-option-fullLabel-level-4) {
+    padding-left: 0;
+    padding-right: calc(var(--cd-spacing-tree-option-level-padding-left) * 3 + var(--cd-spacing-tree-option-level1-padding-left));
+  }
+  :global(.cd-rtl .cd-tree-option-fullLabel-level-5) {
+    padding-left: 0;
+    padding-right: calc(var(--cd-spacing-tree-option-level-padding-left) * 4 + var(--cd-spacing-tree-option-level1-padding-left));
+  }
+  :global(.cd-rtl .cd-tree-option-fullLabel-level-6) {
+    padding-left: 0;
+    padding-right: calc(var(--cd-spacing-tree-option-level-padding-left) * 5 + var(--cd-spacing-tree-option-level1-padding-left));
+  }
+  :global(.cd-rtl .cd-tree-option-fullLabel-level-7) {
+    padding-left: 0;
+    padding-right: calc(var(--cd-spacing-tree-option-level-padding-left) * 6 + var(--cd-spacing-tree-option-level1-padding-left));
+  }
+  :global(.cd-rtl .cd-tree-option-fullLabel-level-8) {
+    padding-left: 0;
+    padding-right: calc(var(--cd-spacing-tree-option-level-padding-left) * 7 + var(--cd-spacing-tree-option-level1-padding-left));
+  }
+  :global(.cd-rtl .cd-tree-option-fullLabel-level-9) {
+    padding-left: 0;
+    padding-right: calc(var(--cd-spacing-tree-option-level-padding-left) * 8 + var(--cd-spacing-tree-option-level1-padding-left));
+  }
+  :global(.cd-rtl .cd-tree-option-fullLabel-level-10) {
+    padding-left: 0;
+    padding-right: calc(var(--cd-spacing-tree-option-level-padding-left) * 9 + var(--cd-spacing-tree-option-level1-padding-left));
+  }
+  :global(.cd-rtl .cd-tree-option-fullLabel-level-11) {
+    padding-left: 0;
+    padding-right: calc(var(--cd-spacing-tree-option-level-padding-left) * 10 + var(--cd-spacing-tree-option-level1-padding-left));
+  }
+  :global(.cd-rtl .cd-tree-option-fullLabel-level-12) {
+    padding-left: 0;
+    padding-right: calc(var(--cd-spacing-tree-option-level-padding-left) * 11 + var(--cd-spacing-tree-option-level1-padding-left));
+  }
+  :global(.cd-rtl .cd-tree-option-fullLabel-level-13) {
+    padding-left: 0;
+    padding-right: calc(var(--cd-spacing-tree-option-level-padding-left) * 12 + var(--cd-spacing-tree-option-level1-padding-left));
+  }
+  :global(.cd-rtl .cd-tree-option-fullLabel-level-14) {
+    padding-left: 0;
+    padding-right: calc(var(--cd-spacing-tree-option-level-padding-left) * 13 + var(--cd-spacing-tree-option-level1-padding-left));
+  }
+  :global(.cd-rtl .cd-tree-option-fullLabel-level-15) {
+    padding-left: 0;
+    padding-right: calc(var(--cd-spacing-tree-option-level-padding-left) * 14 + var(--cd-spacing-tree-option-level1-padding-left));
+  }
+  :global(.cd-rtl .cd-tree-option-fullLabel-level-16) {
+    padding-left: 0;
+    padding-right: calc(var(--cd-spacing-tree-option-level-padding-left) * 15 + var(--cd-spacing-tree-option-level1-padding-left));
+  }
+  :global(.cd-rtl .cd-tree-option-fullLabel-level-17) {
+    padding-left: 0;
+    padding-right: calc(var(--cd-spacing-tree-option-level-padding-left) * 16 + var(--cd-spacing-tree-option-level1-padding-left));
+  }
+  :global(.cd-rtl .cd-tree-option-fullLabel-level-18) {
+    padding-left: 0;
+    padding-right: calc(var(--cd-spacing-tree-option-level-padding-left) * 17 + var(--cd-spacing-tree-option-level1-padding-left));
+  }
+  :global(.cd-rtl .cd-tree-option-fullLabel-level-19) {
+    padding-left: 0;
+    padding-right: calc(var(--cd-spacing-tree-option-level-padding-left) * 18 + var(--cd-spacing-tree-option-level1-padding-left));
+  }
+  :global(.cd-rtl .cd-tree-option-fullLabel-level-20) {
+    padding-left: 0;
+    padding-right: calc(var(--cd-spacing-tree-option-level-padding-left) * 19 + var(--cd-spacing-tree-option-level1-padding-left));
+  }
+
 </style>

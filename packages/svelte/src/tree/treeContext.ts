@@ -77,8 +77,6 @@ export interface TreeContextValue {
   toOrig: (node: TreeNodeData) => TreeNodeData;
   icon: Snippet<[{ node: TreeNodeData; expanded: boolean; isLeaf: boolean }]> | undefined;
   expandIcon: Snippet<[{ node: TreeNodeData; expanded: boolean; loading: boolean }]> | undefined;
-  suffix: Snippet<[{ node: TreeNodeData }]> | undefined;
-  dragGhost: Snippet<[{ node: TreeNodeData }]> | undefined;
   onNodeClick: (node: TreeNodeData, e: MouseEvent) => void;
   onNodeExpand: (node: TreeNodeData, e: MouseEvent) => void;
   onNodeCheck: (node: TreeNodeData) => void;
