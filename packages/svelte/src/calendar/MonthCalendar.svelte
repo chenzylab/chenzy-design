@@ -199,8 +199,16 @@
     <div class="cd-calendar-month-week" role="presentation">
       <ul class="cd-calendar-month-grid-col" role="presentation">
         {#each monthWeeks as week, wi (wi)}
-          <!-- 每周行（对齐 Semi renderWeekRow：weekrow role=presentation > skeleton(li) + event-items） -->
-          <div class="cd-calendar-month-weekrow" role="presentation" bind:clientHeight={monthWeekH}>
+          <!-- 每周行（对齐 Semi renderWeekRow：weekrow role=presentation > skeleton(li) + event-items）。
+               clientHeight 只让第一行真正写入 monthWeekH：Semi this.cellDom 是单一 ref，多行共享同一 ref
+               只留最后挂载的那份；Svelte bind:clientHeight 若绑在循环每个节点上，各行尺寸变化会持续
+               互相覆写同一个响应式变量，导致 monthItemLimit 在渲染期间抖动、不同行读到不一致的 limit
+               而错位重叠。用 {get,set} pair 让非首行的 setter 变成空操作，值稳定来自单一节点。 -->
+          <div
+            class="cd-calendar-month-weekrow"
+            role="presentation"
+            bind:clientHeight={() => monthWeekH, (v) => { if (wi === 0) monthWeekH = v; }}
+          >
             <!-- svelte-ignore a11y_no_noninteractive_element_to_interactive_role -->
             <ul class="cd-calendar-month-skeleton" role="row">
               {#each week as cell, ci (cell.date.getTime())}
@@ -220,10 +228,16 @@
                 {/snippet}
                 {#if remaining > 0}
                   {@const cardKey = cell.date.toString()}
+                  <!-- triggerStyle=display:contents：Tooltip 内层 .cd-tooltip-trigger-custom 已是
+                       display:contents，但最外层 .cd-tooltip 仍是普通盒子，会插进
+                       .cd-calendar-month-skeleton（display:flex）与 <li>（本应是直接 flex item）
+                       之间，让 <li> 脱离 flex 布局、按内容收缩宽度，多个「+N」格子因此错位重叠。
+                       显式让外层也 display:contents，使 <li> 重新成为 flex 的直接子项。 -->
                   <Popover
                     trigger="custom"
                     position="bottom"
                     visible={openCardKey === cardKey}
+                    triggerStyle="display: contents;"
                   >
                     <!-- svelte-ignore a11y_no_noninteractive_element_to_interactive_role -->
                     <li
