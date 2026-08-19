@@ -4,6 +4,8 @@
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
+  import { getContext } from 'svelte';
+  import { CONFIG_CONTEXT_KEY, type ConfigContextValue } from '../config-provider/context.js';
 
   type BadgeType = 'primary' | 'secondary' | 'tertiary' | 'danger' | 'warning' | 'success';
   type BadgeTheme = 'solid' | 'light' | 'inverted';
@@ -70,7 +72,11 @@
   // count 为 Snippet 时的渲染句柄（isSnippet 保证类型）。
   const countSnippet = $derived(isSnippet ? (count as Snippet) : undefined);
 
-  const resolvedPosition = $derived(position ?? 'rightTop');
+  // 默认 position 随 direction 切换（对齐 Semi：direction==='rtl' ? 'leftTop' : 'rightTop'）；
+  // 用户显式传入的 position 不受 direction 影响，按物理方向原样渲染。
+  const configCtx = getContext<ConfigContextValue | undefined>(CONFIG_CONTEXT_KEY);
+  const defaultPosition = $derived(configCtx?.current.direction === 'rtl' ? 'leftTop' : 'rightTop');
+  const resolvedPosition = $derived(position ?? defaultPosition);
 
   const wrapperCls = $derived(
     [
@@ -113,6 +119,10 @@
     display: inline-block;
   }
 
+  :global(.cd-rtl) .cd-badge {
+    direction: rtl;
+  }
+
   .cd-badge-dot {
     box-sizing: border-box;
     width: var(--cd-width-badge-dot);
@@ -144,13 +154,13 @@
   .cd-badge-rightTop {
     position: absolute;
     top: 0;
-    inset-inline-end: 0;
+    right: 0;
     transform: translate(50%, -50%);
     transform-origin: 100% 0%;
   }
   .cd-badge-rightBottom {
     position: absolute;
-    inset-inline-end: 0;
+    right: 0;
     bottom: 0;
     transform: translate(50%, 50%);
     transform-origin: 100% 0%;
@@ -158,34 +168,16 @@
   .cd-badge-leftTop {
     position: absolute;
     top: 0;
-    inset-inline-start: 0;
+    left: 0;
     transform: translate(-50%, -50%);
     transform-origin: 100% 0%;
   }
   .cd-badge-leftBottom {
     position: absolute;
     bottom: 0;
-    inset-inline-start: 0;
+    left: 0;
     transform: translate(-50%, 50%);
     transform-origin: 100% 0%;
-  }
-
-  /* RTL：镜像水平平移（inset-inline 已处理锚点，transform 的 x 需翻向） */
-  :global(.cd-rtl) .cd-badge-rightTop,
-  :global(.cd-rtl) .cd-badge-rightBottom {
-    transform: translate(-50%, var(--cd-badge-ty));
-  }
-  :global(.cd-rtl) .cd-badge-leftTop,
-  :global(.cd-rtl) .cd-badge-leftBottom {
-    transform: translate(50%, var(--cd-badge-ty));
-  }
-  .cd-badge-rightTop,
-  .cd-badge-leftTop {
-    --cd-badge-ty: -50%;
-  }
-  .cd-badge-rightBottom,
-  .cd-badge-leftBottom {
-    --cd-badge-ty: 50%;
   }
 
   .cd-badge-custom {
@@ -200,7 +192,6 @@
   /* ── type × theme ── */
   .cd-badge-primary.cd-badge-solid {
     background-color: var(--cd-color-badge-primary-solid-bg-default);
-    color: var(--cd-color-white);
   }
   .cd-badge-primary.cd-badge-light {
     background-color: var(--cd-color-badge-primary-light-bg-default);
@@ -212,7 +203,6 @@
 
   .cd-badge-secondary.cd-badge-solid {
     background-color: var(--cd-color-badge-secondary-solid-bg-default);
-    color: var(--cd-color-white);
   }
   .cd-badge-secondary.cd-badge-light {
     background-color: var(--cd-color-badge-secondary-light-bg-default);
@@ -224,7 +214,6 @@
 
   .cd-badge-tertiary.cd-badge-solid {
     background-color: var(--cd-color-badge-tertiary-solid-bg-default);
-    color: var(--cd-color-white);
   }
   .cd-badge-tertiary.cd-badge-light {
     background-color: var(--cd-color-badge-tertiary-light-bg-default);
@@ -236,7 +225,6 @@
 
   .cd-badge-danger.cd-badge-solid {
     background-color: var(--cd-color-badge-danger-solid-bg-default);
-    color: var(--cd-color-white);
   }
   .cd-badge-danger.cd-badge-light {
     background-color: var(--cd-color-badge-danger-light-bg-default);
@@ -248,7 +236,6 @@
 
   .cd-badge-warning.cd-badge-solid {
     background-color: var(--cd-color-badge-warning-solid-bg-default);
-    color: var(--cd-color-white);
   }
   .cd-badge-warning.cd-badge-light {
     background-color: var(--cd-color-badge-warning-light-bg-default);
@@ -260,7 +247,6 @@
 
   .cd-badge-success.cd-badge-solid {
     background-color: var(--cd-color-badge-success-solid-bg-default);
-    color: var(--cd-color-white);
   }
   .cd-badge-success.cd-badge-light {
     background-color: var(--cd-color-badge-success-light-bg-default);
