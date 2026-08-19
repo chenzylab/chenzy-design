@@ -96,6 +96,30 @@ export function getWeeksInMonth(date: Date, weekStartsOn: WeekStartsOn = 0): num
   return Math.round(differenceInCalendarDays(lastWeekStart, firstWeekStart) / 7) + 1;
 }
 
+/**
+ * Month calendar grid, one row per week — row count is whatever the month
+ * actually spans (4/5/6), not a fixed 42-cell grid (Semi getMonthlyData:
+ * `numberOfWeek = getWeeksInMonth(...)`). Distinct from date.ts's
+ * `getMonthGrid`, which is the date-picker-panel generator and always
+ * returns a fixed 6-week/42-cell grid for a stable panel height — Calendar's
+ * month view instead wants each week row to get its fair share of the
+ * container height, so a shorter month must render fewer rows.
+ */
+export function getMonthWeeks(date: Date, weekStartsOn: WeekStartsOn = 0): Date[][] {
+  const monthStart = startOfMonth(date);
+  const weekCount = getWeeksInMonth(date, weekStartsOn);
+  const gridStart = startOfWeek(monthStart, weekStartsOn);
+  const weeks: Date[][] = [];
+  for (let w = 0; w < weekCount; w += 1) {
+    const week: Date[] = [];
+    for (let d = 0; d < 7; d += 1) {
+      week.push(addDaysLocal(gridStart, w * 7 + d));
+    }
+    weeks.push(week);
+  }
+  return weeks;
+}
+
 export type WeekStartsOn = 0 | 1 | 2 | 3 | 4 | 5 | 6;
 
 export const round = (value: number): number => Math.round(value * 1000) / 1000;

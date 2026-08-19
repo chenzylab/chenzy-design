@@ -132,6 +132,7 @@ export {
   isWeekend,
   getWeekOfMonth,
   getWeeksInMonth,
+  getMonthWeeks,
   round,
   getPos,
   // event algorithms

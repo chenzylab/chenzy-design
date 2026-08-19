@@ -6,7 +6,7 @@ export const meta = {
   name: 'Calendar',
   category: 'show',
   description:
-    '纯事件展示日历，对齐 Semi Design Calendar。四视图 mode=day/week/month/range：day 单日时间轴（左时间列 + 单日列，25×2 半小时可点击格 + 绝对定位事件）；week 星期表头 + 7 列 DayCol，跨天事件走顶部全天区（parseWeekSpanEvents）；range 结构同 week，列数=range 天数（左闭右开），跨天走 parseSpanEvents；month 6×7 网格，跨天条走 getMonthEvents，每格超额显示「还有 N 项」并用 Popover 弹卡片。displayValue 决定展示锚点；onClick 回调点击的精确时间点（日/周精确到半小时，月精确到日）。showCurrTime 当前时间红线（当天列，每 30s 刷新）。事件定位全部来自 @chenzy-design/core 纯算法（getDailyEvents/parseWeekSpanEvents/parseSpanEvents/getMonthEvents/calcRowHeight/allDayEventMap/getPos），本组件只把数值位置转成内联样式。事件外观由 event.children 承载（字符串直出 / snippet render），对齐 Semi children。头部对齐 Semi：无默认导航，仅当传入 header 时渲染自定义头部。',
+    '纯事件展示日历，对齐 Semi Design Calendar。四视图 mode=day/week/month/range：day 单日时间轴（左时间列 + 单日列，25×2 半小时可点击格 + 绝对定位事件）；week 星期表头 + 7 列 DayCol，跨天事件走顶部全天区（parseWeekSpanEvents）；range 结构同 week，列数=range 天数（左闭右开），跨天走 parseSpanEvents；month 网格行数按 getWeeksInMonth 动态算（4/5/6 周皆有可能，非固定 6 周），跨天条走 getMonthEvents，每格超额显示「还有 N 项」并用 Popover 弹卡片（含关闭按钮）。displayValue 决定展示锚点；onClick 回调点击的精确时间点（日/周精确到半小时，月精确到日）。showCurrTime 当前时间红线（当天列，每 30s 刷新）。事件定位全部来自 @chenzy-design/core 纯算法（getDailyEvents/parseWeekSpanEvents/parseSpanEvents/getMonthEvents/calcRowHeight/allDayEventMap/getPos），本组件只把数值位置转成内联样式。事件外观由 event.children 承载（字符串直出 / snippet render），对齐 Semi children。头部对齐 Semi：无默认导航，仅当传入 header 时渲染自定义头部。',
   exports: ['Calendar'],
   props: [
     { name: 'displayValue', type: 'Date', default: 'new Date()', desc: '展示锚点日期（决定展示的天/周/月）' },
@@ -87,7 +87,7 @@ export const meta = {
   a11y: {
     hasRole: true,
     focusable: true,
-    note: '根容器 role=grid + aria-label（取标题）。时间轴视图每列 role=gridcell（含 aria-label 日期），半小时格为 <button>（aria-label=日期+时:分）。week/range 视图有日期表头 role=columnheader（day 视图对齐 Semi 无列头）。month 视图：星期表头 role=columnheader，日格 role=gridcell，today 格 aria-current=date，日格可点击（Enter/Space）。月视图「还有 N 项」用 Popover（trigger=click，showCloseButton，title=日期），关闭回调 onClose。',
+    note: '根容器 role=grid + aria-label（取标题）。时间轴视图每列 role=gridcell（含 aria-label 日期），半小时格为 <button>（aria-label=日期+时:分）。week/range 视图有日期表头 role=columnheader（day 视图对齐 Semi 无列头）。month 视图：星期表头 role=columnheader，日格 role=gridcell，today 格 aria-current=date，日格可点击（Enter/Space）。月视图「还有 N 项」用 Popover（trigger=custom，受控 visible，含 IconClose 关闭按钮），关闭回调 onClose。',
   },
   tokens: [
     // color（$color-calendar_*）

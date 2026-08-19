@@ -67,6 +67,9 @@ export const calendarTokens = {
   // ============================ Font（对齐 Semi variables.scss Font 段）============================
   // $font-calendar_day_allDay-fontSize（全天区 font-size：令 1em=26px，使 top:${topInd}em 步长=行高不重叠）
   'calendar-font-day-allday-font-size': { value: '26px', category: 'other', label: '全天区字号（em 基准）', usage: 'Semi $font-calendar_day_allDay-fontSize（.week .all-day font-size，em=26px）' },
+  // $font-calendar_month_day-fontSize（月视图跨天条 font-size：令 1em=24px，使 height:1em 有足够高度不裁切文字；
+  // 条内 children 再用 font-size-regular 缩回 14px，容器高度与文字大小解耦）
+  'calendar-font-month-day-font-size': { value: '24px', category: 'other', label: '月视图跨天条字号（em 基准）', usage: 'Semi $font-calendar_month_day-fontSize（.month .event-month font-size，em=24px）' },
 
   // ============================ Radius（$radius-calendar_*）============================
   // $radius-calendar_today_date / $radius-calendar_currCircle

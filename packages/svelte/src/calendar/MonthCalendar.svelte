@@ -8,12 +8,12 @@
   import type { Snippet } from 'svelte';
   import {
     getMonthEvents,
+    getMonthWeeks,
     startOfWeek,
     addDaysLocal,
     isSameDay,
     isSameMonth,
     isWeekend,
-    getMonthGrid,
     weekdayOrder,
     type CalendarEvent,
     type PositionedSpanEvent,
@@ -72,13 +72,9 @@
     return weekdayFmt.format(d);
   }
 
-  // --- month 视图网格 ---
-  const monthWeeks = $derived.by(() => {
-    const cells = getMonthGrid(anchor, weekStartsOn);
-    const out: (typeof cells)[] = [];
-    for (let i = 0; i < cells.length; i += 7) out.push(cells.slice(i, i + 7));
-    return out;
-  });
+  // --- month 视图网格（对齐 Semi getMonthlyData：行数按 getWeeksInMonth 动态算，4/5/6 周皆有可能，
+  //     不是固定 6 周——行数越少，每行分到的高度越大，"+N"/事件条才有 Semi 同款的宽松空间） ---
+  const monthWeeks = $derived(getMonthWeeks(anchor, weekStartsOn));
   const monthEventMap = $derived(getMonthEvents(events, anchor, weekStartsOn));
   // 对齐 Semi calcItemLimit = ceil((cellHeight - 60) / 24)，按周行实测高度动态算。
   let monthWeekH = $state(0);
@@ -211,23 +207,23 @@
           >
             <!-- svelte-ignore a11y_no_noninteractive_element_to_interactive_role -->
             <ul class="cd-calendar-month-skeleton" role="row">
-              {#each week as cell, ci (cell.date.getTime())}
+              {#each week as date, ci (date.getTime())}
                 {@const { remaining, all } = monthCellOverflow(wi, ci)}
-                {@const isToday = isSameDay(cell.date, now)}
-                {@const sameMonth = isSameMonth(cell.date, anchor)}
+                {@const isToday = isSameDay(date, now)}
+                {@const sameMonth = isSameMonth(date, anchor)}
                 {#snippet monthDate()}
                   {#if renderDateDisplay}
-                    {@render renderDateDisplay(cell.date)}
-                  {:else if dayString(cell.date) === '1'}
+                    {@render renderDateDisplay(date)}
+                  {:else if dayString(date) === '1'}
                     <!-- 对齐 Semi formatDayString：每月 1 号显示「X月 1日」——月份缩写 + today-date
                          + locale.datestring 单位后缀（中文「日」、英文空串）。原先漏了后缀。 -->
-                    <span class="cd-calendar-month-date">{monthShortFmt.format(cell.date)}<span class="cd-calendar-today-date">&nbsp;{dayString(cell.date)}</span>{loc().t('Calendar.datestring')}</span>
+                    <span class="cd-calendar-month-date">{monthShortFmt.format(date)}<span class="cd-calendar-today-date">&nbsp;{dayString(date)}</span>{loc().t('Calendar.datestring')}</span>
                   {:else}
-                    <span class="cd-calendar-month-date"><span class="cd-calendar-today-date">{dayString(cell.date)}</span></span>
+                    <span class="cd-calendar-month-date"><span class="cd-calendar-today-date">{dayString(date)}</span></span>
                   {/if}
                 {/snippet}
                 {#if remaining > 0}
-                  {@const cardKey = cell.date.toString()}
+                  {@const cardKey = date.toString()}
                   <!-- triggerStyle=display:contents：Tooltip 内层 .cd-tooltip-trigger-custom 已是
                        display:contents，但最外层 .cd-tooltip 仍是普通盒子，会插进
                        .cd-calendar-month-skeleton（display:flex）与 <li>（本应是直接 flex item）
@@ -242,23 +238,23 @@
                     <!-- svelte-ignore a11y_no_noninteractive_element_to_interactive_role -->
                     <li
                       class:cd-calendar-today={isToday}
-                      class:cd-calendar-weekend={markWeekend && isWeekend(cell.date)}
+                      class:cd-calendar-weekend={markWeekend && isWeekend(date)}
                       class:cd-calendar-month-same={sameMonth}
                       role="gridcell"
-                      aria-label={cell.date.toLocaleDateString()}
-                      aria-current={isToday ? 'date' : undefined}
-                      onclick={(e) => emitDayClick(cell.date, e)}
-                      onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); emitDayClick(cell.date, e); } }}
+                      aria-label={date.toLocaleDateString()}
+                      aria-current={isToday ? 'date' : 'false'}
+                      onclick={(e) => emitDayClick(date, e)}
+                      onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); emitDayClick(date, e); } }}
                     >
                       {@render monthDate()}
                       <!-- svelte-ignore a11y_click_events_have_key_events -->
                       <!-- svelte-ignore a11y_no_static_element_interactions -->
                       <div
                         class="cd-calendar-month-event-card-wrapper"
-                        onclick={(e) => { e.stopPropagation(); openCardKey = cardKey; onMoreClick?.(e, cell.date, remaining); }}
+                        onclick={(e) => { e.stopPropagation(); openCardKey = cardKey; onMoreClick?.(e, date, remaining); }}
                       >{loc().t('Calendar.remaining', { count: remaining })}</div>
                       {#if dateGridRender}
-                        {@const extra = dateGridRender(cell.date.toString(), cell.date)}
+                        {@const extra = dateGridRender(date.toString(), date)}
                         {#if extra}{@render extra()}{/if}
                       {/if}
                     </li>
@@ -267,8 +263,8 @@
                         <div class="cd-calendar-month-event-card-content">
                           <div class="cd-calendar-month-event-card-header">
                             <div class="cd-calendar-month-event-card-header-info">
-                              <div class="cd-calendar-month-event-card-header-info-weekday">{weekdayLongFmt.format(cell.date)}</div>
-                              <div class="cd-calendar-month-event-card-header-info-date">{dayString(cell.date)}</div>
+                              <div class="cd-calendar-month-event-card-header-info-weekday">{weekdayLongFmt.format(date)}</div>
+                              <div class="cd-calendar-month-event-card-header-info-date">{dayString(date)}</div>
                             </div>
                             <IconButton
                               class="cd-calendar-month-event-card-close"
@@ -296,17 +292,17 @@
                   <!-- svelte-ignore a11y_no_noninteractive_element_to_interactive_role -->
                   <li
                     class:cd-calendar-today={isToday}
-                    class:cd-calendar-weekend={markWeekend && isWeekend(cell.date)}
+                    class:cd-calendar-weekend={markWeekend && isWeekend(date)}
                     class:cd-calendar-month-same={sameMonth}
                     role="gridcell"
-                    aria-label={cell.date.toLocaleDateString()}
-                    aria-current={isToday ? 'date' : undefined}
-                    onclick={(e) => emitDayClick(cell.date, e)}
-                    onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); emitDayClick(cell.date, e); } }}
+                    aria-label={date.toLocaleDateString()}
+                    aria-current={isToday ? 'date' : 'false'}
+                    onclick={(e) => emitDayClick(date, e)}
+                    onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); emitDayClick(date, e); } }}
                   >
                     {@render monthDate()}
                     {#if dateGridRender}
-                      {@const extra = dateGridRender(cell.date.toString(), cell.date)}
+                      {@const extra = dateGridRender(date.toString(), date)}
                       {#if extra}{@render extra()}{/if}
                     {/if}
                   </li>
@@ -493,7 +489,11 @@
     left: 0;
     overflow: hidden;
   }
+  /* font-size:24px 是 height:1em 的 em 基准（对齐 Semi .event-month { font-size; height:1em }），
+     不是文字实际显示字号——内部 children 由 363 行 `> :global(*)` 规则重新缩回 font-size-regular(14px)。
+     此前漏了这条 font-size，height:1em 继承了外层 14px 算成 14px 高，装不下文字+padding 而被裁切。 */
   .cd-calendar-month-weekrow .cd-calendar-event-month {
+    font-size: var(--cd-calendar-font-month-day-font-size);
     height: var(--cd-calendar-height-month-week-row-event-month);
     white-space: nowrap;
     text-overflow: ellipsis;
