@@ -4,211 +4,173 @@
 
 ## 1. 概述
 
-Badge（徽标）用于在宿主元素（图标、头像、按钮等）的角标位置展示状态提示：未读数字、红点（dot）、或自定义内容。典型场景包括消息计数、未读提醒、新功能标记、状态点。
+Badge（徽标）用于在宿主元素（图标、头像、按钮等）的角标位置展示提示：数字计数、红点（dot）、或自定义节点。典型场景包括消息计数、未读提醒、新功能标记。
 
 核心能力：
-- **数字徽标**：展示 `count` 数值；超过 `overflowCount` 时显示溢出格式（如 `99+`）。
-- **红点（dot）**：不展示具体数值，仅以小圆点表示存在未读/新状态。
-- **状态点（status dot）**：独立的语义状态指示器（success/processing/error/warning/default），可附带文本，不依赖宿主子元素。
-- **自定义内容**：通过 slot 或 `count` 传入任意节点。
-- **定位**：相对宿主元素四角定位（默认右上），支持像素级 `offset` 偏移。
-- **count=0 控制**：通过 `showZero` 决定 count 为 0 时是否仍显示。
+- **数字徽标**：展示 `count` 数值/字符串；数值超过 `overflowCount` 时显示溢出格式（如 `99+`）。
+- **红点（dot）**：不展示具体数值，仅以小圆点表示存在提醒，优先级高于 `count`。
+- **自定义内容**：`count` 传入 Snippet（节点）时直接渲染该节点，不套用 `type`/`theme` 语义样式。
+- **定位**：相对宿主元素四角定位（`position`：`leftTop`/`leftBottom`/`rightTop`/`rightBottom`，默认 `rightTop`）。
+- **独立使用**：省略 `children`（宿主）时，徽标以 `static` 定位独立展示。
 
-Badge 本质是纯展示组件 + 受控宿主包裹，无键盘交互、无浮层，因此**不需要 core headless 逻辑**，仅需 `useId`/`useLiveAnnouncer` 用于无障碍读屏。
+Badge 本质是纯展示组件，无键盘交互、无浮层、无受控状态，**不需要 @chenzy-design/core 的 headless 逻辑**。
 
-非目标：Badge 不负责轮播未读列表、不提供点击行为（点击交给宿主元素自行处理）。
+非目标：Badge 不提供 status 独立状态指示器、不提供 `showZero`/`offset` 等 Semi 没有的能力、不提供点击行为的语义（`onClick`/`onMouseEnter`/`onMouseLeave` 仅做事件透传，交互逻辑由宿主/调用方决定）。
 
 ## 2. 设计语义
 
-- **角标定位**：徽标绝对定位于宿主包裹盒（`position: relative` 的 `cd-badge`）四角，默认 `top-right`。`offset=[x, y]` 在该锚点基础上做平移（正值向右/下）。
-- **数字徽标**：圆角胶囊（pill），高度 `--cd-badge-height`（默认 20px），单数字时为正圆，多数字横向 padding 扩展。背景默认 `--cd-color-danger`，文字 `--cd-color-white`。
-- **dot 红点**：直径 `--cd-badge-dot-size`（默认 6px），无文字，纯圆点。
-- **status 点**：直径同 dot，颜色由 `type` 映射语义色；`processing` 类型附带呼吸涟漪动画（`reduced-motion` 下静止）。
-- **溢出**：`count > overflowCount` 时渲染 `${overflowCount}+`。
-- **theme 变体**：`solid`（实心，默认）/ `light`（浅色背景 + 深色文字），用于不同对比度场景。
-- **尺寸**：`small | default`（Badge 无 large；与全局尺寸约定对齐，数字徽标尺寸通过 token 区分）。
-- **隐藏**：count=0 且 `showZero=false`、或 dot 模式 `dot=false` 时不渲染徽标节点（仅渲染宿主）。
-- **进出动画**：徽标出现/消失使用缩放 + 透明度过渡（`--cd-badge-motion-duration`），`reduced-motion` 下取消缩放仅保留即时显隐。
+- **角标定位**：徽标绝对定位于宿主包裹盒（`position: relative` 的 `.cd-badge`）四角，用**物理属性** `top`/`right`/`bottom`/`left`（对齐 Semi，非逻辑属性 `inset-inline-*`），配合 `transform: translate(±50%, ±50%)` 使徽标中心落在宿主角点上。默认 `position` 为 `rightTop`；`direction === 'rtl'` 时默认值切换为 `leftTop`（读 `ConfigContext.current.direction`，对齐 Semi `defaultPosition` 逻辑）——用户显式传入的 `position` 不受 `direction` 影响，按物理方向原样渲染，不做 CSS 镜像。
+- **数字徽标**（`.cd-badge-count`）：圆角胶囊，高度/最小宽度 `--cd-height-badge-count`（18px），单数字时为正圆，多字符横向 padding 扩展（`--cd-spacing-badge-count-paddingx` 4px）。背景 `--cd-color-badge-default-bg-default`，描边 `--cd-width-badge-border`（1px）+ `--cd-color-badge-default-border-default`，文字色 `--cd-color-badge-default-text-default`（继承默认值，随 `type`/`theme` 组合被下方规则覆盖）。
+- **dot 红点**（`.cd-badge-dot`）：直径 `--cd-width-badge-dot`/`--cd-height-badge-dot`（8px），圆角 `--cd-radius-badge-dot`，无文字，同样带 1px 描边。
+- **溢出**：`count` 为 number 且 `overflowCount && overflowCount < count` 时渲染 `${overflowCount}+`，否则渲染 `${count}`；`count` 为 string 时原样展示；为 Snippet 时直接渲染（custom 形态，套用 `.cd-badge-custom`，`display: flex`，不叠加 `type`/`theme` class）。
+- **type × theme 矩阵**：`type`（`primary`/`secondary`/`tertiary`/`danger`/`warning`/`success`）× `theme`（`solid`/`light`/`inverted`）共 18 种组合：
+  - `solid`：`background-color` 取对应语义色（如 `--cd-color-badge-primary-solid-bg-default`），文字色不额外设置，继承 `.cd-badge-count` 的默认文字色（`--cd-color-badge-default-text-default`，随主题反色，不写死白色）。
+  - `light`：浅色背景 + 同色系文字（如 `--cd-color-badge-primary-light-bg-default` + `--cd-color-badge-primary-light-text-default`）。
+  - `inverted`：不设背景，仅文字着色（如 `--cd-color-badge-primary-inverted-text-default`），用于在有色背景上展示。
+- **独立使用**（无 `children`）：`.cd-badge-block`，`position: static`，`display: inline-block`，不做绝对定位角标。
+- **RTL**：`.cd-badge` 在 `.cd-rtl` 祖先下设置 `direction: rtl`（纯文本方向声明，不影响绝对定位的物理 `left`/`right` 计算），配合上述默认 `position` 切换共同实现镜像效果。
 
 ## 3. 分层实现
 
-Badge 为**纯展示组件**，无交互逻辑，**省略 @chenzy-design/core 的 createBadge**。
+Badge 为**纯展示组件**，无交互逻辑，**省略 @chenzy-design/core 的 createBadge**，也不引入 `useId`/`useLiveAnnouncer` 等 core 原语（当前实现未消费）。
 
-- **@chenzy-design/svelte**：`Badge.svelte` 全部实现（定位计算、溢出格式化、显隐判断、status 渲染）。
-- 复用 core 原语（轻量）：
-  - `useId`：为徽标节点生成 id，供宿主 `aria-describedby` 关联。
-  - `useLiveAnnouncer`（可选，`announce` prop 开启时）：当 `count` 变化时向 `aria-live=polite` 区播报新计数，供动态未读消息场景。
-- 定位/溢出/显隐均为纯函数（可内联，无状态机），不引入 roving/focus-trap/dismiss/scroll-lock 等。
+- **@chenzy-design/svelte**：`Badge.svelte` 单文件全部实现（内容格式化、class 组合、默认 position 派生）。对齐 Semi：Semi Badge 同样是单文件（`packages/semi-ui/badge/index.tsx`），不做多文件拆分。
+- 定位/溢出/显隐均为 `$derived`/`$derived.by` 纯派生（无状态机），不引入 roving/focus-trap/dismiss/scroll-lock 等。
+- 默认 `position` 通过 `getContext(CONFIG_CONTEXT_KEY)` 读取 `direction`，对齐 Semi `ConfigContext` 消费方式（`static contextType = ConfigContext`）。
 - SSR 安全：不读取 DOM 尺寸，定位纯 CSS 绝对定位 + token，无客户端测量，首屏无闪烁。
 
 ## 4. API
 
 ### Props
 
-> 本表由 `packages/svelte/src/badge/meta.ts` 真源生成（2026-07-30 重校）。此前本表列的 prop 多为 Semi 对齐前的旧名或已删除项（如 `value`→`activeKey`、`change`→`onChange`），改 prop 时请同步 meta.ts，勿手写「规划中」的 prop。
+> 本表由 `packages/svelte/src/badge/meta.ts` 真源生成，与 Semi `BadgeProps` 一一对应（`countClassName`→`countClass`、`className`→`class` 为 Svelte 化改名，其余同名）。
 
 | Prop | 类型 | 默认值 | 说明 |
 | --- | --- | --- | --- |
-| count | `number\|string\|Snippet` | `undefined` | 徽标内容；数字/字符串按 overflowCount 处理，Snippet 时直接渲染 |
+| count | `number\|string\|Snippet` | `undefined` | 徽标内容；数字/字符串按 overflowCount 处理，Snippet 时直接渲染（custom） |
 | dot | `boolean` | `false` | 显示小圆点，优先于 count |
-| type | `'primary'\|'secondary'\|'tertiary'\|'danger'\|'warning'\|'success'` | `'primary'` |  |
-| theme | `'solid'\|'light'\|'inverted'` | `'solid'` |  |
-| position | `'leftTop'\|'leftBottom'\|'rightTop'\|'rightBottom'` | `'rightTop'` |  |
-| overflowCount | `number` | `undefined` | 超出显示 {n}+ |
-| countStyle | `string` | `undefined` | 徽标内容区域样式 |
-| countClass | `string` | `undefined` | 徽标内容区域类名 |
-| style | `string` | `undefined` | 徽标内容区域内联样式（优先于 countStyle） |
+| type | `'primary'\|'secondary'\|'tertiary'\|'danger'\|'warning'\|'success'` | `'primary'` | 徽标类型（语义色） |
+| theme | `'solid'\|'light'\|'inverted'` | `'solid'` | 徽标主题 |
+| position | `'leftTop'\|'leftBottom'\|'rightTop'\|'rightBottom'` | `'rightTop'`（RTL 下 `'leftTop'`） | 徽标位置 |
+| overflowCount | `number` | `undefined` | 超出显示 `{n}+` |
+| countStyle | `string` | `undefined` | 徽标内容区域样式（等价 Semi countStyle） |
+| countClass | `string` | `undefined` | 徽标内容区域类名（等价 Semi countClassName） |
+| style | `string` | `undefined` | 徽标内容区域内联样式，优先于 countStyle（对齐 Semi `style || countStyle`） |
 | class | `string` | `undefined` | 根节点类名 |
-| onClick | `(e: MouseEvent) => void` | `undefined` |  |
-| onMouseEnter | `(e: MouseEvent) => void` | `undefined` |  |
-| onMouseLeave | `(e: MouseEvent) => void` | `undefined` |  |
-| children | `Snippet` | `undefined` | 宿主子元素；省略时独立使用 |
+| onClick | `(e: MouseEvent) => void` | `undefined` | 点击事件 |
+| onMouseEnter | `(e: MouseEvent) => void` | `undefined` | 鼠标移入事件 |
+| onMouseLeave | `(e: MouseEvent) => void` | `undefined` | 鼠标移出事件 |
+| children | `Snippet` | `undefined` | 宿主子元素；省略时独立使用（block 形态） |
 
-> 注：Badge 无受控显隐与受控输入，故不涉及 `value`/`on:change`/`open`/`on:openChange`。显隐由 `count`/`dot`/`showZero` 派生。
+> Badge 无受控显隐、无 `showZero`/`offset`/`status` 等 Semi 没有的能力，不予实现。
 
 ### Events
 
-> 本组件无事件回调 prop（meta.events 为空）。此前本表列的回调均未实现，已删。
-
-> 点击行为不由 Badge 提供；宿主元素自行绑定 `on:click`。
+> 本组件无独立事件回调（`meta.events` 为空）；`onClick`/`onMouseEnter`/`onMouseLeave` 是原生 DOM 事件的 prop 化透传，非语义事件。
 
 ### Slots
 
-| 名称 | props | 说明 |
-|---|---|---|
-| default | — | 宿主子元素（被包裹的图标/头像/按钮等）；`status` 模式下可省略 |
-| count | `{ count, overflowed }` | 自定义徽标内容，覆盖 `count`/`dot` 的默认渲染 |
+| 名称 | 说明 |
+|---|---|
+| default（children） | 宿主子元素（被包裹的图标/头像/按钮等）；省略时走独立使用形态 |
+| count | `count` 传 Snippet 时的自定义徽标内容，直接渲染，不套用 type/theme 样式 |
 
 ## 5. 主题 / Token
 
-组件仅消费 Alias 与 Component 级 Token，禁止写死值。
+组件仅消费 Alias 与 Component 级 Token（`--cd-` 前缀），禁止写死值。以下为 `packages/svelte/src/badge/Badge.svelte` 实际消费的全部 token，1:1 镜像 Semi `packages/semi-foundation/badge/variables.scss`：
 
 | Component Token | 取值（默认引用） | 说明 |
 |---|---|---|
-| `--cd-badge-height` | `20px` | 数字徽标高度（default 尺寸） |
-| `--cd-badge-height-small` | `16px` | small 尺寸高度 |
-| `--cd-badge-padding-x` | `6px` | 多字符横向内边距 |
-| `--cd-badge-font-size` | `12px` | 数字字号 |
-| `--cd-badge-dot-size` | `6px` | 红点 / status 点直径 |
-| `--cd-badge-radius` | `999px` | 胶囊圆角 |
-| `--cd-badge-color-bg` | `var(--cd-color-danger)` | 徽标背景（默认 danger） |
-| `--cd-badge-color-text` | `var(--cd-color-white)` | 徽标文字 |
-| `--cd-badge-color-bg-light` | `var(--cd-color-danger-light-default)` | light 变体背景 |
-| `--cd-badge-color-text-light` | `var(--cd-color-danger)` | light 变体文字 |
-| `--cd-badge-border-color` | `var(--cd-color-bg-0)` | 描边色（与宿主背景同色，制造分离感） |
-| `--cd-badge-border-width` | `1px` | 徽标外描边宽度 |
-| `--cd-badge-status-color-success` | `var(--cd-color-success)` | status=success 颜色 |
-| `--cd-badge-status-color-processing` | `var(--cd-color-primary)` | status=processing 颜色 |
-| `--cd-badge-status-color-error` | `var(--cd-color-danger)` | status=error 颜色 |
-| `--cd-badge-status-color-warning` | `var(--cd-color-warning)` | status=warning 颜色 |
-| `--cd-badge-status-color-default` | `var(--cd-color-text-2)` | status=default 颜色 |
-| `--cd-badge-status-text-color` | `var(--cd-color-text-0)` | status 文本颜色 |
-| `--cd-badge-motion-duration` | `var(--cd-motion-duration-fast, 200ms)` | 显隐/缩放过渡时长 |
+| `--cd-color-badge-default-border-default` | `var(--cd-color-bg-1)` | 描边色 - 默认 |
+| `--cd-color-badge-default-bg-default` | `var(--cd-color-bg-1)` | 背景色 - 默认（dot/count 通用底色） |
+| `--cd-color-badge-default-text-default` | `var(--cd-color-bg-2)` | 文字色 - 默认（solid 主题继承此值，随主题反色） |
+| `--cd-color-badge-{type}-solid-bg-default` | 各语义色（如 `var(--cd-color-primary)`） | solid 主题背景（type 为 primary/secondary/tertiary/danger/warning/success） |
+| `--cd-color-badge-{type}-light-bg-default` | 各语义浅色（如 `var(--cd-color-primary-light-default)`） | light 主题背景 |
+| `--cd-color-badge-{type}-light-text-default` | 各语义色 | light 主题文字 |
+| `--cd-color-badge-{type}-inverted-text-default` | 各语义色 | inverted 主题文字 |
+| `--cd-width-badge-dot` / `--cd-height-badge-dot` | `8px` | 点状徽标宽高 |
+| `--cd-radius-badge-dot` | `var(--cd-border-radius-circle)` | 点状徽标圆角 |
+| `--cd-height-badge-count` | `18px` | 数字徽标高度/最小宽度 |
+| `--cd-spacing-badge-count-paddingy` | `0px` | 数字徽标上下内边距 |
+| `--cd-spacing-badge-count-paddingx` | `4px` | 数字徽标左右内边距 |
+| `--cd-width-badge-border` | `1px` | 描边宽度 |
+| `--cd-z-badge` | `1` | 徽标 z-index |
 
-- `type` 通过映射切换 `--cd-badge-color-bg`/`--cd-badge-color-text`（如 `type=primary` → `--cd-color-primary`）。
-- 暗色模式：所有色值经 Alias 自动切换，组件不需额外适配。
-- 对比度：solid 徽标文字与背景须满足 AA（≥4.5:1），数字字号 12px 视为普通文本而非大文本，danger/white 组合需在 token 层校验。
+> `color-badge-default-light-bg-default`（`var(--cd-color-bg-2)`）与 `z-badge-light-bg`（`-1`）为原始层完整镜像 Semi 保留的两个 token；Semi `badge.scss` 自身也未消费这两个变量（Semi 自身的死变量），组件层同样不消费，属正常现象，非缺口。
+
+- 组件同时消费全局字体原子 token：`--cd-font-size-small`、`--cd-line-height-small`、`--cd-font-weight-regular`（数字徽标文字排版），这些是跨组件共享的全局 token，不在上表 badge 专属清单中重复列出。
+- 暗色模式：所有色值经 Alias 自动切换，组件不需额外适配；例如 `--cd-color-bg-2` 在 light 下为 `white`，dark 下为 `#35363c`，solid 主题文字色随之自动反色（不得写死 `--cd-color-white`）。
 
 ## 6. 无障碍（WCAG 2.1 AA）
 
-参考 WAI-ARIA：Badge 非交互，归类为状态文本。
+Badge 非交互，归类为纯展示元素：
 
-- **数字徽标**：徽标节点 `aria-hidden` 不设；改为给宿主关联 `aria-describedby={badgeId}`，徽标自身提供可读文本（如 `5 条未读消息`），由 `countAriaLabel` / i18n 生成。纯视觉的 `99+` 应同时提供精确语义文本（`超过 99 条`）。
-- **dot 红点**：无数值语义，徽标节点 `aria-hidden="true"`，由宿主 `aria-label` 自行表达（如「消息（有未读）」），Badge 提供 `dotAriaLabel`（经 i18n）可选挂到宿主 `aria-describedby`。
-- **status 点**：渲染为 `<span role="status">` 或普通文本；点本体 `aria-hidden="true"`，语义由 `text` 文本承担；无 `text` 时用 `aria-label`（i18n 映射 status → 文案）。
-- **动态计数（announce=true）**：通过 `useLiveAnnouncer` 写入 `aria-live="polite"` 区域，避免频繁打断（节流，仅播报最终值）。
-- **焦点**：Badge 不可聚焦、不进入 Tab 序；焦点完全归宿主元素。
-- **对比度**：solid 文字/背景满足 4.5:1；status 点作为非文本图形需满足 3:1（与相邻背景）。
-- **reduced-motion**：`prefers-reduced-motion: reduce` 时禁用 `processing` 涟漪动画与缩放进出过渡，改为即时显隐。
-- **RTL**：`position` 的 `left/right` 与 `offset.x` 在 `[dir=rtl]` 下镜像（top-right → top-left 视觉），逻辑用 `inset-inline-*`。
+- Badge 本身不需要 `tabindex`，不进入 Tab 序列。
+- 数字/字符串徽标以文本节点渲染，可被屏幕阅读器读出；宿主元素可自行通过 `aria-describedby` 关联徽标内容。
+- 纯红点（dot）无数值语义，其含义应由宿主元素的文案承载；独立使用时建议在相邻文字中给出状态说明（见 demo「独立使用」中 `<Badge dot /> 进行中` 的写法）。
+- 不以颜色为唯一信息通道，需同时通过文案或图标区分语义。
+- 对比度：solid 徽标文字与背景应满足 AA（≥4.5:1）；token 层色值已按此校准。
 
 ## 7. 国际化
 
-用户可见文案零硬编码，全部经 i18n。数字格式化使用 `Intl.NumberFormat`（按 locale 处理千分位/数字系统），溢出符号 `+` 通过模板组合。
-
-| i18n key | 默认（zh-CN） | 说明 |
-|---|---|---|
-| `Badge.unreadCount` | `{count} 条未读` | 数字徽标无障碍文本（`count` 用 Intl 格式化） |
-| `Badge.overflowCount` | `超过 {max} 条` | 溢出时精确语义文本 |
-| `Badge.dot` | `有新内容` | dot 模式无障碍文本 |
-| `Badge.status.success` | `成功` | status=success 默认标签 |
-| `Badge.status.processing` | `进行中` | status=processing 默认标签 |
-| `Badge.status.error` | `错误` | status=error 默认标签 |
-| `Badge.status.warning` | `警告` | status=warning 默认标签 |
-| `Badge.status.default` | `默认` | status=default 默认标签 |
-
-- 溢出展示文本 `99+`：数字部分经 `Intl.NumberFormat(locale).format(overflowCount)`，`+` 由模板拼接（保证 RTL 下符号位置正确）。
-- `text` prop 为业务侧传入，不在库 i18n 范围，但库默认 status 标签提供完整 key。
+Badge 无内置 i18n 文案 key（对齐 Semi：Semi Badge 同样不消费 `Locale` context，无 `locale.badge.*` 命名空间）。`count` 为调用方直接传入的数字/字符串/节点，不经库内文案层；溢出格式化为纯字符串拼接 `` `${overflowCount}+` ``，不经 `Intl.NumberFormat`（Semi 亦如此，`overflowCount && overflowCount < count ? \`${overflowCount}+\` : \`${count}\``，无千分位/locale 处理）。
 
 ## 8. 文案
 
 遵循 content-guidelines：
 
+- Badge 内容若为英文时，首字母应大写（对齐 Semi md 文案规范，如 demo 中 `count='NEW'`）。
 - 计数文本简洁，仅数字，无单位后缀（单位放宿主语境）。
-- 无障碍文本完整可读：`5 条未读`、`超过 99 条`，避免读屏只读出孤立数字「5」。
-- status 文本用名词/形容词短语，首字母/句首语气统一，不加句号。
-- 溢出阈值文案统一为 `{max}+`，不混用 `99+` / `>99`。
 
-**危险操作文案**：Badge 为只读展示，**不涉及危险操作**，无破坏性确认文案。若 `type=danger` 仅表示视觉强调（如错误计数），不得让其文案产生「点击即删除」等误导。
+**危险操作文案**：Badge 为只读展示，**不涉及危险操作**，无破坏性确认文案。`type=danger` 仅表示视觉强调（如错误计数），不得让其文案产生"点击即删除"等误导。
 
 ## 9. 性能（Perf Budget）
 
 | 维度 | 预算 | 说明 |
 |---|---|---|
 | gzip 体积（svelte，单组件） | ≤ 2.5 KB | 纯展示，无状态机/无 core 依赖 |
-| 共享 core 增量 | ~0（仅 `useId`，可选 `useLiveAnnouncer`） | announce 关闭时不引入 announcer |
+| 共享 core 增量 | 0 | 不引入任何 core headless 原语 |
 | 首次渲染 | < 0.3ms / 实例 | 纯 CSS 定位，无 DOM 测量 |
-| count 更新 | 单 text 节点更新，O(1) | 仅徽标文本变化，宿主不重渲染 |
-| 列表场景（如 100 项带 Badge） | 无虚拟化需求（宿主列表负责） | Badge 自身极轻 |
+| count 更新 | 单文本节点更新，O(1) | 仅徽标文本变化，宿主不重渲染 |
 
-- **不需要虚拟化**：单实例 DOM 极小（1-2 节点）。
-- **惰性渲染**：count=0 且 `!showZero`、`!dot` 时不渲染徽标节点（条件 `{#if}`），降低 DOM 数量。
-- **destroyOnClose**：不适用（无浮层）。
-- 溢出格式化为纯函数，按 `count`/`overflowCount` 派生（`$derived`），无副作用。
-- 动画用 CSS transform/opacity（合成层），不触发 layout。
+- **不需要虚拟化**：单实例 DOM 极小（2 个 `<span>` 节点）。
+- 溢出格式化为纯函数，按 `count`/`overflowCount` 派生（`$derived.by`），无副作用。
+- 无进出场动画，无 CSS transition/animation。
 
 ## 10. AI 元数据
 
-提供 `component.meta.ts`，内容包含：
+提供 `meta.ts`，内容包含：
 
-- `name: 'Badge'`、`category: 'show'`、`stage: 'M4'`、`semiEquivalent: 'Badge'`。
-- `tags: ['徽标', '红点', '计数', '未读', 'overflow', 'status']`。
-- `props` schema（类型、默认值、枚举、是否 i18n 相关）镜像第 4 节。
-- `slots`/`events` 描述。
-- `a11yNotes`：非交互、宿主 `aria-describedby` 关联、status role。
-- `usageHints`：「用于宿主右上角计数」「dot 适合无需精确数字的提醒」「status 用于独立状态指示」。
-- `antiPatterns`：「不要把可点击逻辑放进 Badge」「不要用 Badge 做 Tag/标签（用 Tag）」「count 极大时改用文本」。
-- `relatedComponents: ['Tag', 'Avatar', 'Tooltip']`。
+- `name: 'Badge'`、`category: 'show'`。
+- `props`/`events`/`slots`/`a11y`/`tokens`/`examples` 镜像本文档第 4/5/6 节真实实现范围。
+- `a11y.note`：非交互、不进入 Tab 序，语义由宿主文案承载。
 
 ## 11. 测试
 
 - **单元（vitest）**：
   - `count > overflowCount` 渲染 `${overflowCount}+`；边界 `count === overflowCount` 不溢出。
-  - `count=0` 且 `showZero=false` 不渲染徽标；`showZero=true` 渲染 `0`。
-  - `dot=true` 仅渲染圆点、无文本。
-  - `type`/`theme` 映射正确的 token class。
-  - `position`/`offset` 生成正确的定位样式。
-  - 溢出格式化纯函数随 `Intl` locale 变化。
+  - `dot=true` 仅渲染圆点、无文本，优先于 count。
+  - `count` 为 Snippet 时走 custom 形态，不套用 type/theme class。
+  - `type`/`theme` 组合映射正确的 class 组合。
+  - 无 `children` 时走 block 形态（`position: static`）。
 - **a11y（vitest-axe / testing-library）**：
-  - dot 徽标节点 `aria-hidden="true"`。
-  - 数字徽标无障碍文本经 i18n 输出完整句（非孤立数字）。
-  - status 模式 `role="status"` 且有可读标签。
-  - axe 零违规。
-- **交互/动态**：`announce=true` 时 count 变化触发 live region 更新（节流断言）。
-- **视觉回归（playwright/storybook）**：四角定位、small/default、solid/light、status 各类型、processing 动画、reduced-motion 静止态、RTL 镜像、暗色模式快照。
+  - 独立使用（block）形态渲染计数文本，axe 零违规。
+  - overflow 场景文本正确，axe 零违规。
+  - dot 场景仅圆点无文本，axe 零违规。
+- **视觉回归（playwright + toMatchScreenshot）**：count/overflow/dot/type/theme 组合快照。
+- **RTL**：`direction='rtl'` 时未显式传 `position` 的默认值应为 `leftTop`（组件层派生，非 CSS 镜像）。
 - **SSR**：服务端渲染输出与客户端 hydrate 一致，无定位闪烁。
 
 ## 12. 验收标准 checklist
 
 - [ ] Props/Events/Slots 与第 4 节一致，类型导出完整（含 `Snippet` 类型）。
-- [ ] count 溢出、showZero、dot、status 五类显隐分支行为正确，边界值覆盖。
-- [ ] 仅消费 `--cd-` Alias/Component token，无写死颜色/尺寸（lint 校验通过）。
+- [ ] count 溢出、dot、custom（Snippet）、block（独立使用）四类分支行为正确，边界值覆盖。
+- [ ] 仅消费 `--cd-` Alias/Component token，无写死颜色/尺寸（含 solid 主题文字色不得写死 `--cd-color-white`）。
 - [ ] 类名遵循 `cd-badge` / `cd-badge-*` 单连字符约定（对齐 Semi，见 class-naming-convention.md）。
-- [ ] 不引入 core headless（纯展示），仅按需 `useId`/`useLiveAnnouncer`。
-- [ ] a11y：dot `aria-hidden`、数字徽标完整可读文本、status `role="status"`、宿主 `aria-describedby` 关联，axe 零违规。
-- [ ] 所有可见文案经 i18n（key 同第 7 节），数字用 `Intl.NumberFormat`。
-- [ ] reduced-motion 关闭 processing 动画与缩放过渡；RTL 镜像定位正确；暗色模式自动适配。
-- [ ] Perf：gzip ≤ 2.5KB；count=0/!showZero 不渲染徽标节点；count 更新 O(1)。
-- [ ] 提供 `component.meta.ts`，字段完整（props/slots/events/a11y/usageHints/antiPatterns）。
+- [ ] 不引入 core headless、不引入 useId/useLiveAnnouncer 等未消费的 core 原语。
+- [ ] 定位使用物理属性 `left`/`right`/`top`/`bottom`（非 `inset-inline-*`），RTL 通过组件层默认 position 切换实现，不做 CSS transform 镜像。
+- [ ] a11y：Badge 不可聚焦、不进 Tab 序，axe 零违规。
+- [ ] Perf：gzip ≤ 2.5KB；count 更新 O(1)；无 core 依赖增量。
+- [ ] 提供 `meta.ts`，字段完整（props/slots/events/a11y/tokens/examples）且与真实实现同步。
 - [ ] 单元 + a11y + 视觉回归 + SSR 测试齐全且通过。
-- [ ] 无受控显隐误用（不出现 `open`/`value` 等不适用 API）。
+- [ ] 无 Semi 没有的超集能力（status 独立指示器、showZero、offset 偏移、announce 播报、small 尺寸系统、动画过渡）。
