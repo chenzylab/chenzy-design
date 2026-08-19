@@ -29,7 +29,7 @@
 
 <style>
   /* sticky 左列（对齐 Semi -sticky-left，物理属性 left）。父组件的同名规则管不到本组件根节点
-     （Svelte scoped 类不跨组件），故这里自带一份；全天 tag 列那份仍在 Calendar.svelte。 */
+     （Svelte scoped 类不跨组件），故这里自带一份；全天 tag 列那份仍在各视图组件内。 */
   .cd-calendar-day-sticky-left,
   .cd-calendar-week-sticky-left {
     position: sticky;
