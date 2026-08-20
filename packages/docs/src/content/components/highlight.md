@@ -17,8 +17,6 @@ brief: 高亮特定内容。
   import differentiatedSrc from '../../demos/highlight/03-differentiated.svelte?raw';
   import Component from '../../demos/highlight/04-component.svelte';
   import componentSrc from '../../demos/highlight/04-component.svelte?raw';
-  import CaseSensitive from '../../demos/highlight/06-case-sensitive.svelte';
-  import caseSensitiveSrc from '../../demos/highlight/06-case-sensitive.svelte?raw';
 </script>
 
 ## 代码演示
@@ -43,7 +41,9 @@ Highlight 组件会将文本拆分成多个独立的行内元素，任何分割�
 
 ### 指定高亮样式
 
-默认情况下，高亮文本会自带文本样式，背景颜色为浅黄色、文本颜色为黑色；暗色模式下背景色更深、文本颜色为白色。当你需要自定义不同的高亮样式时，你可以通过 `highlightClassName`、`highlightStyle` 来指定。
+默认情况下，高亮文本会自带文本样式，背景颜色 --cd-color-yellow-4，文本颜色为黑色。
+暗色模式下，背景颜色为 --cd-color-yellow-2，文本颜色为白色。
+当你需要自定义不同的高亮样式时，你可以通过 `highlightClassName`、`highlightStyle` 来指定。
 
 <DemoBox code={highlightStyleSrc}><HighlightStyle /></DemoBox>
 
@@ -58,12 +58,6 @@ Highlight 组件会将文本拆分成多个独立的行内元素，任何分割�
 默认会将 `sourceString` 中与 `searchWords` 匹配的文本用 `mark` 标签包裹，你也可以通过 `component` 重新指定标签。
 
 <DemoBox code={componentSrc}><Component /></DemoBox>
-
-### 大小写敏感
-
-通过设置 `caseSensitive` 控制匹配是否区分大小写，默认为不敏感。
-
-<DemoBox code={caseSensitiveSrc}><CaseSensitive /></DemoBox>
 
 ## API 参考
 
