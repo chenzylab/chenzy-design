@@ -394,11 +394,10 @@
       .join(' '),
   );
   const hideViewerCls = $derived(!viewerVisible ? 'cd-image-preview-hide' : '');
-  const wrapperStyle = $derived(
-    getPopupContainer
-      ? `z-index:${zIndex};position:static;${style}`
-      : `z-index:${zIndex};${style}`,
-  );
+  // position 定位统一走 CSS class（.cd-image-preview-popup 切 absolute），不用内联覆盖，
+  // 否则会盖掉 class 的 position:absolute 致 inset:0 失效（对齐 Semi Portal 双层：
+  // 外层包裹用 wrapperStyle.position:static，内层预览 div 自身保留 class 的 absolute）。
+  const wrapperStyle = $derived(`z-index:${zIndex};${style}`);
 </script>
 
 {#if visible}
