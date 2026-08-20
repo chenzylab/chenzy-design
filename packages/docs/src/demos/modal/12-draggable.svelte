@@ -5,9 +5,9 @@
 </script>
 
 <Button onclick={() => (visible = true)}>Open Modal</Button>
-<Modal title="可拖拽 Modal" {visible} onCancel={() => (visible = false)}>
+<Modal title="可拖拽 Modal" {visible} centered onCancel={() => (visible = false)}>
   {#snippet modalRender(modal)}
-    <DragMove>
+    <DragMove positionStrategy="relative">
       {@render modal()}
     </DragMove>
   {/snippet}

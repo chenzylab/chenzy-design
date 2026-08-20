@@ -7,15 +7,9 @@
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
-  import {
-    Icon,
-    IconInfoCircle,
-    IconTickCircle,
-    IconAlertTriangle,
-    IconAlertCircle,
-    IconHelpCircle,
-  } from '@chenzy-design/icons';
+  import { Icon } from '@chenzy-design/icons';
   import { Modal } from './index.js';
+  import { confirmTypeConfig } from './confirm.js';
 
   type ConfirmType = 'confirm' | 'info' | 'success' | 'warning' | 'error';
 
@@ -91,10 +85,11 @@
   let visible = $state(true);
   let loading = $state(false);
 
-  // error/warning 用 danger 确认按钮（对齐 Semi withError okButtonProps.type='danger'）。
-  const effectiveOkType = $derived(okType ?? (type === 'error' || type === 'warning' ? 'danger' : 'primary'));
+  // 对齐 Semi confirm.tsx：仅 withError 覆盖确认按钮为 danger，withWarning 不覆盖。
+  const effectiveOkType = $derived(okType ?? (confirmTypeConfig[type].okButtonType ?? 'primary'));
 
   const iconIsString = $derived(typeof icon === 'string');
+  const TypeIcon = $derived(confirmTypeConfig[type].icon);
 
   // 仅透传已定义的可选 props（exactOptionalPropertyTypes：避免显式 undefined）。
   const optionalProps = $derived({
@@ -190,16 +185,8 @@
       <Icon svg={icon as string} size="extra-large" />
     {:else if icon}
       {@render (icon as Snippet)()}
-    {:else if type === 'info'}
-      <IconInfoCircle size="extra-large" />
-    {:else if type === 'success'}
-      <IconTickCircle size="extra-large" />
-    {:else if type === 'warning'}
-      <IconAlertTriangle size="extra-large" />
-    {:else if type === 'error'}
-      <IconAlertCircle size="extra-large" />
     {:else}
-      <IconHelpCircle size="extra-large" />
+      <TypeIcon size="extra-large" />
     {/if}
   </span>
 {/snippet}
@@ -243,5 +230,13 @@
   }
   :global(.cd-modal-confirm-content-withIcon) {
     margin-left: var(--cd-spacing-modal-content-withicon-marginleft);
+  }
+
+  /* —— RTL（对齐 Semi rtl.scss .semi-modal-confirm-rtl）——
+     .cd-modal-rtl 挂在被包裹 Modal 自身根节点（与 .cd-modal-confirm 同一节点，见
+     Modal.svelte rootCls），故此处沿用同一祖先类，不单独造 .cd-modal-confirm-rtl。 */
+  :global(.cd-modal-rtl .cd-modal-confirm-content-withIcon) {
+    margin-left: 0;
+    margin-right: var(--cd-spacing-modal-content-withicon-marginleft);
   }
 </style>
