@@ -9,13 +9,13 @@
   <Highlight
     {sourceString}
     {searchWords}
-    highlightStyle="border-radius: 6px; margin-left: 4px; margin-right: 4px; padding-left: 4px; padding-right: 4px; background-color: var(--cd-color-teal-5); color: #fff;"
+    highlightStyle="border-radius: 6px; margin-left: 4px; margin-right: 4px; padding-left: 4px; padding-right: 4px; background-color: var(--cd-color-teal-5); color: var(--cd-color-white);"
   />
 </h2>
 <h2>
   <Highlight
     {sourceString}
     {searchWords}
-    highlightStyle="border-radius: 6px; margin-left: 4px; margin-right: 4px; padding-left: 4px; padding-right: 4px; background-color: var(--cd-color-primary); color: #fff;"
+    highlightStyle="border-radius: 6px; margin-left: 4px; margin-right: 4px; padding-left: 4px; padding-right: 4px; background-color: var(--cd-color-primary); color: var(--cd-color-white);"
   />
 </h2>
