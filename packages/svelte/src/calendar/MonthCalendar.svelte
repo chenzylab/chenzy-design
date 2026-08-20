@@ -503,9 +503,10 @@
     white-space: nowrap;
     text-overflow: ellipsis;
   }
-  /* 「还有 N 项」（对齐 Semi .month-event-card-wrapper：右下角，可点击） */
+  /* 「还有 N 项」（对齐 Semi .month-event-card-wrapper：右下角，可点击，无背景/圆角/左右内边距——
+     这些是此前自造的超集，Semi 只有 font-size/display/position/right/padding-top/user-select）。 */
   .cd-calendar-month-event-card-wrapper {
-    font-size: var(--cd-font-size-small);
+    font-size: var(--cd-font-size-regular);
     /* 显式 line-height：切断从 Popover/Tooltip 外层 .cd-tooltip 继承来的 line-height:0
        （Tooltip.svelte 给 trigger=custom 的 wrapper 归零 line-height 消除 inline-block 基线坑，
        但 display:contents 只让盒子在布局树消失，不阻断 CSS 继承，line-height:0 仍会传给这里，
@@ -517,22 +518,19 @@
     bottom: 0;
     z-index: var(--cd-calendar-z-item);
     padding-top: var(--cd-calendar-spacing-month-event-card-wrapper-padding-top);
-    padding-left: 2px;
-    padding-right: 2px;
     color: var(--cd-calendar-color-day-text-default);
-    background: var(--cd-color-bg-2);
-    border-radius: var(--cd-border-radius-small, 3px);
     user-select: none;
     cursor: pointer;
   }
-  .cd-calendar-month-event-card-wrapper:hover {
-    text-decoration: underline;
-  }
 
-  /* +N 卡片（对齐 Semi .month-event-card / -content / -header / -header-info / -body / -list） */
+  /* +N 卡片（对齐 Semi .month-event-card / -content / -header / -header-info / -body / -list）。
+     宽度按内容自适应：默认对齐 Semi 220px，但 event.children 若是不换行的长文本（如完整时间范围
+     "月日时分~月日时分"），Semi 220px 会把内容硬切成两行甚至裁掉结尾——本库改为
+     min-width 兜底默认宽度、width:max-content 按最长一行内容自动撑宽，max-width 防止溢出视口。 */
   .cd-calendar-month-event-card {
-    width: var(--cd-calendar-width-card);
-    max-width: 100%;
+    min-width: var(--cd-calendar-width-card);
+    width: max-content;
+    max-width: min(100%, 90vw);
   }
   .cd-calendar-month-event-card-content {
     padding: var(--cd-calendar-spacing-month-event-card-content-padding-y) var(--cd-calendar-spacing-month-event-card-content-padding-x);
@@ -572,6 +570,7 @@
   }
   .cd-calendar-month-event-card-list li {
     padding: var(--cd-spacing-extra-tight) 0;
+    white-space: nowrap;
   }
 
   /* —— RTL（逐条对齐 Semi calendar/rtl.scss）——
