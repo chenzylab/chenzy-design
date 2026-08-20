@@ -12,6 +12,8 @@ export interface ImagePreviewGroupContext {
   lazyLoad: boolean;
   /** 懒加载 observer rootMargin（对齐 Semi lazyLoadMargin）。 */
   lazyLoadMargin: string;
+  /** 懒加载 observer 的 root（对齐 Semi 以组容器为 root，而非默认 viewport）。 */
+  getRoot: () => Element | null;
   /** 子 Image 注册自身，返回稳定 imageID（注册顺序）；src/title 用 getter 保持响应性。 */
   register: (item: {
     getSrc: () => string;

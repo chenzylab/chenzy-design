@@ -120,11 +120,16 @@
     onVisibleChange?.(next);
   }
 
+  // lazyLoad：每个子 Image 自管 IntersectionObserver（见 Image.svelte），进视口才设真实 src。
+  // rootEl 经 context.getRoot() 下发给子图作 observer root（对齐 Semi 以组容器为 root，而非 viewport）。
+  let rootEl = $state<HTMLDivElement | null>(null);
+
   setImagePreviewGroupContext({
     isGroup: true,
     // context 仅 setup 时构建一次；lazyLoad/lazyLoadMargin/setDownloadName 取初始值（运行期不变），untrack 消警告。
     lazyLoad: untrack(() => lazyLoad),
     lazyLoadMargin: untrack(() => lazyLoadMargin),
+    getRoot: () => rootEl,
     register(item) {
       const slot = items.length;
       items = [...items, item];
@@ -146,10 +151,6 @@
     },
     setDownloadName: untrack(() => setDownloadName),
   });
-
-  // lazyLoad：每个子 Image 自管 IntersectionObserver（见 Image.svelte），进视口才设真实 src。
-  // 此处仅提供组根容器引用（布局/样式用）。lazyLoad 经 context 下发给子图。
-  let rootEl = $state<HTMLDivElement | null>(null);
 
   const groupCls = $derived(
     ['cd-image-preview-group', className].filter(Boolean).join(' '),

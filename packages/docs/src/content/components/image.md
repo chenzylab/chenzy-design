@@ -162,8 +162,8 @@ import { Image, ImagePreview } from '@chenzy-design/svelte';
 | previewStyle | 自定义预览样式 | string | - |
 | prevTip | 上一步操作按钮提示 | string | `上一步` |
 | renderCloseIcon | 自定义关闭 icon | Snippet | - |
-| renderLeftIcon | 自定义向左 icon | Snippet | - |
-| renderRightIcon | 自定义向右 icon | Snippet | - |
+| renderLeftIcon | 自定义向左 icon，入参为当前预览图下标 | `Snippet<[currentIndex]>` | - |
+| renderRightIcon | 自定义向右 icon，入参为当前预览图下标 | `Snippet<[currentIndex]>` | - |
 | renderHeader | 自定义渲染预览顶部信息，入参为当前图 previewTitle | `Snippet<[title]>` | - |
 | renderPreviewMenu | 自定义渲染预览底部菜单信息 | `Snippet<[MenuProps]>` | - |
 | rotateTip | 旋转操作按钮提示 | string | `旋转` |

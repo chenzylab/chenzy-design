@@ -29,7 +29,7 @@
     fallback?: string | Snippet;
     /** 预览：false 禁用；true 默认开启；对象=预览参数（含 src 覆盖预览图）。 */
     preview?: boolean | PreviewProps;
-    crossorigin?: 'anonymous' | 'use-credentials';
+    crossOrigin?: 'anonymous' | 'use-credentials';
     /** 透传到 img 的自定义类名（对齐 Semi imgCls）。 */
     imgCls?: string;
     /** 透传到 img 的自定义内联样式（对齐 Semi imgStyle）。 */
@@ -43,6 +43,8 @@
     onError?: (e: Event) => void;
     onLoad?: (e: Event) => void;
     onClick?: (e: MouseEvent) => void;
+    /** 透传到底层 img 的其余原生属性（对齐 Semi ImageProps extends ImgHTMLAttributes）。 */
+    [key: string]: unknown;
   }
 
   let {
@@ -53,7 +55,7 @@
     placeholder,
     fallback,
     preview = true,
-    crossorigin,
+    crossOrigin,
     imgCls,
     imgStyle,
     setDownloadName,
@@ -63,6 +65,7 @@
     onError,
     onLoad,
     onClick,
+    ...restProps
   }: Props = $props();
 
   const loc = useLocale();
@@ -130,7 +133,10 @@
           }
         }
       },
-      { rootMargin: group?.lazyLoadMargin ?? '0px 100px 100px 0px' },
+      {
+        root: group?.getRoot() ?? null,
+        rootMargin: group?.lazyLoadMargin ?? '0px 100px 100px 0px',
+      },
     );
     observer.observe(node);
     return () => observer.disconnect();
@@ -201,12 +207,13 @@
 >
   <img
     bind:this={imgNode}
+    {...restProps}
     class={imgClass}
     src={resolvedSrc}
     {alt}
     {width}
     {height}
-    crossorigin={crossorigin}
+    crossorigin={crossOrigin}
     style={imgStyle}
     onload={handleLoad}
     onerror={handleError}
@@ -251,7 +258,7 @@
     src={[previewSrc]}
     visible={effectiveVisible}
     onVisibleChange={setPreviewVisible}
-    crossOrigin={crossorigin}
+    crossOrigin={crossOrigin !== undefined ? crossOrigin : previewProps?.crossOrigin}
     {setDownloadName}
     maskClosable={previewProps?.maskClosable}
     closable={previewProps?.closable}
