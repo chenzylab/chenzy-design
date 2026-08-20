@@ -237,7 +237,7 @@ const components = [
   ['carousel', '{ Carousel }', '5.5 KB'],
   ['collapse', '{ CollapsePanelComponent }', '4.4 KB'],
   ['collapsible', '{ Collapsible }', '2 KB'],
-  ['descriptions', '{ DescriptionsItem }', '2.8 KB'],
+  ['descriptions', '{ DescriptionsItem }', '3.2 KB'],
   ['empty', '{ Empty }', '2.55 KB'],
   ['highlight', '{ Highlight }', '1.45 KB'],
   ['image', '{ Image, ImagePreview }', '13 KB'],
