@@ -42,6 +42,13 @@
 
   // 触发方式全集（对齐 Semi strings.TRIGGER_SET）
   type Trigger = 'hover' | 'focus' | 'click' | 'custom' | 'contextMenu';
+  // margin 对象形式（对齐 Semi Tooltip margin，Dropdown 继承 TooltipProps 未覆盖类型）。
+  type MarginObject = {
+    marginLeft?: number;
+    marginTop?: number;
+    marginRight?: number;
+    marginBottom?: number;
+  };
 
   // 默认间距（对齐 Semi numbers）：顶层 4、嵌套 2。
   const SPACING = 4;
@@ -80,8 +87,8 @@
      */
     spacing?: number | { x: number; y: number };
     /** 弹出层计算溢出时增加的冗余值(px)（对齐 Semi margin，作用同 Tooltip margin）。 */
-    margin?: number;
-    /** 弹出层 z-index（对齐 Semi zIndex）。默认 1050（Tooltip DEFAULT_Z_INDEX）。 */
+    margin?: number | MarginObject;
+    /** 弹出层 z-index（对齐 Semi zIndex）。默认 1060（Tooltip numbers.DEFAULT_Z_INDEX，Dropdown 继承未覆盖）。 */
     zIndex?: number;
     /** 下拉动画开关（对齐 Semi motion）。默认 true。 */
     motion?: boolean;
@@ -156,7 +163,7 @@
   }: Props = $props();
   // cdGlobal 全局默认 props（对齐 Semi semiGlobal.config.overrideDefaultProps）：
   // 优先级 = 显式传值 > cdGlobal['Dropdown'] > 组件内置默认值。
-  const zIndex = $derived(resolveDefault(zIndexProp, 'Dropdown', 'zIndex', 1050));
+  const zIndex = $derived(resolveDefault(zIndexProp, 'Dropdown', 'zIndex', 1060));
   const motion = $derived(resolveDefault(motionProp, 'Dropdown', 'motion', true));
   const trigger = $derived(resolveDefault(triggerProp, 'Dropdown', 'trigger', 'hover'));
   const position = $derived(resolveDefault(positionProp, 'Dropdown', 'position', 'bottom'));
@@ -188,9 +195,19 @@
     return horizontal ? s.x : s.y;
   });
 
-  // 溢出冗余（Semi margin）：透传给 floating padding（视口边缘保留距离）；未传时用默认。
-  const DEFAULT_FLOAT_PADDING = 8;
-  const floatPadding = $derived(typeof margin === 'number' ? margin : DEFAULT_FLOAT_PADDING);
+  // 溢出冗余（Semi margin）：透传给 floating padding（视口边缘保留距离）；未传时对齐 Semi
+  // Tooltip numbers.MARGIN 默认 0（Dropdown 继承 TooltipProps，无自身覆盖）。
+  // 对象形式（marginLeft/Top/Right/Bottom）归一取最大分量（core padding 语义近似，同 Tooltip）。
+  const floatPadding = $derived.by(() => {
+    if (margin === undefined) return 0;
+    if (typeof margin === 'number') return margin;
+    return Math.max(
+      margin.marginTop ?? 0,
+      margin.marginBottom ?? 0,
+      margin.marginLeft ?? 0,
+      margin.marginRight ?? 0,
+    );
+  });
 
   // clickToHide 解析：未传时 hover/click 默认 true（点击项关闭），custom/contextMenu 不受此控制。
   const resolvedClickToHide = $derived(clickToHide ?? true);

@@ -86,7 +86,7 @@ import { Dropdown } from '@chenzy-design/svelte';
 | keepDOM | 关闭时是否保留内部组件 DOM 不销毁 | boolean | false |
 | margin | 弹出层计算溢出时增加的冗余值，作用同 Tooltip margin | number \| object | - |
 | mouseEnterDelay | 鼠标移入 Trigger 后延迟显示的时间（ms，仅 hover/focus 生效） | number | 50 |
-| mouseLeaveDelay | 鼠标移出弹出层后延迟消失的时间（ms，仅 hover/focus 生效） | number | 50 |
+| mouseLeaveDelay | 鼠标移出弹出层后延迟消失的时间（ms，仅 hover/focus 生效） | number | 100 |
 | menu | 通过传入 JSON Array 来快速配置 Dropdown 内容 | `Array<DropdownMenuItem>` | [] |
 | position | 弹出菜单的位置，常用："bottom"、"bottomLeft"、"bottomRight"（本库用 Placement 命名） | Placement | `bottom` |
 | render | 弹出层的内容，由 `Dropdown.Menu` 及 `Dropdown.Item`、`Dropdown.Title` 构成 | Snippet | - |
@@ -97,7 +97,7 @@ import { Dropdown } from '@chenzy-design/svelte';
 | stopPropagation | 是否阻止弹出层上的点击事件冒泡 | boolean | false |
 | trigger | 触发下拉的行为，可选 "hover"、"focus"、"click"、"custom"、"contextMenu" | string | "hover" |
 | visible | 是否显示菜单，需配合 trigger custom 使用 | boolean | - |
-| zIndex | 弹出层 z-index 值 | number | 1050 |
+| zIndex | 弹出层 z-index 值 | number | 1060 |
 | onClickOutSide | 弹出层展示时，点击非 Children、非弹出层内部区域的回调（仅 custom、click 有效） | `(e: Event) => void` | - |
 | onEscKeyDown | 在 trigger 或弹出层按 Esc 键时调用 | `(e: Event) => void` | - |
 | onVisibleChange | 弹出层显示状态改变时的回调 | `(visible: boolean) => void` | - |
