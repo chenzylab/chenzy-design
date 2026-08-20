@@ -30,7 +30,7 @@ import { Empty } from '@chenzy-design/svelte';
 
 ### 基本用法
 
-通过 `imageSlot` 设置占位图片，可以引入本库内置的对应插画（插画默认宽高是 200x200），也可以传入自定义的插画。目前拥有的插画可以查看[占位图插画](#占位图插画aaa建设中aaa)。
+通过 `imageSlot` 设置占位图片，可以从 `@chenzy-design/illustrations` 中手动引入对应的插画（插画默认宽高是 200x200），也可以传入自定义的插画。目前拥有的插画可以查看[占位图插画](#占位图插画aaa建设中aaa)。
 
 内置一系列暗色模式的插画，并支持通过 `darkModeImageSlot` 传入暗色模式下需要使用的插画，以更好地适配暗色模式。
 
@@ -54,7 +54,7 @@ import { Empty } from '@chenzy-design/svelte';
 
 ### 占位图插画(建设中)
 
-目前本库内置以下插画。
+目前 `@chenzy-design/illustrations` 中支持以下插画。
 
 <DemoBox code={illustrationsSrc}><Illustrations /></DemoBox>
 
@@ -72,6 +72,7 @@ import { Empty } from '@chenzy-design/svelte';
 | layout | 布局方式，支持 `vertical`, `horizontal` | string | `vertical` |
 | style | 样式名 | string | - |
 | title | 标题 | string | - |
+| ...rest | 透传到根节点的其余属性（如 data-*），对齐 Semi `getDataAttr(rest)` | `Record<string, unknown>` | - |
 
 ## Accessibility
 

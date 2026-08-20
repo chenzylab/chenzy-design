@@ -5,6 +5,7 @@
   darkModeImage 存在时监听 data-theme（对齐 Semi 监听 body theme-mode）在暗色下切换插画。
   title 用 Typography.Title（有图 heading=4；无图 heading=6 + fontWeight 400），description 为 div。
   layout：vertical（默认）| horizontal。
+  其余属性（如 data-*）透传到根节点，对齐 Semi getDataAttr(rest)。
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
@@ -41,6 +42,8 @@
     imageSlot?: Snippet;
     /** 暗色自定义插画节点 */
     darkModeImageSlot?: Snippet;
+    /** 透传到根节点的其余属性（如 data-*），对齐 Semi getDataAttr(rest) */
+    [key: string]: unknown;
   }
 
   let {
@@ -55,6 +58,7 @@
     children,
     imageSlot,
     darkModeImageSlot,
+    ...rest
   }: Props = $props();
 
   // —— 暗色探测：仅在提供 darkModeImage/darkModeImageSlot 时挂载观察，对齐 Semi 仅 darkModeImage 时监听。
@@ -107,7 +111,7 @@
   );
 </script>
 
-<div class={wrapperCls} {style}>
+<div class={wrapperCls} {style} {...rest}>
   <div class="cd-empty-image" style={imageStyle}>
     {#if activeSlot}
       {@render activeSlot()}

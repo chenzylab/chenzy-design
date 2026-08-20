@@ -1,6 +1,6 @@
 <script lang="ts">
+  import { Empty } from '@chenzy-design/svelte';
   import {
-    Empty,
     IllustrationSuccess, IllustrationSuccessDark,
     IllustrationFailure, IllustrationFailureDark,
     IllustrationNoAccess, IllustrationNoAccessDark,
@@ -9,7 +9,7 @@
     IllustrationNoResult, IllustrationNoResultDark,
     IllustrationConstruction, IllustrationConstructionDark,
     IllustrationIdle, IllustrationIdleDark,
-  } from '@chenzy-design/svelte';
+  } from '@chenzy-design/illustrations';
 
   const items = [
     { light: IllustrationSuccess, dark: IllustrationSuccessDark, desc: '创建成功' },

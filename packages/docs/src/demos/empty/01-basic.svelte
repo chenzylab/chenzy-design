@@ -1,9 +1,6 @@
 <script lang="ts">
-  import {
-    Empty,
-    IllustrationConstruction,
-    IllustrationConstructionDark,
-  } from '@chenzy-design/svelte';
+  import { Empty } from '@chenzy-design/svelte';
+  import { IllustrationConstruction, IllustrationConstructionDark } from '@chenzy-design/illustrations';
 </script>
 
 <Empty
