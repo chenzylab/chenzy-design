@@ -37,12 +37,12 @@
       <Slider value={zoom} step={0.1} min={0.1} max={3} onChange={(v) => (zoom = v as number)} />
     </div>
   </div>
-  <div style="display: flex; gap: 24px; align-items: flex-start;">
-    <div style="flex: 1;">
+  <div style="display: flex;">
+    <div style="width: 50%; flex-grow: 1;">
       <strong>实时预览</strong>
-      <div bind:this={previewEl} style="height: 200px; margin-top: 8px;"></div>
+      <div bind:this={previewEl} style="height: 300px; margin-top: 8px;"></div>
     </div>
-    <div style="flex: 1;">
+    <div style="width: 50%; flex-grow: 1; padding-left: 10px;">
       <Button onclick={crop}>裁切</Button>
       {#if result}
         <img src={result} alt="裁切结果" style="display: block; margin-top: 12px; max-width: 100%; border: 1px solid var(--cd-color-border);" />

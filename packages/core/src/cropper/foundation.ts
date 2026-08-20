@@ -1,6 +1,6 @@
 /**
- * createCropper — framework-agnostic geometry engine for the Cropper component.
- * Ported 逐行 from Semi 的 semi-foundation/cropper/foundation.js (CropperFoundation).
+ * createCropperFoundation — framework-agnostic geometry engine for the Cropper component.
+ * Ported 逐行 from Semi 的 semi-foundation/cropper/foundation.ts (CropperFoundation).
  * See specs/components/show/Cropper.spec.md §3.
  *
  * 纯几何/状态：容器/图片/裁切框坐标换算、8 角点 resize（自由 + aspectRatio 约束）、
@@ -10,6 +10,9 @@
  *
  * 坐标系：以裁切容器左上角为原点，x 向右、y 向下。centerPoint 存的是几何中心。
  */
+
+import { getMiddle, getAspectHW } from './utils.js';
+import type { CropperCorner } from './constants.js';
 
 /** 2D 点。 */
 export interface Point {
@@ -45,26 +48,6 @@ export interface ContainerData {
   height: number;
 }
 
-/** 角点方向：4 角 + 4 边中点。 */
-export type CropperCorner = 'tl' | 'tm' | 'tr' | 'ml' | 'mr' | 'bl' | 'bm' | 'br';
-
-/** 裁切框形状。 */
-export type CropperShape = 'rect' | 'round' | 'roundRect';
-
-/** 角点全集与圆形（round）时仅保留的 4 个边中点角点。 */
-export const CROPPER_CORNERS: readonly CropperCorner[] = [
-  'tl',
-  'tm',
-  'tr',
-  'ml',
-  'mr',
-  'bl',
-  'bm',
-  'br',
-];
-export const CROPPER_ROUND_CORNERS: readonly CropperCorner[] = ['tm', 'ml', 'mr', 'bm'];
-export const CROPPER_SHAPES: readonly CropperShape[] = ['rect', 'round', 'roundRect'];
-
 /** adapter：渲染层注入的 DOM 读取 + 变更通知。core 只调、不持有 DOM 引用。 */
 export interface CropperAdapter {
   /** 返回裁切容器元素（读 clientWidth/clientHeight/getBoundingClientRect）。 */
@@ -97,24 +80,6 @@ export interface CropperFoundationState {
   loaded: boolean;
 }
 
-/** getMiddle — 将 value 钳制到 [min, max]。（Semi cropper.utils.getMiddle） */
-export function getMiddle(value: number, [min, max]: [number, number]): number {
-  return Math.min(Math.max(value, min), max);
-}
-
-/**
- * getAspectHW — 在给定 (width, height) 外接框内取满足 aspect(=w/h) 的最大内接矩形宽高。
- * （Semi cropper.utils.getAspectHW）
- */
-export function getAspectHW(width: number, height: number, aspect: number): [number, number] {
-  if (width / height > aspect) {
-    width = height * aspect;
-  } else {
-    height = width / aspect;
-  }
-  return [width, height];
-}
-
 const DEFAULT_PROPS: CropperFoundationProps = {
   defaultAspectRatio: 1,
   fill: 'rgba(0, 0, 0, 0)',
@@ -123,7 +88,7 @@ const DEFAULT_PROPS: CropperFoundationProps = {
   zoomStep: 0.1,
 };
 
-/** 每个方向的 resize 参数（自由 resize 分支用）。 */
+/** 每个方向的 resize 参数（自由 resize 分支用）。（Semi foundation.getMoveParamByDir） */
 export function getMoveParamByDir(dir: CropperCorner): { paramX: number; paramY: number } {
   let paramX = 0;
   let paramY = 0;

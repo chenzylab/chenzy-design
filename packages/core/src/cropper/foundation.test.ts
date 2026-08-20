@@ -1,14 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
-import {
-  createCropperFoundation,
-  getMiddle,
-  getAspectHW,
-  getMoveParamByDir,
-  CROPPER_CORNERS,
-  CROPPER_ROUND_CORNERS,
-  type CropperFoundationState,
-  type CropperFoundationProps,
-} from './cropper.js';
+import { createCropperFoundation, getMoveParamByDir } from './foundation.js';
+import { CROPPER_CORNERS, CROPPER_ROUND_CORNERS } from './constants.js';
+import type { CropperFoundationState, CropperFoundationProps } from './foundation.js';
 
 /**
  * jsdom 无关的纯几何单测。构造一个内存 harness：
@@ -46,20 +39,7 @@ function makeHarness(
   return { foundation, state, notifyZoomChange, container };
 }
 
-describe('cropper utils', () => {
-  it('getMiddle clamps to [min, max]', () => {
-    expect(getMiddle(5, [0, 10])).toBe(5);
-    expect(getMiddle(-3, [0, 10])).toBe(0);
-    expect(getMiddle(99, [0, 10])).toBe(10);
-  });
-
-  it('getAspectHW fits a box to a target aspect (w/h)', () => {
-    // wide outer box, aspect 1 → shrink width to match height
-    expect(getAspectHW(200, 100, 1)).toEqual([100, 100]);
-    // tall outer box, aspect 2 → shrink height to match width
-    expect(getAspectHW(100, 200, 2)).toEqual([100, 50]);
-  });
-
+describe('cropper foundation move params', () => {
   it('getMoveParamByDir maps corners to sign vectors', () => {
     expect(getMoveParamByDir('tl')).toEqual({ paramX: -1, paramY: -1 });
     expect(getMoveParamByDir('br')).toEqual({ paramX: 1, paramY: 1 });

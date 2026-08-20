@@ -263,7 +263,7 @@ export {
   type CropperCorner,
   type CropperShape,
   type Point as CropperPoint,
-} from './cropper.js';
+} from './cropper/index.js';
 export {
   mergeConfig,
   DEFAULT_CONFIG,
