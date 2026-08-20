@@ -21,6 +21,7 @@
     setDescriptionsContext,
     type DescriptionsAlign,
     type DescriptionsLayout,
+    type DescriptionsItemEntry,
   } from './context.js';
 
   type Size = 'small' | 'medium' | 'large';
@@ -56,17 +57,15 @@
     children,
   }: Props = $props();
 
-  setDescriptionsContext({
-    getAlign: () => align,
-    getLayout: () => layout,
-  });
-
   // 镜像 Semi foundation.getHorizontalList：按 span 累加分组，达到 column 换行；
   // 尾组若最后一项无 span 且总 span 不足 column，补足使其撑满该行。
-  function getHorizontalList(items: DescriptionData[]): DescriptionData[][] {
+  // 复用于 data 与 children（收集自 Descriptions.Item）两种数据源（对齐 Semi getColumns）。
+  function getHorizontalList<T extends { hidden?: boolean | undefined; span?: number | undefined }>(
+    items: T[],
+  ): T[][] {
     const visible = items.filter((item) => !item.hidden);
-    const list: DescriptionData[][] = [];
-    let itemList: DescriptionData[] = [];
+    const list: T[][] = [];
+    let itemList: T[] = [];
     let totalSpan = 0;
     for (const item of visible) {
       totalSpan += item.span || 1;
@@ -91,8 +90,45 @@
     return list;
   }
 
+  // horizontal + 无 data（children 声明式模式）：收集 <Descriptions.Item> 元信息，交由本组件统一分组渲染
+  // （对齐 Semi getColumns 从 React children 提取后走同一 getHorizontalList；Item 自身在此模式下不渲染 DOM）。
+  // Map + version：Item 在 $effect 中按注册顺序 register/unregister（纯写，无副作用读），
+  // version 冒泡触发 $derived.by 只读重建快照（同 Table Column 收集模式，避免在 $derived 中做有副作用的注册）。
+  const registry = new Map<string, DescriptionsItemEntry>();
+  let order: string[] = [];
+  let version = $state(0);
+  const usesChildrenCollector = $derived(layout === 'horizontal' && !(data && data.length));
+
+  function registerItem(id: string, entry: DescriptionsItemEntry): void {
+    if (!registry.has(id)) order.push(id);
+    registry.set(id, entry);
+    version++;
+  }
+  function unregisterItem(id: string): void {
+    if (registry.delete(id)) {
+      order = order.filter((existing) => existing !== id);
+      version++;
+    }
+  }
+
+  setDescriptionsContext({
+    getAlign: () => align,
+    getLayout: () => layout,
+    isCollecting: () => usesChildrenCollector,
+    registerItem,
+    unregisterItem,
+  });
+
+  const collectedItems = $derived.by(() => {
+    void version;
+    return order.map((id) => registry.get(id)!);
+  });
+
   const horizontalList = $derived(
-    layout === 'horizontal' ? getHorizontalList(data) : [],
+    layout === 'horizontal' && data && data.length ? getHorizontalList(data) : [],
+  );
+  const horizontalChildrenList = $derived(
+    usesChildrenCollector ? getHorizontalList(collectedItems) : [],
   );
   const verticalData = $derived(data.filter((item) => !item.hidden));
 
@@ -116,10 +152,41 @@
   );
 </script>
 
+{#snippet collectedPlainCell(item: DescriptionsItemEntry)}
+  <td class="cd-descriptions-item" colspan={item.span || 1}>
+    <span class="cd-descriptions-key" style={item.keyStyle}>{item.itemKey}:</span>
+    <span class="cd-descriptions-value">{@render item.children?.()}</span>
+  </td>
+{/snippet}
+
+{#snippet collectedAlignCell(item: DescriptionsItemEntry)}
+  <th class="cd-descriptions-item cd-descriptions-item-th">
+    <span class="cd-descriptions-key" style={item.keyStyle}>{item.itemKey}</span>
+  </th>
+  <td class="cd-descriptions-item cd-descriptions-item-td" colspan={item.span ? item.span * 2 - 1 : 1}>
+    <span class="cd-descriptions-value">{@render item.children?.()}</span>
+  </td>
+{/snippet}
+
 <div class={cls} {style}>
   <table>
     <tbody>
-      {#if data && data.length}
+      {#if usesChildrenCollector}
+        <!-- children 收集模式：渲染 children 触发各 Item 向父级注册（自身静默不出 DOM），
+             再按分组统一输出 tr（对齐 Semi getColumns 从 children 提取后走 getHorizontalList）。 -->
+        {@render children?.()}
+        {#each horizontalChildrenList as rowItems, rIndex (rIndex)}
+          <tr>
+            {#each rowItems as item, iIndex (iIndex)}
+              {#if align === 'plain'}
+                {@render collectedPlainCell(item)}
+              {:else}
+                {@render collectedAlignCell(item)}
+              {/if}
+            {/each}
+          </tr>
+        {/each}
+      {:else if data && data.length}
         {#if layout === 'horizontal'}
           {#each horizontalList as rowItems, rIndex (rIndex)}
             <tr>
