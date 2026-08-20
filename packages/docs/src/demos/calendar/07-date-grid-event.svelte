@@ -24,7 +24,8 @@
 <style>
   :global(.dg-schedule-evt) {
     position: absolute;
-    inset-inline: 0;
+    left: 0;
+    right: 0;
     box-sizing: border-box;
     padding: 10px;
     background: var(--cd-color-primary-light-default);

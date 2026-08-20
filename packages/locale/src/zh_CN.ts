@@ -93,6 +93,7 @@ export const zh_CN: Locale = {
     PM: '下午{time}时',
     remaining: '还有 {count} 项',
     datestring: '日',
+    close: '关闭',
   },
   Tree: {
     emptyText: '暂无数据',

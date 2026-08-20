@@ -93,6 +93,7 @@ export const en_US: Locale = {
     remaining: '{count} more',
     // 对齐 Semi en_US：英文无日期单位后缀，只显示「Jul 1」。
     datestring: '',
+    close: 'Close',
   },
   Tree: {
     emptyText: 'No data',

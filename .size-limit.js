@@ -227,7 +227,12 @@ const components = [
   // contentMotion 动效、JS scale 自适应、group 各档 border/margin），按实测 6.7 KB +8% 校准。
   ['avatar', '{ AvatarGroup }', '7.3 KB'],
   ['badge', '{ Badge }', '2.5 KB'],
-  ['calendar', '{ Calendar }', '9 KB'],
+  // 9 KB → 12.5 KB：按 Semi packages/semi-ui/calendar 结构拆分为 Calendar(路由壳)/
+  // DayCalendar/WeekCalendar/RangeCalendar/MonthCalendar/DayCol 六个独立文件（weekCalendar
+  // 与 rangeCalendar 在 Semi 中就是互不共享代码的独立实现，各自持有一份 scoped CSS，纯架构
+  // 对齐 8.12→11.93 KB），叠加同批 fix(calendar) 补齐月视图 +N 卡片 IconClose 关闭按钮
+  // （此前完全缺失，meta.ts 早已声称有而实现没有）11.93→12.28 KB，真实新功能。按实测 +0.22 KB 余量校准。
+  ['calendar', '{ Calendar }', '12.5 KB'],
   ['card', '{ Card, CardGroup }', '3.7 KB'],
   ['carousel', '{ Carousel }', '5.5 KB'],
   ['collapse', '{ CollapsePanelComponent }', '4.4 KB'],
