@@ -94,7 +94,7 @@ Popover 需要将 DOM 事件监听器应用到 children 中，如果子元素是
 
 ### 设置浮层背景色
 
-如果你需要定制浮层的背景色或边框颜色，请**务必同时声明 `style` 中的背景色/边框色与 `arrowStyle` 中的 `backgroundColor` 和 `borderColor` 属性**，这样能够使得“小三角”也能应用相同的背景色和边框颜色。
+如果你需要定制浮层的背景色或边框颜色，请**务必单独声明 `style` 中的 `backgroundColor` 和 `borderColor` 属性**，这样能够使得“小三角”也能应用相同的背景色和边框颜色。
 
 <DemoBox code={customBgSrc}><CustomBg /></DemoBox>
 
@@ -123,9 +123,9 @@ Popover content 支持传入带参数的 Snippet，它的入参是一个对象�
 | content | 显示的内容：文本或 Snippet，Snippet 可选接收 `{ initialFocusRef }` 入参 | `string`\|`Snippet<[{ initialFocusRef }]>` | - |
 | defaultVisible | 非受控时初始是否展示弹出层 | boolean | false |
 | disabled | 是否禁用触发 | boolean | false |
-| disableFocusListener | trigger 为 `hover` 时，不响应键盘聚焦弹出浮层事件 | boolean | false |
+| disableFocusListener | trigger 为 `hover` 时，不响应键盘聚焦弹出浮层事件，详见 [issue#977](https://github.com/DouyinFE/semi-design/issues/977) | boolean | true |
 | getPopupContainer | 指定父级 DOM，弹层将会渲染至该 DOM 中，自定义需要设置 `position: relative`。这会改变浮层 DOM 树位置，但不会改变视图渲染位置。缺省回退 ConfigProvider 全局配置，再回退 `document.body` | () => HTMLElement | () => document.body |
-| guardFocus | 当焦点处于弹出层内时，切换 Tab 是否让焦点在弹出层内循环 | boolean | true（dialog 模式下） |
+| guardFocus | 当焦点处于弹出层内时，切换 Tab 是否让焦点在弹出层内循环（对齐 Semi：始终为 true，不接受外部覆盖） | boolean | true |
 | keepDOM | 关闭时是否保留内部组件不销毁 | boolean | false |
 | margin | 弹出层计算溢出时的增加的冗余值，作用同 Tooltip margin | number \| `{ marginLeft: number; marginTop: number; marginRight: number; marginBottom: number }` | 0 |
 | motion | 是否展示弹出层动画 | boolean | true |

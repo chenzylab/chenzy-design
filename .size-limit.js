@@ -247,7 +247,10 @@ const components = [
   ['list', '{ List, ListItem }', '3.5 KB'],
   ['overflow-list', '{ OverflowList }', '3.2 KB'],
   // 箭头定位 CSS 迁回 Tooltip 后 4.11→2.82 KB 实测；预算按 +15% buffer 校准（见浮层三件套注）。
-  ['popover', '{ Popover }', '3.3 KB'],
+  // 2026-08-20 严格对齐 Semi：Arrow 拆独立文件（对齐 semi-ui/popover/Arrow.tsx 物理结构）+
+  // 补齐箭头颜色兜底链路（arrowStyle→style 解析→CSS path:nth-child token 兜底，此前无 style
+  // 兜底、且无 CSS 默认色，导致无自定义色时箭头渲染为黑色）后实测 3.35 KB，预算随之上调。
+  ['popover', '{ Popover }', '3.4 KB'],
   ['scroll-list', '{ ScrollList }', '5.75 KB'],
   // 对齐 Semi 破坏性重写 + 补全 API（onCell 行列合并、column.children 表头合并、useFullRender、onRow 事件、根 class/style、components tag 覆盖、getVirtualizedListRef、scrollToFirstRowOnChange、RTL、图标组件化）后实测 17.92 KB。
   // 二次补齐 Semi 文档全量 API（showSortTip+Tooltip、sortIcon/filterIcon、renderFilterDropdown/renderFilterDropdownItem+FilterDropdownHost、onHeaderCell、filterConfirmMode confirm 模式、defaultFilteredValue、filterChildrenRecord/sortChildrenRecord 树形过滤排序、rowSelection.checkRelation/clickRow/hidden/renderCell、pagination.currentPage/total/position/formatPageText、Table 级 resizable+onResize 事件、expandAllRows、emptySnippet、onRow 拖拽事件）后实测 20.44 KB。

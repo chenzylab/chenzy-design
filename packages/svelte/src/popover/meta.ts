@@ -67,7 +67,7 @@ export const meta = {
     },
     { name: 'clickToHide', type: 'boolean', default: 'false', desc: '点击浮层及内部任一元素时自动关闭' },
     { name: 'keepDOM', type: 'boolean', default: 'false', desc: '关闭时保留浮层 DOM 不销毁（--hidden 隐藏）' },
-    { name: 'disableFocusListener', type: 'boolean', default: 'false', desc: 'hover 触发时不响应键盘 focus 显隐' },
+    { name: 'disableFocusListener', type: 'boolean', default: 'true', desc: 'hover 触发时不响应键盘 focus 显隐（对齐 Semi Popover.defaultProps，覆盖 Tooltip 层的 false 默认值，见 issue#977）' },
     { name: 'disabled', type: 'boolean', default: 'false', desc: '禁用触发' },
     { name: 'motion', type: 'boolean', default: 'true', desc: '是否展示进出场动画，reduced-motion 退化' },
     {
@@ -81,8 +81,8 @@ export const meta = {
     {
       name: 'guardFocus',
       type: 'boolean',
-      default: "role==='dialog'",
-      desc: '焦点处于浮层内时 Tab 是否循环（缺省随 dialog 模式）',
+      default: 'true',
+      desc: '@deprecated 对齐 Semi Popover：永远为 true 且不接受外部覆盖（Semi render() 硬编码 guardFocus，此 prop 被忽略，仅为向后兼容保留声明）',
     },
     {
       name: 'returnFocusOnClose',
