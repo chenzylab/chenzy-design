@@ -25,9 +25,13 @@
       scroll: [overflow[0]] .cd-overflow-list-scroll-wrapper{ 可见项* } [overflow[1]]
 -->
 <script lang="ts" generics="T extends Record<string, any>">
-  import { resolveDefault } from '@chenzy-design/core';
+  import { resolveDefault, createResizeObserver } from '@chenzy-design/core';
   import type { Snippet } from 'svelte';
   import { untrack } from 'svelte';
+  import {
+    createIntersectionObserver,
+    type IntersectionObserverController,
+  } from './intersection-observer.js';
 
   // MINIMUM_HTML_ELEMENT_WIDTH：Semi numbers 常量，用于估算 maxCount 上界。
   const MINIMUM_HTML_ELEMENT_WIDTH = 4;
@@ -138,7 +142,7 @@
   let itemSizeMap = new Map<Key, number>();
   let containerEl = $state<HTMLElement | null>(null);
   let scrollerEl = $state<HTMLElement | null>(null);
-  let io: IntersectionObserver | null = null;
+  let io: IntersectionObserverController | null = null;
   // 已观测的 scroll 项 DOM（key → node），用于 IO diff。
   const scrollItemNodes = new Map<string, Element>();
   // onOverflow 去重（对齐 Semi statePivot !== pivot 判断）。
@@ -258,10 +262,14 @@
   }
 
   // action：给每个可见项包 ResizeObserver 测宽（命令式，cleanup disconnect）。
+  // 对齐 Semi 全程走自造 ResizeObserver 组件而非裸浏览器 API：本库等价原语走
+  // @chenzy-design/core 的 createResizeObserver（Tabs/Anchor/Cropper 等兄弟组件同用）。
   function measureItem(node: HTMLElement, params: { item: T; index: number }) {
     let current = params;
-    const ro = new ResizeObserver(() => {
-      onItemMeasured(current.item, current.index, node.clientWidth);
+    const ro = createResizeObserver({
+      onResize: (entry) => {
+        onItemMeasured(current.item, current.index, entry.width);
+      },
     });
     ro.observe(node);
     return {
@@ -276,13 +284,14 @@
 
   // action：折叠节点测宽 overflowWidth（命令式）。
   function measureOverflow(node: HTMLElement) {
-    const ro = new ResizeObserver(() => {
-      const w = node.clientWidth;
-      if (w !== overflowWidth) {
-        overflowWidth = w;
-        overflowStatus = 'calculating';
-        pivot = -1;
-      }
+    const ro = createResizeObserver({
+      onResize: (entry) => {
+        if (entry.width !== overflowWidth) {
+          overflowWidth = entry.width;
+          overflowStatus = 'calculating';
+          pivot = -1;
+        }
+      },
     });
     ro.observe(node);
     return {
@@ -324,20 +333,20 @@
   function observeScrollItem(node: HTMLElement, key: string) {
     node.dataset.scrollkey = key;
     scrollItemNodes.set(key, node);
-    io?.observe(node);
+    io?.observe(key, node);
     return {
       update(nextKey: string) {
         if (nextKey !== key) {
-          io?.unobserve(node);
+          io?.unobserve(key, node);
           scrollItemNodes.delete(key);
           key = nextKey;
           node.dataset.scrollkey = key;
           scrollItemNodes.set(key, node);
-          io?.observe(node);
+          io?.observe(key, node);
         }
       },
       destroy() {
-        io?.unobserve(node);
+        io?.unobserve(key, node);
         scrollItemNodes.delete(key);
       },
     };
@@ -350,11 +359,12 @@
   $effect(() => {
     if (isScroll || !containerEl) return;
     const el = containerEl;
-    const ro = new ResizeObserver((entries) => {
-      const w = entries[0]?.target.clientWidth ?? 0;
-      containerWidth = w;
-      overflowStatus = 'calculating';
-      pivot = -1;
+    const ro = createResizeObserver({
+      onResize: (entry) => {
+        containerWidth = entry.width;
+        overflowStatus = 'calculating';
+        pivot = -1;
+      },
     });
     ro.observe(el);
     // 立即测一次初值。
@@ -383,20 +393,21 @@
     });
   });
 
-  // scroll 模式 IntersectionObserver：观测滚动 wrapper 内各项。
+  // scroll 模式 IntersectionObserver：观测滚动 wrapper 内各项（对齐 Semi
+  // intersectionObserver.tsx 拆出的独立文件）。
   $effect(() => {
     if (!isScroll || !scrollerEl) return;
-    const root = scrollerEl;
-    const observer = new IntersectionObserver((entries) => handleIntersect(entries), {
-      root,
+    const controller = createIntersectionObserver({
+      onIntersect: (entries) => handleIntersect(entries),
+      root: scrollerEl,
       threshold,
       rootMargin: '0px',
     });
-    io = observer;
+    io = controller;
     // 观测当前已注册的项。
-    for (const node of scrollItemNodes.values()) observer.observe(node);
+    for (const [key, node] of scrollItemNodes) controller.observe(key, node);
     return () => {
-      observer.disconnect();
+      controller.destroy();
       io = null;
     };
   });
@@ -469,5 +480,10 @@
     flex: 1;
     flex-wrap: nowrap;
     overflow-x: scroll;
+  }
+
+  /* —— RTL（对齐 Semi rtl.scss `.semi-rtl .semi-overflow-list { direction: rtl }`）—— */
+  :global(.cd-rtl) .cd-overflow-list {
+    direction: rtl;
   }
 </style>
