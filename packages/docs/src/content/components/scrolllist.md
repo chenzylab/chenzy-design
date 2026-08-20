@@ -10,6 +10,10 @@ brief: 滚动列表。
 
   import Basic from '../../demos/scroll-list/01-basic.svelte';
   import basicSrc from '../../demos/scroll-list/01-basic.svelte?raw';
+  import Normal from '../../demos/scroll-list/02-normal.svelte';
+  import normalSrc from '../../demos/scroll-list/02-normal.svelte?raw';
+  import SingleWheel from '../../demos/scroll-list/03-single-wheel.svelte';
+  import singleWheelSrc from '../../demos/scroll-list/03-single-wheel.svelte?raw';
 </script>
 
 ## 代码演示
@@ -25,6 +29,18 @@ import { ScrollList, ScrollItem } from '@chenzy-design/svelte';
 滚动列表提供了一个类似于 iOS 操作系统的滚动选择模式，同时支持滚动至指定窗口位置选择与点击选择。
 
 <DemoBox code={basicSrc}><Basic /></DemoBox>
+
+### 普通列表模式
+
+`mode="normal"` 时点击项即选中并高亮背景，不吸附居中。
+
+<DemoBox code={normalSrc}><Normal /></DemoBox>
+
+### 单个无限滚动列表
+
+`cycled` 开启无限循环，`motion={false}` 关闭滚动缓动动画，直接定位。
+
+<DemoBox code={singleWheelSrc}><SingleWheel /></DemoBox>
 
 ## API 参考
 

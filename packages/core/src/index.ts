@@ -170,7 +170,7 @@ export {
   type ScrollItemMode,
   type ScrollItemData,
   type ScrollItemSelectPayload,
-} from './scroll-list.js';
+} from './scroll-list/index.js';
 export {
   computeVisibleCount,
   computeTabOverflow,
