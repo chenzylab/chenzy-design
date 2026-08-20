@@ -63,8 +63,8 @@
     renderHeader?: Snippet<[string | Snippet | undefined]> | undefined;
     renderPreviewMenu?: Snippet<[MenuProps]> | undefined;
     renderCloseIcon?: Snippet | undefined;
-    renderLeftIcon?: Snippet | undefined;
-    renderRightIcon?: Snippet | undefined;
+    renderLeftIcon?: Snippet<[number]> | undefined;
+    renderRightIcon?: Snippet<[number]> | undefined;
     onVisibleChange?: ((visible: boolean) => void) | undefined;
     onChange?: ((index: number) => void) | undefined;
     onClose?: (() => void) | undefined;
@@ -453,7 +453,7 @@
         aria-label={prevTip ?? loc().t('Image.prevTip')}
         onclick={() => switchImage('prev')}
       >
-        {#if renderLeftIcon}{@render renderLeftIcon()}{:else}<IconArrowLeft size="large" />{/if}
+        {#if renderLeftIcon}{@render renderLeftIcon(currentIndex)}{:else}<IconArrowLeft size="large" />{/if}
       </div>
     {/if}
     {#if showNext}
@@ -467,7 +467,7 @@
         aria-label={nextTip ?? loc().t('Image.nextTip')}
         onclick={() => switchImage('next')}
       >
-        {#if renderRightIcon}{@render renderRightIcon()}{:else}<IconArrowRight size="large" />{/if}
+        {#if renderRightIcon}{@render renderRightIcon(currentIndex)}{:else}<IconArrowRight size="large" />{/if}
       </div>
     {/if}
 

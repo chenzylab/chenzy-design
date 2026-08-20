@@ -51,8 +51,8 @@ export interface PreviewProps {
   renderHeader?: Snippet<[string | Snippet | undefined]>;
   renderPreviewMenu?: Snippet<[MenuProps]>;
   renderCloseIcon?: Snippet;
-  renderLeftIcon?: Snippet;
-  renderRightIcon?: Snippet;
+  renderLeftIcon?: Snippet<[number]>;
+  renderRightIcon?: Snippet<[number]>;
   onVisibleChange?: (visible: boolean) => void;
   onChange?: (index: number) => void;
   onClose?: () => void;
