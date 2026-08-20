@@ -51,10 +51,6 @@
   </List>
 </div>
 
-<p style="color:var(--cd-color-text-2); font-size:12px; margin-top:8px;">
-  按 ↑ / ↓ 方向键切换高亮项。
-</p>
-
 <style>
   :global(.demo-booklist .demo-active-item) {
     background-color: var(--cd-color-fill-0);

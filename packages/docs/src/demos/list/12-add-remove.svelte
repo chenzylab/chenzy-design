@@ -54,4 +54,7 @@
   :global(.demo-booklist .list-item:hover) {
     background-color: var(--cd-color-fill-0);
   }
+  :global(.demo-booklist .list-item:active) {
+    background-color: var(--cd-color-fill-1);
+  }
 </style>
