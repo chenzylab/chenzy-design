@@ -1,28 +1,22 @@
 /**
- * ScrollList / ScrollItem helpers — framework-agnostic picker math.
+ * ScrollItem（列）headless 层 — 对齐 Semi Design `semi-foundation/scrollList/itemFoundation.ts`。
  *
- * 严格对齐 Semi Design（semi-foundation/scrollList）。Semi 的 itemFoundation 是有
- * 状态、直接操作真实 DOM 的类；本层遵循 chenzy-design headless 哲学，只抽出**纯函数**
- * 几何 / 文案 / 缓动数学，DOM 读写（节点搬移、getBoundingClientRect）由 svelte 渲染层
- * 用这些函数实现，无 DOM、无框架依赖、无内部可变状态。
+ * Semi 的 ItemFoundation 是有状态、直接操作真实 DOM 的类（selectIndex/selectNode 用
+ * `listWrapper.children`、`getBoundingClientRect` 读写节点）。chenzy-design 的 headless 层遵循
+ * MVVM 纯函数哲学（见 specs/00-foundation/mvvm-adapter.spec.md）：本文件抽出等价的**纯几何/
+ * 文案函数**，DOM 读写（滚动位置驱动、节点搬移）由 svelte 渲染层（ScrollItem.svelte）用这些
+ * 函数的返回值实现，本文件不接触 DOM、无内部可变状态。
  *
- * 对齐来源：
- * - scrollItem.tsx `scrollToNode` / `scrollToCenter` → {@link centerOffset}
- * - itemFoundation `getNearestNodeInfo`（选区中线找最近非禁用节点） → {@link nearestIndex}
- * - scrollTo.ts（semi-animation 驱动 scrollTop） → {@link scrollFrame}
- *   （已核 semi-animation 源码：scrollTo 传 `{duration}` 不传 easing → wrapValue 走 bezier 分支 →
- *    getEasing(undefined)='linear'=cubic-bezier(.25,.25,.75,.75)，数学上即线性。故本层用**线性**缓动，
- *    非弹簧、非 ease-out。）
- * - renderItemList `transform`（选中项文案变换） → {@link resolveItemText}
- * - constants.ts `DEFAULT_ITEM_HEIGHT=36` / `DEFAULT_SCROLL_DURATION=120`
+ * 对齐来源（Semi 方法 → 本文件函数）：
+ * - `renderItemList` 的 transform 优先级 → {@link resolveItemText}
+ * - `scrollToNode` / `scrollToCenter` 的居中公式 → {@link centerOffset}
+ * - `getNearestNodeInfo`（选区中线找最近非禁用节点） → {@link nearestIndex}
+ * - `selectNode` 的 `indexInList % data.length` 取模 → {@link wrapIndex}
+ * - `shouldPrepend` / `shouldAppend`（cycled 缓冲份数）→ 同名纯函数（参数化为相对坐标，不读 DOM）
  */
+import type { ScrollItemMode } from './constants.js';
 
-/** ScrollItem.mode：wheel（滚轮，居中吸附）| normal（普通列表，点击选中）。对齐 Semi strings.MODE。 */
-export type ScrollItemMode = 'wheel' | 'normal';
-
-/** Semi scrollList numbers 常量。 */
-export const SCROLL_LIST_DEFAULT_ITEM_HEIGHT = 36;
-export const SCROLL_LIST_DEFAULT_SCROLL_DURATION = 120;
+export type { ScrollItemMode };
 
 /**
  * 单项数据（对齐 Semi itemFoundation `Item`）。
@@ -47,7 +41,7 @@ export interface ScrollItemSelectPayload {
 }
 
 /**
- * 解析一项应展示的文案（对齐 Semi renderItemList）。
+ * 解析一项应展示的文案（对齐 Semi `renderItemList`）。
  * selected 时优先用 transform（item.transform > 公共 transform）变换，否则 text ?? String(value)。
  */
 export function resolveItemText(
@@ -63,9 +57,9 @@ export function resolveItemText(
 }
 
 /**
- * 把某 index 的项**居中**到视窗中线所需的 scrollTop（对齐 Semi scrollToNode）：
+ * 把某 index 的项**居中**到视窗中线所需的 scrollTop（对齐 Semi `scrollToNode`）：
  * targetTop = node.offsetTop - (wrapperHeight - itemHeight) / 2。
- * offsetTop = index * itemHeight（含 ul 顶部 `:before` 空白，见样式）。
+ * offsetTop = index * itemHeight（含 ul 顶部 `:before` 空白，见渲染层样式）。
  */
 export function centerOffset(
   index: number,
@@ -78,7 +72,7 @@ export function centerOffset(
 }
 
 /**
- * 给定当前 scrollTop 与视窗高度，求中线最近的**非禁用**项索引（对齐 getNearestNodeInfo）。
+ * 给定当前 scrollTop 与视窗高度，求中线最近的**非禁用**项索引（对齐 Semi `getNearestNodeInfo`）。
  * 中线在视窗几何正中；每项中心 = topPadding + (i + 0.5) * itemHeight - scrollTop。
  * 返回 -1 表示无可选项（全禁用 / 空）。
  */
@@ -106,35 +100,17 @@ export function nearestIndex(
   return best;
 }
 
-/** 正取模：把任意整数索引折回 [0, count)（cycled 用）。对齐 Semi `index % list.length` 语义（负值也回正）。 */
+/**
+ * 正取模：把任意整数索引折回 [0, count)（cycled 用）。
+ * 对齐 Semi `selectNode` 里 `indexInList % data.length` 的语义（负值也回正）。
+ */
 export function wrapIndex(index: number, count: number): number {
   if (count <= 0) return 0;
   return ((index % count) + count) % count;
 }
 
 /**
- * cubic ease-out（先快后缓）。t ∈ [0,1]。通用缓动工具。
- * 注意：ScrollList 落定**不**用它——Semi scrollTo 用的是线性（见 {@link scrollFrame}）。
- */
-export function easeOut(t: number): number {
-  const clamped = t < 0 ? 0 : t > 1 ? 1 : t;
-  return 1 - Math.pow(1 - clamped, 3);
-}
-
-/**
- * 缓动滚动的单帧 scrollTop（照搬 Semi scrollTo.ts：from→to over duration，**线性**）。
- * Semi 的 scrollTo 只传 duration 不传 easing → semi-animation 落到 'linear' bezier
- * （cubic-bezier(.25,.25,.75,.75)，即匀速 y=x）。故此处用线性插值 `elapsed/duration`。
- * elapsed>=duration 或 duration<=0 时返回 to（落定）。渲染层用 rAF 逐帧调用并写 el.scrollTop。
- */
-export function scrollFrame(from: number, to: number, elapsed: number, duration: number): number {
-  if (duration <= 0 || elapsed >= duration) return to;
-  const p = elapsed / duration; // 线性，对齐 Semi
-  return from + (to - from) * p;
-}
-
-/**
- * cycled 头部要补多少「份」完整数据，才能让首节点越过上缓冲区顶（对齐 Semi shouldPrepend）。
+ * cycled 头部要补多少「份」完整数据，才能让首节点越过上缓冲区顶（对齐 Semi `shouldPrepend`）。
  * 照搬 Semi while 循环：`while (baseTop + itemHeight >= wrapperTop - wrapperHeight*ratio) { count++; baseTop -= listHeight }`，
  * 参数化为相对坐标 `firstTop = firstNodeTop - wrapperTop`（首 li 顶相对视窗顶的偏移，可负），不读 DOM。
  * ratio=缓冲区为视窗高度的倍数（init 时 2，滚动调整时 1，对齐 Semi）。
@@ -160,7 +136,7 @@ export function shouldPrepend(
 }
 
 /**
- * cycled 尾部要补多少「份」完整数据，才能让尾节点越过下缓冲区底（对齐 Semi shouldAppend）。
+ * cycled 尾部要补多少「份」完整数据，才能让尾节点越过下缓冲区底（对齐 Semi `shouldAppend`）。
  * 照搬 Semi while 循环：`while (baseTop <= wrapperTop + wrapperHeight*ratio) { count++; baseTop += listHeight }`，
  * 参数化为相对坐标 `lastTop = lastNodeTop - wrapperTop`（尾 li 顶相对视窗顶的偏移），不读 DOM。
  */

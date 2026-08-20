@@ -11,7 +11,7 @@ import {
   SCROLL_LIST_DEFAULT_ITEM_HEIGHT,
   SCROLL_LIST_DEFAULT_SCROLL_DURATION,
   type ScrollItemData,
-} from './scroll-list.js';
+} from './index.js';
 
 const items: ScrollItemData[] = [
   { value: 0 },
