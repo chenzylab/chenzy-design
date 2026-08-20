@@ -62,6 +62,18 @@ export type DragMoveCustomMove = (
   left: number,
 ) => void;
 
+/**
+ * How the drag element's position is written/read (mirrors Semi
+ * `positionStrategy`). `'absolute'` (default) forces `position:absolute` and
+ * reads/writes offsetLeft/offsetTop. `'relative'` keeps the element's
+ * original in-flow position (`position:relative`) and reads/writes via
+ * `getComputedStyle`/`getBoundingClientRect`, so dragging layers on top of
+ * the element's existing layout position instead of relocating it — this is
+ * what Modal's draggable title bar uses to avoid jumping out of its centered
+ * position on first drag.
+ */
+export type DragMovePositionStrategy = 'absolute' | 'relative';
+
 export interface CreateDragMoveOptions {
   /** Resolve the element that moves (imperative, never reactive). */
   handler?: DragMoveHandlerGetter;
@@ -69,6 +81,11 @@ export interface CreateDragMoveOptions {
   getElement: DragMoveElementGetter;
   /** Resolve the constrainer box, or `null` for no constraint. */
   constrainer?: DragMoveConstrainerGetter;
+  /**
+   * Position read/write strategy. Defaults to `'absolute'` (对齐 Semi
+   * foundation.ts `updatePositionStrategy` 默认值).
+   */
+  positionStrategy?: DragMovePositionStrategy;
   /** Gate a drag; return `false` to cancel. */
   allowMove?: DragMoveAllow;
   /** Apply the new position yourself (else DragMove writes style.top/left). */
@@ -104,7 +121,9 @@ export interface CreateDragMoveOptions {
 export interface DragMoveController {
   /**
    * Register the pointerdown/touchstart listener on the handler element and
-   * force it to `position: absolute` so top/left take effect. Idempotent.
+   * apply the resolved `positionStrategy` (`absolute` by default, `relative`
+   * to preserve the element's original in-flow position) so top/left take
+   * effect. Idempotent.
    */
   init(): void;
   /** Whether a drag is currently active. */
@@ -126,7 +145,8 @@ export interface MoveRange {
 
 /**
  * Compute the pixel range within which `element` may move so it stays inside
- * `constrainer`. Ported from semi-foundation dragMove `_calcMoveRange`: walks
+ * `constrainer`, `'absolute'` strategy. Ported from semi-foundation dragMove
+ * `_calcMoveRange` (positionStrategy !== 'relative' branch): walks
  * offsetParent chain from the element up to the constrainer, accumulating the
  * offset, then derives min/max from the constrainer box minus the element box.
  * Returns `null` when there is no constrainer (free move).
@@ -153,9 +173,35 @@ export const calcMoveRange = (
 };
 
 /**
+ * Compute the pixel range for `'relative'` strategy. Ported from
+ * semi-foundation dragMove `_calcMoveRange` (positionStrategy === 'relative'
+ * branch): unlike the absolute branch, the range is anchored to the
+ * element's *current* computed `left`/`top` (it keeps its in-flow position),
+ * offset by the viewport-rect delta between element and constrainer.
+ */
+export const calcMoveRangeRelative = (
+  element: HTMLElement,
+  constrainer: HTMLElement | null,
+): MoveRange | null => {
+  if (!constrainer) return null;
+  const elementRect = element.getBoundingClientRect();
+  const constrainerRect = constrainer.getBoundingClientRect();
+  const style = getComputedStyle(element);
+  const currentLeft = parseFloat(style.left) || 0;
+  const currentTop = parseFloat(style.top) || 0;
+  return {
+    xMin: currentLeft + constrainerRect.left - elementRect.left,
+    xMax: currentLeft + constrainerRect.right - elementRect.right,
+    yMin: currentTop + constrainerRect.top - elementRect.top,
+    yMax: currentTop + constrainerRect.bottom - elementRect.bottom,
+  };
+};
+
+/**
  * Given the pointer position, the recorded start offset, and an optional move
- * range, compute the clamped `{ top, left }` for the element. Pure — no DOM
- * writes, so it is trivially unit-testable.
+ * range, compute the clamped `{ top, left }` for the element, `'absolute'`
+ * strategy (`clientX - offsetLeft` origin). Pure — no DOM writes, so it is
+ * trivially unit-testable.
  */
 export const computeNextPosition = (
   clientX: number,
@@ -166,6 +212,31 @@ export const computeNextPosition = (
 ): { top: number; left: number } => {
   let left = clientX - startOffsetX;
   let top = clientY - startOffsetY;
+  if (range) {
+    left = clampValueInRange(left, range.xMin, range.xMax);
+    top = clampValueInRange(top, range.yMin, range.yMax);
+  }
+  return { top, left };
+};
+
+/**
+ * `'relative'` strategy variant of {@link computeNextPosition}: the next
+ * position is the element's start `left`/`top` (its original in-flow
+ * position) plus the pointer delta since drag start, rather than an
+ * offsetLeft-anchored origin. Ported from semi-foundation dragMove
+ * `_changePos` (positionStrategy === 'relative' branch).
+ */
+export const computeNextPositionRelative = (
+  clientX: number,
+  clientY: number,
+  startClientX: number,
+  startClientY: number,
+  startLeft: number,
+  startTop: number,
+  range: MoveRange | null,
+): { top: number; left: number } => {
+  let left = startLeft + (clientX - startClientX);
+  let top = startTop + (clientY - startClientY);
   if (range) {
     left = clampValueInRange(left, range.xMin, range.xMax);
     top = clampValueInRange(top, range.yMin, range.yMax);
@@ -196,11 +267,20 @@ export function createDragMove(
     options.ownerDocument ??
     (typeof document !== 'undefined' ? document : undefined);
 
+  const positionStrategy: DragMovePositionStrategy =
+    options.positionStrategy === 'relative' ? 'relative' : 'absolute';
+
   let element: HTMLElement | null = null;
   let handlerEl: HTMLElement | null = null;
   let dragging = false;
+  // 'absolute' strategy state
   let startOffsetX = 0;
   let startOffsetY = 0;
+  // 'relative' strategy state (对齐 Semi foundation startClientX/Y + startLeft/Top)
+  let startClientX = 0;
+  let startClientY = 0;
+  let startLeft = 0;
+  let startTop = 0;
   let range: MoveRange | null = null;
   let initialized = false;
 
@@ -224,6 +304,14 @@ export function createDragMove(
 
   const calcOffset = (point: { clientX: number; clientY: number }): void => {
     if (!element) return;
+    if (positionStrategy === 'relative') {
+      const style = getComputedStyle(element);
+      startClientX = point.clientX;
+      startClientY = point.clientY;
+      startLeft = parseFloat(style.left) || 0;
+      startTop = parseFloat(style.top) || 0;
+      return;
+    }
     startOffsetX = point.clientX - element.offsetLeft;
     startOffsetY = point.clientY - element.offsetTop;
   };
@@ -233,13 +321,24 @@ export function createDragMove(
     e: MouseEvent | TouchEvent,
   ): void => {
     if (!element) return;
-    const { top, left } = computeNextPosition(
-      point.clientX,
-      point.clientY,
-      startOffsetX,
-      startOffsetY,
-      range,
-    );
+    const { top, left } =
+      positionStrategy === 'relative'
+        ? computeNextPositionRelative(
+            point.clientX,
+            point.clientY,
+            startClientX,
+            startClientY,
+            startLeft,
+            startTop,
+            range,
+          )
+        : computeNextPosition(
+            point.clientX,
+            point.clientY,
+            startOffsetX,
+            startOffsetY,
+            range,
+          );
     // 对齐 Semi foundation._changePos：clamp 同步算好，写入（customMove 或 style）包 rAF。
     requestAnimationFrame(() => {
       if (!element) return;
@@ -298,9 +397,17 @@ export function createDragMove(
     if (element) options.onEnd?.(e, element);
   }
 
+  const calcRange = (): MoveRange | null => {
+    if (!element) return null;
+    const constrainerEl = options.constrainer?.() ?? null;
+    return positionStrategy === 'relative'
+      ? calcMoveRangeRelative(element, constrainerEl)
+      : calcMoveRange(element, constrainerEl);
+  };
+
   const onMouseDown = (e: MouseEvent): void => {
     if (!element) return;
-    range = calcMoveRange(element, options.constrainer?.() ?? null);
+    range = calcRange();
     options.onMouseDown?.(e);
     if (!allow(e)) return;
     dragging = true;
@@ -316,7 +423,7 @@ export function createDragMove(
 
   const onTouchStart = (e: TouchEvent): void => {
     if (!element) return;
-    range = calcMoveRange(element, options.constrainer?.() ?? null);
+    range = calcRange();
     options.onTouchStart?.(e);
     if (!allow(e)) return;
     const touch = e.targetTouches[0];
@@ -345,8 +452,10 @@ export function createDragMove(
         throw new Error('DragMove: drag element must be a valid element');
       }
       handlerEl = resolveHandler() ?? element;
-      // 对齐 Semi foundation init：element 强制 absolute（top/left 生效），handler 命令式写 cursor:move。
-      element.style.position = 'absolute';
+      // 对齐 Semi foundation updatePositionStrategy：'relative' 保留元素原始文档流位置
+      // 再叠加拖拽偏移，其余情况强制 absolute（top/left 生效）。handler 命令式写 cursor:move。
+      element.style.position =
+        positionStrategy === 'relative' ? 'relative' : 'absolute';
       handlerEl.style.cursor = 'move';
       handlerEl.addEventListener('mousedown', onMouseDown);
       handlerEl.addEventListener('touchstart', onTouchStart);

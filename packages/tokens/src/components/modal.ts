@@ -35,6 +35,16 @@ export const modalTokens = {
   // —— Spacing（对齐 $spacing-modal_*）——
   'spacing-modal-marginy': { value: '80px', category: 'spacing', label: '距顶外边距', usage: '模态框距容器顶部外边距' },
   'spacing-modal-marginx': { value: 'auto', category: 'spacing', label: '水平外边距', usage: '模态框水平外边距（默认居中）' },
+  // 对齐 Semi $spacing-modal_mask-top/-right/-bottom/-left：4 个独立物理属性（非 inset 简写）。
+  'spacing-modal-mask-top': { value: '0', category: 'spacing', label: '蒙层顶部位置', usage: '模态框蒙层顶部位置' },
+  'spacing-modal-mask-right': { value: '0', category: 'spacing', label: '蒙层右侧位置', usage: '模态框蒙层右侧位置' },
+  'spacing-modal-mask-bottom': { value: '0', category: 'spacing', label: '蒙层底部位置', usage: '模态框蒙层底部位置' },
+  'spacing-modal-mask-left': { value: '0', category: 'spacing', label: '蒙层左侧位置', usage: '模态框蒙层左侧位置' },
+  // 对齐 Semi $spacing-modal_wrap-top/-right/-bottom/-left：4 个独立物理属性（非 inset 简写）。
+  'spacing-modal-wrap-top': { value: '0', category: 'spacing', label: 'wrap 顶部位置', usage: '模态框 wrap 顶部位置' },
+  'spacing-modal-wrap-right': { value: '0', category: 'spacing', label: 'wrap 右侧位置', usage: '模态框 wrap 右侧位置' },
+  'spacing-modal-wrap-bottom': { value: '0', category: 'spacing', label: 'wrap 底部位置', usage: '模态框 wrap 底部位置' },
+  'spacing-modal-wrap-left': { value: '0', category: 'spacing', label: 'wrap 左侧位置', usage: '模态框 wrap 左侧位置' },
   'spacing-modal-content-withicon-marginleft': { value: '36px', category: 'spacing', label: '带图标内容左外边距', usage: '模态框带图标时内容左外边距' },
   'spacing-modal-icon-wrapper-marginright': { value: 'var(--cd-spacing-base-tight)', category: 'spacing', label: '图标右外边距', usage: '模态框图标右侧外边距' },
   'spacing-modal-content-paddingy': { value: '0', category: 'spacing', label: '内容垂直内边距', usage: '模态框内容垂直内边距' },

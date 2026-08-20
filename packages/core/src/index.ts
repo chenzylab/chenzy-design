@@ -737,7 +737,9 @@ export {
 export {
   createDragMove,
   calcMoveRange,
+  calcMoveRangeRelative,
   computeNextPosition,
+  computeNextPositionRelative,
   clampValueInRange,
   type CreateDragMoveOptions,
   type DragMoveController,
@@ -746,6 +748,7 @@ export {
   type DragMoveConstrainerGetter,
   type DragMoveAllow,
   type DragMoveCustomMove,
+  type DragMovePositionStrategy,
   type MoveRange,
 } from './drag-move.js';
 export {

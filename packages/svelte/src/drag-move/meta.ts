@@ -24,6 +24,12 @@ export const meta = {
       desc: "移动约束区。'parent'=父元素，或返回具体容器 DOM；缺省不约束",
     },
     {
+      name: 'positionStrategy',
+      type: "'absolute' | 'relative'",
+      default: "'absolute'",
+      desc: "位置读写策略。'absolute' 强制 position:absolute，以 offsetLeft/offsetTop 为基准；'relative' 保留元素原始文档流位置（position:relative），拖拽在其上叠加偏移（如 Modal 可拖拽标题栏，避免首次拖拽从居中位置跳走）",
+    },
+    {
       name: 'allowMove',
       type: '(e, element) => boolean',
       default: 'undefined',

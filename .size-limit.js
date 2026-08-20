@@ -74,7 +74,10 @@ const components = [
   ['banner', '{ Banner }', '3.3 KB'],
   // modal：6.2→6.4 对齐 Semi 补 onOk/onCancel Promise loading、preventScroll、命令式 config 全字段（实测 6.29）
   //        →6.5 接 cdGlobal 全局默认 props（12 个 prop 走 resolveDefault，实测 6.41）
-  ['modal', '{ modal }', '6.5 KB'],
+  //        →7.2 全量严格对齐 Semi 工程：文件拆分对齐 Modal.tsx/ModalContent.tsx（新增
+  //        ModalContent.svelte + confirm.ts 两个模块边界）、RTL 四处镜像规则、mask/wrap
+  //        inset 简写拆回 4 个独立物理属性、DragMove positionStrategy 支持（实测 7.02）
+  ['modal', '{ modal }', '7.2 KB'],
   ['notification', '{ notification }', '5.5 KB'],
   // 浮层三件套对齐 Semi 破坏性重写后箭头定位职责回归 Tooltip 基座：Tooltip 内联 12 方位
   // x-placement CSS（+40%），Popover/Popconfirm 移除重复箭头 CSS 与中间变量层而下降。

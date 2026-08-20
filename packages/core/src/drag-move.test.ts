@@ -2,12 +2,15 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   createDragMove,
   calcMoveRange,
+  calcMoveRangeRelative,
   computeNextPosition,
+  computeNextPositionRelative,
   clampValueInRange,
 } from './drag-move.js';
 
 // node 环境（unit project）无全局 requestAnimationFrame（对齐 Semi foundation._changePos
 // 把写入包 rAF 后引入）。测试不需要真的等一帧，同步 flush 即可验证写入发生。
+// 同样无全局 getComputedStyle：'relative' 策略读 style.left/top 靠它，stub 成直接读 el.style。
 let rafCallbacks: Array<() => void> = [];
 beforeEach(() => {
   rafCallbacks = [];
@@ -15,6 +18,7 @@ beforeEach(() => {
     rafCallbacks.push(cb);
     return rafCallbacks.length;
   });
+  vi.stubGlobal('getComputedStyle', (el: { style: Record<string, string> }) => el.style);
 });
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -53,10 +57,13 @@ function makeFakeEl(
     offsetWidth: number;
     offsetHeight: number;
     offsetParent: unknown;
+    /** getBoundingClientRect() 返回值（'relative' 策略走视口坐标系换算）。 */
+    rect: { left: number; top: number; right: number; bottom: number };
   }> = {},
 ) {
   const l = new Map<string, Set<(e: unknown) => void>>();
   const style: Record<string, string> = {};
+  const rect = overrides.rect ?? { left: 0, top: 0, right: 50, bottom: 50 };
   return {
     style,
     offsetLeft: overrides.offsetLeft ?? 0,
@@ -64,6 +71,7 @@ function makeFakeEl(
     offsetWidth: overrides.offsetWidth ?? 50,
     offsetHeight: overrides.offsetHeight ?? 50,
     offsetParent: overrides.offsetParent ?? null,
+    getBoundingClientRect: () => rect,
     addEventListener(t: string, fn: (e: unknown) => void) {
       if (!l.has(t)) l.set(t, new Set());
       l.get(t)!.add(fn);
@@ -122,6 +130,45 @@ describe('computeNextPosition', () => {
       left: 50,
       top: 40,
     });
+  });
+});
+
+describe('computeNextPositionRelative', () => {
+  it('unconstrained: start left/top + client delta since drag start', () => {
+    // startLeft=10, startTop=20; pointer moved from (100,100) to (140,90) → +40,-10
+    expect(computeNextPositionRelative(140, 90, 100, 100, 10, 20, null)).toEqual({
+      left: 50,
+      top: 10,
+    });
+  });
+  it('clamps to move range on both axes', () => {
+    const range = { xMin: 0, xMax: 100, yMin: 0, yMax: 60 };
+    expect(computeNextPositionRelative(500, 500, 100, 100, 10, 20, range)).toEqual({
+      left: 100,
+      top: 60,
+    });
+  });
+});
+
+describe('calcMoveRangeRelative', () => {
+  it('returns null when no constrainer', () => {
+    const el = makeFakeEl();
+    expect(calcMoveRangeRelative(el as unknown as HTMLElement, null)).toBeNull();
+  });
+  it('anchors range to current computed left/top, offset by viewport rect delta', () => {
+    const constrainer = makeFakeEl({ rect: { left: 0, top: 0, right: 400, bottom: 300 } });
+    const el = makeFakeEl({ rect: { left: 50, top: 40, right: 150, bottom: 120 } });
+    el.style.left = '10px';
+    el.style.top = '20px';
+    const range = calcMoveRangeRelative(
+      el as unknown as HTMLElement,
+      constrainer as unknown as HTMLElement,
+    );
+    // xMin = currentLeft + constrainer.left - el.left = 10 + 0 - 50 = -40
+    // xMax = currentLeft + constrainer.right - el.right = 10 + 400 - 150 = 260
+    // yMin = currentTop + constrainer.top - el.top = 20 + 0 - 40 = -20
+    // yMax = currentTop + constrainer.bottom - el.bottom = 20 + 300 - 120 = 200
+    expect(range).toEqual({ xMin: -40, xMax: 260, yMin: -20, yMax: 200 });
   });
 });
 
@@ -359,5 +406,82 @@ describe('createDragMove — lifecycle + position write', () => {
   it('init throws when the drag element is missing', () => {
     const ctrl = createDragMove({ getElement: () => null });
     expect(() => ctrl.init()).toThrow(/drag element/);
+  });
+});
+
+describe("createDragMove — positionStrategy: 'relative'", () => {
+  it('init sets position:relative instead of absolute', () => {
+    const el = makeFakeEl();
+    const doc = makeFakeDoc();
+    const ctrl = createDragMove({
+      getElement: () => el as unknown as HTMLElement,
+      positionStrategy: 'relative',
+      ownerDocument: doc as unknown as Document,
+    });
+    ctrl.init();
+    expect(el.style.position).toBe('relative');
+  });
+
+  it('drag preserves the element in-flow position, layering the pointer delta on top (Modal centered draggable case)', () => {
+    // Modal 居中时 left/top 未显式设（0），拖拽应以此为起点叠加偏移，而非像 absolute
+    // 那样以 offsetLeft/offsetTop 为原点重新计算——避免首次拖拽从居中位置跳走。
+    const el = makeFakeEl();
+    const doc = makeFakeDoc();
+    const ctrl = createDragMove({
+      getElement: () => el as unknown as HTMLElement,
+      positionStrategy: 'relative',
+      ownerDocument: doc as unknown as Document,
+    });
+    ctrl.init();
+    el.fire('mousedown', me(200, 200));
+    doc.fire('mousemove', me(230, 180));
+    flushRaf();
+    // startLeft/startTop read via getComputedStyle (stubbed to el.style) = 0/0 (unset)
+    expect(el.style.left).toBe('30px');
+    expect(el.style.top).toBe('-20px');
+  });
+
+  it('drag layers delta on top of a non-zero starting left/top (already-moved element)', () => {
+    const el = makeFakeEl();
+    el.style.left = '50px';
+    el.style.top = '40px';
+    const doc = makeFakeDoc();
+    const ctrl = createDragMove({
+      getElement: () => el as unknown as HTMLElement,
+      positionStrategy: 'relative',
+      ownerDocument: doc as unknown as Document,
+    });
+    ctrl.init();
+    el.fire('mousedown', me(0, 0));
+    doc.fire('mousemove', me(10, 5));
+    flushRaf();
+    expect(el.style.left).toBe('60px');
+    expect(el.style.top).toBe('45px');
+  });
+
+  it('constrainer clamps using getBoundingClientRect + computed style (relative branch)', () => {
+    const constrainer = makeFakeEl({ rect: { left: 0, top: 0, right: 200, bottom: 200 } });
+    const el = makeFakeEl({ rect: { left: 0, top: 0, right: 50, bottom: 50 } });
+    const doc = makeFakeDoc();
+    const ctrl = createDragMove({
+      getElement: () => el as unknown as HTMLElement,
+      constrainer: () => constrainer as unknown as HTMLElement,
+      positionStrategy: 'relative',
+      ownerDocument: doc as unknown as Document,
+    });
+    ctrl.init();
+    el.fire('mousedown', me(0, 0));
+    // xMax = 0 + 200 - 50 = 150; drag far beyond clamps to it
+    doc.fire('mousemove', me(999, 999));
+    flushRaf();
+    expect(el.style.left).toBe('150px');
+    expect(el.style.top).toBe('150px');
+  });
+
+  it('defaults to absolute strategy when positionStrategy is omitted', () => {
+    const el = makeFakeEl({ offsetLeft: 5, offsetTop: 5 });
+    const ctrl = createDragMove({ getElement: () => el as unknown as HTMLElement });
+    ctrl.init();
+    expect(el.style.position).toBe('absolute');
   });
 });

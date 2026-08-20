@@ -1,7 +1,8 @@
 <!--
   DragMove — 严格对齐 Semi Design dragMove（纯逻辑组件，无样式层）。
   包裹单个子元素使其可拖拽在可选约束区内移动（改位置，非尺寸）。core createDragMove 承载
-  命令式指针几何：init 强制 element position:absolute + handler cursor:move（对齐 Semi foundation），
+  命令式指针几何：init 按 positionStrategy 设 element position（absolute 默认值/relative 保留
+  原文档流位置）+ handler cursor:move（对齐 Semi foundation updatePositionStrategy），
   pointerdown 记起点→document 绑 move/up→clamp 到 constrainer 的 top/left→customMove 或写 style。
 
   Svelte 无 React cloneElement，无法把 ref 注入 children 本身，故用一层 wrapper div 承载 bind:this
@@ -12,13 +13,20 @@
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
-  import { createDragMove } from '@chenzy-design/core';
+  import { createDragMove, type DragMovePositionStrategy } from '@chenzy-design/core';
 
   interface Props {
     /** 拖拽触发元素（缺省为整个被包裹子元素）。返回把手 DOM。 */
     handler?: () => HTMLElement;
     /** 移动约束区。'parent'=父元素，或返回具体容器 DOM；缺省不约束。 */
     constrainer?: (() => HTMLElement | null) | 'parent' | undefined;
+    /**
+     * 位置读写策略（对齐 Semi positionStrategy）。'absolute'（默认）强制
+     * position:absolute，以 offsetLeft/offsetTop 为基准；'relative' 保留元素
+     * 原始文档流位置（position:relative），拖拽在其上叠加偏移——Modal 可拖拽
+     * 标题栏用它避免首次拖拽时从居中位置跳走。
+     */
+    positionStrategy?: DragMovePositionStrategy;
     /** 谓词：本次是否允许拖拽。返回 false 取消。 */
     allowMove?: (e: MouseEvent | TouchEvent, element: HTMLElement) => boolean;
     /** 自定义位置应用（缺省组件直接写 el.style.top/left）。 */
@@ -43,6 +51,7 @@
   let {
     handler,
     constrainer,
+    positionStrategy = 'absolute',
     allowMove,
     customMove,
     allowInputDrag = false,
@@ -76,6 +85,7 @@
       getElement: () => rootEl,
       ...(handler ? { handler } : {}),
       constrainer: resolveConstrainer,
+      positionStrategy,
       ...(allowMove ? { allowMove } : {}),
       ...(customMove ? { customMove } : {}),
       allowInputDrag,
