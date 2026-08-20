@@ -11,10 +11,6 @@
     visible
     position="right"
     showArrow
-    arrowStyle={{
-      borderColor: 'var(--cd-color-blue-4)',
-      backgroundColor: 'var(--cd-color-blue-4)',
-    }}
     style="background-color: var(--cd-color-blue-4); border-color: var(--cd-color-blue-4); color: var(--cd-color-white); border-width: 1px; border-style: solid;"
   >
     {#snippet content()}

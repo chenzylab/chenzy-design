@@ -735,6 +735,11 @@
      产生额外的对齐基线，导致被包裹的按钮比同级直接渲染的按钮视觉上更高。 */
   .cd-tooltip-trigger-custom {
     display: contents;
+    /* display:contents 元素不参与盒模型，但仍会向子孙传递可继承属性（line-height 在内）。
+       下面 .cd-tooltip 上归零的 line-height 只用于消除自身 inline-block 的基线空间，
+       在此处重置回 normal 切断继承链，避免子孙内联内容（如 children 里的 Tag 文字）
+       被压成 line-height:0 导致内容盒高度塌陷、被 overflow:hidden 裁剪至不可见。 */
+    line-height: normal;
   }
   /* 最外层 .cd-tooltip 是事件承载根（pointerenter/leave/focus/click，不能 display:contents
      否则丢事件语义），custom 模式下仍是 inline-block——inline-block 按 line-height

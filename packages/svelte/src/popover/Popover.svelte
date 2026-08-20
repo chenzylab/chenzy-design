@@ -10,8 +10,9 @@
        - role 派生：click/custom → dialog（承可交互富内容）；hover/focus → tooltip
        - spacing 默认按 showArrow 切换：4（无箭头）/ 10（有箭头，对齐 Semi SPACING/SPACING_WITH_ARROW）
        - content 支持函数形态：({ initialFocusRef }) => ...，打开时自动聚焦（对齐 Semi 2.8.0）
-  箭头：Popover 用独立双 path SVG（一层描边色 + 一层背景色，对齐 Semi popover/Arrow.tsx），
-       尺寸 8px（Semi popover 覆写 tooltip 箭头为 8px），颜色 arrowStyle 覆盖 token 默认；
+  箭头：拆分为独立 Arrow.svelte（对齐 Semi popover/Arrow.tsx 物理文件），双 path SVG
+       （一层描边色 + 一层背景色），尺寸 8px（Semi popover 覆写 tooltip 箭头为 8px），
+       颜色取值顺序 arrowStyle → style（内联串解析出 background-color/border-color）→ token，
        与 Tooltip 单 path currentColor 箭头解耦（各自 DOM 严格对齐 Semi）。
   注意事项同 Semi：Popover 需将事件监听器应用到 children，children 应能承载事件与定位。
 -->
@@ -20,6 +21,7 @@
   import { useId, resolveDefault } from '@chenzy-design/core';
   import { Tooltip, type Position } from '../tooltip/index.js';
   import { useLocale } from '../locale-provider/index.js';
+  import Arrow from './Arrow.svelte';
 
   type TriggerKind = 'hover' | 'focus' | 'click' | 'custom' | 'contextMenu';
 
@@ -73,7 +75,7 @@
     clickToHide?: boolean;
     /** 关闭时保留浮层 DOM 不销毁（--hidden 隐藏），对齐 Semi keepDOM */
     keepDOM?: boolean;
-    /** hover 触发时不响应键盘 focus 显隐，对齐 Semi disableFocusListener */
+    /** hover 触发时不响应键盘 focus 显隐，对齐 Semi disableFocusListener（Popover 层缺省 true，见 issue#977） */
     disableFocusListener?: boolean;
     disabled?: boolean;
     /** 是否展示进出场动画 */
@@ -84,7 +86,10 @@
     zIndex?: number;
     /** Esc 关闭浮层 */
     closeOnEsc?: boolean;
-    /** 焦点处于浮层内时 Tab 是否循环（对齐 Semi guardFocus），默认随 dialog 模式 */
+    /**
+     * @deprecated 对齐 Semi Popover：guardFocus 永远为 true 且不接受外部覆盖
+     * （Semi render() 中硬编码 `<Tooltip guardFocus ...>`，此 prop 被忽略，仅为向后兼容保留声明）。
+     */
     guardFocus?: boolean;
     /** 关闭后焦点归还触发器（仅 guardFocus 时生效），对齐 Semi returnFocusOnClose */
     returnFocusOnClose?: boolean;
@@ -174,7 +179,8 @@
   const position = $derived(resolveDefault(positionProp, 'Popover', 'position', 'bottom'));
   const closeOnEsc = $derived(resolveDefault(closeOnEscProp, 'Popover', 'closeOnEsc', true));
   const returnFocusOnClose = $derived(resolveDefault(returnFocusOnCloseProp, 'Popover', 'returnFocusOnClose', true));
-  const disableFocusListener = $derived(resolveDefault(disableFocusListenerProp, 'Popover', 'disableFocusListener', false));
+  // Popover 层缺省 true（对齐 Semi Popover.defaultProps，覆盖 Tooltip 层的 false 默认值）。
+  const disableFocusListener = $derived(resolveDefault(disableFocusListenerProp, 'Popover', 'disableFocusListener', true));
 
   const loc = useLocale();
   const titleId = useId('cd-popover-title');
@@ -220,10 +226,6 @@
     isDialog && !ariaLabelledby ? loc().t('Popover.dialogLabel') : undefined,
   );
 
-  // 箭头颜色：arrowStyle 覆盖 token 默认（描边 = popover-arrow-border，背景 = popover-arrow-bg）。
-  const arrowBorderColor = $derived(arrowStyle?.borderColor ?? 'var(--cd-color-popover-arrow-border)');
-  const arrowBgColor = $derived(arrowStyle?.backgroundColor ?? 'var(--cd-color-popover-arrow-bg)');
-  const arrowBorderOpacity = $derived(arrowStyle?.borderOpacity ?? 1);
 </script>
 
 <Tooltip
@@ -249,7 +251,7 @@
   {getPopupContainer}
   {zIndex}
   {closeOnEsc}
-  {guardFocus}
+  guardFocus={true}
   {returnFocusOnClose}
   {stopPropagation}
   {rePosKey}
@@ -269,34 +271,11 @@
   {@render children?.()}
 </Tooltip>
 
-<!-- Popover 双 path 箭头（对齐 Semi popover/Arrow.tsx）：水平 top/bottom、垂直 left/right。
-     方位由 Tooltip 传的 resolvedSide 决定，但 showArrow Snippet 无入参，故渲染两套 SVG，
-     由 .cd-popover-wrapper[x-placement] 选择器控制显隐 + 定位（见 <style>）。 -->
+<!-- Popover 箭头（对齐 Semi popover/Arrow.tsx 独立文件 + render() 中 <Arrow position={position} .../>）：
+     isVertical 判断消费用户声明的 position（非 autoAdjustOverflow 翻转后的实际方位），
+     忠实复刻 Semi 行为（含 leftTopOver/rightTopOver 不以 top/bottom 开头故按水平渲染的边界瑕疵）。 -->
 {#snippet popoverArrow()}
-  <svg
-    class="cd-popover-icon-arrow cd-popover-icon-arrow-h"
-    width="24"
-    height="8"
-    viewBox="0 0 24 7"
-    xmlns="http://www.w3.org/2000/svg"
-    aria-hidden="true"
-    focusable="false"
-  >
-    <path d="M0 0.5L0 1.5C4 1.5, 5.5 3, 7.5 5S10,8 12,8S14.5 7, 16.5 5S20,1.5 24,1.5L24 0.5L0 0.5z" style="fill:{arrowBorderColor};opacity:{arrowBorderOpacity}" />
-    <path d="M0 0L0 1C4 1, 5.5 2, 7.5 4S10,7 12,7S14.5  6, 16.5 4S20,1 24,1L24 0L0 0z" style="fill:{arrowBgColor}" />
-  </svg>
-  <svg
-    class="cd-popover-icon-arrow cd-popover-icon-arrow-v"
-    width="8"
-    height="24"
-    viewBox="0 0 7 24"
-    xmlns="http://www.w3.org/2000/svg"
-    aria-hidden="true"
-    focusable="false"
-  >
-    <path d="M0.5 0L1.5 0C1.5 4, 3 5.5, 5 7.5S8,10 8,12S7 14.5, 5 16.5S1.5,20 1.5,24L0.5 24L0.5 0z" style="fill:{arrowBorderColor};opacity:{arrowBorderOpacity}" />
-    <path d="M0 0L1 0C1 4, 2 5.5, 4 7.5S7,10 7,12S6 14.5, 4 16.5S1,20 1,24L0 24L0 0z" style="fill:{arrowBgColor}" />
-  </svg>
+  <Arrow {position} {arrowStyle} popStyle={styleExtra} />
 {/snippet}
 
 <!-- renderPopCard：对齐 Semi <div class="popover"><div class="popover-content">…</div></div>。
@@ -364,25 +343,28 @@
     min-inline-size: 0;
   }
 
-  /* --- 箭头（双 path，8px；描边由 path:nth-child(1)、背景 path:nth-child(2) 内联 style 上色）。
-     定位对齐 Semi tooltip/arrow.scss（popover import 复用同一套选择器，尺寸换 8px/6px）。
-     showArrow Snippet 渲染两套 SVG（水平 --h / 垂直 --v），由 x-placement 选择器决定显隐。 --- */
+  /* --- 箭头（双 path，8px）。定位对齐 Semi tooltip/arrow.scss（popover import 复用同一套
+     选择器，尺寸换 8px/6px）。Arrow.svelte 按声明 position 只渲染一套 SVG（h 或 v，对齐 Semi
+     Arrow.tsx），此处仅负责按运行时 x-placement（同轴内可能因 autoAdjustOverflow 翻转）摆放坐标。
+     颜色默认值走 CSS path:nth-child() 兜底（对齐 Semi popover.scss），Arrow.svelte 仅在有
+     arrowStyle/style 自定义色时才写内联 style 覆盖（对齐 React style 对象 undefined 值被跳过、
+     回落 CSS 的行为）。 --- */
   :global(.cd-popover-icon-arrow) {
     position: absolute;
-    display: none;
   }
-  /* top/bottom 系显示水平箭头；left/right 系显示垂直箭头 */
-  :global(.cd-popover-wrapper[x-placement^='top']) :global(.cd-popover-icon-arrow-h),
-  :global(.cd-popover-wrapper[x-placement^='bottom']) :global(.cd-popover-icon-arrow-h) {
-    display: block;
+  :global(.cd-popover-icon-arrow-h) {
     inline-size: var(--cd-width-popover-arrow);
     block-size: var(--cd-height-popover-arrow);
   }
-  :global(.cd-popover-wrapper[x-placement^='left']) :global(.cd-popover-icon-arrow-v),
-  :global(.cd-popover-wrapper[x-placement^='right']) :global(.cd-popover-icon-arrow-v) {
-    display: block;
+  :global(.cd-popover-icon-arrow-v) {
     inline-size: var(--cd-width-popover-arrow-vertical);
     block-size: var(--cd-height-popover-arrow-vertical);
+  }
+  :global(.cd-popover-icon-arrow path:nth-child(1)) {
+    fill: var(--cd-color-popover-arrow-border);
+  }
+  :global(.cd-popover-icon-arrow path:nth-child(2)) {
+    fill: var(--cd-color-popover-arrow-bg);
   }
 
   /* top 系：箭头在下缘 */
