@@ -1,0 +1,35 @@
+{
+  "name": "@chenzy-design/illustrations",
+  "version": "0.1.0",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/chenzylab/chenzy-design.git",
+    "directory": "packages/illustrations"
+  },
+  "type": "module",
+  "sideEffects": false,
+  "description": "chenzy-design 语义插画集，对齐 Semi @douyinfe/semi-illustrations",
+  "svelte": "./dist/index.js",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "svelte": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "src",
+    "dist"
+  ],
+  "scripts": {
+    "build": "svelte-package -i src -o dist",
+    "typecheck": "svelte-check --tsconfig ./tsconfig.json"
+  },
+  "peerDependencies": {
+    "svelte": ">=5.0.0"
+  },
+  "devDependencies": {
+    "svelte-check": "^4.0.0"
+  }
+}

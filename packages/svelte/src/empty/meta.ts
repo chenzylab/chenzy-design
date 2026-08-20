@@ -19,6 +19,7 @@ export const meta = {
     { name: 'children', type: 'Snippet', default: 'undefined', desc: '动作区（footer）' },
     { name: 'imageSlot', type: 'Snippet', default: 'undefined', desc: '自定义插画节点（等价 Semi image 传 ReactNode）' },
     { name: 'darkModeImageSlot', type: 'Snippet', default: 'undefined', desc: '暗色自定义插画节点' },
+    { name: '...rest', type: 'Record<string, unknown>', default: 'undefined', desc: '透传到根节点的其余属性（如 data-*），对齐 Semi getDataAttr(rest)' },
   ],
   a11y: {
     role: 'none',

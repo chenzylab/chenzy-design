@@ -18,6 +18,7 @@
     "@chenzy-design/core": "workspace:*",
     "@chenzy-design/icons": "workspace:*",
     "@chenzy-design/icons-lab": "workspace:*",
+    "@chenzy-design/illustrations": "workspace:*",
     "@chenzy-design/svelte": "workspace:*",
     "@chenzy-design/tokens": "workspace:*",
     "@chenzy-design/unocss-preset": "workspace:*",

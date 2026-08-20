@@ -241,7 +241,7 @@ export {
   IllustrationConstructionDark,
   IllustrationIdle,
   IllustrationIdleDark,
-} from './illustrations/index.js';
+} from '@chenzy-design/illustrations';
 export {
   Descriptions,
   DescriptionsItem,

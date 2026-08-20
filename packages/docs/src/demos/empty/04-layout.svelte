@@ -1,10 +1,6 @@
 <script lang="ts">
-  import {
-    Empty,
-    Button,
-    IllustrationSuccess,
-    IllustrationSuccessDark,
-  } from '@chenzy-design/svelte';
+  import { Empty, Button } from '@chenzy-design/svelte';
+  import { IllustrationSuccess, IllustrationSuccessDark } from '@chenzy-design/illustrations';
 </script>
 
 <!-- horizontal：插画在左、文案在右，适合长描述 -->

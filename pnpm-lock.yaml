@@ -138,6 +138,9 @@ importers:
       '@chenzy-design/icons-lab':
         specifier: workspace:*
         version: link:../icons-lab
+      '@chenzy-design/illustrations':
+        specifier: workspace:*
+        version: link:../illustrations
       '@chenzy-design/svelte':
         specifier: workspace:*
         version: link:../svelte
@@ -208,6 +211,16 @@ importers:
         specifier: ^4.0.0
         version: 4.6.0(picomatch@4.0.4)(svelte@5.56.3(@typescript-eslint/types@8.61.1))(typescript@6.0.3)
 
+  packages/illustrations:
+    dependencies:
+      svelte:
+        specifier: '>=5.0.0'
+        version: 5.56.3(@typescript-eslint/types@8.61.1)
+    devDependencies:
+      svelte-check:
+        specifier: ^4.0.0
+        version: 4.6.0(picomatch@4.0.4)(svelte@5.56.3(@typescript-eslint/types@8.61.1))(typescript@6.0.3)
+
   packages/locale:
     dependencies:
       date-fns:
@@ -234,6 +247,9 @@ importers:
       '@chenzy-design/icons':
         specifier: workspace:*
         version: link:../icons
+      '@chenzy-design/illustrations':
+        specifier: workspace:*
+        version: link:../illustrations
       '@chenzy-design/locale':
         specifier: workspace:*
         version: link:../locale
