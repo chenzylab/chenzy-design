@@ -12,8 +12,8 @@
 - **不用**：纯展示图片 → Image；仅预览无需裁切 → 不用本组件。
 
 ## 3. 分层实现
-- **headless（core/）**：`packages/core/src/cropper.ts` —— 移植 Semi `CropperFoundation` 的几何逻辑（框架无关，adapter 注入 getContainer/getImg/notifyZoomChange）。核心：imgData/containerData 状态、8 角点 resize（corner: tl/tm/tr/ml/mr/bl/bm/br）、裁切框拖拽、图片拖拽、滚轮缩放、旋转、aspectRatio 约束、moveRange 边界钳制、resize 重算、预览渲染。**这是富媒体里几何最重的 core**，逐行对照 Semi foundation.js 移植。
-- **渲染（svelte/）**：`Cropper.svelte` + 子件（裁切框 CropperBox、角点 Corner、遮罩 Mask、预览 Preview）。容器 + `<img>` + 裁切框叠加层，`$effect` 绑定 mousedown/mousemove/mouseup（角点/框/图片/遮罩各一套）+ wheel + resize observer，destroy 解绑。`getCropperCanvas()` 用 canvas 绘制裁切结果（ref 方法）。
+- **headless（core/）**：`packages/core/src/cropper/` —— 移植 Semi `semi-foundation/cropper` 的几何逻辑，文件结构逐一镜像 Semi（`constants.ts` 角点/形状枚举、`utils.ts` getMiddle/getAspectHW、`foundation.ts` createCropperFoundation 主体、`index.ts` 汇出），框架无关，adapter 注入 getContainer/getImg/notifyZoomChange。核心：imgData/containerData 状态、8 角点 resize（corner: tl/tm/tr/ml/mr/bl/bm/br）、裁切框拖拽、图片拖拽、滚轮缩放、旋转、aspectRatio 约束、moveRange 边界钳制、resize 重算、预览渲染。**这是富媒体里几何最重的 core**，逐行对照 Semi foundation.ts 移植。
+- **渲染（svelte/）**：`Cropper.svelte` 单文件（对齐 Semi `semi-ui/cropper/index.tsx` 同为单文件、不拆子组件）。容器 + `<img>` + 遮罩层 + 裁切框叠加层（内联裁切视图 img + 8 角点），`$effect` 绑定 mousedown/mousemove/mouseup（角点/框/图片/遮罩各一套）+ wheel + resize observer，destroy 解绑。`getCropperCanvas()` 用 canvas 绘制裁切结果（ref 方法）。
 
 ## 4. API（对齐 Semi，完整）
 ### Props
@@ -47,22 +47,23 @@
 无。
 
 ## 5. 主题 / Token
-裁切框边框/角点/遮罩全走 token。
+裁切框边框/角点/遮罩全走 token（逐个镜像 Semi `semi-foundation/cropper/variables.scss`，名/值/公式一致）。
 | Token | 默认 | 用途 |
 |---|---|---|
-| `--cd-cropper-box-border` | 品牌/白 | 裁切框边框 |
-| `--cd-cropper-corner-bg` | 白 | 角点调整块 |
-| `--cd-cropper-mask` | 半透明黑 | 遮罩 |
-| `--cd-cropper-grid-line` | 半透明白 | 九宫格辅助线（若有） |
+| `--cd-cropper-mask-bg` | `var(--cd-color-overlay-bg)` | 遮罩层背景（半透明暗色） |
+| `--cd-cropper-box-outline-color` | `var(--cd-color-primary)` | 裁切框 outline 颜色 |
+| `--cd-cropper-box-outline-width` | `1px` | 裁切框 outline 宽度 |
+| `--cd-cropper-corner-bg` | `var(--cd-color-primary)` | 角点调整块背景色 |
+| `--cd-cropper-corner-size` | `10px` | 角点宽高 |
 （禁写死；对照 Semi cropper.scss 的 class 挂 token。组件名多段 → manifest MULTI_SEGMENT 无需加（cropper 单段）。）
 
 ## 6. 无障碍（见 a11y.spec.md）
-> 对齐优先：以 Semi 交互为基线。补纯 aria：容器 `role=application` 或 `img` + `aria-label`（走 i18n）；角点/裁切框可聚焦（tabindex）+ 键盘微调（↑↓←→ 移动裁切框，作为增强，Semi 若无则标注偏离）。
-- 拖拽为主要交互；键盘增强不改鼠标语义。
-- reduced-motion / RTL：跟随 Semi。
+> 严格对齐 Semi：交互完全靠鼠标（拖拽 + 滚轮），Semi 原生实现无键盘 resize/移动，本库不加此类增强。仅补纯 aria：容器 `role=group` + `aria-label`（走 locale `Cropper.container`，未设时用此 key；可用 `aria-label` prop 覆盖）；底图/裁切视图 `<img>` 为装饰性（`alt=""`）；角点/遮罩/裁切框 `role=presentation`。
+- 拖拽为唯一交互方式，无键盘等价操作（对齐 Semi，非本库缺陷）。
+- reduced-motion / RTL：跟随 Semi（Semi 无相关处理）。
 
 ## 7. 国际化
-- i18n key：`Cropper.{label,crop,reset}` 等（容器 aria-label、若有内置按钮）。全走 locale。
+- i18n key：`Cropper.container`（容器 aria-label 兜底文案，`aria-label` prop 未设时用；本库补充，Semi 无内置文案）。全走 locale，见 `packages/locale/src/{en_US,zh_CN}.ts`。
 
 ## 8. 文案
 - 遵循 content-guidelines。
