@@ -118,3 +118,15 @@ import { Carousel } from '@chenzy-design/svelte';
 | --- | --- | --- | --- |
 | props | 箭头 div 上的可传参数，包括 style、onClick 事件等 | `Record<string, unknown>` | - |
 | children | 箭头自定义 Icon | Snippet | - |
+
+## Methods
+
+绑定在组件实例上的方法，可以通过 `bind:this` 拿到实例后调用：
+
+| 名称 | 说明 |
+| --- | --- |
+| play() | 播放 |
+| stop() | 停止播放 |
+| goTo(targetIndex) | 切换到指定位置 |
+| prev() | 切换到上一位置 |
+| next() | 切换到下一位置 |
