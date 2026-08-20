@@ -34,7 +34,7 @@ Dropdown 是一个轻量级浮层菜单容器，通过触发元素（按钮、�
 | 维度 | 语义 |
 | --- | --- |
 | 角色定位 | 命令触发型浮层菜单，非数据选择器 |
-| 视觉层级 | 浮层位于 `--cd-z-index-dropdown`(1050)，带阴影 `--cd-shadow-elevated` 与圆角 `--cd-radius-medium` |
+| 视觉层级 | 浮层位于 `--cd-z-index-dropdown`(1060，对齐 Semi Tooltip numbers.DEFAULT_Z_INDEX)，带阴影 `--cd-shadow-elevated` 与圆角 `--cd-radius-medium` |
 | 间距节奏 | 菜单项高度随 `size` 变化（small 28 / default 32 / large 40），左右内边距 `--cd-spacing-base`(8px) 基准 |
 | 状态语义 | 默认 / hover(`--cd-color-fill-0`) / active / 选中(`--cd-dropdown-item-selected-bg`) / 禁用(`--cd-color-disabled-text`) / 危险(`--cd-color-danger`) |
 | 危险项 | 文字与 hover 背景使用 danger 色阶，与普通项形成明确视觉区隔 |
@@ -82,8 +82,8 @@ Dropdown 是一个轻量级浮层菜单容器，通过触发元素（按钮、�
 | mouseEnterDelay | `number` | `50` | 移入 Trigger 后延迟显示(ms)，仅 hover/focus 生效（对齐 Semi） |
 | mouseLeaveDelay | `number` | `100` | 移出弹出层后延迟消失(ms)，仅 hover/focus 生效（对齐 Semi） |
 | spacing | `number \| { x: number; y: number }` | `4（嵌套 2）` | 弹出层与 Trigger 距离(px)（对齐 Semi spacing） |
-| margin | `number` | `undefined` | 弹出层计算溢出的冗余值(px)（对齐 Semi margin） |
-| zIndex | `number` | `1050` | 弹出层 z-index（对齐 Semi zIndex） |
+| margin | `number \| { marginLeft?, marginTop?, marginRight?, marginBottom? }` | `undefined` | 弹出层计算溢出的冗余值(px)（对齐 Semi margin） |
+| zIndex | `number` | `1060` | 弹出层 z-index（对齐 Semi zIndex） |
 | motion | `boolean` | `true` | 下拉动画开关（对齐 Semi motion） |
 | className | `string` | `undefined` | 下拉弹层外层样式类名（作用于 div.cd-dropdown，对齐 Semi className） |
 | contentClassName | `string` | `undefined` | 下拉菜单根元素类名（作用于 div.cd-dropdown-content，对齐 Semi contentClassName） |
