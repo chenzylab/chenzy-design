@@ -95,7 +95,8 @@ import { Collapse } from '@chenzy-design/svelte';
 | class | 样式类名 | string | - |
 | disabled | 面板是否被禁用 | boolean | false |
 | extra | 自定义渲染每个面板右上角的辅助内容（仅当 header 为 string 时生效） | string \| Snippet | - |
-| header | 面板头内容 | string \| Snippet | - |
+| head | 面板头富内容插槽（对应 Semi header 传 ReactNode 的用法，优先于 header；此时 extra 不单独渲染） | Snippet | - |
+| header | 面板头文本内容 | string | - |
 | itemKey | 必填且唯一，选中状态匹配 `activeKey`、`defaultActiveKey` | string | - |
 | onMotionEnd | 动画结束的回调 | () => void | - |
 | reCalcKey | 当 reCalcKey 改变时，将重新计算子节点的高度，用于优化动态渲染时的计算 | string \| number | - |
@@ -114,3 +115,35 @@ import { Collapse } from '@chenzy-design/svelte';
 ## 文案规范
 
 折叠面板本质是卡片容器增加了收起和展开的功能，所以折叠面板的文案规范需要和卡片文案规范保持一致。
+
+## FAQ
+
+- ##### Collapse 内嵌表单收起后表单数据会清空？
+
+  Collapse 收起之后，默认会销毁相应的 DOM。所以相应的 field 被卸载了，数据也被清空。可以通过给 collapse 增加 `keepDOM={true}`，保留对应的 DOM 节点。
+
+- ##### Collapse 中 Typography 截断逻辑失效？
+
+  如果开启了 `keepDOM` 会导致面板样式 `display: none`，此时会影响截断长度的计算。
+
+- ##### Collapse.Header 整体作为折叠、展开的点击热区，如果在 Header 中放置了自定义元素（例如 Input），点击时候会导致 Collapse 收起/展开。如何避免？
+
+  可以在自定义元素的 onclick 事件回调中，阻止事件冒泡至 Collapse.Header 即可。若自定义元素未提供 event 对象，再包裹一层 div，于 div onclick 中阻止冒泡亦可。
+
+```svelte
+<script lang="ts">
+  import { Collapse, Input } from '@chenzy-design/svelte';
+</script>
+
+<Collapse>
+  <Collapse.Panel itemKey="1">
+    {#snippet head()}
+      <div style="display: inline-flex;" onclick={(e) => e.stopPropagation()}>
+        <span>Panel header</span>
+        <Input />
+      </div>
+    {/snippet}
+    <p>Hi, bytedance dance dance. This is the docsite of Semi UI. </p>
+  </Collapse.Panel>
+</Collapse>
+```
