@@ -40,7 +40,6 @@ import { carouselTokens } from './carousel.js';
 import { cropperTokens } from './cropper.js';
 import { imageTokens } from './image.js';
 import { scrollListTokens } from './scroll-list.js';
-import { overflowListTokens } from './overflow-list.js';
 import { spinTokens } from './spin.js';
 import { progressTokens } from './progress.js';
 import { skeletonTokens } from './skeleton.js';
@@ -112,7 +111,6 @@ export const componentTokens = {
   ...cropperTokens,
   ...imageTokens,
   ...scrollListTokens,
-  ...overflowListTokens,
   ...spinTokens,
   ...progressTokens,
   ...skeletonTokens,
