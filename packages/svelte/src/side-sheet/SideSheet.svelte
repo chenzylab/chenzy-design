@@ -14,7 +14,7 @@
               └ .cd-sidesheet-footer（footer 时）
 
   API 严格镜像 Semi 名：visible（受控不回写）/ onCancel / afterVisibleChange / placement /
-    size(small|medium|large，默认 small) / width(默认 448) / height(默认 400) / title / footer /
+    size(small|medium|large，默认 small) / width(默认 448) / height(默认 448) / title / footer /
     closable / closeIcon / closeOnEsc(默认 false) / mask / maskClosable / disableScroll /
     keepDOM / getPopupContainer / zIndex(默认 1000) / motion / style / bodyStyle / headerStyle /
     maskStyle / className。ReactNode→Snippet、className→class（本库 Svelte 惯例）。
@@ -33,11 +33,10 @@
   import { useId, useScrollLock,
     resolveDefault,
   } from '@chenzy-design/core';
-  import { IconClose } from '@chenzy-design/icons';
-  import { IconButton } from '../iconbutton/index.js';
   import { useLocale } from '../locale-provider/index.js';
   import { getGlobalPopupContainer } from '../config-provider/index.js';
   import { acquireZIndex } from '../modal/z-stack.js';
+  import SideSheetContent from './SideSheetContent.svelte';
 
   type Placement = 'left' | 'right' | 'top' | 'bottom';
   type Size = 'small' | 'medium' | 'large';
@@ -51,7 +50,7 @@
     size?: Size;
     /** 宽度，位置为 left/right 时生效。对齐 Semi width（默认 448）。 */
     width?: number | string;
-    /** 高度，位置为 top/bottom 时生效。对齐 Semi height（默认 400）。 */
+    /** 高度，位置为 top/bottom 时生效。对齐 Semi height（默认 448，见 semi-foundation constants.ts HEIGHT）。 */
     height?: number | string;
     /** 标题（string）。对齐 Semi title。 */
     title?: string;
@@ -155,14 +154,15 @@
   const isHorizontal = $derived(placement === 'top' || placement === 'bottom');
 
   // 尺寸解析（对齐 Semi）：left/right 用 width（缺省走 size class）；top/bottom 用 height（缺省 448）。
-  // Semi：sheetHeight = isHorizontal ? (height || 400) : '100%'；宽度经 size class 或 width 内联。
+  // Semi：sheetHeight = isHorizontal ? (height || defaultHeight) : '100%'，defaultHeight=448
+  // （semi-foundation/sideSheet/constants.ts strings.HEIGHT；Semi 官方 md 文档写 400 是滞后未同步的旧值）。
   const widthPx = $derived(
     width === undefined ? undefined : typeof width === 'number' ? `${width}px` : width,
   );
   const heightPx = $derived(
     height === undefined ? undefined : typeof height === 'number' ? `${height}px` : height,
   );
-  const sheetHeight = $derived(isHorizontal ? (heightPx ?? '400px') : '100%');
+  const sheetHeight = $derived(isHorizontal ? (heightPx ?? '448px') : '100%');
   // 仅 left/right 时把 width 作为内联宽（Semi：isVertical 时才设 width）。
   const innerWidth = $derived(isVertical ? widthPx : undefined);
 
@@ -276,16 +276,34 @@
   const effectiveZ = $derived(stackZ ?? zIndex);
 
   // —— portal（红线 #3）：命令式挂到 getPopupContainer()/body，脱离父层叠上下文 ——
+  // 挂载点 <div>（对应 Semi _portal/index.tsx 的 this.el）只承担 popup 模式下的
+  // position:static（抵消挂载点意外成为新定位上下文、干扰 .cd-sidesheet-popup 的
+  // position:absolute 尺寸计算）；不在挂载点设置 z-index —— Semi 原始实现把 zIndex 加在
+  // 这个默认 position:static 的挂载点上，而 z-index 对 static 元素是无效声明（CSS 规范），
+  // 在 Semi 官方站从未暴露是因为没有与之竞争层级的祖先定位元素；本库场景（docs 站 sticky
+  // 顶部导航 z-index:100）会让该失效的 z-index 被导航栏盖住。改为把 z-index 加在
+  // .cd-sidesheet wrapper 自身（body 模式 fixed / popup 模式 absolute，均可正常接受 z-index）。
+  let portalMountEl = $state<HTMLElement | null>(null);
   function portal(node: HTMLElement) {
     if (typeof document === 'undefined') return { destroy() {} };
     const target = container?.() ?? globalPopupContainer?.() ?? document.body;
-    target.appendChild(node);
+    const mountEl = document.createElement('div');
+    target.appendChild(mountEl);
+    mountEl.appendChild(node);
+    portalMountEl = mountEl;
     return {
       destroy() {
-        if (node.parentNode) node.parentNode.removeChild(node);
+        if (portalMountEl === mountEl) portalMountEl = null;
+        if (mountEl.parentNode) mountEl.parentNode.removeChild(mountEl);
       },
     };
   }
+
+  $effect(() => {
+    const el = portalMountEl;
+    if (!el) return;
+    el.style.position = isPopup ? 'static' : '';
+  });
 
   // wrapper class（对齐 Semi classList）。
   const wrapperCls = $derived(
@@ -334,11 +352,11 @@
       .join('; ') || undefined,
   );
 
-  // wrapper 内联样式：z-index；popup 时 position:static；mask=false 且 left/right 时宽度在 wrapper。
+  // wrapper 内联样式：z-index（wrapper 自身 fixed/absolute 定位下可正常生效，见上方 portal
+  // 注释）；mask=false 且 left/right 时宽度在 wrapper（对齐 Semi SideSheetContent wrapperStyle.width）。
   const wrapperStyle = $derived(
     [
       `z-index: ${effectiveZ}`,
-      isPopup ? 'position: static' : undefined,
       !mask && innerWidth !== undefined ? `width: ${innerWidth}` : undefined,
     ]
       .filter(Boolean)
@@ -349,76 +367,40 @@
 {#if shouldRender}
   <!-- use:portal 命令式挂载到 getPopupContainer()/body，脱离父层叠上下文。 -->
   <div class={wrapperCls} style={wrapperStyle} use:portal>
-    {#if mask}
-      <!-- 遮罩 aria-hidden；点击关闭为鼠标增强（键盘等价 Esc）。 -->
-      <div
-        aria-hidden="true"
-        class="cd-sidesheet-mask {maskAnimCls}"
-        style={maskStyle}
-        onmousedown={maskClosable ? onMaskMouseDown : undefined}
-        onclick={maskClosable ? onMaskClick : undefined}
-        onanimationend={onAnimationEnd}
-      ></div>
-    {/if}
-    <div
-      class={innerCls}
-      role="dialog"
-      tabindex="-1"
-      aria-modal={mask ? 'true' : undefined}
-      aria-labelledby={hasTitle ? titleId : undefined}
-      aria-label={hasTitle ? undefined : ariaLabel}
-      style={innerStyle}
-      onanimationend={onAnimationEnd}
-    >
-      <div class="cd-sidesheet-content">
-        {#if hasTitle || closable}
-          <div class="cd-sidesheet-header" role="heading" aria-level="1" style={headerStyle}>
-            {#if hasTitle}
-              <div id={titleId} class="cd-sidesheet-title">
-                {#if titleSnippet}
-                  {@render titleSnippet()}
-                {:else}
-                  {title}
-                {/if}
-              </div>
-            {/if}
-            {#if closable}
-              <IconButton
-                class="cd-sidesheet-close"
-                type="tertiary"
-                theme="borderless"
-                size="small"
-                aria-label={loc().t('SideSheet.closeAriaLabel')}
-                onclick={emitCancel}
-              >
-                {#snippet icon()}
-                  {#if closeIcon}
-                    {@render closeIcon()}
-                  {:else}
-                    <IconClose />
-                  {/if}
-                {/snippet}
-              </IconButton>
-            {/if}
-          </div>
-        {/if}
-
-        <div class="cd-sidesheet-body" style={bodyStyle}>
-          {@render children?.()}
-        </div>
-
-        {#if footer}
-          <div class="cd-sidesheet-footer">
-            {@render footer({ close })}
-          </div>
-        {/if}
-      </div>
-    </div>
+    <SideSheetContent
+      {mask}
+      {maskStyle}
+      {maskClosable}
+      {maskAnimCls}
+      {title}
+      {titleSnippet}
+      {titleId}
+      {hasTitle}
+      {closable}
+      {closeIcon}
+      closeAriaLabel={loc().t('SideSheet.closeAriaLabel')}
+      {headerStyle}
+      {ariaLabel}
+      {innerCls}
+      {innerStyle}
+      {bodyStyle}
+      {footer}
+      {children}
+      {onMaskMouseDown}
+      {onMaskClick}
+      {onAnimationEnd}
+      onClose={emitCancel}
+      {close}
+    />
   </div>
 {/if}
 
 <style>
-  /* 严格镜像 Semi semi-foundation/sideSheet/sideSheet.scss。变量 → --cd-*-side-sheet-* 对齐层。 */
+  /* 严格镜像 Semi semi-foundation/sideSheet/sideSheet.scss。变量 → --cd-*-side-sheet-* 对齐层。
+     本文件只保留 wrapper 层规则（对应 Semi index.tsx 渲染的最外层节点）；mask/inner/content/
+     header/body/footer/title/动画类等 SideSheetContent 自己渲染的元素样式在 SideSheetContent.svelte。
+     :global() 前缀用于本组件根节点类名（.cd-sidesheet-*）作祖先、命中子组件内部元素的选择器
+     （Svelte scoped CSS 不跨组件生效，对齐 Modal.svelte/ModalContent.svelte 的既有模式）。 */
   .cd-sidesheet {
     position: fixed;
     top: 0;
@@ -428,11 +410,11 @@
     color: var(--cd-color-side-sheet-main-text);
     font-size: var(--cd-font-size-regular, 14px);
   }
-  .cd-sidesheet-inner:focus,
-  .cd-sidesheet-content:focus {
+  .cd-sidesheet :global(.cd-sidesheet-inner):focus,
+  .cd-sidesheet :global(.cd-sidesheet-content):focus {
     outline: none;
   }
-  .cd-sidesheet-inner-wrap {
+  .cd-sidesheet :global(.cd-sidesheet-inner-wrap) {
     position: absolute;
   }
 
@@ -443,8 +425,8 @@
     width: 0%;
     height: 100%;
   }
-  .cd-sidesheet-left .cd-sidesheet-inner-wrap,
-  .cd-sidesheet-right .cd-sidesheet-inner-wrap {
+  .cd-sidesheet-left :global(.cd-sidesheet-inner-wrap),
+  .cd-sidesheet-right :global(.cd-sidesheet-inner-wrap) {
     height: 100%;
   }
   .cd-sidesheet-left.cd-sidesheet,
@@ -454,7 +436,7 @@
   .cd-sidesheet-right {
     right: 0;
   }
-  .cd-sidesheet-right .cd-sidesheet-inner-wrap {
+  .cd-sidesheet-right :global(.cd-sidesheet-inner-wrap) {
     right: 0;
   }
   .cd-sidesheet-top,
@@ -463,8 +445,8 @@
     width: 100%;
     height: 0%;
   }
-  .cd-sidesheet-top .cd-sidesheet-inner-wrap,
-  .cd-sidesheet-bottom .cd-sidesheet-inner-wrap {
+  .cd-sidesheet-top :global(.cd-sidesheet-inner-wrap),
+  .cd-sidesheet-bottom :global(.cd-sidesheet-inner-wrap) {
     width: 100%;
   }
   .cd-sidesheet-top.cd-sidesheet,
@@ -477,108 +459,24 @@
   .cd-sidesheet-bottom {
     bottom: 0;
   }
-  .cd-sidesheet-bottom .cd-sidesheet-inner-wrap {
+  .cd-sidesheet-bottom :global(.cd-sidesheet-inner-wrap) {
     bottom: 0;
   }
 
-  /* —— title（对齐 Semi -title）—— */
-  .cd-sidesheet-title {
-    flex: 1 0 auto;
-    margin: var(--cd-spacing-side-sheet-title-margin);
-    color: var(--cd-color-side-sheet-main-text);
-    font-weight: var(--cd-font-side-sheet-title-fontweight);
-    font-size: var(--cd-font-side-sheet-title-fontsize);
-    /* Semi sideSheet.scss:77 @include font-size-header-5 → 24px */
-    line-height: var(--cd-line-height-header-5);
-    text-align: left;
-  }
-
-  /* —— inner（对齐 Semi -inner）—— */
-  .cd-sidesheet-inner {
-    z-index: 1;
-    overflow: auto;
-    background-color: var(--cd-color-side-sheet-bg);
-    backdrop-filter: var(--cd-filter-side-sheet-bg);
-    border: 0;
-  }
-
-  /* —— header（对齐 Semi -header）—— */
-  .cd-sidesheet-header {
-    display: flex;
-    align-items: flex-start;
-    padding: var(--cd-spacing-side-sheet-header-padding);
-    padding-bottom: var(--cd-spacing-side-sheet-header-padding-bottom);
-    border-bottom: var(--cd-width-side-sheet-header-border-bottom) solid
-      var(--cd-color-side-sheet-header-border-bottom);
-  }
-
-  /* —— body（对齐 Semi -body）—— */
-  .cd-sidesheet-body {
-    flex: 1;
-    overflow: auto;
-    padding: var(--cd-spacing-side-sheet-body-paddingy) var(--cd-spacing-side-sheet-body-paddingx);
-  }
-
-  /* —— size（对齐 Semi -size-small/medium/large）—— */
-  .cd-sidesheet-size-small {
-    width: var(--cd-width-side-sheet-size-small);
-  }
-  .cd-sidesheet-size-medium {
-    width: var(--cd-width-side-sheet-size-medium);
-  }
-  .cd-sidesheet-size-large {
-    width: var(--cd-width-side-sheet-size-large);
-  }
-  .cd-sidesheet-size-small.cd-sidesheet {
-    width: var(--cd-width-side-sheet-size-small);
-  }
-  .cd-sidesheet-size-medium.cd-sidesheet {
-    width: var(--cd-width-side-sheet-size-medium);
-  }
-  .cd-sidesheet-size-large.cd-sidesheet {
-    width: var(--cd-width-side-sheet-size-large);
-  }
-
-  /* —— content（对齐 Semi -content）—— */
-  .cd-sidesheet-content {
-    display: flex;
-    flex-direction: column;
-    box-sizing: border-box;
-    height: 100%;
-    overflow: hidden;
-  }
-
-  /* —— mask（对齐 Semi -mask）—— */
-  .cd-sidesheet-mask {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: var(--cd-color-side-sheet-mask-bg);
-    backdrop-filter: var(--cd-filter-side-sheet-mask-bg);
-    opacity: 1;
-  }
-
-  /* —— footer（对齐 Semi -footer）—— */
-  .cd-sidesheet-footer {
-    padding: var(--cd-spacing-side-sheet-footer-padding);
-  }
-
   /* —— fixed（mask=false；对齐 Semi -fixed，阴影 + 贴边定位）—— */
-  .cd-sidesheet-fixed .cd-sidesheet-inner {
+  .cd-sidesheet-fixed :global(.cd-sidesheet-inner) {
     box-shadow: var(--cd-shadow-elevated);
   }
   .cd-sidesheet-fixed.cd-sidesheet-left {
     left: 0;
   }
-  .cd-sidesheet-fixed.cd-sidesheet-left .cd-sidesheet-inner {
+  .cd-sidesheet-fixed.cd-sidesheet-left :global(.cd-sidesheet-inner) {
     left: 0;
   }
   .cd-sidesheet-fixed.cd-sidesheet-right {
     left: auto;
   }
-  .cd-sidesheet-fixed.cd-sidesheet-right .cd-sidesheet-inner {
+  .cd-sidesheet-fixed.cd-sidesheet-right :global(.cd-sidesheet-inner) {
     right: 0;
   }
   .cd-sidesheet-fixed.cd-sidesheet-top,
@@ -588,8 +486,23 @@
   .cd-sidesheet-fixed.cd-sidesheet-bottom {
     top: auto;
   }
-  .cd-sidesheet-fixed.cd-sidesheet-bottom .cd-sidesheet-inner {
+  .cd-sidesheet-fixed.cd-sidesheet-bottom :global(.cd-sidesheet-inner) {
     bottom: 0;
+  }
+
+  /* —— size 收窄 wrapper 自身宽度（mask=false 时 wrapperCls 带 -size-{size}；对齐 Semi
+     &-size-small.#{$module} 等复合选择器，CSS 层叠顺序在 -left/-right 的 width:100% 之后
+     声明从而覆盖生效，收窄回 448/684/920px，而非铺满整个视口）——
+     缺了这组规则会导致 mask=false 时 wrapper 铺满 100% 视口宽高，即使背景透明也会挡住
+     下层元素的点击（外部区域点不动的真因）。 */
+  .cd-sidesheet-size-small.cd-sidesheet {
+    width: var(--cd-width-side-sheet-size-small);
+  }
+  .cd-sidesheet-size-medium.cd-sidesheet {
+    width: var(--cd-width-side-sheet-size-medium);
+  }
+  .cd-sidesheet-size-large.cd-sidesheet {
+    width: var(--cd-width-side-sheet-size-large);
   }
 
   /* —— popup（getPopupContainer 非 body；对齐 Semi -popup）—— */
@@ -603,113 +516,10 @@
   }
 
   /* —— RTL（对齐 Semi rtl.scss）—— */
-  .cd-sidesheet-rtl .cd-sidesheet-inner {
+  .cd-sidesheet-rtl :global(.cd-sidesheet-inner) {
     direction: rtl;
   }
-  .cd-sidesheet-rtl .cd-sidesheet-title {
+  .cd-sidesheet-rtl :global(.cd-sidesheet-title) {
     text-align: right;
-  }
-
-  /* —— 关闭按钮（Semi 用 IconButton；此处仅补 x-semi-prop 无关的对齐视觉，实际样式由 Button 承担）—— */
-
-  /* —— 进出场动画（对齐 Semi animation.scss keyframes + animation-content/mask 类）—— */
-  @keyframes cd-sidesheet-slideShow_top {
-    from { transform: translateY(-100%); }
-    to { transform: translateY(0); }
-  }
-  @keyframes cd-sidesheet-slideHide_top {
-    from { transform: translateY(0); }
-    to { transform: translateY(-100%); }
-  }
-  @keyframes cd-sidesheet-slideShow_bottom {
-    from { transform: translateY(100%); }
-    to { transform: translateY(0); }
-  }
-  @keyframes cd-sidesheet-slideHide_bottom {
-    from { transform: translateY(0); }
-    to { transform: translateY(100%); }
-  }
-  @keyframes cd-sidesheet-slideShow_left {
-    from { transform: translateX(-100%); }
-    to { transform: translateX(0); }
-  }
-  @keyframes cd-sidesheet-slideHide_left {
-    from { transform: translateX(0); }
-    to { transform: translateX(-100%); }
-  }
-  @keyframes cd-sidesheet-slideShow_right {
-    from { transform: translateX(100%); }
-    to { transform: translateX(0); }
-  }
-  @keyframes cd-sidesheet-slideHide_right {
-    from { transform: translateX(0); }
-    to { transform: translateX(100%); }
-  }
-  @keyframes cd-sidesheet-opacityShow {
-    from { opacity: 0; }
-    to { opacity: 1; }
-  }
-  @keyframes cd-sidesheet-opacityHide {
-    from { opacity: 1; }
-    to { opacity: 0; }
-  }
-
-  .cd-sidesheet-animation-content_show_top {
-    animation: cd-sidesheet-slideShow_top var(--cd-animation-duration-side-sheet-inner-show)
-      var(--cd-animation-function-side-sheet-inner-show) var(--cd-animation-delay-side-sheet-inner-show);
-    animation-fill-mode: forwards;
-  }
-  .cd-sidesheet-animation-content_hide_top {
-    animation: cd-sidesheet-slideHide_top var(--cd-animation-duration-side-sheet-inner-hide)
-      var(--cd-animation-function-side-sheet-inner-hide) var(--cd-animation-delay-side-sheet-inner-hide);
-    animation-fill-mode: forwards;
-  }
-  .cd-sidesheet-animation-content_show_bottom {
-    animation: cd-sidesheet-slideShow_bottom var(--cd-animation-duration-side-sheet-inner-show)
-      var(--cd-animation-function-side-sheet-inner-show) var(--cd-animation-delay-side-sheet-inner-show);
-    animation-fill-mode: forwards;
-  }
-  .cd-sidesheet-animation-content_hide_bottom {
-    animation: cd-sidesheet-slideHide_bottom var(--cd-animation-duration-side-sheet-inner-hide)
-      var(--cd-animation-function-side-sheet-inner-hide) var(--cd-animation-delay-side-sheet-inner-hide);
-    animation-fill-mode: forwards;
-  }
-  .cd-sidesheet-animation-content_show_left {
-    animation: cd-sidesheet-slideShow_left var(--cd-animation-duration-side-sheet-inner-show)
-      var(--cd-animation-function-side-sheet-inner-show) var(--cd-animation-delay-side-sheet-inner-show);
-    animation-fill-mode: forwards;
-  }
-  .cd-sidesheet-animation-content_hide_left {
-    animation: cd-sidesheet-slideHide_left var(--cd-animation-duration-side-sheet-inner-hide)
-      var(--cd-animation-function-side-sheet-inner-hide) var(--cd-animation-delay-side-sheet-inner-hide);
-    animation-fill-mode: forwards;
-  }
-  .cd-sidesheet-animation-content_show_right {
-    animation: cd-sidesheet-slideShow_right var(--cd-animation-duration-side-sheet-inner-show)
-      var(--cd-animation-function-side-sheet-inner-show) var(--cd-animation-delay-side-sheet-inner-show);
-    animation-fill-mode: forwards;
-  }
-  .cd-sidesheet-animation-content_hide_right {
-    animation: cd-sidesheet-slideHide_right var(--cd-animation-duration-side-sheet-inner-hide)
-      var(--cd-animation-function-side-sheet-inner-hide) var(--cd-animation-delay-side-sheet-inner-hide);
-    animation-fill-mode: forwards;
-  }
-  .cd-sidesheet-animation-mask_show {
-    animation: cd-sidesheet-opacityShow var(--cd-animation-duration-side-sheet-mask-show)
-      var(--cd-animation-function-side-sheet-mask-show) var(--cd-animation-delay-side-sheet-mask-show);
-    animation-fill-mode: forwards;
-  }
-  .cd-sidesheet-animation-mask_hide {
-    animation: cd-sidesheet-opacityHide var(--cd-animation-duration-side-sheet-mask-hide)
-      var(--cd-animation-function-side-sheet-mask-hide) var(--cd-animation-delay-side-sheet-mask-hide);
-    animation-fill-mode: forwards;
-  }
-
-  /* reduced-motion：禁用位移/淡入动画，立即显隐（motion=false 时 JS 已不加动画类） */
-  @media (prefers-reduced-motion: reduce) {
-    .cd-sidesheet-inner,
-    .cd-sidesheet-mask {
-      animation: none !important;
-    }
   }
 </style>

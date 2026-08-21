@@ -50,7 +50,7 @@ SideSheet 含完整交互/键盘/焦点逻辑，采用 headless + 渲染分层�
 | placement | `'left'\|'right'\|'top'\|'bottom'` | `'right'` | 滑出位置 |
 | size | `'small'\|'medium'\|'large'` | `'small'` | 尺寸（448/684/920px），仅 left/right 生效 |
 | width | `number\|string` | `448` | left/right 宽度，数字按 px |
-| height | `number\|string` | `400` | top/bottom 高度，数字按 px |
+| height | `number\|string` | `448` | top/bottom 高度，数字按 px（对齐 Semi semi-foundation constants.ts strings.HEIGHT，Semi 官方 md 文档写 400 是滞后未同步的旧值） |
 | title | `string` | `undefined` | 面板标题 |
 | titleSnippet | `Snippet` | `undefined` | 自定义标题区（覆盖 title）；对齐 Semi title(ReactNode) |
 | closable | `boolean` | `true` | 是否显示右上角关闭按钮 |
