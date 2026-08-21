@@ -124,7 +124,7 @@ export const meta = {
     hasRole: true,
     focusable: false,
     pattern: 'grid|treegrid',
-    note: '对齐 Semi：role 静态标注为 grid 或 treegrid（分组 groupBy / 展开行 expandedRowRender / 树形 tree 任一存在时 treegrid，否则 grid），不因交互能力(排序/筛选/行选择等)与否切换。table 静态 aria-rowcount(顶层数据源行数)/aria-colcount(叶子列数)；表头行 role=row + aria-rowindex，表头格 role=columnheader + aria-colindex；数据行 role=row(aria-rowindex/aria-expanded/aria-level 视展开/树形层级而定)，数据格 role=gridcell + aria-colindex。无方向键漫游、无 roving tabindex(Semi 无此实现，本库不再自造超集，浏览器默认 Tab 序逐格移动)。可排序列 aria-sort(ascending/descending/none)；行选择原生 checkbox，全选 aria-label「全选」、行选「选择此行」，半选经 attachment 命令式设 input.indeterminate(只写属性、不读几何、无响应式循环)；焦点环 --cd-focus-ring；reduced-motion 关闭 spinner 与图标过渡。',
+    note: '对齐 Semi：role 静态标注为 grid 或 treegrid（分组 groupBy / 展开行 expandedRowRender / 树形 tree 任一存在时 treegrid，否则 grid），不因交互能力(排序/筛选/行选择等)与否切换。table 静态 aria-rowcount(顶层数据源行数)/aria-colcount(叶子列数)；表头行 role=row + aria-rowindex，表头格 role=columnheader + aria-colindex；数据行 role=row + aria-rowindex，数据格 role=gridcell + aria-colindex（无 aria-level，树形层级仅体现为视觉缩进）；展开按钮/分组标题行自带 aria-expanded。无方向键漫游、无 roving tabindex(Semi 无此实现，本库不再自造超集，浏览器默认 Tab 序逐格移动)。可排序列 aria-sort(ascending/descending/none)；行选择原生 checkbox，全选 aria-label「全选」、行选「选择此行」，半选经 attachment 命令式设 input.indeterminate(只写属性、不读几何、无响应式循环)；焦点环 --cd-focus-ring；reduced-motion 关闭 spinner 与图标过渡。',
   },
   tokens: [
     // 全量对齐 Semi table/variables.scss —— 组件直接消费 Semi 全名 token（无自造中间短名）
