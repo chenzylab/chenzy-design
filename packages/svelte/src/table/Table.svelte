@@ -1433,7 +1433,7 @@
         return sum + (typeof w === 'number' ? w : 120);
       }, 0),
   );
-  const tableStyle = $derived(hasFixed ? `min-inline-size:${totalMinWidth}px` : undefined);
+  const tableStyle = $derived(hasFixed ? `min-width:${totalMinWidth}px` : undefined);
 
   function colNumWidth(col: ColumnDef<T>, index: number): number {
     const w = resolveWidth(col, index);
@@ -1545,6 +1545,11 @@
   });
   const firstRightFixed = $derived(leafColumns.findIndex((c) => fixedOf(c) === 'right'));
 
+  // RTL：语义上「固定在左端」的列在 RTL 下视觉挂在右边（对齐 Semi TableCell.tsx/
+  // TableHeaderRow.tsx getTdProps()：isRTL 时 sticky 的 CSS 属性名与 -left-last/
+  // -right-first class 归属都互换，非只翻文字方向）。
+  const isRtl = $derived(direction === 'rtl');
+
   // 组合某数据列的 sticky 行内样式（含宽度）
   function cellStyle(col: ColumnDef<T>, i: number): string | undefined {
     const parts: string[] = [];
@@ -1552,28 +1557,34 @@
     if (w) parts.push(w);
     const left = fixedLeftOffsets[i];
     const right = fixedRightOffsets[i];
-    if (left != null) parts.push(`position:sticky`, `inset-inline-start:${left}px`);
-    else if (right != null) parts.push(`position:sticky`, `inset-inline-end:${right}px`);
+    if (left != null) parts.push(`position:sticky`, `${isRtl ? 'right' : 'left'}:${left}px`);
+    else if (right != null) parts.push(`position:sticky`, `${isRtl ? 'left' : 'right'}:${right}px`);
     return parts.length ? parts.join(';') : undefined;
   }
 
   function fixedCellClass(i: number): string {
     if (fixedLeftOffsets[i] != null) {
-      return `cd-table-cell-fixed cd-table-cell-fixed-left${i === lastLeftFixed ? ' cd-table-cell-fixed-left-last' : ''}`;
+      const lastClass = isRtl ? 'cd-table-cell-fixed-right-first' : 'cd-table-cell-fixed-left-last';
+      const sideClass = isRtl ? 'cd-table-cell-fixed-right' : 'cd-table-cell-fixed-left';
+      return `cd-table-cell-fixed ${sideClass}${i === lastLeftFixed ? ` ${lastClass}` : ''}`;
     }
     if (fixedRightOffsets[i] != null) {
-      return `cd-table-cell-fixed cd-table-cell-fixed-right${i === firstRightFixed ? ' cd-table-cell-fixed-right-first' : ''}`;
+      const firstClass = isRtl ? 'cd-table-cell-fixed-left-last' : 'cd-table-cell-fixed-right-first';
+      const sideClass = isRtl ? 'cd-table-cell-fixed-left' : 'cd-table-cell-fixed-right';
+      return `cd-table-cell-fixed ${sideClass}${i === firstRightFixed ? ` ${firstClass}` : ''}`;
     }
     return '';
   }
 
-  // 前置 leading 列在存在左固定列时也需 sticky 锁定在最左
+  // 前置 leading 列在存在左固定列时也需 sticky 锁定在最左（RTL 下锁在视觉右端）
   function leadingStyle(slot: 'expand' | 'selection'): string | undefined {
     if (!hasFixed || lastLeftFixed < 0) return undefined;
     const offset = slot === 'expand' ? 0 : expandAsColumn ? LEADING_W : 0;
-    return `position:sticky;inset-inline-start:${offset}px`;
+    return `position:sticky;${isRtl ? 'right' : 'left'}:${offset}px`;
   }
-  const leadingFixedClass = $derived(hasFixed && lastLeftFixed >= 0 ? 'cd-table-cell-fixed cd-table-cell-fixed-left' : '');
+  const leadingFixedClass = $derived(
+    hasFixed && lastLeftFixed >= 0 ? `cd-table-cell-fixed ${isRtl ? 'cd-table-cell-fixed-right' : 'cd-table-cell-fixed-left'}` : '',
+  );
 
   // 单元格 style 合并：把 onCell 返回的自定义 style 追加到该 td 已有的 sticky/宽度 style 之后。
   function mergeCellStyle(base: string | undefined, extra: string | undefined): string | undefined {
@@ -1615,11 +1626,11 @@
   const scrollWrapStyle = $derived.by(() => {
     const parts: string[] = [];
     if (virtualized || scrollBody) {
-      parts.push(`block-size:${height}px`, 'overflow:auto');
+      parts.push(`height:${height}px`, 'overflow:auto');
     }
     if (scroll?.y != null) {
       const yVal = typeof scroll.y === 'number' ? `${scroll.y}px` : scroll.y;
-      parts.push(`max-block-size:${yVal}`, 'overflow-y:auto');
+      parts.push(`max-height:${yVal}`, 'overflow-y:auto');
     }
     if (scroll?.x != null) {
       parts.push('overflow-x:auto');
@@ -1641,7 +1652,7 @@
       // 无 scroll.x 但有固定列：min-width 保证固定列不被压缩（窄容器横滚），
       // 同时 width:100% 撑满容器（对齐 Semi：无 scroll.x 时表格 100%，无 width 列
       // 吸收剩余空间，不塌成固定列总宽致右侧留白）。
-      parts.push(tableStyle, 'inline-size:100%');
+      parts.push(tableStyle, 'width:100%');
     }
     return parts.length ? parts.join(';') : undefined;
   });
@@ -1668,15 +1679,17 @@
     const parts: string[] = [];
     if (rowSelection?.columnWidth != null) {
       const w = rowSelection.columnWidth;
-      parts.push(`inline-size:${typeof w === 'number' ? `${w}px` : w}`);
+      parts.push(`width:${typeof w === 'number' ? `${w}px` : w}`);
     }
     if (rowSelection?.fixed) {
-      // fixed selection column — sticky at start of row
-      parts.push('position:sticky', 'inset-inline-start:0');
+      // fixed selection column — sticky at start of row（RTL 下锁在视觉右端）
+      parts.push('position:sticky', `${isRtl ? 'right' : 'left'}:0`);
     }
     return parts.length ? parts.join(';') : undefined;
   });
-  const selectionFixedClass = $derived(rowSelection?.fixed ? 'cd-table-cell-fixed cd-table-cell-fixed-left' : '');
+  const selectionFixedClass = $derived(
+    rowSelection?.fixed ? `cd-table-cell-fixed ${isRtl ? 'cd-table-cell-fixed-right' : 'cd-table-cell-fixed-left'}` : '',
+  );
 
   // --- groupBy: build grouped display rows ---
   type GroupRow = { type: 'group'; groupKey: string; group: T[]; expanded: boolean; groupIndex: number };
@@ -2077,7 +2090,7 @@
                     {/snippet}
                     {#snippet gIndentMaterial()}
                       {#if treeEnabled && i === 0}
-                        <span class="cd-table-row-indent" style="inline-size:{row.level * indentSize}px" aria-hidden="true"></span>
+                        <span class="cd-table-row-indent" style="width:{row.level * indentSize}px" aria-hidden="true"></span>
                       {/if}
                     {/snippet}
                     {#if col.useFullRender && col.render}
@@ -2127,7 +2140,7 @@
         {:else}
         {#if virtualized && vTopPad > 0}
           <tr class="cd-table-row cd-table-row-spacer" aria-hidden="true">
-            <td colspan={colSpan} style="block-size:{vTopPad}px; padding:0; border:0"></td>
+            <td colspan={colSpan} style="height:{vTopPad}px; padding:0; border:0"></td>
           </tr>
         {/if}
         {#each renderRows as row, ri (row.key)}
@@ -2207,7 +2220,7 @@
                 {/snippet}
                 {#snippet cellIndentMaterial()}
                   {#if treeEnabled && i === 0}
-                    <span class="cd-table-row-indent" style="inline-size:{row.level * indentSize}px" aria-hidden="true"></span>
+                    <span class="cd-table-row-indent" style="width:{row.level * indentSize}px" aria-hidden="true"></span>
                   {/if}
                 {/snippet}
                 {#snippet cellSelectionMaterial()}
@@ -2262,7 +2275,7 @@
         {/each}
         {#if virtualized && vBottomPad > 0}
           <tr class="cd-table-row cd-table-row-spacer" aria-hidden="true">
-            <td colspan={colSpan} style="block-size:{vBottomPad}px; padding:0; border:0"></td>
+            <td colspan={colSpan} style="height:{vBottomPad}px; padding:0; border:0"></td>
           </tr>
         {/if}
         {/if}
@@ -2371,7 +2384,7 @@
     box-sizing: border-box;
     margin: 0;
     padding: 0;
-    inline-size: 100%;
+    width: 100%;
     color: var(--cd-color-table-text-default);
     font-size: var(--cd-font-table-base-fontsize);
     /* 对齐 Semi font-size-regular mixin：line-height 20px，避免继承文档站正文行高致表头/单元格偏高 */
@@ -2381,7 +2394,7 @@
   /* body 滚动容器：.semi-table-body（横向 + 纵向滚动区） */
   .cd-table-body {
     position: relative;
-    inline-size: 100%;
+    width: 100%;
     box-sizing: border-box;
     overflow-x: auto;
   }
@@ -2395,7 +2408,7 @@
      thead 同时带 cd-table-thead 与 cd-table-thead-sticky 两个 class，叠加成 0,4,0。 */
   .cd-table-thead.cd-table-thead-sticky > .cd-table-row > .cd-table-row-head {
     position: sticky;
-    inset-block-start: 0;
+    top: 0;
     z-index: calc(var(--cd-z-table-fixed-column) + 1);
   }
   .cd-table-row-spacer:hover {
@@ -2404,7 +2417,7 @@
 
   /* 表格本体：.semi-table */
   .cd-table {
-    inline-size: 100%;
+    width: 100%;
     text-align: left;
     border-collapse: separate;
     border-spacing: 0;
@@ -2414,8 +2427,8 @@
   }
   /* fixed 布局：固定列 / 列宽精确 */
   .cd-table-fixed {
-    inline-size: auto;
-    min-inline-size: 100%;
+    width: auto;
+    min-width: 100%;
     table-layout: fixed;
   }
 
@@ -2428,9 +2441,11 @@
     vertical-align: middle;
     overflow-wrap: break-word;
     position: relative;
-    padding-inline: var(--cd-spacing-table-row-head-paddingx);
-    padding-block: var(--cd-spacing-table-row-head-paddingy);
-    border-block-end: var(--cd-width-table-header-border) var(--cd-border-table-base-borderstyle) var(--cd-color-table-th-border-default);
+    padding-left: var(--cd-spacing-table-row-head-paddingx);
+    padding-right: var(--cd-spacing-table-row-head-paddingx);
+    padding-top: var(--cd-spacing-table-row-head-paddingy);
+    padding-bottom: var(--cd-spacing-table-row-head-paddingy);
+    border-bottom: var(--cd-width-table-header-border) var(--cd-border-table-base-borderstyle) var(--cd-color-table-th-border-default);
   }
   /* 点击排序表头：clickSort */
   .cd-table-row-head-clicksort {
@@ -2461,8 +2476,9 @@
   .cd-table-tbody > .cd-table-row > .cd-table-row-cell {
     display: table-cell;
     overflow-wrap: break-word;
-    border-inline: none;
-    border-block-end: var(--cd-width-table-base-border) var(--cd-border-table-base-borderstyle) var(--cd-color-table-border-default);
+    border-left: none;
+    border-right: none;
+    border-bottom: var(--cd-width-table-base-border) var(--cd-border-table-base-borderstyle) var(--cd-color-table-border-default);
     padding: var(--cd-spacing-table-tbody-rowcell-padding);
     box-sizing: border-box;
     position: relative;
@@ -2470,10 +2486,12 @@
   }
   /* 尺寸档：middle / small 单元格纵向内边距 */
   .cd-table-middle .cd-table-tbody > .cd-table-row > .cd-table-row-cell {
-    padding-block: var(--cd-spacing-table-middle-paddingy);
+    padding-top: var(--cd-spacing-table-middle-paddingy);
+    padding-bottom: var(--cd-spacing-table-middle-paddingy);
   }
   .cd-table-small .cd-table-tbody > .cd-table-row > .cd-table-row-cell {
-    padding-block: var(--cd-spacing-table-small-paddingy);
+    padding-top: var(--cd-spacing-table-small-paddingy);
+    padding-bottom: var(--cd-spacing-table-small-paddingy);
   }
   .cd-table-row-cell-ellipsis {
     overflow: hidden;
@@ -2507,7 +2525,7 @@
   /* 选择列 / 展开列固定宽度（对齐 Semi $width-table_column_selection = 48px） */
   .cd-table-column-selection,
   .cd-table-column-expand {
-    inline-size: var(--cd-width-table-column-selection);
+    width: var(--cd-width-table-column-selection);
     text-align: center;
     white-space: nowrap;
   }
@@ -2530,8 +2548,10 @@
     background-color: var(--cd-color-table-row-expanded-bg-default);
   }
   .cd-table-row-cell-expanded-content {
-    padding-inline: var(--cd-spacing-table-expand-row-paddingleft) var(--cd-spacing-table-expand-row-paddingright);
-    padding-block: var(--cd-spacing-table-expand-row-paddingtop) var(--cd-spacing-table-expand-row-paddingbottom);
+    padding-left: var(--cd-spacing-table-expand-row-paddingleft);
+    padding-right: var(--cd-spacing-table-expand-row-paddingright);
+    padding-top: var(--cd-spacing-table-expand-row-paddingtop);
+    padding-bottom: var(--cd-spacing-table-expand-row-paddingbottom);
     background-color: var(--cd-color-table-row-expanded-bg-default);
   }
   .cd-table-row-hidden {
@@ -2541,7 +2561,7 @@
   /* 分组表头行 .semi-table-row-section */
   .cd-table-tbody > .cd-table-row-section > .cd-table-row-cell {
     background-color: var(--cd-color-table-selection-bg-default);
-    border-block-end: var(--cd-width-table-base-border) var(--cd-border-table-base-borderstyle) var(--cd-color-table-border-default);
+    border-bottom: var(--cd-width-table-base-border) var(--cd-border-table-base-borderstyle) var(--cd-color-table-border-default);
   }
   .cd-table-tbody > .cd-table-row-section > .cd-table-row-cell:not(.cd-table-column-selection) {
     padding: var(--cd-spacing-table-tbody-rowselection-rowcell-notselection-paddingy) var(--cd-spacing-table-tbody-rowselection-rowcell-notselection-paddingx);
@@ -2571,11 +2591,11 @@
     background-color: var(--cd-color-table-th-bg-default);
   }
   .cd-table-cell-fixed-left-last {
-    border-inline-end: var(--cd-width-table-cell-fixed-left-last) solid var(--cd-color-table-shadow-border-default);
+    border-right: var(--cd-width-table-cell-fixed-left-last) solid var(--cd-color-table-shadow-border-default);
     box-shadow: var(--cd-shadow-table-right);
   }
   .cd-table-cell-fixed-right-first {
-    border-inline-start: var(--cd-width-table-cell-fixed-right-first) solid var(--cd-color-table-shadow-border-default);
+    border-left: var(--cd-width-table-cell-fixed-right-first) solid var(--cd-color-table-shadow-border-default);
     box-shadow: var(--cd-shadow-table-left);
   }
   /* 横滚到边隐藏对应阴影 */
@@ -2592,12 +2612,12 @@
      对齐 Semi：保留上/左边框（含表头上边框），右/下由单元格 border 补齐避免双线。 */
   .cd-table-wrapper-bordered > .cd-table-container {
     border: var(--cd-width-table-base-border) var(--cd-border-table-base-borderstyle) var(--cd-color-table-border-default);
-    border-inline-end: 0;
-    border-block-end: 0;
+    border-right: 0;
+    border-bottom: 0;
   }
   .cd-table-bordered .cd-table-thead > .cd-table-row > .cd-table-row-head,
   .cd-table-bordered .cd-table-tbody > .cd-table-row > .cd-table-row-cell {
-    border-inline-end: var(--cd-width-table-base-border) var(--cd-border-table-base-borderstyle) var(--cd-color-table-border-default);
+    border-right: var(--cd-width-table-base-border) var(--cd-border-table-base-borderstyle) var(--cd-color-table-border-default);
   }
 
   /* ===== 空数据占位 .semi-table-placeholder ===== */
@@ -2607,7 +2627,7 @@
     font-size: var(--cd-font-table-base-fontsize);
     text-align: center;
     background: var(--cd-color-table-pl-bg-default);
-    border-block-end: var(--cd-width-table-base-border) var(--cd-border-table-base-borderstyle) var(--cd-color-table-border-default);
+    border-bottom: var(--cd-width-table-base-border) var(--cd-border-table-base-borderstyle) var(--cd-color-table-border-default);
   }
 
   /* ===== 排序 ColumnSorter ===== */
@@ -2650,15 +2670,15 @@
   }
   .cd-table-column-sorter {
     display: inline-block;
-    inline-size: var(--cd-width-table-column-sorter-icon);
-    block-size: var(--cd-height-table-column-sorter-icon);
+    width: var(--cd-width-table-column-sorter-icon);
+    height: var(--cd-height-table-column-sorter-icon);
     vertical-align: middle;
     text-align: center;
   }
   .cd-table-column-sorter-up,
   .cd-table-column-sorter-down {
     display: block;
-    block-size: 0;
+    height: 0;
     color: var(--cd-color-table-sorter-text-default);
   }
   .cd-table-column-sorter-up.on,
@@ -2667,13 +2687,13 @@
   }
   .cd-table-column-sorter-up :global(svg),
   .cd-table-column-sorter-down :global(svg) {
-    inline-size: var(--cd-width-table-column-sorter-icon);
-    block-size: var(--cd-height-table-column-sorter-icon);
+    width: var(--cd-width-table-column-sorter-icon);
+    height: var(--cd-height-table-column-sorter-icon);
   }
 
   /* ===== 列筛选 ColumnFilter ===== */
   .cd-table-column-filter {
-    margin-inline-start: var(--cd-spacing-table-column-filter-marginleft);
+    margin-left: var(--cd-spacing-table-column-filter-marginleft);
     display: inline-flex;
     align-items: center;
     /* 同 sorter：消除 baseline descender，避免撑高 th */
@@ -2685,8 +2705,8 @@
     background: transparent;
   }
   .cd-table-column-filter :global(svg) {
-    inline-size: var(--cd-width-table-column-filter-icon);
-    block-size: var(--cd-height-table-column-filter-icon);
+    width: var(--cd-width-table-column-filter-icon);
+    height: var(--cd-height-table-column-filter-icon);
   }
   .cd-table-column-filter.on {
     color: var(--cd-color-table-filter-on-text-default);
@@ -2698,8 +2718,9 @@
   /* 筛选下拉面板 .semi-table-column-filter-dropdown */
   .cd-table-column-filter-dropdown {
     z-index: var(--cd-z-dropdown, 1060);
-    min-inline-size: 10rem;
-    padding-block: var(--cd-spacing-extra-tight);
+    min-width: 10rem;
+    padding-top: var(--cd-spacing-extra-tight);
+    padding-bottom: var(--cd-spacing-extra-tight);
     background: var(--cd-color-bg-3, #fff);
     border-radius: var(--cd-border-radius-medium, 6px);
     box-shadow: var(--cd-shadow-elevated, 0 4px 12px rgba(0, 0, 0, 0.12));
@@ -2756,7 +2777,7 @@
     margin: 0;
     padding: 0;
     list-style: none;
-    max-block-size: var(--cd-height-table-column-filter-dropdown);
+    max-height: var(--cd-height-table-column-filter-dropdown);
     overflow-y: auto;
   }
   .cd-table-column-filter-label {
@@ -2774,7 +2795,7 @@
     justify-content: space-between;
     gap: var(--cd-spacing-tight);
     padding: var(--cd-spacing-extra-tight) var(--cd-spacing-base-tight);
-    border-block-start: var(--cd-width-table-base-border) var(--cd-border-table-base-borderstyle) var(--cd-color-table-border-default);
+    border-top: var(--cd-width-table-base-border) var(--cd-border-table-base-borderstyle) var(--cd-color-table-border-default);
   }
   .cd-table-column-filter-reset,
   .cd-table-column-filter-confirm {
@@ -2799,7 +2820,7 @@
      .resizing.cd-table-row-cell（若未来数据行也标 resizing class 时生效，目前无挂载点，
      保留是为了不丢 Semi 对齐语义，非死代码故意保留供后续对齐）。 */
   .resizing.cd-table-row-cell {
-    border-inline-end: var(--cd-width-table-resizer-border) solid var(--cd-color-table-resizer-bg-default);
+    border-right: var(--cd-width-table-resizer-border) solid var(--cd-color-table-resizer-bg-default);
   }
 
   /* ===== 行选择 checkbox 包裹 .semi-table-selection-wrap ===== */
@@ -2835,7 +2856,7 @@
     vertical-align: middle;
     background: var(--cd-color-table-expanded-bg-default);
     color: var(--cd-color-table-expanded-icon-default);
-    margin-inline-end: var(--cd-spacing-table-expand-icon-marginright);
+    margin-right: var(--cd-spacing-table-expand-icon-marginright);
     transition: transform 150ms cubic-bezier(0.62, 0.05, 0.36, 0.95);
   }
   .cd-table-expand-icon:hover {
@@ -2854,8 +2875,8 @@
     transform: rotate(0deg);
   }
   .cd-table-expand-icon-placeholder {
-    inline-size: 16px;
-    block-size: 16px;
+    width: 16px;
+    height: 16px;
     background: transparent;
     pointer-events: none;
     cursor: default;
@@ -2878,7 +2899,7 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    min-block-size: var(--cd-height-table-pagination-outer-min);
+    min-height: var(--cd-height-table-pagination-outer-min);
     color: var(--cd-color-table-page-text-default);
   }
   /* 分页左侧 range 文案（显示第 X-Y 条，共 N 条），对齐 Semi 灰色说明文字。 */
@@ -2890,8 +2911,10 @@
   /* ===== 标题 / footer ===== */
   .cd-table-title {
     position: relative;
-    padding-block: var(--cd-spacing-table-title-paddingy);
-    padding-inline: var(--cd-spacing-table-title-paddingx);
+    padding-top: var(--cd-spacing-table-title-paddingy);
+    padding-bottom: var(--cd-spacing-table-title-paddingy);
+    padding-left: var(--cd-spacing-table-title-paddingx);
+    padding-right: var(--cd-spacing-table-title-paddingx);
   }
   .cd-table-footer {
     background-color: var(--cd-color-table-footer-bg-default);
@@ -2911,8 +2934,8 @@
     opacity: 0.6;
   }
   .cd-table-spinner {
-    inline-size: 28px;
-    block-size: 28px;
+    width: 28px;
+    height: 28px;
     border: 3px solid var(--cd-color-fill-1, rgba(0, 0, 0, 0.1));
     border-top-color: var(--cd-color-primary);
     border-radius: 50%;
@@ -2933,18 +2956,66 @@
     }
   }
 
-  /* —— RTL（对齐 Semi table/rtl.scss）——
-     表体与表头的默认文字方向由左改右；`-align-right` 修饰类在 RTL 下
-     语义仍是「行末对齐」，故翻成 left（Semi 同）。
-     单元格内边距本库已用 padding-inline，会自己翻，不重复覆盖。 */
-  :global(.cd-rtl) .cd-table {
+  /* —— RTL（对齐 Semi table/rtl.scss，完整覆盖，非此前 3 条精简版）——
+     选择器锚点用 .cd-table-wrapper-rtl（挂在本组件最外层 wrapper，同批同时带
+     dir="rtl"），对齐本库 Modal/SideSheet 已用惯例（class:cd-{component}-rtl +
+     :global(.cd-{component}-rtl) 祖先选择器），非全局 .cd-rtl。 */
+
+  /* 表体默认文字方向由左改右（表头文字方向 + align-left/right operate-wrapper 镜像
+     已移至 TableHeaderRow.svelte——.cd-table-row-head/.cd-table-operate-wrapper
+     都在该组件渲染，同样是跨组件祖先链失效的坑，见该文件对应规则注释） */
+  :global(.cd-table-wrapper-rtl) .cd-table {
     direction: rtl;
     text-align: right;
   }
-  :global(.cd-rtl) .cd-table-thead > .cd-table-row > .cd-table-row-head {
-    text-align: right;
+
+  /* 固定列边框 + 阴影：class 归属已在 fixedCellClass()/leadingFixedClass 按
+     isRtl 交换（-left-last↔-right-first 語義随视觉左右重新分配，对齐 Semi
+     TableCell.tsx/TableHeaderRow.tsx 的 isRTL 分支），但 Semi rtl.scss 在此基础上
+     仍对同一对 class 显式重写了 border-left/right（tbody 见 rtl.scss L74-88，
+     独立于 JS 端已完成的 class 语义交换）。两处是否重复镜像存疑——按 Semi 实际
+     产物（rtl.scss 源码字面量）照抄，不按自己的推导省略，避免主观判断引入偏差。
+     若未来有条件真机对比 Semi RTL 固定列渲染，可用于校验此处是否需要精简。
+
+     选择器省去 Semi 原文的 `.cd-table-tbody > .cd-table-row >` 祖先链：这条 <tr> 由
+     BaseRow.svelte 渲染（批次2拆分后），带的是该组件自己的 scoped hash，不是本文件
+     的 hash；`:global()` 只包在最外层 `.cd-table-wrapper-rtl` 时，Svelte 仍会给链条
+     中间未被 :global() 包裹的 `.cd-table-tbody`/`.cd-table-row` 追加本文件 hash，
+     导致这段祖先链在真实 DOM 里永远不可能匹配（真机验证发现：computed border 值与
+     规则定义正好相反，命中的是未加 RTL 覆盖前的 LTR 基础规则）。.cd-table-cell-fixed-
+     left-last/-right-first 在语义上已经唯一（只出现在固定列单元格），无需祖先链
+     消歧，直接用目标 class 自身作选择器即可命中。 */
+  :global(.cd-table-wrapper-rtl) .cd-table-cell-fixed-left-last {
+    border-right: 0;
+    border-left: var(--cd-width-table-cell-fixed-left-last) solid var(--cd-color-table-shadow-border-default);
   }
-  :global(.cd-rtl) .cd-table-align-right {
-    text-align: left;
+  :global(.cd-table-wrapper-rtl) .cd-table-cell-fixed-right-first {
+    border-left: 0;
+    border-right: var(--cd-width-table-cell-fixed-right-first) solid var(--cd-color-table-shadow-border-default);
   }
+
+  /* bordered 模式：容器/单元格/placeholder 边框左右互换。
+     表头 <th> 一侧（.cd-table-row-head）已移至 TableHeaderRow.svelte（该 class 命中
+     该文件内高频渲染点，:global()+长组合链在此处曾实测触发 svelte.compile() 编译
+     卡死不返回，详见 TableHeaderRow.svelte 对应规则注释）。 */
+  :global(.cd-table-wrapper-rtl.cd-table-wrapper-bordered) > .cd-table-container {
+    border-left: 0;
+    border-right: var(--cd-width-table-base-border) var(--cd-border-table-base-borderstyle) var(--cd-color-table-border-default);
+  }
+  /* 条件前缀用 .cd-table-wrapper-bordered（挂在最外层 wrapper，与 .cd-table-wrapper-rtl
+     同级）而非 .cd-table-bordered（table 元素上的 class）：双 table 架构下 <table> 由
+     HeadTable.svelte/Body.svelte 渲染，.cd-table-bordered 前缀会被加上本文件 hash，
+     与 table 元素实际携带的 hash 不同，导致祖先链在真实 DOM 里不可能匹配（同一类
+     "跨组件祖先链失效"坑，详见 TableHeaderRow.svelte 对应规则注释）。 */
+  :global(.cd-table-wrapper-rtl.cd-table-wrapper-bordered) .cd-table-row-cell {
+    border-right: 0;
+    border-left: var(--cd-width-table-base-border) var(--cd-border-table-base-borderstyle) var(--cd-color-table-border-default);
+  }
+  :global(.cd-table-wrapper-rtl) .cd-table-placeholder {
+    border-left: var(--cd-width-table-base-border) var(--cd-border-table-base-borderstyle) var(--cd-color-table-border-default);
+    border-right: 0;
+  }
+
+  /* Spin/loading 遮罩：对齐 Semi rtl.scss `.semi-spin { direction: rtl }`。
+     本库加载态用简单转圈 spinner（非 Spin 组件实例），无方向敏感内容，跳过。 */
 </style>

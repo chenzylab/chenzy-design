@@ -54,7 +54,7 @@
      组件）而非 Table.svelte，否则父组件的同名规则不会应用到子组件渲染的元素上。 */
   .cd-table-head {
     position: relative;
-    inline-size: 100%;
+    width: 100%;
     box-sizing: border-box;
     overflow: hidden;
   }

@@ -349,6 +349,47 @@
     position: relative;
   }
   .resizing.cd-table-row-head {
-    border-inline-end: var(--cd-width-table-resizer-border) solid var(--cd-color-table-resizer-bg-default);
+    border-right: var(--cd-width-table-resizer-border) solid var(--cd-color-table-resizer-bg-default);
+  }
+
+  /* RTL（对齐 Semi rtl.scss `.resizing { border-left: ... }`，thead 内 .resizing 通配规则）：
+     resize 中标示线从右边移到左边。.cd-table-wrapper-rtl 挂在 Table.svelte 最外层 wrapper，
+     跨组件须 :global()。 */
+  :global(.cd-table-wrapper-rtl) .resizing.cd-table-row-head {
+    border-right: 0;
+    border-left: var(--cd-width-table-resizer-border) solid var(--cd-color-table-resizer-bg-default);
+  }
+
+  /* RTL bordered 模式：表头单元格边框左右互换（对齐 Semi rtl.scss
+     `.semi-table-thead > .semi-table-row > .semi-table-row-head { border-right:0; border-left:... }`）。
+     挂载点 <th> 在本文件渲染，故留在这里（Svelte scoped CSS 不跨组件生效）。
+
+     选择器用 .cd-table-wrapper-rtl.cd-table-wrapper-bordered（两个 class 同挂在
+     Table.svelte 最外层 wrapper 上，与 .cd-table-cell-fixed-* 那条同理）而非
+     Semi 原文的 `.cd-table-thead > .cd-table-row >` 祖先链或本组件曾用过的
+     `.cd-table-bordered`（table 元素上的 class）：table 元素在双 table 架构下由
+     HeadTable.svelte/Body.svelte 渲染，`.cd-table-bordered` 前缀会被 Svelte 加上
+     本文件（TableHeaderRow.svelte）的 scoped hash，与 table 元素实际携带的 hash
+     不同，导致这段祖先链在真实 DOM 里永远不可能匹配（同一类"跨组件祖先链失效"，
+     真机验证发现 computed border 与规则定义相反，命中的是未加 RTL 覆盖前的基础规则）。
+     wrapper 上的两个 class 整体在 :global() 内，不受 hash 影响，可以安全跨组件引用；
+     .cd-table-row-head 在本组件作用域内语义已唯一，无需再叠加 thead/row 祖先链消歧。
+     同批曾用长组合链触发 svelte.compile() 编译卡死不返回（Svelte CSS 未使用性
+     分析的已知性能坑），这里的两层选择器写法同时避开了该坑。 */
+  :global(.cd-table-wrapper-rtl.cd-table-wrapper-bordered) .cd-table-row-head {
+    border-right: 0;
+    border-left: var(--cd-width-table-base-border) var(--cd-border-table-base-borderstyle) var(--cd-color-table-border-default);
+  }
+
+  /* 表头文字方向 + align-left/right operate-wrapper 镜像（从 Table.svelte 移来，
+     .cd-table-row-head/.cd-table-operate-wrapper 都在本文件渲染，同一类跨组件坑）。 */
+  :global(.cd-table-wrapper-rtl) .cd-table-row-head {
+    text-align: right;
+  }
+  :global(.cd-table-wrapper-rtl) .cd-table-align-left .cd-table-operate-wrapper {
+    justify-content: flex-end;
+  }
+  :global(.cd-table-wrapper-rtl) .cd-table-align-right .cd-table-operate-wrapper {
+    justify-content: flex-start;
   }
 </style>

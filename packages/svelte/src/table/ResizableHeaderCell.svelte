@@ -56,10 +56,10 @@
      提供（挂载点在 TableHeaderRow.svelte，规则也留在该文件）。 */
   .react-resizable-handle {
     position: absolute;
-    inline-size: var(--cd-width-table-react-resizable-handle);
-    block-size: calc(100% - var(--cd-spacing-table-resizable-offset-y) * 2);
-    inset-block-end: var(--cd-spacing-table-resizable-bottom);
-    inset-inline-end: var(--cd-spacing-table-react-resizable-handle-right);
+    width: var(--cd-width-table-react-resizable-handle);
+    height: calc(100% - var(--cd-spacing-table-resizable-offset-y) * 2);
+    bottom: var(--cd-spacing-table-resizable-bottom);
+    right: var(--cd-spacing-table-react-resizable-handle-right);
     cursor: col-resize;
     z-index: 0;
     touch-action: none;
@@ -77,6 +77,14 @@
   :global(.cd-table-bordered) .react-resizable-handle,
   :global(.cd-table-bordered) .react-resizable-handle:hover {
     background-color: transparent;
+  }
+
+  /* RTL（对齐 Semi rtl.scss `.react-resizable-handle { right: auto; left: ... }`）：
+     手柄从右边移到左边，同一个 right 偏移量复用（Semi 未额外定义镜像专用变量）。
+     .cd-table-wrapper-rtl 挂在 Table.svelte 的最外层 wrapper 上，跨组件须 :global()。 */
+  :global(.cd-table-wrapper-rtl) .react-resizable-handle {
+    right: auto;
+    left: var(--cd-spacing-table-react-resizable-handle-right);
   }
 
   @media (prefers-reduced-motion: reduce) {
