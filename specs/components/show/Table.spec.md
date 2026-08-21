@@ -21,7 +21,7 @@ Table 是结构化二维数据的核心展示与操作组件，是整个组件�
 
 - **结构语义**：对齐 Semi，`role` 静态标注为 `grid`（普通表）或 `treegrid`（分组 `groupBy` / 展开行 `expandedRowRender` / 树形 `tree` 任一存在），不因交互能力（排序/筛选/行选择等）与否切换；配合 `role="row"`/`role="columnheader"`/`role="gridcell"` 显式标注，DOM 用 `div` 分层（headerWrapper / bodyWrapper / 固定列 layer）。
 - **视觉层级**：表头底色 `--cd-table-header-bg`（弱于内容区，建立"控制区 vs 数据区"对比），行边框使用 `--cd-color-border` 的低对比变体（`--cd-table-border-color`），保证密集数据下不产生网格噪音。
-- **密度（density）**：`small | default | large` 对应行高与单元格 padding 三档，满足"信息密集报表 → 舒适浏览"的尺度切换；密度只改 spacing token，不改字号语义。
+- **密度（density）**：`small | default | middle` 对应行高与单元格 padding 三档，满足"信息密集报表 → 舒适浏览"的尺度切换；密度只改 spacing token，不改字号语义。
 - **状态语义**：行 hover（`--cd-table-row-hover-bg`）、选中（`--cd-table-row-selected-bg`）、斑马纹（`--cd-table-row-stripe-bg`）三种背景态分层，选中态对比度优先级最高。
 - **固定列视觉**：固定列与滚动区交界处使用渐变阴影（`--cd-table-fixed-shadow`），且仅在横向滚动发生时显现（`scrollLeft > 0` / 未触底），用阴影而非硬边界传达"层叠浮起"。
 - **运动**：展开/收起行使用高度过渡，排序图标切换无位移仅状态色变化；`prefers-reduced-motion` 下取消展开动画与阴影渐变过渡。
@@ -62,18 +62,19 @@ Table 是结构化二维数据的核心展示与操作组件，是整个组件�
 
 | Prop | 类型 | 默认值 | 说明 |
 | --- | --- | --- | --- |
-| columns | `ColumnDef<T>[]` | `[]` | 列定义：key/dataIndex/title/width/fixed/resizable/align/className/ellipsis/sorter/filters/onFilter/filterConfirmMode/render；children 表头合并（子列，父列 title 横跨叶子列）；onCell 返回 colSpan/rowSpan 行列合并（值 0 跳过渲染）；useFullRender 完全自定义（render 额外收到 expandIcon/indentText 物料自行摆放） |
+| columns | `ColumnDef<T>[]` | `[]` | 列定义：key/dataIndex/title/width/fixed/resize/align/className/ellipsis/sorter/filters/onFilter/filterConfirmMode/render；children 表头合并（子列，父列 title 横跨叶子列）；onCell 返回 colSpan/rowSpan 行列合并（值 0 跳过渲染）；useFullRender 完全自定义（render 额外收到 expandIcon/indentText 物料自行摆放） |
 | children | `Snippet` | `undefined` | 组合式列容器（对齐 Semi Table.Column）：放 <Column> 子组件声明列，嵌套 <Column> 即表头合并。与 columns 并存，传了 columns 用配置式否则用组合式收集 |
 | dataSource | `T[]` | `[]` | 数据行 |
 | rowKey | `string \| ((record: T) => RowKey)` | `'key'` | 行唯一键解析 |
-| size | `'small'\|'default'\|'large'` | `'default'` |  |
+| size | `'small'\|'default'\|'middle'` | `'default'` |  |
+| tableLayout | `'' \| 'auto' \| 'fixed'` | `''` | 控制 `<table>` 的 table-layout（对齐 Semi）。缺省沿用既有推导：存在 fixed 列时 fixed，否则 auto；显式传值覆盖推导 |
 | bordered | `boolean` | `false` | 单元格边框 |
 | stripe | `boolean` | `false` | 斑马纹 |
 | loading | `boolean` | `false` | 半透明遮罩 + spinner |
 | sortState | `SortState` | `undefined` | 受控排序态；受控时不回写，仅 onSortChange |
 | defaultSortState | `SortState` | `{ key: null, order: null }` | 非受控初始排序 |
 | onSortChange | `(state: SortState) => void` | `undefined` |  |
-| pagination | `false \| { pageSize?: number; current?: number; defaultCurrent?: number; onChange?: (page: number) => void }` | `undefined` | false 关闭；对象/缺省启用内置分页(pageSize 默认 10)。current 受控不回写 |
+| pagination | `false \| { pageSize?: number; currentPage?: number; defaultCurrentPage?: number; onPageChange?: (page: number) => void }` | `undefined` | false 关闭；对象/缺省启用内置分页(pageSize 默认 10)。currentPage 受控不回写 |
 | rowSelection | `RowSelection<T>` | `undefined` | selectedRowKeys 受控不回写；defaultSelectedRowKeys / onChange / getCheckboxProps；checkStrictly(默认 false) 树形父子联动开关：false 勾父连带勾后代+后代部分选中父行半选，true 父子独立 |
 | expandable | `Expandable<T>` | `undefined` | expandedRowRender / rowExpandable / expandedRowKeys 受控不回写 / defaultExpandedRowKeys / onExpand |
 | tree | `boolean \| TreeTable` | `undefined` | 树形数据：true 或 { childrenColumnName(默认 children) / indentSize(默认 16) / expandedRowKeys 受控不回写 / defaultExpandedRowKeys / onExpand }。第一列内展开三角+逐级缩进；排序/分页/筛选作用于顶层行 |
@@ -93,7 +94,7 @@ Table 是结构化二维数据的核心展示与操作组件，是整个组件�
 | onReachBottom | `() => void` | `undefined` | 纵向触底（懒加载触发），距底 reachBottomThreshold 像素内触发一次 |
 | reachBottomThreshold | `number` | `0` | onReachBottom 触发阈值（距底像素），默认 0（精确触底） |
 | scroll | `ScrollConfig` | `undefined` | 横/纵向滚动配置：x 设最小宽度横向溢出，y 设最大高度纵向溢出；scrollToFirstRowOnChange 分页/排序/筛选变化后滚回顶部 |
-| components | `{ table?; header?; body? }（tag 名）` | `undefined` | 覆盖组成元素 tag（对齐 Semi）：thead/tbody/行经 svelte:element 换标签，内部 class/role/事件仍注入 |
+| components | `{ table?; header?; body? }（tag 名 + body.colgroup 槽位）` | `undefined` | 覆盖组成元素 tag（对齐 Semi）：thead/tbody/行经 svelte:element 换标签，内部 class/role/事件仍注入；body.colgroup.{wrapper,col} 覆盖 colgroup/col 标签名（对齐 Semi ColGroup 消费的 components.body.colgroup，唯一真被 Semi 自身消费的 components 子槽位）。header.outer/body.outer/footer.* 未实现：核实 Semi 源码（Table.tsx renderFooter、HeadTable.tsx/Body 渲染）发现这些槽位在 Semi 自身实现里也未被消费（仅存在于 TableComponents 类型声明），本库不补充空转槽位 |
 | getVirtualizedListRef | `(ref: { scrollTo; scrollToItem }) => void` | `undefined` | 返回虚拟化滚动控制句柄，仅 virtualized 有效（对齐 Semi） |
 | sticky | `boolean \| { offsetHeader?: number }` | `false` | 表头吸顶：true 时 sticky 定位；对象可指定 offsetHeader（px） |
 | showHeader | `boolean` | `true` | 是否显示表头 |
@@ -110,11 +111,11 @@ Table 是结构化二维数据的核心展示与操作组件，是整个组件�
 | clickGroupedRowToExpand | `boolean` | `false` | 点击分组标题行折叠/展开该组内数据行（groupBy 时生效，disclosure 模式 role=button+aria-expanded+Enter/Space 可达） |
 | defaultExpandAllGroupRows | `boolean` | `false` | 非受控：默认是否展开分组行。对齐 Semi，仅显式 true 才默认展开，缺省与 false 均默认折叠。动态加载数据不生效 |
 | expandAllGroupRows | `boolean` | `undefined` | 受控：true 展开全部分组、false 折叠全部分组；受控时不回写，仅经 onGroupExpandChange 通知 |
-| onGroupExpandChange | `(info: { groupKey: string; expanded: boolean; expandedGroupKeys: string[] }) => void` | `undefined` | 分组展开/收起变化回调（点击分组标题行触发） |
+| onGroupExpandChange | `(info: { groupKey: string; expanded: boolean; expandedGroupKeys: string[] }) => void` | `undefined` | 分组展开/收起变化回调（点击分组标题行触发）。**Semi 无此专属回调**：核实 Semi Table 官方 API（onChange/onExpand/onExpandedRowsChange/onGroupedRow 等）不含逐组展开变化通知，仅有 expandAllGroupRows/clickGroupedRowToExpand 等控制型 props；本库参照 Semi 展开行 onExpand 的模式补充，属合理扩展 |
 | onGroupedRow | `(group: T[], index: number) => { onClick?; onDoubleClick?; className?; style? }` | `undefined` | 分组标题行自定义属性回调（类似 onRow，仅作用于分组头行），返回值合并进分组头 tr |
 | titleSnippet | `Snippet` | `undefined` | 表格顶部标题区域 |
 | footerSnippet | `Snippet<[{ currentData: T[] }]>` | `undefined` | 表格底部内容区域（接收 currentData） |
-| renderPagination | `Snippet<[{ total: number; currentPage: number; pageSize: number; onChange: (page: number) => void }]>` | `undefined` | 自定义分页器渲染，替换内置 Pagination UI；调用 onChange(page) 触发内部翻页（受控 current 不回写） |
+| renderPagination | `Snippet<[{ total: number; currentPage: number; pageSize: number; onChange: (page: number) => void }]>` | `undefined` | 自定义分页器渲染，替换内置 Pagination UI；调用 onChange(page) 触发内部翻页（受控 currentPage 不回写） |
 | expandIcon | `Snippet<[{ expanded: boolean; record: T }]>` | `undefined` | 自定义展开行的展开/收起图标（替换默认三角），仅 expandable 展开列生效 |
 | hideExpandedColumn | `boolean` | `true` | 展开按钮是否并入首列。默认 true（并入首列，对齐 Semi）；false 时展开按钮单独成列 |
 | rowSpanHover | `boolean` | `false` | 合并单元格（rowSpan）时 hover 高亮整个合并区（渐进能力，依赖单元格合并） |
@@ -130,14 +131,14 @@ Table 是结构化二维数据的核心展示与操作组件，是整个组件�
 | `onPaginationChange` | 分页变化 |
 | `onSelectChange` | 选择集变化（与 rowSelection.onChange 同时触发） |
 | `onExpandChange` | 行展开/收起（展开行与树形行均触发） |
-| `onGroupExpandChange` | 分组展开/收起（点击分组标题行触发） |
+| `onGroupExpandChange` | 分组展开/收起（点击分组标题行触发）。Semi 无此专属回调，本库合理扩展（详见上方 Props 表该行说明） |
 | `onScroll` | 滚动位置（含触底） |
 | `onReachBottom` | 纵向触底（懒加载触发） |
 | `rowSelection.onChange` | 行选择变更，回传 keys 与对应 rows |
 | `pagination.onChange` | 页码变更 |
 | `onRowClick` | 行点击(复选框/排序按钮已阻止冒泡) |
 
-`ColumnDef<T>` 关键字段：`dataIndex`、`title`、`key`、`width`、`align('left'|'center'|'right')`、`fixed('left'|'right'|true)`、`ellipsis`、`sorter(boolean|(a,b)=>number|{multiple})`、`sortOrder`、`defaultSortOrder`、`filters`、`filteredValue`、`onFilter`、`filterMultiple`、`render`、`colSpan`/`rowSpan`(via `onCell`)、`resizable`、`children`(多级表头)。
+`ColumnDef<T>` 关键字段：`dataIndex`、`title`、`key`、`width`、`align('left'|'center'|'right')`、`fixed('left'|'right'|true)`、`ellipsis`、`sorter(boolean|(a,b)=>number|{multiple})`、`sortOrder`、`defaultSortOrder`、`filters`、`filteredValue`、`onFilter`、`filterMultiple`、`render`、`colSpan`/`rowSpan`(via `onCell`)、`resize`、`children`(多级表头)。
 
 `RowSelection<T>`：`type('checkbox'|'radio')`、`selectedRowKeys`、`defaultSelectedRowKeys`、`onChange`、`onSelect`、`onSelectAll`、`getCheckboxProps`、`fixed`、`columnWidth`、`preserveSelectedRowKeys`(跨页/筛选保留)、`hideSelectAll`。
 
@@ -151,7 +152,7 @@ Table 是结构化二维数据的核心展示与操作组件，是整个组件�
 | `onPaginationChange` | 分页变化 |
 | `onSelectChange` | 选择集变化（与 rowSelection.onChange 同时触发） |
 | `onExpandChange` | 行展开/收起（展开行与树形行均触发） |
-| `onGroupExpandChange` | 分组展开/收起（点击分组标题行触发） |
+| `onGroupExpandChange` | 分组展开/收起（点击分组标题行触发）。Semi 无此专属回调，本库合理扩展（详见上方 Props 表该行说明） |
 | `onScroll` | 滚动位置（含触底） |
 | `onReachBottom` | 纵向触底（懒加载触发） |
 | `rowSelection.onChange` | 行选择变更，回传 keys 与对应 rows |
@@ -195,7 +196,7 @@ Table 是结构化二维数据的核心展示与操作组件，是整个组件�
 | `--cd-table-cell-padding-x` | `--cd-spacing-4` | 单元格横向 padding |
 | `--cd-table-row-height-sm` | `--cd-size-7` | small 行高 |
 | `--cd-table-row-height` | `--cd-size-9` | default 行高 |
-| `--cd-table-row-height-lg` | `--cd-size-11` | large 行高 |
+| `--cd-table-row-height-lg` | `--cd-size-11` | middle 行高（旧 token 名沿用 -lg 后缀，未随 size 值改名 large→middle 重命名，见下方"设计变量"章节的真实 token 表） |
 | `--cd-table-fixed-shadow` | `--cd-shadow-2` | 固定列层叠阴影 |
 | `--cd-table-sort-active-color` | `--cd-color-primary` | 激活排序图标色 |
 | `--cd-table-filter-active-color` | `--cd-color-primary` | 激活筛选图标色 |
@@ -297,7 +298,7 @@ Table 是结构化二维数据的核心展示与操作组件，是整个组件�
 - **单元（core）**：排序三态循环 / 多列优先级；筛选谓词与多值；选择 indeterminate、shift 范围、跨页 preserve、getCheckboxProps 禁用；树形展平与展开；数据管道 memo 正确性；虚拟区间计算（边界 overscan、动态高度）；固定列偏移与 RTL 镜像。
 - **组件（svelte）**：受控 vs 非受控分支；`on:change` 聚合 payload 形状；横向滚动 header/body 同步；loading/empty 渲染；密度档行高；`destroyOnClose` 卸载。
 - **a11y**：axe 无违规；`aria-sort`/`aria-rowcount`/`role=grid|treegrid` 静态标注断言；筛选浮层 focus-trap + Esc dismiss。
-- **视觉回归**：固定列阴影、斑马纹、选中态、多级表头、small/large 密度、RTL、深色模式 snapshot。
+- **视觉回归**：固定列阴影、斑马纹、选中态、多级表头、small/middle 密度、RTL、深色模式 snapshot。
 - **性能基准**：1k/10k 行挂载时长、滚动 fps、全选 toggle 时长纳入 CI 性能门禁（回归 > 10% 失败）。
 - **i18n**：缺失 key 回退、ICU 复数、RTL 布局快照。
 

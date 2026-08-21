@@ -14,6 +14,8 @@
     leadingWidth,
     colKey,
     colStyle,
+    tagColgroup = 'colgroup',
+    tagCol = 'col',
   }: {
     leafColumns: ColumnDef<T>[];
     expandAsColumn: boolean;
@@ -22,17 +24,21 @@
     leadingWidth: number;
     colKey: (col: ColumnDef<T>, index: number) => string;
     colStyle: (col: ColumnDef<T>, index: number) => string | undefined;
+    /** 覆盖 <colgroup> 标签名（对齐 Semi components.body.colgroup.wrapper），缺省原生 colgroup */
+    tagColgroup?: string;
+    /** 覆盖 <col> 标签名（对齐 Semi components.body.colgroup.col），缺省原生 col */
+    tagCol?: string;
   } = $props();
 </script>
 
-<colgroup class="cd-table-colgroup">
+<svelte:element this={tagColgroup} class="cd-table-colgroup">
   {#if expandAsColumn}
-    <col class="cd-table-column-expand" style="width:{leadingWidth}px" />
+    <svelte:element this={tagCol} class="cd-table-column-expand" style="width:{leadingWidth}px" />
   {/if}
   {#if hasSelection}
-    <col class="cd-table-column-selection" style="width:{selectionColWidth}px" />
+    <svelte:element this={tagCol} class="cd-table-column-selection" style="width:{selectionColWidth}px" />
   {/if}
   {#each leafColumns as col, i (colKey(col, i))}
-    <col class={col.className} style={colStyle(col, i)} />
+    <svelte:element this={tagCol} class={col.className} style={colStyle(col, i)} />
   {/each}
-</colgroup>
+</svelte:element>

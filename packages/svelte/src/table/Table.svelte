@@ -1,12 +1,12 @@
 <!--
   Table — see specs/components/show/Table.spec.md
   列定义驱动渲染：三态排序、客户端分页、行选择(含半选)，受控/非受控双轨。
-  受控 sortState / rowSelection.selectedRowKeys / pagination.current 不回写，
+  受控 sortState / rowSelection.selectedRowKeys / pagination.currentPage 不回写，
   仅通过 onSortChange / rowSelection.onChange / pagination.onChange 通知 (红线 #1)。
   复用 @chenzy-design/core 纯函数算法与 Pagination 组件，不重复实现。
   固定列：column.fixed='left'|'right'，横滚时 sticky 锁定 + 逐列像素偏移 + 边界阴影。
   列筛选：column.filters + onFilter，列头漏斗弹浮层多选过滤（复用 _floating + useDismiss）。
-  列宽拖拽：column.resizable，列头右侧拖拽手柄，指针几何命令式管理(红线 #3)；
+  列宽拖拽：column.resize，列头右侧拖拽手柄，指针几何命令式管理(红线 #3)；
   覆盖宽度存本地 SvelteMap 不写回 columns prop(红线 #1)，进 cellStyle 宽度计算。
   树形数据：tree=true 或 tree={{ childrenColumnName, indentSize, expandedRowKeys... }}；
   行含 children 自动嵌套，第一列内展开三角 + 逐级缩进；排序/分页/筛选作用于顶层行，
@@ -83,6 +83,7 @@
     dataSource = [],
     rowKey = 'key',
     size = 'default',
+    tableLayout = '',
     bordered = false,
     stripe = false,
     loading = false,
@@ -155,6 +156,13 @@
     dataSource?: T[];
     rowKey?: string | ((record: T) => RowKey);
     size?: TableSize;
+    /**
+     * 控制 `<table>` 的 table-layout（对齐 Semi tableLayout）。缺省 `''`：沿用本库既有
+     * 行为（存在 fixed 列或双 table 架构时固定为 fixed，`.cd-table-fixed` class）；
+     * 显式传 `'auto'` 强制浏览器按内容自动分配列宽（不加 `.cd-table-fixed`）；
+     * 显式传 `'fixed'` 强制固定布局（等效当前默认对 fixed 场景的行为）。
+     */
+    tableLayout?: '' | 'auto' | 'fixed';
     bordered?: boolean;
     stripe?: boolean;
     loading?: boolean;
@@ -167,12 +175,8 @@
           pageSize?: number;
           /** 受控当前页（对齐 Semi currentPage） */
           currentPage?: number;
-          /** 受控当前页（本库旧名，与 currentPage 等效，currentPage 优先） */
-          current?: number;
           /** 非受控默认当前页（对齐 Semi defaultCurrentPage） */
           defaultCurrentPage?: number;
-          /** 非受控默认当前页（本库旧名，与 defaultCurrentPage 等效） */
-          defaultCurrent?: number;
           /** 数据总数：受控远程分页时覆盖本地数据长度（对齐 Semi total） */
           total?: number;
           /** 分页器位置：底部/顶部/上下都有（对齐 Semi position），默认 bottom */
@@ -236,7 +240,7 @@
     /**
      * Table 级列伸缩开关（对齐 Semi resizable）。true 时所有带 width 的列可拖拽伸缩
      * （column.resize=false 单列关闭）；对象态提供 onResize/onResizeStart/onResizeStop
-     * 事件（返回的对象与该列合并，如 className）。与列级 column.resizable 兼容并存。
+     * 事件（返回的对象与该列合并，如 className）。
      */
     resizable?: boolean | ResizableConfig<T>;
     /** 筛选浮层挂载容器，默认跟随触发按钮 */
@@ -264,7 +268,11 @@
     defaultExpandAllGroupRows?: boolean;
     /** 受控：为 true 展开全部分组、false 折叠全部分组。受控时不回写，仅经 onGroupExpandChange 通知（红线 #1） */
     expandAllGroupRows?: boolean;
-    /** 分组展开/收起变化回调（点击分组标题行触发），回传当前展开的分组 key 集合 */
+    /**
+     * 分组展开/收起变化回调（点击分组标题行触发），回传当前展开的分组 key 集合。
+     * Semi 无此专属回调（Semi 分组仅有 expandAllGroupRows/clickGroupedRowToExpand 等展开控制
+     * props，无逐组变化通知），本库参照 Semi 展开行 onExpand 的模式补充，属合理扩展。
+     */
     onGroupExpandChange?: (info: { groupKey: string; expanded: boolean; expandedGroupKeys: string[] }) => void;
     /** 分组标题行的自定义属性回调（类似 onRow，仅作用于分组头行），返回值合并进分组头行 tr。groupBy 时生效 */
     onGroupedRow?: (group: T[], index: number) => { onClick?: (e: MouseEvent) => void; onDoubleClick?: (e: MouseEvent) => void; onMouseEnter?: (e: MouseEvent) => void; onMouseLeave?: (e: MouseEvent) => void; className?: string; style?: string };
@@ -306,12 +314,20 @@
     /**
      * 覆盖组成元素的 tag 名（对齐 Semi components）。Svelte 侧以标签名字符串生效，
      * 经 <svelte:element> 渲染，内部 class/role/事件仍注入。缺省用原生
-     * table/thead/tbody/tr/th/td。常见用法：body.row='div' 配合拖拽库。
+     * table/thead/tbody/tr/th/td/colgroup/col。常见用法：body.row='div' 配合拖拽库。
+     * body.colgroup.{wrapper,col} 对齐 Semi ColGroup 消费的 components.body.colgroup
+     * （Semi 自身实现里唯一真被消费的 components 子槽位，其余 header.outer/body.outer/
+     * footer.* 在 Semi 源码中也未被消费，本库同步不实现）。
      */
     components?: {
       table?: string;
       header?: { wrapper?: string; row?: string; cell?: string };
-      body?: { wrapper?: string; row?: string; cell?: string };
+      body?: {
+        wrapper?: string;
+        row?: string;
+        cell?: string;
+        colgroup?: { wrapper?: string; col?: string };
+      };
     };
     /**
      * 返回虚拟化滚动控制句柄（对齐 Semi getVirtualizedListRef）。仅 virtualized 时有效。
@@ -331,6 +347,8 @@
   const tagHeaderCell = $derived(components?.header?.cell ?? 'th');
   const tagBodyRow = $derived(components?.body?.row ?? 'tr');
   const tagBodyCell = $derived(components?.body?.cell ?? 'td');
+  const tagColgroupWrapper = $derived(components?.body?.colgroup?.wrapper ?? 'colgroup');
+  const tagCol = $derived(components?.body?.colgroup?.col ?? 'col');
 
   const loc = useLocale();
   // 单例 live region（polite）：排序结果播报给屏幕阅读器（命令式写入在事件回调，红线 #3）。
@@ -427,9 +445,8 @@
   }
 
   // 某列是否可伸缩：Table 级 resizable 开启时，带 width 且 column.resize!==false 的列
-  // 可伸缩（对齐 Semi）；列级 column.resizable 保持兼容。
+  // 可伸缩（对齐 Semi）。
   function columnResizable(col: ColumnDef<T>): boolean {
-    if (col.resizable) return true;
     if (!resizable) return false;
     if (col.resize === false) return false;
     return col.width !== undefined;
@@ -761,18 +778,15 @@
     return data;
   });
 
-  // --- 分页：受控 currentPage/current 不回写 (红线 #1) ---
+  // --- 分页：受控 currentPage 不回写 (红线 #1) ---
   // virtualized 与分页互斥：虚拟滚动时全量渲染滚动，忽略 pagination（取舍见 props 注释）。
-  // currentPage（对齐 Semi）优先于旧名 current；defaultCurrentPage 优先于 defaultCurrent。
   const paginationEnabled = $derived(!virtualized && pagination !== false);
   const pageSize = $derived(pagination ? (pagination.pageSize ?? 10) : 10);
-  const controlledPage = $derived(
-    pagination ? (pagination.currentPage ?? pagination.current) : undefined,
-  );
+  const controlledPage = $derived(pagination ? pagination.currentPage : undefined);
   const isPageControlled = $derived(controlledPage !== undefined);
   let innerPage = $state(initPage());
   function initPage(): number {
-    return pagination ? (pagination.defaultCurrentPage ?? pagination.defaultCurrent ?? 1) : 1;
+    return pagination ? (pagination.defaultCurrentPage ?? 1) : 1;
   }
   const currentPage = $derived(controlledPage ?? innerPage);
 
@@ -1608,13 +1622,18 @@
     };
   }
 
+  // table-layout：tableLayout 显式传值时覆盖默认推导（对齐 Semi tableLayout）；
+  // 缺省 '' 时沿用既有推导（存在 fixed 列时 fixed，否则 auto）。
+  const resolvedFixedLayout = $derived(
+    tableLayout === 'fixed' ? true : tableLayout === 'auto' ? false : hasFixed,
+  );
   const cls = $derived(
     [
       'cd-table',
       `cd-table-${size}`,
       bordered && 'cd-table-bordered',
       stripe && 'cd-table-stripe',
-      hasFixed && 'cd-table-fixed',
+      resolvedFixedLayout && 'cd-table-fixed',
       rowSpanHover && 'cd-table-row-span-hover',
     ]
       .filter(Boolean)
@@ -1844,6 +1863,8 @@
       leadingWidth={LEADING_W}
       colKey={colKeyOf}
       colStyle={colGroupStyle}
+      tagColgroup={tagColgroupWrapper}
+      {tagCol}
     />
   {/snippet}
   {#snippet theadContent()}

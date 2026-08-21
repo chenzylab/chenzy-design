@@ -439,7 +439,7 @@ Semi 借助 React 的 `dnd-kit` 搭配 `components.body.row` 注入自定义 `So
 | class | 最外层样式名（对齐 Semi className） | string | - |
 | clickGroupedRowToExpand | 点击分组表头行时分组内容展开或收起 | boolean | false |
 | columns | 表格列的配置描述，详见 [Column](#column) | `ColumnDef<T>[]` | [] |
-| components | 覆盖组成元素的标签名（`table`/`header`/`body` 的 `wrapper`/`row`/`cell`） | object | - |
+| components | 覆盖组成元素的标签名（`table`/`header`/`body` 的 `wrapper`/`row`/`cell`；`body.colgroup.{wrapper,col}` 覆盖 colgroup/col） | object | - |
 | dataSource | 数据。**请为每一条数据分配一个独立的 key，或使用 rowKey 指定一个作为主键的属性名** | `T[]` | [] |
 | defaultExpandAllRows | 默认是否展开所有行，动态加载数据时不生效 | boolean | false |
 | defaultExpandAllGroupRows | 默认是否展开分组行，动态加载数据时不生效 | boolean | false |
@@ -469,10 +469,11 @@ Semi 借助 React 的 `dnd-kit` 搭配 `components.body.row` 注入自定义 `So
 | rowSelection | 表格行是否可选择，详见 [rowSelection](#rowselection) | `RowSelection<T>` | - |
 | scroll | 表格滚动配置，详见 [scroll](#scroll) | object | - |
 | showHeader | 是否显示表头 | boolean | true |
-| size | 表格尺寸，影响表格行 padding | 'small' \| 'default' \| 'large' | 'default' |
+| size | 表格尺寸，影响表格行 padding | 'small' \| 'default' \| 'middle' | 'default' |
 | sortState / defaultSortState | 受控 / 非受控排序状态 | SortState | - |
 | sticky | 固定表头 | boolean \| `{ offsetHeader: number }` | false |
 | stripe | 斑马纹 | boolean | false |
+| tableLayout | 控制 `<table>` 的 table-layout。缺省沿用既有推导：存在 fixed 列时 fixed，否则 auto；显式传值覆盖推导 | '' \| 'auto' \| 'fixed' | '' |
 | title / titleSnippet | 表格标题（字符串 / Snippet） | string \| Snippet | - |
 | tree | 树形数据：true 或 `{ childrenColumnName / indentSize / expandedRowKeys / defaultExpandedRowKeys / onExpand }` | boolean \| TreeTable | - |
 | virtualized | 行虚拟滚动 | boolean | false |
@@ -516,7 +517,6 @@ Semi 借助 React 的 `dnd-kit` 搭配 `components.body.row` 注入自定义 `So
 | renderFilterDropdown | 自定义筛选器 dropdown 面板 | `Snippet<[RenderFilterDropdownProps]>` | - |
 | renderFilterDropdownItem | 自定义每个筛选项渲染方式 | Snippet | - |
 | resize | Table resizable 开启后是否允许本列伸缩 | boolean | true |
-| resizable | 列宽可拖拽调整（列级开关，与 Table 级 resizable 并存） | boolean | - |
 | showSortTip | 是否展示排序提示（受控 sortOrder 时不生效） | boolean | false |
 | sortChildrenRecord | 是否对子级数据本地排序（树形） | boolean | - |
 | sorter | 排序：true 按 dataIndex 默认比较，或自定义比较器 `(a, b, sortOrder?) => number` | boolean \| function | - |

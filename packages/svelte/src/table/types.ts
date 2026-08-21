@@ -7,7 +7,7 @@ import type { Snippet } from 'svelte';
 import type { RowKey } from '@chenzy-design/core';
 
 export type Align = 'left' | 'center' | 'right';
-export type TableSize = 'small' | 'default' | 'large';
+export type TableSize = 'small' | 'default' | 'middle';
 
 export interface ColumnDef<T> {
   /** 列唯一键，缺省回退 dataIndex / 列索引 */
@@ -31,8 +31,6 @@ export interface ColumnDef<T> {
   width?: number | string;
   /** 固定列：横向滚动时左/右侧 sticky 锁定（需配合 width 数值）。true 等效 'left'（对齐 Semi） */
   fixed?: boolean | 'left' | 'right';
-  /** 列宽可拖拽调整：列头右侧出现拖拽手柄，指针拖拽实时改列宽 */
-  resizable?: boolean;
   /**
    * Table 级 resizable 开启后是否允许本列伸缩（对齐 Semi column.resize）。
    * 默认 true；设置为 false 后本列不再出现拖拽手柄。
