@@ -173,6 +173,7 @@
   {@const colResizable = columnResizable(col)}
   {@const headerCellProps = col.onHeaderCell ? col.onHeaderCell(col, i) : undefined}
   {@const resizeOverride = resizeOverrides?.get(colKey)}
+  {@const clickToSort = sortable && !hasFilter && !col.useFullRender}
   {#if col.colSpan !== 0}
   <th
     rowspan={thRowSpan > 1 ? thRowSpan : undefined}
@@ -181,13 +182,17 @@
     class:cd-table-row-cell-ellipsis={!!col.ellipsis}
     class:cd-table-row-head-has-filter={hasFilter}
     class:cd-table-row-head-resizable={colResizable}
+    class:cd-table-row-head-clicksort={clickToSort}
     class:resizing={resizingKey === colKey}
     scope="col"
     style={mergeCellStyle(mergeHeaderStyle(cellStyle(col, i)), headerCellProps?.style)}
     aria-sort={sortable ? ariaSortFor(col, i) : undefined}
     role="columnheader"
     aria-colindex={gc + 1}
-    onclick={headerCellProps?.onClick ?? undefined}
+    onclick={(e: MouseEvent) => {
+      headerCellProps?.onClick?.(e);
+      if (clickToSort) onSort(col, i);
+    }}
     onmouseenter={headerCellProps?.onMouseEnter ?? undefined}
     onmouseleave={headerCellProps?.onMouseLeave ?? undefined}
   >
@@ -199,7 +204,11 @@
       {@const order = col.sortOrder !== undefined ? col.sortOrder : (currentSort.key === colKeyOf(col, i) ? currentSort.order : null)}
       {@const showTip = col.showSortTip === true && col.sortOrder === undefined}
       {#snippet sortTitle()}{@render columnTitle(col)}{/snippet}
-      <ColumnSorter {col} {order} {showTip} title={sortTitle} onSort={() => onSort(col, i)} />
+      <!-- clickToSort 为真时排序点击热区扩大到整个 <th>（见上方 onclick），ColumnSorter
+           自身不再响应点击，避免与 th 的 onclick 冒泡重复触发（对齐 Semi Table.tsx 里
+           ColumnSorter onClick={useFullRender || hasFilter ? handleSort : null} 的互斥
+           关系：仅 useFullRender/hasFilter 时按钮自己承担点击职责）。 -->
+      <ColumnSorter {col} {order} {showTip} title={sortTitle} onSort={clickToSort ? undefined : () => onSort(col, i)} />
     {:else if typeof col.title !== 'string'}
       <!-- 自定义 title（函数）：透传 selection/filter 物料，由使用方摆放（对齐 Semi
            title({ selection, filter, sorter })）。摆放 selection 全选框会撑高表头至 41px。 -->

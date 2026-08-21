@@ -24,7 +24,11 @@
     order: 'ascend' | 'descend' | null;
     showTip: boolean;
     title: Snippet;
-    onSort: () => void;
+    /**
+     * undefined 时按钮自身不响应点击（对齐 Semi：<th> 已扩大排序点击热区时，
+     * ColumnSorter 让出点击职责避免冒泡重复触发，见 TableHeaderRow.svelte 调用点注释）。
+     */
+    onSort?: (() => void) | undefined;
   } = $props();
 
   const loc = useLocale();
