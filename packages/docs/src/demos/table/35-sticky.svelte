@@ -48,4 +48,9 @@
   </div>
 {/snippet}
 
-<Table {columns} dataSource={data} {rowSelection} scroll={{ y: 300, x: 1200 }} sticky={{ top: 60 }} />
+<div style="height: 400px; overflow: auto;">
+  <div style="height: 200px; display: flex; align-items: flex-end; padding-bottom: 12px; color: var(--cd-color-text-2); font-size: 13px;">
+    向下滚动此区域查看表头吸顶效果
+  </div>
+  <Table {columns} dataSource={data} {rowSelection} scroll={{ x: 1200 }} sticky={{ top: 0 }} />
+</div>
