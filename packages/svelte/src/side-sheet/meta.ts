@@ -8,7 +8,7 @@ export const meta = {
   stage: 'M5',
   semiEquivalent: 'SideSheet',
   description:
-    '滑动侧边栏：从视口四边（left/right/top/bottom）滑入的浮层容器，承载二级操作页面 / 详情 / 表单 / 筛选，比 Modal 提供更大可滚动内容区。DOM 结构与类名严格对齐 Semi：wrapper(.cd-sidesheet-{placement}) > mask + inner(.cd-sidesheet-inner.cd-sidesheet-inner-wrap.cd-sidesheet-size-{size}, role=dialog tabindex=-1) > content > header(role=heading aria-level=1)+body+footer。Portal 到 getPopupContainer()/body 脱离父层叠上下文；role=dialog，mask 时加 aria-modal；closeOnEsc（默认 false）时 window 监听 Esc 关闭；mask=true 默认锁 body 滚动（disableScroll），getPopupContainer 指向非 body 时为 popup 模式（wrapper position:static）。mask=false 为可操作外部区域形态（无遮罩、面板 box-shadow: --cd-shadow-elevated、宽度落在 wrapper）。size(small448/medium684/large920，默认 small) 仅 left/right 生效；width（默认 448，left/right）/ height（默认 400，top/bottom）显式覆盖。进出场动画对齐 Semi CSSAnimation：mask 淡入淡出 + inner 按 placement 滑入滑出，animationend 后卸载；motion=false 或 prefers-reduced-motion 退化即时显隐。关闭按钮用 IconButton（type=tertiary theme=borderless size=small）+ IconClose。受控 visible（不回写），仅经 onCancel(e) 通知；afterVisibleChange 于动画结束回调可见状态。keepDOM 关闭保留 DOM。',
+    '滑动侧边栏：从视口四边（left/right/top/bottom）滑入的浮层容器，承载二级操作页面 / 详情 / 表单 / 筛选，比 Modal 提供更大可滚动内容区。DOM 结构与类名严格对齐 Semi：wrapper(.cd-sidesheet-{placement}) > mask + inner(.cd-sidesheet-inner.cd-sidesheet-inner-wrap.cd-sidesheet-size-{size}, role=dialog tabindex=-1) > content > header(role=heading aria-level=1)+body+footer。Portal 到 getPopupContainer()/body 脱离父层叠上下文；role=dialog，mask 时加 aria-modal；closeOnEsc（默认 false）时 window 监听 Esc 关闭；mask=true 默认锁 body 滚动（disableScroll），getPopupContainer 指向非 body 时为 popup 模式（wrapper position:static）。mask=false 为可操作外部区域形态（无遮罩、面板 box-shadow: --cd-shadow-elevated、宽度落在 wrapper）。size(small448/medium684/large920，默认 small) 仅 left/right 生效；width（默认 448，left/right）/ height（默认 448，top/bottom）显式覆盖。进出场动画对齐 Semi CSSAnimation：mask 淡入淡出 + inner 按 placement 滑入滑出，animationend 后卸载；motion=false 或 prefers-reduced-motion 退化即时显隐。关闭按钮用 IconButton（type=tertiary theme=borderless size=small）+ IconClose。受控 visible（不回写），仅经 onCancel(e) 通知；afterVisibleChange 于动画结束回调可见状态。keepDOM 关闭保留 DOM。',
   exports: ['SideSheet'],
   a11yPattern: 'dialog-modal',
   apgRef: 'dialog (modal)',
@@ -22,7 +22,7 @@ export const meta = {
     { name: 'placement', type: "'left'|'right'|'top'|'bottom'", default: "'right'", desc: '滑出位置' },
     { name: 'size', type: "'small'|'medium'|'large'", default: "'small'", desc: '尺寸（448/684/920px），仅 left/right 生效' },
     { name: 'width', type: 'number|string', default: '448', desc: 'left/right 宽度，数字按 px' },
-    { name: 'height', type: 'number|string', default: '400', desc: 'top/bottom 高度，数字按 px' },
+    { name: 'height', type: 'number|string', default: '448', desc: 'top/bottom 高度，数字按 px' },
     { name: 'title', type: 'string', default: 'undefined', desc: '面板标题' },
     { name: 'titleSnippet', type: 'Snippet', default: 'undefined', desc: '自定义标题区（覆盖 title）；对齐 Semi title(ReactNode)' },
     { name: 'closable', type: 'boolean', default: 'true', desc: '是否显示右上角关闭按钮' },
