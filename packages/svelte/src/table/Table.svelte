@@ -2638,9 +2638,11 @@
 
   /* ===== 固定列：sticky + 边界阴影 =====
      .cd-table-cell-fixed-* 都命中本文件内渲染的 <td>（数据单元格）或
-     TableHeaderRow.svelte 渲染的 <th>（表头单元格），后者跨组件须 :global()。 */
-  .cd-table-cell-fixed-left,
-  .cd-table-cell-fixed-right {
+     TableHeaderRow.svelte 渲染的 <th>（表头单元格），后者跨组件须 :global()——
+     此前漏了 :global()，真机核对发现表头固定列 z-index 恒为 auto（未命中这条
+     规则），横向滚动时表头分割线/阴影被非固定列内容盖住，与 tbody 表现不一致。 */
+  :global(.cd-table-cell-fixed-left),
+  :global(.cd-table-cell-fixed-right) {
     z-index: var(--cd-z-table-fixed-column);
     position: sticky;
     background-color: var(--cd-color-table-bg-default);
