@@ -25,7 +25,7 @@ Table 是结构化二维数据的核心展示与操作组件，是整个组件�
 - **状态语义**：行 hover（`--cd-table-row-hover-bg`）、选中（`--cd-table-row-selected-bg`）、斑马纹（`--cd-table-row-stripe-bg`）三种背景态分层，选中态对比度优先级最高。
 - **固定列视觉**：固定列与滚动区交界处使用渐变阴影（`--cd-table-fixed-shadow`），且仅在横向滚动发生时显现（`scrollLeft > 0` / 未触底），用阴影而非硬边界传达"层叠浮起"。
 - **运动**：展开/收起行使用高度过渡，排序图标切换无位移仅状态色变化；`prefers-reduced-motion` 下取消展开动画与阴影渐变过渡。
-- **空与载入**：空数据复用 Empty 语义占满 body 宽度并垂直居中；`loading` 时覆盖半透明遮罩 + Spin，保留已有结构避免布局抖动（skeleton 可选）。
+- **空与载入**：空数据复用 Empty 语义占满 body 宽度并垂直居中；`loading` 时复用 Spin 组件（对齐 Semi），保留已有结构避免布局抖动。
 
 ## 3. 分层实现
 
@@ -70,7 +70,7 @@ Table 是结构化二维数据的核心展示与操作组件，是整个组件�
 | tableLayout | `'' \| 'auto' \| 'fixed'` | `''` | 控制 `<table>` 的 table-layout（对齐 Semi）。缺省沿用既有推导：存在 fixed 列时 fixed，否则 auto；显式传值覆盖推导 |
 | bordered | `boolean` | `false` | 单元格边框 |
 | stripe | `boolean` | `false` | 斑马纹 |
-| loading | `boolean` | `false` | 半透明遮罩 + spinner |
+| loading | `boolean` | `false` | 加载态；复用 Spin 组件（对齐 Semi `<Spin spinning size="large">`），包裹标题/分页/表体/footer 整个内容区 |
 | sortState | `SortState` | `undefined` | 受控排序态；受控时不回写，仅 onSortChange |
 | defaultSortState | `SortState` | `{ key: null, order: null }` | 非受控初始排序 |
 | onSortChange | `(state: SortState) => void` | `undefined` |  |

@@ -47,6 +47,7 @@
   import { createColumnCollector, setColumnsContext } from './getColumns.js';
   import { getCellWidths, headWidthsEqual, arrayAdd, type HeadWidthEntry } from './table-context.js';
   import TablePagination from './TablePagination.svelte';
+  import { Spin } from '../spin/index.js';
   import { floating } from '../_floating/use-floating.js';
   import { useDismiss, registerOverlayRoot } from '@chenzy-design/core';
   import { useLocale } from '../locale-provider/index.js';
@@ -1840,6 +1841,10 @@
       {@render children()}
     </div>
   {/if}
+  <!-- loading 遮罩：对齐 Semi Table.tsx（<Spin spinning={loading} size="large"> 包裹
+       title/pagination/container/footer 整个内容区，非本库此前手写的仅 body 区域遮罩，
+       复用本库自己的 Spin 组件而非重新手写 spinner 视觉）。 -->
+  <Spin spinning={loading} size="large">
   {#if titleSnippet || title}
     <div class="cd-table-title">
       {#if titleSnippet}{@render titleSnippet()}{:else}{title}{/if}
@@ -2341,11 +2346,6 @@
         colgroup={colgroupContent}
         tbody={tbodyContent}
       />
-      {#if loading}
-        <div class="cd-table-loading" aria-hidden="true">
-          <span class="cd-table-spinner"></span>
-        </div>
-      {/if}
     </div>
   {:else}
     <!-- 单 table：thead+tbody 同表，Body includeHeader=true（现状路径，DOM 结构不变）。 -->
@@ -2371,11 +2371,6 @@
         thead={theadContent}
         tbody={tbodyContent}
       />
-      {#if loading}
-        <div class="cd-table-loading" aria-hidden="true">
-          <span class="cd-table-spinner"></span>
-        </div>
-      {/if}
     </div>
   {/if}
     <!-- footer 在 .cd-table-container 内、body 之后（对齐 Semi） -->
@@ -2389,6 +2384,7 @@
   {#if paginationEnabled && total > 0 && (paginationPosition === 'bottom' || paginationPosition === 'both')}
     {@render paginationArea()}
   {/if}
+  </Spin>
 </div>
 <!-- /.cd-table-wrapper -->
 
@@ -2973,34 +2969,10 @@
     position: relative;
   }
 
-  /* ===== 加载态遮罩 ===== */
-  .cd-table-loading {
-    position: absolute;
-    inset: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: var(--cd-color-table-bg-default);
-    opacity: 0.6;
-  }
-  .cd-table-spinner {
-    width: 28px;
-    height: 28px;
-    border: 3px solid var(--cd-color-fill-1, rgba(0, 0, 0, 0.1));
-    border-top-color: var(--cd-color-primary);
-    border-radius: 50%;
-    animation: cd-table-spin 0.8s linear infinite;
-  }
-  @keyframes cd-table-spin {
-    to {
-      transform: rotate(360deg);
-    }
-  }
+  /* 加载态：复用 Spin 组件（对齐 Semi <Spin spinning={loading} size="large">），
+     不再手写遮罩/spinner 视觉与 @keyframes，样式由 Spin.svelte 自己承担。 */
 
   @media (prefers-reduced-motion: reduce) {
-    .cd-table-spinner {
-      animation: none;
-    }
     .cd-table-expand-icon {
       transition: none;
     }

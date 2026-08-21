@@ -17,7 +17,7 @@ export const meta = {
     { name: 'tableLayout', type: "'' | 'auto' | 'fixed'", default: "''", desc: '控制 <table> 的 table-layout（对齐 Semi）。缺省沿用既有推导：存在 fixed 列时 fixed，否则 auto；显式传值覆盖推导' },
     { name: 'bordered', type: 'boolean', default: 'false', desc: '单元格边框' },
     { name: 'stripe', type: 'boolean', default: 'false', desc: '斑马纹' },
-    { name: 'loading', type: 'boolean', default: 'false', desc: '半透明遮罩 + spinner' },
+    { name: 'loading', type: 'boolean', default: 'false', desc: '加载态；复用 Spin 组件（对齐 Semi <Spin spinning size="large">），包裹标题/分页/表体/footer 整个内容区' },
     { name: 'sortState', type: 'SortState', default: 'undefined', desc: '受控排序态；受控时不回写，仅 onSortChange' },
     { name: 'defaultSortState', type: 'SortState', default: '{ key: null, order: null }', desc: '非受控初始排序' },
     { name: 'onSortChange', type: '(state: SortState) => void', default: 'undefined' },
