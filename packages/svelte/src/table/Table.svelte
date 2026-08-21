@@ -2889,8 +2889,14 @@
     box-shadow: var(--cd-focus-ring);
   }
 
-  /* ===== 展开图标 .semi-table-expand-icon ===== */
-  .cd-table-expand-icon {
+  /* ===== 展开图标 .semi-table-expand-icon =====
+     可交互的展开按钮实际由 CustomExpandIcon.svelte（批次1拆出）/SectionRow.svelte
+     （批次2拆出）渲染，本文件内只有不可交互的 -placeholder 占位符。以下规则统一
+     :global()（同一类"拆组件后普通scoped CSS祖先链全面失效"的坑：此前是普通 scoped
+     规则，命中真实按钮时因 scoped hash 不匹配从不生效——真机验证发现点击展开后
+     class 正确切到 cd-table-expandedIcon-show，但 computed transform 仍是 none，
+     旋转动画完全未生效）。 */
+  :global(.cd-table-expand-icon) {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -2905,19 +2911,19 @@
     margin-right: var(--cd-spacing-table-expand-icon-marginright);
     transition: transform 150ms cubic-bezier(0.62, 0.05, 0.36, 0.95);
   }
-  .cd-table-expand-icon:hover {
+  :global(.cd-table-expand-icon):hover {
     color: var(--cd-color-table-text-default);
   }
-  .cd-table-expand-icon:focus-visible {
+  :global(.cd-table-expand-icon):focus-visible {
     outline: none;
     box-shadow: var(--cd-focus-ring);
     border-radius: var(--cd-border-radius-small);
   }
   /* 旋转态：展开 90°（对齐 Semi -expandedIcon-show/-hide） */
-  .cd-table-expandedIcon-show {
+  :global(.cd-table-expandedIcon-show) {
     transform: rotate(90deg);
   }
-  .cd-table-expandedIcon-hide {
+  :global(.cd-table-expandedIcon-hide) {
     transform: rotate(0deg);
   }
   .cd-table-expand-icon-placeholder {
