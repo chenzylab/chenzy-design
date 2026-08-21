@@ -59,7 +59,6 @@ export const meta = {
     { name: 'onScroll', type: '(info: TableScrollInfo) => void', default: 'undefined', desc: '滚动位置（含触底，用于无限加载）' },
     { name: 'onReachBottom', type: '() => void', default: 'undefined', desc: '纵向触底（懒加载触发），距底 reachBottomThreshold 像素内触发一次' },
     { name: 'reachBottomThreshold', type: 'number', default: '0', desc: 'onReachBottom 触发阈值（距底像素），默认 0（精确触底）' },
-    { name: 'gridNav', type: 'boolean', default: 'undefined', desc: '交互态 WAI-ARIA Grid Pattern 开关；缺省时按是否有交互能力自动启用，显式 true/false 强制' },
     { name: 'scroll', type: 'ScrollConfig', default: 'undefined', desc: '横/纵向滚动配置：x 设最小宽度横向溢出，y 设最大高度纵向溢出；scrollToFirstRowOnChange 分页/排序/筛选变化后滚回顶部' },
     { name: 'components', type: '{ table?; header?; body? }（tag 名）', default: 'undefined', desc: '覆盖组成元素 tag（对齐 Semi）：thead/tbody/行经 svelte:element 换标签，内部 class/role/事件仍注入' },
     { name: 'getVirtualizedListRef', type: '(ref: { scrollTo; scrollToItem }) => void', default: 'undefined', desc: '返回虚拟化滚动控制句柄，仅 virtualized 有效（对齐 Semi）' },
@@ -113,10 +112,9 @@ export const meta = {
   ],
   a11y: {
     hasRole: true,
-    focusable: true,
-    pattern: 'grid|table',
-    keyboard: '↑↓ 行 / ←→ 列 / Home·End 行内首末 / Ctrl·Cmd+Home·End 表首末 / PageUp·PageDown 翻屏 / Enter·F2 进入单元格交互、Esc 退出',
-    note: '交互态(排序/筛选/行选择/展开/树形/行点击任一)遵循 WAI-ARIA APG Grid Pattern：role=grid + aria-rowcount/colcount(虚拟化为逻辑总数) + role=row(aria-rowindex 真实序) + role=columnheader/rowheader/gridcell + aria-colindex；单元格 roving tabindex(整 grid 单一 Tab 停靠点，纯派生)，二维方向键漫游(纯函数 nextGridCoord)，命令式 focusCell 聚焦；虚拟化下方向键移到未渲染行先滚动进视口再 tick 后聚焦，焦点行被回收时回退到 grid 容器并 announce(不掉 body)；Enter/F2 进入单元格内控件交互模式、Esc 退出回导航(导航模式下单元格内控件 tabindex=-1 不破坏 roving)。纯展示表(无交互)降级为 role=table 省漫游。可排序列 aria-sort(ascending/descending/none)；行选择原生 checkbox，全选 aria-label「全选」、行选「选择此行」，半选经 attachment 命令式设 input.indeterminate(只写属性、不读几何、无响应式循环)；焦点环 --cd-focus-ring；reduced-motion 关闭 spinner 与图标过渡。',
+    focusable: false,
+    pattern: 'grid|treegrid',
+    note: '对齐 Semi：role 静态标注为 grid 或 treegrid（分组 groupBy / 展开行 expandedRowRender / 树形 tree 任一存在时 treegrid，否则 grid），不因交互能力(排序/筛选/行选择等)与否切换。table 静态 aria-rowcount(顶层数据源行数)/aria-colcount(叶子列数)；表头行 role=row + aria-rowindex，表头格 role=columnheader + aria-colindex；数据行 role=row(aria-rowindex/aria-expanded/aria-level 视展开/树形层级而定)，数据格 role=gridcell + aria-colindex。无方向键漫游、无 roving tabindex(Semi 无此实现，本库不再自造超集，浏览器默认 Tab 序逐格移动)。可排序列 aria-sort(ascending/descending/none)；行选择原生 checkbox，全选 aria-label「全选」、行选「选择此行」，半选经 attachment 命令式设 input.indeterminate(只写属性、不读几何、无响应式循环)；焦点环 --cd-focus-ring；reduced-motion 关闭 spinner 与图标过渡。',
   },
   tokens: [
     // 全量对齐 Semi table/variables.scss —— 组件直接消费 Semi 全名 token（无自造中间短名）

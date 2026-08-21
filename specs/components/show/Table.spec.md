@@ -19,7 +19,7 @@ Table 是结构化二维数据的核心展示与操作组件，是整个组件�
 
 ## 2. 设计语义
 
-- **结构语义**：原生 `<table>` 语义不足以承载固定列/虚拟化，因此采用 `role="grid"`（交互型）或 `role="table"`（纯展示）+ `role="row"`/`role="columnheader"`/`role="rowheader"`/`role="gridcell"` 显式标注，DOM 用 `div` 分层（headerWrapper / bodyWrapper / 固定列 layer）。
+- **结构语义**：对齐 Semi，`role` 静态标注为 `grid`（普通表）或 `treegrid`（分组 `groupBy` / 展开行 `expandedRowRender` / 树形 `tree` 任一存在），不因交互能力（排序/筛选/行选择等）与否切换；配合 `role="row"`/`role="columnheader"`/`role="gridcell"` 显式标注，DOM 用 `div` 分层（headerWrapper / bodyWrapper / 固定列 layer）。
 - **视觉层级**：表头底色 `--cd-table-header-bg`（弱于内容区，建立"控制区 vs 数据区"对比），行边框使用 `--cd-color-border` 的低对比变体（`--cd-table-border-color`），保证密集数据下不产生网格噪音。
 - **密度（density）**：`small | default | large` 对应行高与单元格 padding 三档，满足"信息密集报表 → 舒适浏览"的尺度切换；密度只改 spacing token，不改字号语义。
 - **状态语义**：行 hover（`--cd-table-row-hover-bg`）、选中（`--cd-table-row-selected-bg`）、斑马纹（`--cd-table-row-stripe-bg`）三种背景态分层，选中态对比度优先级最高。
@@ -42,7 +42,7 @@ Table 是结构化二维数据的核心展示与操作组件，是整个组件�
 - 展开状态机（`expandedRowKeys`、树形 `childrenColumnName` 递归展平为可视行序列）。
 - 数据管道（client 模式下 filter → sort → paginate 的纯函数组合 pipeline，memoized）。
 - **虚拟化引擎**：复用通用 `createVirtualizer`（rowHeight 固定/动态测量、overscan、scrollTop → 可视区间 startIndex/endIndex、累积偏移 translateY）。
-- 复用原语：`useId`（生成 table id / aria-describedby）、`useRovingTabindex`（grid 单元格焦点漫游）、`useLiveAnnouncer`（排序/筛选/分页/选择结果播报）、`useScrollLock`（不适用，省）。
+- 复用原语：`useId`（生成 table id / aria-describedby）、`useLiveAnnouncer`（排序/筛选/分页/选择结果播报）、`useScrollLock`（不适用，省）。
 
 `createTable` 暴露 store（`rows$`、`flatColumns$`、`sortState$`、`selectionState$`、`virtualRange$`）+ action（`toggleSort`、`setFilter`、`toggleSelect`、`selectAll`、`toggleExpand`、`onBodyScroll`）。
 
@@ -52,7 +52,7 @@ Table 是结构化二维数据的核心展示与操作组件，是整个组件�
 - 子组件：`Table.Column`（声明式列，亦支持 `columns` 数组式）、内置 `Selection`/`Expand`/`Sorter`/`Filter` 渲染件。
 - 滚动同步：横向滚动时 header 与 body `transform: translateX` 同步；纵向虚拟化由 body 滚动驱动 `onBodyScroll`。
 - 透传 `render` slot/函数获得 `{ text, record, index, column }`。
-- 纯展示降级：当无 `sorter/filters/rowSelection/expandable/onRow` 交互时，可输出语义化 `<table>`（`role="table"`）省去 grid 漫游逻辑。
+- role 标注对齐 Semi 静态语义：无分组/展开行渲染/树形时输出 `role="grid"`，命中任一则 `role="treegrid"`；不因排序/筛选/行选择/onRow 等交互能力切换。
 
 ## 4. API
 
@@ -92,7 +92,6 @@ Table 是结构化二维数据的核心展示与操作组件，是整个组件�
 | onScroll | `(info: TableScrollInfo) => void` | `undefined` | 滚动位置（含触底，用于无限加载） |
 | onReachBottom | `() => void` | `undefined` | 纵向触底（懒加载触发），距底 reachBottomThreshold 像素内触发一次 |
 | reachBottomThreshold | `number` | `0` | onReachBottom 触发阈值（距底像素），默认 0（精确触底） |
-| gridNav | `boolean` | `undefined` | 交互态 WAI-ARIA Grid Pattern 开关；缺省时按是否有交互能力自动启用，显式 true/false 强制 |
 | scroll | `ScrollConfig` | `undefined` | 横/纵向滚动配置：x 设最小宽度横向溢出，y 设最大高度纵向溢出；scrollToFirstRowOnChange 分页/排序/筛选变化后滚回顶部 |
 | components | `{ table?; header?; body? }（tag 名）` | `undefined` | 覆盖组成元素 tag（对齐 Semi）：thead/tbody/行经 svelte:element 换标签，内部 class/role/事件仍注入 |
 | getVirtualizedListRef | `(ref: { scrollTo; scrollToItem }) => void` | `undefined` | 返回虚拟化滚动控制句柄，仅 virtualized 有效（对齐 Semi） |
@@ -207,14 +206,13 @@ Table 是结构化二维数据的核心展示与操作组件，是整个组件�
 
 ## 6. 无障碍
 
-遵循 WAI-ARIA APG **Grid Pattern**（交互态）/ **Table Pattern**（纯展示）。
+对齐 Semi：`role` 静态标注为 `grid`/`treegrid`（分组/展开行渲染/树形任一存在时 `treegrid`），不提供方向键漫游或 roving tabindex（Semi 无此实现，本库不自造超集，浏览器默认 Tab 序逐格移动）。
 
-- **role 结构**：交互态根 `role="grid"`（含 `aria-rowcount`/`aria-colcount`，虚拟化时为总数而非渲染数），行 `role="row"`（`aria-rowindex` 用真实序号），表头 `role="columnheader"` + `aria-sort="ascending|descending|none"`，行头 `role="rowheader"`，数据 `role="gridcell"`。
-- **选择**：行复选框为原生 `<input type=checkbox>` 带 `aria-label`（`Table.selectRow` 注入行标识）；全选框 `aria-label=Table.selectAll`，半选用 `indeterminate` 属性 + `aria-checked="mixed"`。
+- **role 结构**：table 静态 `role="grid"` 或 `"treegrid"`（含 `aria-rowcount`/`aria-colcount`，均为顶层数据源真实行数/列数，非虚拟化渲染切片数），表头行 `role="row"` + `aria-rowindex`，表头格 `role="columnheader"` + `aria-colindex` + `aria-sort="ascending|descending|none"`（可排序列），数据行 `role="row"`（`aria-rowindex`/`aria-expanded`/`aria-level` 视展开/树形层级而定），数据格 `role="gridcell"` + `aria-colindex`。
+- **选择**：行复选框为原生 `<input type=checkbox>` 带 `aria-label`（`Table.selectRow` 注入行标识）；全选框 `aria-label=Table.selectAll`，半选用 `indeterminate` 属性。
 - **排序**：排序触发器为 `<button>` 嵌于 columnheader，`aria-label` 形如 `Table.sortBy {column}`，激活后更新 `aria-sort`；变更经 `useLiveAnnouncer` 播报 `Table.sortedAnnounce`。
-- **筛选**：筛选触发器 `<button aria-haspopup="listbox" aria-expanded>` 控制浮层（遵循 `open + on:openChange`），浮层内 `useFocusTrap` + Esc `useDismiss`。
-- **键盘（grid）**：方向键在单元格间漫游（`useRovingTabindex`，每行仅一个 tabbable 入口）；`Home/End` 行首尾，`Ctrl+Home/End` 表首尾，`PageUp/PageDown` 翻视口（虚拟化需先滚动再聚焦）；`Space` 切换当前行选择，`Enter` 触发行内主操作，可聚焦控件用 `F2`/`Enter` 进入。
-- **焦点管理**：虚拟化下被回收的聚焦行，焦点回退到最近可视行并 announce；展开行内容获得独立 tab 序列。
+- **筛选**：筛选触发器 `<button aria-haspopup="listbox" aria-expanded>` 控制浮层，浮层内 focus-trap + Esc dismiss。
+- **键盘**：浏览器默认 Tab 序逐格移动（无自定义漫游）；`Space`/`Enter` 触发聚焦控件的默认行为（checkbox 勾选、button 点击等），展开行内容获得独立 tab 序列。
 - **对比度**：选中/hover/斑马纹背景与文字均 ≥ 4.5:1；排序激活色与表头底色 ≥ 3:1（图标 graphical object）。固定列阴影不作为唯一信息载体。
 - **reduced-motion**：取消展开高度动画与固定列阴影过渡，立即态切换。
 - **RTL**：`dir=rtl` 下 `fixed:left/right` 与偏移计算镜像，排序/展开图标方向翻转，`text-align` 默认随 `start/end`。
@@ -288,7 +286,7 @@ Table 是结构化二维数据的核心展示与操作组件，是整个组件�
 - `name: 'Table'`、`category: 'show'`、`stage: 'M4'`、`semiEquivalent: 'Table'`。
 - `props`/`events`/`slots` 的机读 schema（类型、默认值、枚举、是否受控、`controlledBy`）。
 - `tokens`：组件级 token 列表及 alias 回退。
-- `a11y`：`pattern: 'grid|table'`、role 映射、键盘 map。
+- `a11y`：`pattern: 'grid|treegrid'`、role 映射（静态标注，非交互态切换）。
 - `i18nKeys`：全部 key 及默认值。
 - `examples`：典型用例片段（基础、排序筛选、行选择、固定列、虚拟化 1k、树形、服务端受控）含可运行 props 快照。
 - `recipes`：AI 生成指引（"服务端表格 → 设 pagination 受控 + on:change 对接 fetch"、"大数据 → virtualized + scroll.y + pagination:false"）。
@@ -298,7 +296,7 @@ Table 是结构化二维数据的核心展示与操作组件，是整个组件�
 
 - **单元（core）**：排序三态循环 / 多列优先级；筛选谓词与多值；选择 indeterminate、shift 范围、跨页 preserve、getCheckboxProps 禁用；树形展平与展开；数据管道 memo 正确性；虚拟区间计算（边界 overscan、动态高度）；固定列偏移与 RTL 镜像。
 - **组件（svelte）**：受控 vs 非受控分支；`on:change` 聚合 payload 形状；横向滚动 header/body 同步；loading/empty 渲染；密度档行高；`destroyOnClose` 卸载。
-- **a11y**：axe 无违规；`aria-sort`/`aria-rowcount`/`aria-checked=mixed` 断言；键盘漫游（方向键/Home/End/PageDown）；焦点回收 announce；筛选浮层 focus-trap + Esc dismiss。
+- **a11y**：axe 无违规；`aria-sort`/`aria-rowcount`/`role=grid|treegrid` 静态标注断言；筛选浮层 focus-trap + Esc dismiss。
 - **视觉回归**：固定列阴影、斑马纹、选中态、多级表头、small/large 密度、RTL、深色模式 snapshot。
 - **性能基准**：1k/10k 行挂载时长、滚动 fps、全选 toggle 时长纳入 CI 性能门禁（回归 > 10% 失败）。
 - **i18n**：缺失 key 回退、ICU 复数、RTL 布局快照。
@@ -314,7 +312,7 @@ Table 是结构化二维数据的核心展示与操作组件，是整个组件�
 - [ ] 固定列 left/right + 固定表头（`scroll.x/y`），阴影仅滚动时显现，RTL 镜像正确。
 - [ ] 虚拟化：1k+ 行仅渲染视口，滚动 60fps，满足 Perf Budget 全部指标。
 - [ ] 全部组件 Token 回退 Alias，无写死值，深色/密度切换正确。
-- [ ] a11y：grid/table role 正确、键盘漫游完整、axe 0 违规、对比度达标、reduced-motion 生效。
+- [ ] a11y：grid/treegrid role 静态标注正确、axe 0 违规、对比度达标、reduced-motion 生效。
 - [ ] i18n：零硬编码，全部 key 可覆盖，日期/数字经 Intl，ICU 复数正确。
 - [ ] 危险批量操作走二次确认 + danger 文案 + 播报。
 - [ ] headless 逻辑位于 `core/createTable`，渲染位于 `svelte`，复用指定原语。
