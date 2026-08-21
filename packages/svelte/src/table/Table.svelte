@@ -67,6 +67,8 @@
   import FilterDropdownHost from './FilterDropdownHost.svelte';
   import Checkbox from '../checkbox/Checkbox.svelte';
   import ColGroup from './ColGroup.svelte';
+  import HeadTable from './HeadTable.svelte';
+  import Body from './Body.svelte';
   import ColumnSorter from './ColumnSorter.svelte';
   import ColumnSelection from './ColumnSelection.svelte';
   import CustomExpandIcon from './CustomExpandIcon.svelte';
@@ -1058,6 +1060,36 @@
     };
   });
 
+  // 双 table 场景横向滚动同步（对齐 Semi handleBodyScrollLeft）：Body 是横向滚动的
+  // 权威来源（用户在 Body 上横滚），HeadTable 的 wrapper div 只读不可交互
+  // （overflow-x:hidden），每次 Body scroll 事件命令式把 scrollLeft 写过去。
+  // 与上面固定列阴影检测effect分离（各自关注点独立），同样 rAF 节流 + cleanup（红线 #3）。
+  let headSyncRafId = 0;
+  $effect(() => {
+    const el = scrollEl;
+    const head = headWrapEl;
+    if (!el || !head || !useFixedHeader) return;
+    const sync = () => {
+      head.scrollLeft = el.scrollLeft;
+    };
+    sync(); // 初始同步
+    const onScrollSync = () => {
+      if (headSyncRafId) return;
+      headSyncRafId = requestAnimationFrame(() => {
+        headSyncRafId = 0;
+        sync();
+      });
+    };
+    el.addEventListener('scroll', onScrollSync, { passive: true });
+    return () => {
+      el.removeEventListener('scroll', onScrollSync);
+      if (headSyncRafId) {
+        cancelAnimationFrame(headSyncRafId);
+        headSyncRafId = 0;
+      }
+    };
+  });
+
   // 全选范围 = 当前渲染行集（树形含已展开的子行）；半选据可见行计算
   const visibleKeys = $derived(displayRows.map((r) => r.key));
   const disabledSet = $derived.by(() => {
@@ -1555,6 +1587,15 @@
   });
   const isStickyHead = $derived(!!sticky || virtualized || scrollBody || scroll?.y != null);
 
+  // --- 双 table 判定（对齐 Semi useFixedHeader）：存在 fixed 列，或需要吸顶/固定高度
+  // 滚动表头（isStickyHead 已覆盖 sticky/virtualized/scrollBody/scroll.y）时，
+  // thead 与 tbody 拆成两个独立 <table>（HeadTable + Body），JS 同步横向 scrollLeft；
+  // 否则维持单一 <table>（thead+tbody 同表，Body includeHeader=true）。 ---
+  const useFixedHeader = $derived(hasFixed || isStickyHead);
+  // HeadTable 外层 div 引用：双 table 场景下，Body 横向滚动时命令式把 scrollLeft
+  // 写到这里（对齐 Semi handleBodyScrollLeft）。单 table 场景不使用。
+  let headWrapEl = $state<HTMLDivElement | null>(null);
+
   // --- selection column width style ---
   const selectionColStyle = $derived.by((): string | undefined => {
     const parts: string[] = [];
@@ -1576,6 +1617,9 @@
   type RenderRow = DataDisplayRow | GroupRow;
 
   const isGrouped = $derived(groupBy !== undefined);
+  // role=grid/treegrid 静态标注（对齐 Semi Body/index.tsx）：分组/展开行/树形时 treegrid，否则 grid。
+  // 双 table 场景下 HeadTable 与 Body 各自的 <table> 都用同一 role（对齐 Semi 两表 role 一致）。
+  const tableRole = $derived<'grid' | 'treegrid'>(isGrouped || hasExpand || treeEnabled ? 'treegrid' : 'grid');
 
   const groupKeyOf = (record: T): string => {
     if (typeof groupBy === 'function') return groupBy(record);
@@ -1707,26 +1751,11 @@
   {/if}
   <!-- .semi-table-container：承载 body + footer -->
   <div class="cd-table-container">
-    <div
-      class="cd-table-body"
-      class:cd-table-body-virtual={virtualized}
-      class:cd-table-body-scroll={scrollBody}
-      class:cd-table-scroll-position-left={hasFixed && scrollPosLeft}
-      class:cd-table-scroll-position-right={hasFixed && scrollPosRight}
-      bind:this={scrollEl}
-      style={scrollWrapStyle}
-    >
-  <!-- role=grid/treegrid 静态标注（对齐 Semi Body/index.tsx：分组/展开行/树形时 treegrid，否则 grid）；
-       aria-rowcount/aria-colcount 为顶层数据源行数/列数（对齐 Semi，非渲染切片数） -->
-  <table
-    class={cls}
-    style={scrollTableStyle}
-    aria-label={ariaLabel}
-    role={isGrouped || hasExpand || treeEnabled ? 'treegrid' : 'grid'}
-    aria-rowcount={dataSource.length}
-    aria-colcount={leafColumns.length}
-  >
-    <!-- ColGroup：对齐 Semi，每列一个 <col>，selection/expand 列带对应 class -->
+    <!-- role=grid/treegrid 静态标注（对齐 Semi Body/index.tsx：分组/展开行/树形时 treegrid，否则 grid）；
+         aria-rowcount/aria-colcount 为顶层数据源行数/列数（对齐 Semi，非渲染切片数） -->
+    <!-- ColGroup：对齐 Semi，每列一个 <col>，selection/expand 列带对应 class。HeadTable 与 Body
+         两处各自 mount 一份、参数相同保证列宽一致（对齐 Semi 双 table 架构，两表各自独立 colgroup）。 -->
+  {#snippet colgroupContent()}
     <ColGroup
       {leafColumns}
       {expandAsColumn}
@@ -1736,6 +1765,8 @@
       colKey={colKeyOf}
       colStyle={colGroupStyle}
     />
+  {/snippet}
+  {#snippet theadContent()}
     {#if showHeader}
       {@const headerRowProps = onHeaderRow ? onHeaderRow(effectiveColumns, 0) : undefined}
     <svelte:element
@@ -1812,7 +1843,8 @@
       {/if}
     </svelte:element>
     {/if}
-    {#snippet headerMergeCell(hc: HeaderCell)}
+  {/snippet}
+  {#snippet headerMergeCell(hc: HeaderCell)}
       {#if hc.isLeaf}
         {@render leafHeaderCell(hc.col, hc.leafIndex, hc.rowSpan)}
       {:else}
@@ -2003,6 +2035,7 @@
           </th>
           {/if}
     {/snippet}
+  {#snippet tbodyContent()}
     <svelte:element this={tagTbody} class="cd-table-tbody">
       {#if visibleRows.length === 0}
         <!-- svelte-ignore a11y_no_redundant_roles -- 对齐 Semi：显式 role="row"（Semi BaseRow 同样在原生 tr 上显式设置） -->
@@ -2288,13 +2321,82 @@
         {/if}
       {/if}
     </svelte:element>
-  </table>
+  {/snippet}
+  {#if useFixedHeader}
+    <!-- 双 table：HeadTable（独立 thead table，横滚只读，overflow-x:hidden）+
+         Body（独立 tbody table，用户实际横滚交互的容器，includeHeader=false）。
+         HeadTable 的 scrollLeft 由 Table.svelte 的 headSyncRafId effect 命令式同步
+         （对齐 Semi handleBodyScrollLeft），本组件不感知同步逻辑。 -->
+    <HeadTable
+      tag={tagTable}
+      cls={cls}
+      style={scrollTableStyle}
+      ariaLabel={ariaLabel}
+      role={tableRole}
+      ariaRowCount={dataSource.length}
+      ariaColCount={leafColumns.length}
+      colgroup={colgroupContent}
+      thead={theadContent}
+      bind:wrapEl={headWrapEl}
+    />
+    <div
+      class="cd-table-body"
+      class:cd-table-body-virtual={virtualized}
+      class:cd-table-body-scroll={scrollBody}
+      class:cd-table-scroll-position-left={hasFixed && scrollPosLeft}
+      class:cd-table-scroll-position-right={hasFixed && scrollPosRight}
+      bind:this={scrollEl}
+      style={scrollWrapStyle}
+    >
+      <Body
+        includeHeader={false}
+        tag={tagTable}
+        cls={cls}
+        style={scrollTableStyle}
+        ariaLabel={ariaLabel}
+        role={tableRole}
+        ariaRowCount={dataSource.length}
+        ariaColCount={leafColumns.length}
+        colgroup={colgroupContent}
+        tbody={tbodyContent}
+      />
       {#if loading}
         <div class="cd-table-loading" aria-hidden="true">
           <span class="cd-table-spinner"></span>
         </div>
       {/if}
     </div>
+  {:else}
+    <!-- 单 table：thead+tbody 同表，Body includeHeader=true（现状路径，DOM 结构不变）。 -->
+    <div
+      class="cd-table-body"
+      class:cd-table-body-virtual={virtualized}
+      class:cd-table-body-scroll={scrollBody}
+      class:cd-table-scroll-position-left={hasFixed && scrollPosLeft}
+      class:cd-table-scroll-position-right={hasFixed && scrollPosRight}
+      bind:this={scrollEl}
+      style={scrollWrapStyle}
+    >
+      <Body
+        includeHeader={true}
+        tag={tagTable}
+        cls={cls}
+        style={scrollTableStyle}
+        ariaLabel={ariaLabel}
+        role={tableRole}
+        ariaRowCount={dataSource.length}
+        ariaColCount={leafColumns.length}
+        colgroup={colgroupContent}
+        thead={theadContent}
+        tbody={tbodyContent}
+      />
+      {#if loading}
+        <div class="cd-table-loading" aria-hidden="true">
+          <span class="cd-table-spinner"></span>
+        </div>
+      {/if}
+    </div>
+  {/if}
     <!-- footer 在 .cd-table-container 内、body 之后（对齐 Semi） -->
     {#if footerSnippet || footer}
       <div class="cd-table-footer">
