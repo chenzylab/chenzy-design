@@ -25,6 +25,8 @@
     colgroup,
     thead,
     wrapEl = $bindable(null),
+    sticky = false,
+    stickyTop = 0,
   }: {
     tag?: string;
     cls: string;
@@ -37,10 +39,19 @@
     thead: Snippet;
     /** 横滚同步落点：Body 侧横向滚动时 Table.svelte 命令式写此 div 的 scrollLeft。 */
     wrapEl?: HTMLDivElement | null;
+    /** 表头吸顶（对齐 Semi HeadTable sticky）：outer div 加 position:sticky。 */
+    sticky?: boolean;
+    /** 距滚动容器顶部偏移 px（对齐 Semi headStyle.top）。 */
+    stickyTop?: number;
   } = $props();
 </script>
 
-<div class="cd-table-head" bind:this={wrapEl}>
+<div
+  class="cd-table-head"
+  class:cd-table-head-sticky={sticky}
+  style={sticky ? `top:${stickyTop}px` : undefined}
+  bind:this={wrapEl}
+>
   <svelte:element this={tag} class={cls} {style} aria-label={ariaLabel} {role} aria-rowcount={ariaRowCount} aria-colcount={ariaColCount}>
     {@render colgroup()}
     {@render thead()}
@@ -57,5 +68,11 @@
     width: 100%;
     box-sizing: border-box;
     overflow: hidden;
+  }
+  /* 吸顶表头（对齐 Semi table.scss &-header-sticky）：sticky 到滚动容器顶部
+     （offset 由内联 style.top 控制，对齐 Semi headStyle.top）。 */
+  .cd-table-head-sticky {
+    position: sticky;
+    z-index: calc(var(--cd-z-table-fixed-column) + 1);
   }
 </style>

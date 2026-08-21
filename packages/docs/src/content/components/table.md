@@ -23,6 +23,8 @@ brief: 表格用于呈现结构化的数据内容，通常会伴随提供对数�
   import remoteDataSrc from '../../demos/table/06-remote-data.svelte?raw';
   import Fixed from '../../demos/table/07-fixed.svelte';
   import fixedSrc from '../../demos/table/07-fixed.svelte?raw';
+  import Sticky from '../../demos/table/35-sticky.svelte';
+  import stickySrc from '../../demos/table/35-sticky.svelte?raw';
   import SortFilterHeader from '../../demos/table/08-sort-filter-header.svelte';
   import sortFilterHeaderSrc from '../../demos/table/08-sort-filter-header.svelte?raw';
   import ShowSortTip from '../../demos/table/09-show-sort-tip.svelte';
@@ -175,6 +177,14 @@ brief: 表格用于呈现结构化的数据内容，通常会伴随提供对数�
 > - 请确保表格内部的所有元素在渲染后不会对单元格的高度造成影响（例如含有未加载完成的图片等）。
 
 <DemoBox code={fixedSrc}><Fixed /></DemoBox>
+
+### 表头吸顶
+
+通过 `sticky` 属性可以将表头固定在页面顶部（v2.21+）。传入 `top` 时可以控制距离滚动容器的距离。
+
+开启 sticky 后，Table 会自动打开 fixed 布局，列宽将由 `column.width` 决定。没有给定 width 的列宽由浏览器自动分配。
+
+<DemoBox code={stickySrc}><Sticky /></DemoBox>
 
 ### 带排序和过滤功能的表头
 
@@ -471,9 +481,9 @@ Semi 借助 React 的 `dnd-kit` 搭配 `components.body.row` 注入自定义 `So
 | showHeader | 是否显示表头 | boolean | true |
 | size | 表格尺寸，影响表格行 padding | 'small' \| 'default' \| 'middle' | 'default' |
 | sortState / defaultSortState | 受控 / 非受控排序状态 | SortState | - |
-| sticky | 固定表头 | boolean \| `{ offsetHeader: number }` | false |
+| sticky | 表头吸顶（v2.21+）。传入 `top` 可控制距滚动容器顶部的偏移；开启后 Table 自动切换为 fixed 布局，列宽由 column.width 决定，未指定 width 的列由浏览器自动分配 | boolean \| `{ top: number }` | false |
 | stripe | 斑马纹 | boolean | false |
-| tableLayout | 控制 `<table>` 的 table-layout。缺省沿用既有推导：存在 fixed 列时 fixed，否则 auto；显式传值覆盖推导 | '' \| 'auto' \| 'fixed' | '' |
+| tableLayout | 控制 `<table>` 的 table-layout。缺省沿用推导：存在 fixed/ellipsis 列，或触发双 table（sticky/virtualized/scrollBody/scroll.y）时 fixed，否则 auto；显式传值覆盖推导 | '' \| 'auto' \| 'fixed' | '' |
 | title / titleSnippet | 表格标题（字符串 / Snippet） | string \| Snippet | - |
 | tree | 树形数据：true 或 `{ childrenColumnName / indentSize / expandedRowKeys / defaultExpandedRowKeys / onExpand }` | boolean \| TreeTable | - |
 | virtualized | 行虚拟滚动 | boolean | false |

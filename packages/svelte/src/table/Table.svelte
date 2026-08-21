@@ -230,8 +230,8 @@
     rowHeight?: number;
     /** 横/纵向滚动配置，x 设最小宽度并横向溢出，y 设最大高度并纵向溢出 */
     scroll?: ScrollConfig;
-    /** 表头吸顶：true 时表头 sticky 定位；对象时可指定 offsetHeader（px） */
-    sticky?: boolean | { offsetHeader?: number };
+    /** 表头吸顶：true 时表头 sticky 定位；对象时可指定 top（距滚动容器顶部偏移 px，对齐 Semi Sticky）。v2.21+ 语义：开启后 Table 自动切换 fixed 布局 */
+    sticky?: boolean | { top?: number };
     /** 是否显示表头，默认 true */
     showHeader?: boolean;
     /** 默认展开全部行（包含树形行），默认 false */
@@ -1627,10 +1627,23 @@
     };
   }
 
+  // --- 双 table 判定（对齐 Semi useFixedHeader）：存在 fixed 列，或需要吸顶/固定高度
+  // 滚动表头（isStickyHead 已覆盖 sticky/virtualized/scrollBody/scroll.y）时，
+  // thead 与 tbody 拆成两个独立 <table>（HeadTable + Body），JS 同步横向 scrollLeft；
+  // 否则维持单一 <table>（thead+tbody 同表，Body includeHeader=true）。
+  const isStickyHead = $derived(!!sticky || virtualized || scrollBody || scroll?.y != null);
+  const useFixedHeader = $derived(hasFixed || isStickyHead);
+
   // table-layout：tableLayout 显式传值时覆盖默认推导（对齐 Semi tableLayout）；
-  // 缺省 '' 时沿用既有推导（存在 fixed 列时 fixed，否则 auto）。
+  // 缺省 '' 时沿用 Semi getTableLayout() 推导：存在 fixed/ellipsis 列，或
+  // useFixedHeader（双 table：sticky/virtualized/scrollBody/scroll.y/固定列）时 fixed，否则 auto。
+  const hasEllipsis = $derived(leafColumns.some((c) => !!c.ellipsis));
   const resolvedFixedLayout = $derived(
-    tableLayout === 'fixed' ? true : tableLayout === 'auto' ? false : hasFixed,
+    tableLayout === 'fixed'
+      ? true
+      : tableLayout === 'auto'
+        ? false
+        : hasFixed || hasEllipsis || useFixedHeader,
   );
   const cls = $derived(
     [
@@ -1684,16 +1697,9 @@
   // --- sticky prop: thead top offset ---
   const stickyOffset = $derived.by((): number => {
     if (!sticky) return 0;
-    if (typeof sticky === 'object' && sticky.offsetHeader != null) return sticky.offsetHeader;
+    if (typeof sticky === 'object' && sticky.top != null) return sticky.top;
     return 0;
   });
-  const isStickyHead = $derived(!!sticky || virtualized || scrollBody || scroll?.y != null);
-
-  // --- 双 table 判定（对齐 Semi useFixedHeader）：存在 fixed 列，或需要吸顶/固定高度
-  // 滚动表头（isStickyHead 已覆盖 sticky/virtualized/scrollBody/scroll.y）时，
-  // thead 与 tbody 拆成两个独立 <table>（HeadTable + Body），JS 同步横向 scrollLeft；
-  // 否则维持单一 <table>（thead+tbody 同表，Body includeHeader=true）。 ---
-  const useFixedHeader = $derived(hasFixed || isStickyHead);
   // HeadTable 外层 div 引用：双 table 场景下，Body 横向滚动时命令式把 scrollLeft
   // 写到这里（对齐 Semi handleBodyScrollLeft）。单 table 场景不使用。
   let headWrapEl = $state<HTMLDivElement | null>(null);
@@ -1882,8 +1888,6 @@
     <svelte:element
       this={tagThead}
       class="cd-table-thead"
-      class:cd-table-thead-sticky={isStickyHead}
-      style={isStickyHead && stickyOffset > 0 ? `top:${stickyOffset}px` : undefined}
     >
       <TableHeaderRow
         variant="leaf"
@@ -2333,6 +2337,8 @@
       colgroup={colgroupContent}
       thead={theadContent}
       bind:wrapEl={headWrapEl}
+      sticky={!!sticky}
+      stickyTop={stickyOffset}
     />
     <div
       class="cd-table-body"
@@ -2429,18 +2435,6 @@
     overflow: auto;
   }
 
-  /* 吸顶表头：thead sticky。特异性须 > .cd-table-thead > .cd-table-row >
-     .cd-table-row-head（0,3,0，设了 position:relative 且定义在后，同特异性会赢）。
-     thead 同时带 cd-table-thead 与 cd-table-thead-sticky 两个 class，叠加成 0,4,0。
-     .cd-table-row（表头 <tr>）与 .cd-table-row-head（<th>）均由 TableHeaderRow.svelte
-     渲染，跨组件须整条 :global()——此前是普通 scoped 规则，真机核对发现吸顶表头场景
-     下 position:sticky 从未真正命中过任何 <th>，意味着 scroll.y 场景下表头完全不会
-     吸附在顶部（功能性回归，非仅视觉细节）。 */
-  :global(.cd-table-thead.cd-table-thead-sticky > .cd-table-row > .cd-table-row-head) {
-    position: sticky;
-    top: 0;
-    z-index: calc(var(--cd-z-table-fixed-column) + 1);
-  }
   .cd-table-row-spacer:hover {
     background: transparent;
   }

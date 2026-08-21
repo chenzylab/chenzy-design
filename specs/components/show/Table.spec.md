@@ -96,7 +96,7 @@ Table 是结构化二维数据的核心展示与操作组件，是整个组件�
 | scroll | `ScrollConfig` | `undefined` | 横/纵向滚动配置：x 设最小宽度横向溢出，y 设最大高度纵向溢出；scrollToFirstRowOnChange 分页/排序/筛选变化后滚回顶部 |
 | components | `{ table?; header?; body? }（tag 名 + body.colgroup 槽位）` | `undefined` | 覆盖组成元素 tag（对齐 Semi）：thead/tbody/行经 svelte:element 换标签，内部 class/role/事件仍注入；body.colgroup.{wrapper,col} 覆盖 colgroup/col 标签名（对齐 Semi ColGroup 消费的 components.body.colgroup，唯一真被 Semi 自身消费的 components 子槽位）。header.outer/body.outer/footer.* 未实现：核实 Semi 源码（Table.tsx renderFooter、HeadTable.tsx/Body 渲染）发现这些槽位在 Semi 自身实现里也未被消费（仅存在于 TableComponents 类型声明），本库不补充空转槽位 |
 | getVirtualizedListRef | `(ref: { scrollTo; scrollToItem }) => void` | `undefined` | 返回虚拟化滚动控制句柄，仅 virtualized 有效（对齐 Semi） |
-| sticky | `boolean \| { offsetHeader?: number }` | `false` | 表头吸顶：true 时 sticky 定位；对象可指定 offsetHeader（px） |
+| sticky | `boolean \| { top?: number }` | `false` | 表头吸顶（v2.21+）：true 时 sticky 定位并自动切换 fixed 布局；对象可指定 top（距滚动容器顶部偏移 px） |
 | showHeader | `boolean` | `true` | 是否显示表头 |
 | defaultExpandAllRows | `boolean` | `false` | 默认展开全部行（含树形行） |
 | getPopupContainer | `() => HTMLElement` | `undefined` | 筛选浮层挂载容器，默认跟随触发按钮 |
