@@ -2453,8 +2453,11 @@
     table-layout: fixed;
   }
 
-  /* ===== 表头 thead ===== */
-  .cd-table-thead > .cd-table-row > .cd-table-row-head {
+  /* ===== 表头 thead =====
+     .cd-table-row-head 在 TableHeaderRow.svelte 渲染，本文件只是 <thead> 容器，
+     故不再要求 .cd-table-thead > .cd-table-row > 祖先链（那条 <tr> 同样不在本文件，
+     跨组件 scoped hash 不匹配会导致规则失效，见下方 tbody 注释的完整说明）。 */
+  :global(.cd-table-row-head) {
     background-color: var(--cd-color-table-th-bg-default);
     color: var(--cd-color-table-th-text-default);
     font-weight: var(--cd-font-weight-bold, 600);
@@ -2469,32 +2472,49 @@
     border-bottom: var(--cd-width-table-header-border) var(--cd-border-table-base-borderstyle) var(--cd-color-table-th-border-default);
   }
   /* 点击排序表头：clickSort */
-  .cd-table-row-head-clicksort {
+  :global(.cd-table-row-head-clicksort) {
     cursor: pointer;
   }
-  .cd-table-row-head-clicksort:hover {
+  :global(.cd-table-row-head-clicksort:hover) {
     background-image: linear-gradient(0deg, var(--cd-color-table-th-clicksort-bg-hover), var(--cd-color-table-th-clicksort-bg-hover));
     background-color: var(--cd-color-table-cell-bg-hover);
   }
-  .cd-table-row-head.cd-table-column-selection {
+  :global(.cd-table-row-head.cd-table-column-selection) {
     text-align: center;
   }
-  .cd-table-row-head-ellipsis,
-  .cd-table-row-head-ellipsis .cd-table-row-head-title {
+  :global(.cd-table-row-head-ellipsis),
+  :global(.cd-table-row-head-ellipsis) :global(.cd-table-row-head-title) {
     overflow: hidden;
     white-space: nowrap;
     text-overflow: ellipsis;
   }
 
-  /* ===== 表体 tbody ===== */
-  .cd-table-tbody {
+  /* ===== 表体 tbody =====
+     .cd-table-row（<tr>）由 BaseRow.svelte/SectionRow.svelte/ExpandedRow.svelte
+     渲染（批次2文件拆分后），.cd-table-row-cell（<td>）由本文件内联渲染。两者分属
+     不同组件的 scoped 作用域：Svelte 只给「出现在当前文件模板里」的元素追加当前
+     文件 hash，<tr> 不在本文件模板里，若规则写成 `.cd-table-tbody > .cd-table-row >
+     .cd-table-row-cell` 这类祖先链，Svelte 仍会给未被 :global() 包裹的每一段都加
+     本文件 hash，导致 .cd-table-row 那一段永远不可能匹配真实 DOM 上的 tr（它带的
+     是 BaseRow.svelte 自己的 hash）——规则语法合法、typecheck/编译均不报错，只是
+     静默从不生效（真机验证发现：td 实际 padding 只有 1px 的 UA 默认值，说明这里
+     曾经全部失效）。
+
+     以下規則统一改为：只在实际会跨组件的祖先层（.cd-table-row 及其状态修饰类
+     selected/stripe/expand/section/hovered，均由子组件渲染）用 :global()，落到
+     本文件内渲染的目标元素（.cd-table-row-cell 及其子代）时不需要额外 :global()
+     包裹目标本身——但由于父选择器已经是 :global()，Svelte 编译器要求同一条选择器
+     内混用 :global()/非-:global() 时非 global 段仍会独立加 hash 并可能仍然错位，
+     为避免重蹈覆辙，整条选择器统一包在 :global() 内，牺牲一点 scoped 隔离换取
+     跨组件可靠匹配（class 命名本身已足够语义化，不依赖 scoped 隔离防冲突）。 */
+  :global(.cd-table-tbody) {
     display: table-row-group;
   }
-  .cd-table-tbody > .cd-table-row {
+  :global(.cd-table-row) {
     display: table-row;
     background-color: var(--cd-color-table-body-bg-default);
   }
-  .cd-table-tbody > .cd-table-row > .cd-table-row-cell {
+  :global(.cd-table-row-cell) {
     display: table-cell;
     overflow-wrap: break-word;
     border-left: none;
@@ -2505,110 +2525,116 @@
     position: relative;
     vertical-align: middle;
   }
-  /* 尺寸档：middle / small 单元格纵向内边距 */
-  .cd-table-middle .cd-table-tbody > .cd-table-row > .cd-table-row-cell {
+  /* 尺寸档：middle / small 单元格纵向内边距。.cd-table-middle/.cd-table-small 挂在
+     <table> 上（HeadTable.svelte/Body.svelte 渲染），同样跨组件，须 :global()。 */
+  :global(.cd-table-middle) :global(.cd-table-row-cell) {
     padding-top: var(--cd-spacing-table-middle-paddingy);
     padding-bottom: var(--cd-spacing-table-middle-paddingy);
   }
-  .cd-table-small .cd-table-tbody > .cd-table-row > .cd-table-row-cell {
+  :global(.cd-table-small) :global(.cd-table-row-cell) {
     padding-top: var(--cd-spacing-table-small-paddingy);
     padding-bottom: var(--cd-spacing-table-small-paddingy);
   }
-  .cd-table-row-cell-ellipsis {
+  :global(.cd-table-row-cell-ellipsis) {
     overflow: hidden;
     white-space: nowrap;
     text-overflow: ellipsis;
   }
 
-  /* 行 hover：Semi 用 background-image+background-color 双层（fill-0 半透 + bg-0 兜底） */
-  .cd-table-tbody > .cd-table-row:hover > .cd-table-row-cell,
-  .cd-table-tbody > .cd-table-row-hovered > .cd-table-row-cell {
+  /* 行 hover：Semi 用 background-image+background-color 双层（fill-0 半透 + bg-0 兜底）。
+     .cd-table-row-hovered 目前代码里没有任何地方会添加这个 class（grep 全库确认），
+     是遗留的死选择器，保留以防未来接线，不在本次范围内新增命令式逻辑去点亮它。 */
+  :global(.cd-table-row):hover > :global(.cd-table-row-cell),
+  :global(.cd-table-row-hovered) > :global(.cd-table-row-cell) {
     background-image: linear-gradient(0deg, var(--cd-color-table-body-bg-hover), var(--cd-color-table-body-bg-hover));
     background-color: var(--cd-color-table-cell-bg-hover);
   }
   /* 固定列 hover：底色保持 body-default，避免透出横滚内容 */
-  .cd-table-tbody > .cd-table-row:hover > .cd-table-cell-fixed-left,
-  .cd-table-tbody > .cd-table-row:hover > .cd-table-cell-fixed-right,
-  .cd-table-tbody > .cd-table-row-hovered > .cd-table-cell-fixed-left,
-  .cd-table-tbody > .cd-table-row-hovered > .cd-table-cell-fixed-right {
+  :global(.cd-table-row):hover > :global(.cd-table-cell-fixed-left),
+  :global(.cd-table-row):hover > :global(.cd-table-cell-fixed-right),
+  :global(.cd-table-row-hovered) > :global(.cd-table-cell-fixed-left),
+  :global(.cd-table-row-hovered) > :global(.cd-table-cell-fixed-right) {
     background-image: linear-gradient(0deg, var(--cd-color-table-body-bg-hover), var(--cd-color-table-body-bg-hover));
     background-color: var(--cd-color-table-body-bg-default);
   }
 
   /* 对齐 */
-  .cd-table-align-center {
+  :global(.cd-table-align-center) {
     text-align: center;
   }
-  .cd-table-align-right {
+  :global(.cd-table-align-right) {
     text-align: right;
   }
 
   /* 选择列 / 展开列固定宽度（对齐 Semi $width-table_column_selection = 48px） */
-  .cd-table-column-selection,
-  .cd-table-column-expand {
+  :global(.cd-table-column-selection),
+  :global(.cd-table-column-expand) {
     width: var(--cd-width-table-column-selection);
     text-align: center;
     white-space: nowrap;
   }
 
-  /* 斑马纹（chenzy-design 扩展；Semi 靠 demo onRow className 实现，此处保留组件级开关） */
-  .cd-table-stripe .cd-table-tbody > .cd-table-row-stripe > .cd-table-row-cell {
+  /* 斑马纹（chenzy-design 扩展；Semi 靠 demo onRow className 实现，此处保留组件级开关）。
+     .cd-table-stripe 挂在 <table> 上，.cd-table-row-stripe 挂在 <tr> 上，均跨组件。 */
+  :global(.cd-table-stripe) :global(.cd-table-row-stripe) > :global(.cd-table-row-cell) {
     background-color: var(--cd-color-table-selection-bg-default);
   }
 
   /* 选中行 */
-  .cd-table-tbody > .cd-table-row-selected > .cd-table-row-cell {
+  :global(.cd-table-row-selected) > :global(.cd-table-row-cell) {
     background-color: var(--cd-color-primary-light-default);
   }
-  .cd-table-row-clickable {
+  :global(.cd-table-row-clickable) {
     cursor: pointer;
   }
 
   /* ===== 展开行 / 分组行 ===== */
-  .cd-table-tbody > .cd-table-row-expand > .cd-table-row-cell {
+  :global(.cd-table-row-expand) > :global(.cd-table-row-cell) {
     background-color: var(--cd-color-table-row-expanded-bg-default);
   }
-  .cd-table-row-cell-expanded-content {
+  :global(.cd-table-row-cell-expanded-content) {
     padding-left: var(--cd-spacing-table-expand-row-paddingleft);
     padding-right: var(--cd-spacing-table-expand-row-paddingright);
     padding-top: var(--cd-spacing-table-expand-row-paddingtop);
     padding-bottom: var(--cd-spacing-table-expand-row-paddingbottom);
     background-color: var(--cd-color-table-row-expanded-bg-default);
   }
-  .cd-table-row-hidden {
+  :global(.cd-table-row-hidden) {
     display: none;
   }
 
   /* 分组表头行 .semi-table-row-section */
-  .cd-table-tbody > .cd-table-row-section > .cd-table-row-cell {
+  :global(.cd-table-row-section) > :global(.cd-table-row-cell) {
     background-color: var(--cd-color-table-selection-bg-default);
     border-bottom: var(--cd-width-table-base-border) var(--cd-border-table-base-borderstyle) var(--cd-color-table-border-default);
   }
-  .cd-table-tbody > .cd-table-row-section > .cd-table-row-cell:not(.cd-table-column-selection) {
+  :global(.cd-table-row-section) > :global(.cd-table-row-cell):not(:global(.cd-table-column-selection)) {
     padding: var(--cd-spacing-table-tbody-rowselection-rowcell-notselection-paddingy) var(--cd-spacing-table-tbody-rowselection-rowcell-notselection-paddingx);
   }
-  .cd-table-section-inner {
+  :global(.cd-table-section-inner) {
     display: inline-flex;
     align-items: center;
   }
-  .cd-table-row-section-clickable .cd-table-row-cell-section {
+  :global(.cd-table-row-section-clickable) :global(.cd-table-row-cell-section) {
     cursor: pointer;
     user-select: none;
   }
-  .cd-table-row-cell-section:focus-visible {
+  :global(.cd-table-row-cell-section):focus-visible {
     outline: 2px solid var(--cd-focus-ring, currentColor);
     outline-offset: -2px;
   }
 
-  /* ===== 固定列：sticky + 边界阴影 ===== */
+  /* ===== 固定列：sticky + 边界阴影 =====
+     .cd-table-cell-fixed-* 都命中本文件内渲染的 <td>（数据单元格）或
+     TableHeaderRow.svelte 渲染的 <th>（表头单元格），后者跨组件须 :global()。 */
   .cd-table-cell-fixed-left,
   .cd-table-cell-fixed-right {
     z-index: var(--cd-z-table-fixed-column);
     position: sticky;
     background-color: var(--cd-color-table-bg-default);
   }
-  .cd-table-thead > .cd-table-row > .cd-table-cell-fixed-left,
-  .cd-table-thead > .cd-table-row > .cd-table-cell-fixed-right {
+  :global(.cd-table-row-head).cd-table-cell-fixed-left,
+  :global(.cd-table-row-head).cd-table-cell-fixed-right {
     background-color: var(--cd-color-table-th-bg-default);
   }
   .cd-table-cell-fixed-left-last {
@@ -2636,8 +2662,11 @@
     border-right: 0;
     border-bottom: 0;
   }
-  .cd-table-bordered .cd-table-thead > .cd-table-row > .cd-table-row-head,
-  .cd-table-bordered .cd-table-tbody > .cd-table-row > .cd-table-row-cell {
+  /* .cd-table-bordered 挂在 <table>（HeadTable.svelte/Body.svelte 渲染），
+     .cd-table-row-head 在 TableHeaderRow.svelte，.cd-table-row-cell 在本文件——
+     三者两两跨组件，整条选择器须 :global()。 */
+  :global(.cd-table-bordered) :global(.cd-table-row-head),
+  :global(.cd-table-bordered) :global(.cd-table-row-cell) {
     border-right: var(--cd-width-table-base-border) var(--cd-border-table-base-borderstyle) var(--cd-color-table-border-default);
   }
 
