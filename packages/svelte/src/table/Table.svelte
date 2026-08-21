@@ -44,8 +44,9 @@
   import { tick } from 'svelte';
   import type { Snippet } from 'svelte';
   import { SvelteMap } from 'svelte/reactivity';
-  import { createColumnCollector, setColumnsContext, getCellWidths, headWidthsEqual, arrayAdd, type HeadWidthEntry } from './context.js';
-  import { Pagination } from '../pagination/index.js';
+  import { createColumnCollector, setColumnsContext } from './getColumns.js';
+  import { getCellWidths, headWidthsEqual, arrayAdd, type HeadWidthEntry } from './table-context.js';
+  import TablePagination from './TablePagination.svelte';
   import { floating } from '../_floating/use-floating.js';
   import { useDismiss, registerOverlayRoot } from '@chenzy-design/core';
   import { useLocale } from '../locale-provider/index.js';
@@ -2358,24 +2359,7 @@
 <!-- /.cd-table-wrapper -->
 
 {#snippet paginationArea()}
-  {#if renderPagination}
-    {@render renderPagination({ total, currentPage, pageSize, onChange: onPageChange })}
-  {:else}
-    <!-- 对齐 Semi Table 分页：左侧 range 文案（显示第 X-Y 条，共 N 条）+ 右侧 default 页码按钮。
-         表格 size（行高密度）不影响分页器，故分页固定 default 尺寸（不透传表格 size）。 -->
-    <div class="cd-table-pagination-outer">
-      {#if pageRangeText !== null}
-        <span class="cd-table-pagination-total">{pageRangeText}</span>
-      {/if}
-      <Pagination
-        {total}
-        currentPage={currentPage}
-        {pageSize}
-        size="default"
-        onChange={onPageChange}
-      />
-    </div>
-  {/if}
+  <TablePagination {total} {currentPage} {pageSize} onChange={onPageChange} {pageRangeText} {renderPagination} />
 {/snippet}
 
 <style>
@@ -2808,35 +2792,12 @@
     color: var(--cd-color-table-filter-on-text-default);
   }
 
-  /* ===== 列宽拖拽手柄 .react-resizable-handle ===== */
-  .cd-table-row-head-resizable {
-    position: relative;
-  }
-  .react-resizable-handle {
-    position: absolute;
-    inline-size: var(--cd-width-table-react-resizable-handle);
-    block-size: calc(100% - var(--cd-spacing-table-resizable-offset-y) * 2);
-    inset-block-end: var(--cd-spacing-table-resizable-bottom);
-    inset-inline-end: var(--cd-spacing-table-react-resizable-handle-right);
-    cursor: col-resize;
-    z-index: 0;
-    touch-action: none;
-    user-select: none;
-    background-color: var(--cd-color-table-border-default);
-  }
-  .react-resizable-handle:hover {
-    background-color: var(--cd-color-table-resizer-bg-default);
-  }
-  /* bordered 表格：手柄恒透明（默认 + hover 都透明），对齐 Semi table.scss &-bordered 内
-     `.react-resizable-handle { background: transparent }`（无 hover 变色，该规则特异性
-     覆盖了非 bordered 的 handle:hover primary 蓝）。列分隔靠单元格 border-right，
-     避免灰手柄条/hover 蓝竖条 + 边框双重竖线。 */
-  .cd-table-bordered .react-resizable-handle,
-  .cd-table-bordered .react-resizable-handle:hover {
-    background-color: transparent;
-  }
-  /* 拖拽中列：resizing 标示线 */
-  .resizing.cd-table-row-head,
+  /* ===== 列宽拖拽：.react-resizable-handle 自身样式迁至 ResizableHeaderCell.svelte
+     （Svelte scoped CSS 不跨组件生效，该 <span> 元素已不在本文件模板里）。
+     .cd-table-row-head-resizable（位置基准）与 .resizing.cd-table-row-head（表头拖拽中
+     标示线）挂载点在 TableHeaderRow.svelte，规则同理迁至该文件。此处只保留数据行
+     .resizing.cd-table-row-cell（若未来数据行也标 resizing class 时生效，目前无挂载点，
+     保留是为了不丢 Semi 对齐语义，非死代码故意保留供后续对齐）。 */
   .resizing.cd-table-row-cell {
     border-inline-end: var(--cd-width-table-resizer-border) solid var(--cd-color-table-resizer-bg-default);
   }
@@ -2967,8 +2928,7 @@
     .cd-table-spinner {
       animation: none;
     }
-    .cd-table-expand-icon,
-    .react-resizable-handle {
+    .cd-table-expand-icon {
       transition: none;
     }
   }

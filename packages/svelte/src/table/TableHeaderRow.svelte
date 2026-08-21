@@ -23,8 +23,9 @@
   import type { ColumnDef, RowSelection } from './types.js';
   import ColumnSelection from './ColumnSelection.svelte';
   import ColumnSorter from './ColumnSorter.svelte';
+  import ColumnFilter from './ColumnFilter.svelte';
+  import ResizableHeaderCell from './ResizableHeaderCell.svelte';
   import Checkbox from '../checkbox/Checkbox.svelte';
-  import { IconFilter } from '@chenzy-design/icons';
 
   interface HeaderCell {
     col: ColumnDef<T>;
@@ -216,17 +217,15 @@
       {/snippet}
       {#snippet headerFilterMaterial()}
         {#if hasFilter}
-          <button
-            type="button"
-            class="cd-table-column-filter"
-            class:on={isEffectivelyFiltered(col, colKey)}
-            aria-label={locT('Table.filter')}
-            aria-expanded={openFilterKey === colKey}
-            bind:this={filterTriggers[colKey]}
-            onclick={(e) => { e.stopPropagation(); setFilterOpen(col, colKey, openFilterKey !== colKey); }}
-          >
-            {#if col.filterIcon}{@render col.filterIcon({ filtered: isEffectivelyFiltered(col, colKey) })}{:else}<IconFilter size="small" aria-hidden="true" />{/if}
-          </button>
+          <ColumnFilter
+            {col}
+            {colKey}
+            filtered={isEffectivelyFiltered(col, colKey)}
+            open={openFilterKey === colKey}
+            ariaLabel={locT('Table.filter')}
+            onToggle={(e) => { e.stopPropagation(); setFilterOpen(col, colKey, openFilterKey !== colKey); }}
+            onTriggerEl={(el) => (filterTriggers[colKey] = el)}
+          />
         {/if}
       {/snippet}
       {@render (col.title as Snippet<[{ filter?: Snippet; sorter?: Snippet; selection?: Snippet }]>)(hasFilter ? { selection: headerSelectionMaterial, filter: headerFilterMaterial } : { selection: headerSelectionMaterial })}
@@ -235,27 +234,18 @@
     {/if}
 
     {#if hasFilter && typeof col.title === 'string'}
-      <button
-        type="button"
-        class="cd-table-column-filter"
-        class:on={isEffectivelyFiltered(col, colKey)}
-        aria-label={locT('Table.filter')}
-        aria-expanded={openFilterKey === colKey}
-        bind:this={filterTriggers[colKey]}
-        onclick={(e) => {
-          e.stopPropagation();
-          setFilterOpen(col, colKey, openFilterKey !== colKey);
-        }}
-      >
-        {#if col.filterIcon}
-          {@render col.filterIcon({ filtered: isEffectivelyFiltered(col, colKey) })}
-        {:else}
-          <IconFilter size="small" aria-hidden="true" />
-        {/if}
-      </button>
-      {#if (openFilterKey === colKey || closingFilterKey === colKey) && filterTriggers[colKey]}
-        {@render filterDropdownPanel(col, colKey)}
-      {/if}
+      {#snippet panelForCol()}{@render filterDropdownPanel(col, colKey)}{/snippet}
+      <ColumnFilter
+        {col}
+        {colKey}
+        filtered={isEffectivelyFiltered(col, colKey)}
+        open={openFilterKey === colKey}
+        ariaLabel={locT('Table.filter')}
+        onToggle={(e) => { e.stopPropagation(); setFilterOpen(col, colKey, openFilterKey !== colKey); }}
+        onTriggerEl={(el) => (filterTriggers[colKey] = el)}
+        showPanel={openFilterKey === colKey || closingFilterKey === colKey}
+        panel={panelForCol}
+      />
     {/if}
     </div>
     <!-- 自定义 title 时 filter 按钮由 title snippet 摆放，浮层在此独立渲染（触发器仍绑 filterTriggers[colKey]） -->
@@ -263,16 +253,13 @@
       {@render filterDropdownPanel(col, colKey)}
     {/if}
 
-    {#if colResizable}
-      <span
-        class="react-resizable-handle"
-        role="separator"
-        aria-orientation="vertical"
-        aria-label={locT('Table.resizeColumn')}
-        bind:this={resizeHandles[colKey]}
-        onpointerdown={(e) => startResize(e, col, i)}
-      ></span>
-    {/if}
+    <ResizableHeaderCell
+      resizable={colResizable}
+      resizing={resizingKey === colKey}
+      ariaLabel={locT('Table.resizeColumn')}
+      onHandleEl={(el) => (resizeHandles[colKey] = el)}
+      onPointerDown={(e) => startResize(e, col, i)}
+    />
   </th>
   {/if}
 {/snippet}
@@ -353,5 +340,15 @@
   :global(.cd-table-thead-sticky) th.cd-table-cell-fixed-left,
   :global(.cd-table-thead-sticky) th.cd-table-cell-fixed-right {
     z-index: var(--cd-z-table-fixed-column);
+  }
+
+  /* 列宽拖拽手柄定位基准 + 拖拽中标示线（批次4：ResizableHeaderCell.svelte 拆分后，
+     .react-resizable-handle 自身样式迁到该组件文件；这两条规则的挂载点（<th>）
+     仍在本文件，故留在这里，Svelte scoped CSS 不跨组件生效） */
+  .cd-table-row-head-resizable {
+    position: relative;
+  }
+  .resizing.cd-table-row-head {
+    border-inline-end: var(--cd-width-table-resizer-border) solid var(--cd-color-table-resizer-bg-default);
   }
 </style>
