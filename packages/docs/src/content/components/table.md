@@ -583,11 +583,11 @@ Semi 借助 React 的 `dnd-kit` 搭配 `components.body.row` 注入自定义 `So
 
 ### ARIA
 
-- 交互型表格的 role 为 `grid`（含 `aria-rowcount`/`aria-colcount`），纯展示型为 `table`；树形表格新增 `aria-level` 表示层级。
-- 行的 role 为 `row`（含 `aria-rowindex`），单元格的 role 为 `gridcell`（含 `aria-colindex`），列头为 `columnheader`（含 `aria-sort`）。
-- 可展开表格行具有 `aria-expanded` 属性。
-- 排序、筛选、分页、选择操作结果通过 live region 向屏幕阅读器播报；行复选框使用原生 `<input type="checkbox">` 并提供 `aria-label`，半选态设 `indeterminate`。
-- 键盘遵循 WAI-ARIA Grid Pattern：方向键在单元格间漫游（roving tabindex），Home/End、PageUp/PageDown 导航，Enter/F2 进入单元格交互模式，Esc 退出。
+- table 的 role 静态标注为 `grid` 或 `treegrid`（分组 `groupBy` / 展开行 `expandable.expandedRowRender` / 树形 `tree` 任一存在时为 `treegrid`，否则 `grid`），不因排序/筛选/行选择等交互能力而切换；并带 `aria-rowcount`（顶层数据源行数）/`aria-colcount`（叶子列数）。
+- 表头行 role 为 `row`（含 `aria-rowindex`），表头格 role 为 `columnheader`（含 `aria-colindex`）；数据行 role 为 `row`（含 `aria-rowindex`，可展开/树形行另带 `aria-expanded`），数据格 role 为 `gridcell`（含 `aria-colindex`）。
+- 可排序列头带 `aria-sort`（`ascending`/`descending`/`none`）。
+- 排序、筛选、分页、选择操作结果通过 live region（polite）向屏幕阅读器播报；行复选框使用原生 `<input type="checkbox">`，全选提供 `aria-label`「全选」、行选提供「选择此行」，半选态命令式设置 `indeterminate`。
+- 对齐 Semi：无方向键单元格漫游、无 roving tabindex（Semi 无此实现，本库不再自造超集），浏览器默认 Tab 序逐格移动；焦点态使用 `--cd-focus-ring`；`prefers-reduced-motion` 下关闭 spinner 与展开图标过渡动画。
 
 ## 文案规范
 
