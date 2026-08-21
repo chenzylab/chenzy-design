@@ -435,6 +435,11 @@
   const widthOverrides = new SvelteMap<string, number>();
   // 拖拽手柄所在列头引用（用于 pointerdown 读取起始几何）
   const resizeHandles: Record<string, HTMLElement | null> = $state({});
+  // TableHeaderRow.svelte 用此回调写入 resizeHandles（而非直接 mutate 传入的对象引用，
+  // 对齐同文件 onRowEl 的回调式 DOM ref 收集模式，避免 Svelte 5 ownership_invalid_mutation）。
+  function setResizeHandleEl(colKey: string, el: HTMLElement | null) {
+    resizeHandles[colKey] = el;
+  }
   // 当前正在拖拽的列 key（用于手柄高亮 / body class）
   let resizingKey = $state<string | null>(null);
 
@@ -550,6 +555,10 @@
   let openFilterKey = $state<string | null>(null);
   // 各列漏斗按钮引用（trigger）+ 当前浮层引用（dismiss extraTargets）
   const filterTriggers: Record<string, HTMLButtonElement | null> = $state({});
+  // TableHeaderRow.svelte 用此回调写入 filterTriggers（同上，避免直接 mutate props）。
+  function setFilterTriggerEl(colKey: string, el: HTMLButtonElement | null) {
+    filterTriggers[colKey] = el;
+  }
   let filterPanelEl = $state<HTMLDivElement | null>(null);
 
   // 全局浮层注册（见 core registerOverlayRoot 注释）：filter panel portal 到 body 后
@@ -1914,6 +1923,8 @@
         {closingFilterKey}
         {filterTriggers}
         {resizeHandles}
+        onFilterTriggerEl={setFilterTriggerEl}
+        onResizeHandleEl={setResizeHandleEl}
         {resizingKey}
         {setFilterOpen}
         {startResize}
@@ -1944,6 +1955,8 @@
             {closingFilterKey}
             {filterTriggers}
             {resizeHandles}
+            onFilterTriggerEl={setFilterTriggerEl}
+            onResizeHandleEl={setResizeHandleEl}
             {resizingKey}
             {setFilterOpen}
             {startResize}

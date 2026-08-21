@@ -73,6 +73,8 @@
     closingFilterKey,
     filterTriggers,
     resizeHandles,
+    onFilterTriggerEl,
+    onResizeHandleEl,
     resizingKey,
     setFilterOpen,
     startResize,
@@ -123,8 +125,14 @@
     onSort: (col: ColumnDef<T>, index: number) => void;
     openFilterKey: string | null;
     closingFilterKey: string | null;
+    /** 只读：判断触发器是否已收集到（如 261 行附近的筛选浮层渲染时机判断）。写入走 onFilterTriggerEl 回调，不直接 mutate。 */
     filterTriggers: Record<string, HTMLButtonElement | null>;
+    /** 只读，语义同 filterTriggers。写入走 onResizeHandleEl 回调。 */
     resizeHandles: Record<string, HTMLElement | null>;
+    /** 收集列筛选触发按钮 DOM 引用（对齐 onRowEl 的回调式 ref 收集，避免直接 mutate props）。 */
+    onFilterTriggerEl?: (colKey: string, el: HTMLButtonElement | null) => void;
+    /** 收集列宽拖拽手柄 DOM 引用，语义同 onFilterTriggerEl。 */
+    onResizeHandleEl?: (colKey: string, el: HTMLElement | null) => void;
     resizingKey: string | null;
     setFilterOpen: (col: ColumnDef<T>, colKey: string, open: boolean) => void;
     startResize: (event: PointerEvent, col: ColumnDef<T>, index: number) => void;
@@ -233,7 +241,7 @@
             open={openFilterKey === colKey}
             ariaLabel={locT('Table.filter')}
             onToggle={(e) => { e.stopPropagation(); setFilterOpen(col, colKey, openFilterKey !== colKey); }}
-            onTriggerEl={(el) => (filterTriggers[colKey] = el)}
+            onTriggerEl={(el) => onFilterTriggerEl?.(colKey, el)}
           />
         {/if}
       {/snippet}
@@ -251,7 +259,7 @@
         open={openFilterKey === colKey}
         ariaLabel={locT('Table.filter')}
         onToggle={(e) => { e.stopPropagation(); setFilterOpen(col, colKey, openFilterKey !== colKey); }}
-        onTriggerEl={(el) => (filterTriggers[colKey] = el)}
+        onTriggerEl={(el) => onFilterTriggerEl?.(colKey, el)}
         showPanel={openFilterKey === colKey || closingFilterKey === colKey}
         panel={panelForCol}
       />
@@ -266,7 +274,7 @@
       resizable={colResizable}
       resizing={resizingKey === colKey}
       ariaLabel={locT('Table.resizeColumn')}
-      onHandleEl={(el) => (resizeHandles[colKey] = el)}
+      onHandleEl={(el) => onResizeHandleEl?.(colKey, el)}
       onPointerDown={(e) => startResize(e, col, i)}
     />
   </th>
