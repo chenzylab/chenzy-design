@@ -1978,7 +1978,7 @@
         class:cd-table-column-filter-dropdown-motion-show={openFilterKey === colKey}
         class:cd-table-column-filter-dropdown-motion-hide={closingFilterKey === colKey}
         onanimationend={() => finalizeFilterClose(colKey)}
-        use:floating={{ trigger: filterTriggers[colKey], placement: 'bottomEnd', autoAdjust: true, offset: 4, getContainer: getPopupContainer }}
+        use:floating={{ trigger: filterTriggers[colKey], placement: 'bottom', autoAdjust: true, offset: 4, getContainer: getPopupContainer }}
         bind:this={filterPanelEl}
       >
         {#if col.renderFilterDropdown}
