@@ -2422,8 +2422,12 @@
 
   /* 吸顶表头：thead sticky。特异性须 > .cd-table-thead > .cd-table-row >
      .cd-table-row-head（0,3,0，设了 position:relative 且定义在后，同特异性会赢）。
-     thead 同时带 cd-table-thead 与 cd-table-thead-sticky 两个 class，叠加成 0,4,0。 */
-  .cd-table-thead.cd-table-thead-sticky > .cd-table-row > .cd-table-row-head {
+     thead 同时带 cd-table-thead 与 cd-table-thead-sticky 两个 class，叠加成 0,4,0。
+     .cd-table-row（表头 <tr>）与 .cd-table-row-head（<th>）均由 TableHeaderRow.svelte
+     渲染，跨组件须整条 :global()——此前是普通 scoped 规则，真机核对发现吸顶表头场景
+     下 position:sticky 从未真正命中过任何 <th>，意味着 scroll.y 场景下表头完全不会
+     吸附在顶部（功能性回归，非仅视觉细节）。 */
+  :global(.cd-table-thead.cd-table-thead-sticky > .cd-table-row > .cd-table-row-head) {
     position: sticky;
     top: 0;
     z-index: calc(var(--cd-z-table-fixed-column) + 1);
@@ -2432,8 +2436,13 @@
     background: transparent;
   }
 
-  /* 表格本体：.semi-table */
-  .cd-table {
+  /* 表格本体：.semi-table。真实 <table> 元素由 HeadTable.svelte/Body.svelte（双 table
+     架构）渲染（svelte:element this={tag}），本文件从不直接渲染 <table>——即便"单 table"
+     路径也走 <Body includeHeader> 组件，故这两条规则须整条 :global()，否则 scoped hash
+     永远不命中真实 <table>（真机验证发现 background/border-collapse/table-layout 全部
+     静默失效：table-layout 恒为浏览器默认 auto，长文本列被撑宽，ellipsis 截断与
+     showTooltip 判断依赖的 truncated 测量永远为 false，tooltip 永不触发）。 */
+  :global(.cd-table) {
     width: 100%;
     text-align: left;
     border-collapse: separate;
@@ -2443,7 +2452,7 @@
     background: var(--cd-color-table-bg-default);
   }
   /* fixed 布局：固定列 / 列宽精确 */
-  .cd-table-fixed {
+  :global(.cd-table-fixed) {
     width: auto;
     min-width: 100%;
     table-layout: fixed;
@@ -2629,8 +2638,14 @@
     position: sticky;
     background-color: var(--cd-color-table-bg-default);
   }
-  :global(.cd-table-row-head).cd-table-cell-fixed-left,
-  :global(.cd-table-row-head).cd-table-cell-fixed-right {
+  /* 复合选择器（同一元素上两个 class）：不能只把 .cd-table-row-head 单独包 :global()——
+     Svelte 仍会给同一复合选择器里未被包裹的 .cd-table-cell-fixed-left/-right 追加本文件
+     hash，而 <th> 实际携带的是 TableHeaderRow.svelte 的 hash，两段 hash 要求无法同时
+     满足，整条规则永远不命中（真机核对发现：th 背景色退回 .cd-table-bg-default 兜底，
+     恰好与 .cd-table-th-bg-default 引用同一底层 token 才没有肉眼可见的差异，但语义上
+     这条规则本身确实失效，不能依赖这种数值巧合）。须整条 :global()。 */
+  :global(.cd-table-row-head.cd-table-cell-fixed-left),
+  :global(.cd-table-row-head.cd-table-cell-fixed-right) {
     background-color: var(--cd-color-table-th-bg-default);
   }
   .cd-table-cell-fixed-left-last {
@@ -2676,25 +2691,33 @@
     border-bottom: var(--cd-width-table-base-border) var(--cd-border-table-base-borderstyle) var(--cd-color-table-border-default);
   }
 
-  /* ===== 排序 ColumnSorter ===== */
+  /* ===== 排序 ColumnSorter =====
+     .cd-table-operate-wrapper/.cd-table-operate-plain 由 TableHeaderRow.svelte 渲染
+     （批次3阶段B补做拆出的表头行组件），跨组件须 :global()（同一类坑：此前只修了这两个
+     class 的 RTL 覆盖版本，漏了基础版本本身——真机验证发现 display:flex 不生效，
+     表头排序/筛选按钮区域退化为默认 inline 布局，line-box 撑高表头）。 */
   /* 对齐 Semi .semi-table-operate-wrapper：flex 行容器，消除 inline line-box 撑高（表头恒 38px） */
-  .cd-table-operate-wrapper {
+  :global(.cd-table-operate-wrapper) {
     display: flex;
     align-items: center;
   }
   /* 纯自定义 title（无 sorter/filter）：不产生布局盒，title 直接在 th 内 inline 布局，
      对齐 Semi（Semi 自定义 title 不套 operate-wrapper，其 inline-flex 内容自然撑高表头）。 */
-  .cd-table-operate-plain {
+  :global(.cd-table-operate-plain) {
     display: contents;
   }
-  .cd-table-align-center .cd-table-operate-wrapper {
+  :global(.cd-table-align-center) :global(.cd-table-operate-wrapper) {
     justify-content: center;
   }
-  .cd-table-align-right .cd-table-operate-wrapper {
+  :global(.cd-table-align-right) :global(.cd-table-operate-wrapper) {
     justify-content: flex-end;
   }
 
-  .cd-table-column-sorter-wrapper {
+  /* .cd-table-column-sorter* 全部由 ColumnSorter.svelte 渲染（批次1拆出），跨组件
+     须 :global()（同一类坑：真机核对时发现遗漏，此前只顾着修 tbody/表头/展开图标
+     几处，排序按钮的基础样式——flex 布局/gap/字重/cursor——从未被系统性核对过，
+     实际全部静默失效）。 */
+  :global(.cd-table-column-sorter-wrapper) {
     display: inline-flex;
     align-items: center;
     /* baseline 对齐会留 descender 空间撑高 th 1px；middle 消除，对齐 Semi 恒 38px 表头 */
@@ -2709,36 +2732,40 @@
     background: none;
     border: none;
   }
-  .cd-table-column-sorter-wrapper:focus-visible {
+  :global(.cd-table-column-sorter-wrapper):focus-visible {
     outline: none;
     box-shadow: var(--cd-focus-ring);
     border-radius: var(--cd-border-radius-small);
   }
-  .cd-table-column-sorter {
+  :global(.cd-table-column-sorter) {
     display: inline-block;
     width: var(--cd-width-table-column-sorter-icon);
     height: var(--cd-height-table-column-sorter-icon);
     vertical-align: middle;
     text-align: center;
   }
-  .cd-table-column-sorter-up,
-  .cd-table-column-sorter-down {
+  :global(.cd-table-column-sorter-up),
+  :global(.cd-table-column-sorter-down) {
     display: block;
     height: 0;
     color: var(--cd-color-table-sorter-text-default);
   }
-  .cd-table-column-sorter-up.on,
-  .cd-table-column-sorter-down.on {
+  :global(.cd-table-column-sorter-up.on),
+  :global(.cd-table-column-sorter-down.on) {
     color: var(--cd-color-table-sorter-on-text-default);
   }
-  .cd-table-column-sorter-up :global(svg),
-  .cd-table-column-sorter-down :global(svg) {
+  :global(.cd-table-column-sorter-up) :global(svg),
+  :global(.cd-table-column-sorter-down) :global(svg) {
     width: var(--cd-width-table-column-sorter-icon);
     height: var(--cd-height-table-column-sorter-icon);
   }
 
-  /* ===== 列筛选 ColumnFilter ===== */
-  .cd-table-column-filter {
+  /* ===== 列筛选 ColumnFilter =====
+     .cd-table-column-filter（触发按钮基础样式）由 ColumnFilter.svelte 渲染（批次4
+     拆出），跨组件须 :global()；.cd-table-column-filter-dropdown 及其内部结构
+     （list/label/actions/reset/confirm）仍在本文件内联渲染（filterDropdownPanel
+     snippet），保持 scoped 不受影响。 */
+  :global(.cd-table-column-filter) {
     margin-left: var(--cd-spacing-table-column-filter-marginleft);
     display: inline-flex;
     align-items: center;
@@ -2750,14 +2777,14 @@
     border: none;
     background: transparent;
   }
-  .cd-table-column-filter :global(svg) {
+  :global(.cd-table-column-filter) :global(svg) {
     width: var(--cd-width-table-column-filter-icon);
     height: var(--cd-height-table-column-filter-icon);
   }
-  .cd-table-column-filter.on {
+  :global(.cd-table-column-filter.on) {
     color: var(--cd-color-table-filter-on-text-default);
   }
-  .cd-table-column-filter:focus-visible {
+  :global(.cd-table-column-filter):focus-visible {
     outline: none;
     box-shadow: var(--cd-focus-ring);
   }
@@ -2869,22 +2896,23 @@
     border-right: var(--cd-width-table-resizer-border) solid var(--cd-color-table-resizer-bg-default);
   }
 
-  /* ===== 行选择 checkbox 包裹 .semi-table-selection-wrap ===== */
-  .cd-table-selection-wrap {
+  /* ===== 行选择 checkbox 包裹 .semi-table-selection-wrap =====
+     全部由 ColumnSelection.svelte 渲染（批次1拆出），跨组件须 :global()。 */
+  :global(.cd-table-selection-wrap) {
     display: inline-flex;
     vertical-align: bottom;
   }
-  .cd-table-selection-disabled {
+  :global(.cd-table-selection-disabled) {
     cursor: not-allowed;
   }
-  .cd-table-selection-checkbox {
+  :global(.cd-table-selection-checkbox) {
     cursor: pointer;
     accent-color: var(--cd-color-primary);
   }
-  .cd-table-selection-checkbox:disabled {
+  :global(.cd-table-selection-checkbox):disabled {
     cursor: not-allowed;
   }
-  .cd-table-selection-checkbox:focus-visible {
+  :global(.cd-table-selection-checkbox):focus-visible {
     outline: none;
     box-shadow: var(--cd-focus-ring);
   }
@@ -2946,8 +2974,9 @@
     vertical-align: middle;
   }
 
-  /* ===== 分页器 .semi-table-pagination-outer ===== */
-  .cd-table-pagination-outer {
+  /* ===== 分页器 .semi-table-pagination-outer =====
+     全部由 TablePagination.svelte 渲染（批次4拆出），跨组件须 :global()。 */
+  :global(.cd-table-pagination-outer) {
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -2955,7 +2984,7 @@
     color: var(--cd-color-table-page-text-default);
   }
   /* 分页左侧 range 文案（显示第 X-Y 条，共 N 条），对齐 Semi 灰色说明文字。 */
-  .cd-table-pagination-total {
+  :global(.cd-table-pagination-total) {
     color: var(--cd-color-table-page-text-default);
     font-size: var(--cd-font-size-regular, 14px);
   }
@@ -2991,8 +3020,12 @@
 
   /* 表体默认文字方向由左改右（表头文字方向 + align-left/right operate-wrapper 镜像
      已移至 TableHeaderRow.svelte——.cd-table-row-head/.cd-table-operate-wrapper
-     都在该组件渲染，同样是跨组件祖先链失效的坑，见该文件对应规则注释） */
-  :global(.cd-table-wrapper-rtl) .cd-table {
+     都在该组件渲染，同样是跨组件祖先链失效的坑，见该文件对应规则注释）。
+     真实 <table> 元素由 HeadTable.svelte/Body.svelte 渲染（同批修复 .cd-table 基础
+     规则时的同一根因），故 .cd-table 部分也须 :global()，不能只包裹 .cd-table-wrapper-rtl
+     ——"部分 global"（只包一段，复合选择器里其余段仍会被加本文件 hash）不可靠，
+     整条选择器统一 :global() 才是唯一可靠写法。 */
+  :global(.cd-table-wrapper-rtl .cd-table) {
     direction: rtl;
     text-align: right;
   }
