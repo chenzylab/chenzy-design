@@ -667,11 +667,6 @@
     if (opts?.closeDropdown !== false) setFilterOpen(col, colKey, false);
     emitFilterChange(colKey, []);
   }
-  function resetFilter(col: ColumnDef<T>, colKey: string) {
-    filterState.set(colKey, new Set());
-    setFilterOpen(col, colKey, false);
-    emitFilterChange(colKey, []);
-  }
   // 筛选变化：单列 onFilterChange + 聚合 onChange。dataIndex 优先列 dataIndex，回退 colKey。
   function emitFilterChange(colKey: string, values: (string | number)[]) {
     const col = leafColumns.find((c, i) => colKeyOf(c, i) === colKey);
@@ -2022,15 +2017,16 @@
           {/each}
         </ul>
         </FilterDropdownHost>
+        <!-- 重置/确定按钮仅 confirm 模式显示（对齐 Semi ColumnFilter.tsx:148-152
+             "Show confirm and reset buttons in confirm mode"：immediate 模式点选项
+             立即生效，无需二次确认，Semi 完全不渲染这组按钮；此前本库无条件渲染，
+             与 Semi immediate 语义不符）。 -->
+        {#if confirmMode}
         <div class="cd-table-column-filter-actions">
-          {#if confirmMode}
-            <button type="button" class="cd-table-column-filter-reset" onclick={() => resetTempFilter(col, colKey)}>{loc().t('Table.resetFilter')}</button>
-            <button type="button" class="cd-table-column-filter-confirm" onclick={() => confirmFilter(col, colKey)}>{loc().t('Table.confirmFilter')}</button>
-          {:else}
-            <button type="button" class="cd-table-column-filter-reset" onclick={() => resetFilter(col, colKey)}>{loc().t('Table.resetFilter')}</button>
-            <button type="button" class="cd-table-column-filter-confirm" onclick={() => setFilterOpen(col, colKey, false)}>{loc().t('Table.confirmFilter')}</button>
-          {/if}
+          <button type="button" class="cd-table-column-filter-reset" onclick={() => resetTempFilter(col, colKey)}>{loc().t('Table.resetFilter')}</button>
+          <button type="button" class="cd-table-column-filter-confirm" onclick={() => confirmFilter(col, colKey)}>{loc().t('Table.confirmFilter')}</button>
         </div>
+        {/if}
         {/if}
       </div>
     {/snippet}
