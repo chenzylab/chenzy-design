@@ -2557,11 +2557,15 @@
     background-image: linear-gradient(0deg, var(--cd-color-table-body-bg-hover), var(--cd-color-table-body-bg-hover));
     background-color: var(--cd-color-table-cell-bg-hover);
   }
-  /* 固定列 hover：底色保持 body-default，避免透出横滚内容 */
-  :global(.cd-table-row):hover > :global(.cd-table-cell-fixed-left),
-  :global(.cd-table-row):hover > :global(.cd-table-cell-fixed-right),
-  :global(.cd-table-row-hovered) > :global(.cd-table-cell-fixed-left),
-  :global(.cd-table-row-hovered) > :global(.cd-table-cell-fixed-right) {
+  /* 固定列 hover：底色保持 body-default，避免透出横滚内容。
+     须限定 .cd-table-tbody 祖先（对齐 Semi table.scss &-tbody > &-row:hover 嵌套写法）——
+     .cd-table-cell-fixed-left/-right 同时命中表头 th 与 tbody td（固定列定位 class
+     不分头尾），且表头 <tr> 与 tbody <tr> 同名 .cd-table-row，缺少祖先限定会导致
+     hover 表头固定列（含筛选/复选框列）时也被这条 tbody 专属规则误染灰。 */
+  :global(.cd-table-tbody) :global(.cd-table-row):hover > :global(.cd-table-cell-fixed-left),
+  :global(.cd-table-tbody) :global(.cd-table-row):hover > :global(.cd-table-cell-fixed-right),
+  :global(.cd-table-tbody) :global(.cd-table-row-hovered) > :global(.cd-table-cell-fixed-left),
+  :global(.cd-table-tbody) :global(.cd-table-row-hovered) > :global(.cd-table-cell-fixed-right) {
     background-image: linear-gradient(0deg, var(--cd-color-table-body-bg-hover), var(--cd-color-table-body-bg-hover));
     background-color: var(--cd-color-table-body-bg-default);
   }
@@ -2651,19 +2655,23 @@
   :global(.cd-table-row-head.cd-table-cell-fixed-right) {
     background-color: var(--cd-color-table-th-bg-default);
   }
-  .cd-table-cell-fixed-left-last {
+  /* .cd-table-cell-fixed-left-last/-right-first 同时命中表头 th（TableHeaderRow.svelte
+     渲染）与 tbody td（本文件 tbodyContent 渲染），跨组件须整条 :global()——此前是
+     普通 scoped 规则，真机核对发现分割线/阴影从未命中过表头（computed border-right
+     恒为 0，box-shadow 恒为 none），只在 tbody 生效，表头视觉上完全没有固定列分割线。 */
+  :global(.cd-table-cell-fixed-left-last) {
     border-right: var(--cd-width-table-cell-fixed-left-last) solid var(--cd-color-table-shadow-border-default);
     box-shadow: var(--cd-shadow-table-right);
   }
-  .cd-table-cell-fixed-right-first {
+  :global(.cd-table-cell-fixed-right-first) {
     border-left: var(--cd-width-table-cell-fixed-right-first) solid var(--cd-color-table-shadow-border-default);
     box-shadow: var(--cd-shadow-table-left);
   }
   /* 横滚到边隐藏对应阴影 */
-  .cd-table-scroll-position-left .cd-table-cell-fixed-left-last {
+  :global(.cd-table-scroll-position-left) :global(.cd-table-cell-fixed-left-last) {
     box-shadow: none;
   }
-  .cd-table-scroll-position-right .cd-table-cell-fixed-right-first {
+  :global(.cd-table-scroll-position-right) :global(.cd-table-cell-fixed-right-first) {
     box-shadow: none;
   }
 
@@ -3048,12 +3056,14 @@
      导致这段祖先链在真实 DOM 里永远不可能匹配（真机验证发现：computed border 值与
      规则定义正好相反，命中的是未加 RTL 覆盖前的 LTR 基础规则）。.cd-table-cell-fixed-
      left-last/-right-first 在语义上已经唯一（只出现在固定列单元格），无需祖先链
-     消歧，直接用目标 class 自身作选择器即可命中。 */
-  :global(.cd-table-wrapper-rtl) .cd-table-cell-fixed-left-last {
+     消歧——但目标 class 自身同样须 :global()：它同时命中表头 th（TableHeaderRow.svelte）
+     与 tbody td（本文件），未包裹时只对本文件内元素生效，RTL 覆盖在表头侧同样会
+     静默失效（与上方基础规则同一类坑）。 */
+  :global(.cd-table-wrapper-rtl) :global(.cd-table-cell-fixed-left-last) {
     border-right: 0;
     border-left: var(--cd-width-table-cell-fixed-left-last) solid var(--cd-color-table-shadow-border-default);
   }
-  :global(.cd-table-wrapper-rtl) .cd-table-cell-fixed-right-first {
+  :global(.cd-table-wrapper-rtl) :global(.cd-table-cell-fixed-right-first) {
     border-left: 0;
     border-right: var(--cd-width-table-cell-fixed-right-first) solid var(--cd-color-table-shadow-border-default);
   }
