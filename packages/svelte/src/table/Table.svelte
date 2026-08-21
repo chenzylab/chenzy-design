@@ -46,7 +46,6 @@
   import { SvelteMap } from 'svelte/reactivity';
   import { createColumnCollector, setColumnsContext, getCellWidths, headWidthsEqual, arrayAdd, type HeadWidthEntry } from './context.js';
   import { Pagination } from '../pagination/index.js';
-  import { IconFilter } from '@chenzy-design/icons';
   import { floating } from '../_floating/use-floating.js';
   import { useDismiss, registerOverlayRoot } from '@chenzy-design/core';
   import { useLocale } from '../locale-provider/index.js';
@@ -65,14 +64,13 @@
     ScrollConfig,
   } from './types.js';
   import FilterDropdownHost from './FilterDropdownHost.svelte';
-  import Checkbox from '../checkbox/Checkbox.svelte';
   import ColGroup from './ColGroup.svelte';
   import HeadTable from './HeadTable.svelte';
   import Body from './Body.svelte';
-  import ColumnSorter from './ColumnSorter.svelte';
   import ColumnSelection from './ColumnSelection.svelte';
   import CustomExpandIcon from './CustomExpandIcon.svelte';
   import BaseRow from './BaseRow.svelte';
+  import TableHeaderRow from './TableHeaderRow.svelte';
   import ExpandedRow from './ExpandedRow.svelte';
   import SectionRow from './SectionRow.svelte';
 
@@ -1843,95 +1841,86 @@
       class:cd-table-thead-sticky={isStickyHead}
       style={isStickyHead && stickyOffset > 0 ? `top:${stickyOffset}px` : undefined}
     >
-      <!-- svelte-ignore a11y_interactive_supports_focus -- 对齐 Semi：显式 role="row"（tagHeaderRow 可经 components 换标签，非交互 grid，无需 tabindex） -->
-      <svelte:element
-        this={tagHeaderRow}
-        role="row"
-        aria-rowindex={1}
-        class="cd-table-row {headerRowProps?.className ?? ''}"
-        style={headerRowProps?.style ?? undefined}
-        onclick={headerRowProps?.onClick ?? undefined}
-        onmouseenter={headerRowProps?.onMouseEnter ?? undefined}
-        onmouseleave={headerRowProps?.onMouseLeave ?? undefined}
-        bind:this={headerRowEl0}
-      >
-        {#if expandAsColumn}
-          {@const gc = 0}
-          <th
-            rowspan={hasHeaderMerge ? headerDepth : undefined}
-            class="cd-table-row-head cd-table-column-expand {leadingFixedClass}"
-            scope="col"
-            style={mergeHeaderStyle(leadingStyle('expand'))}
-            role="columnheader"
-            aria-colindex={gc + 1}
-          ></th>
-        {/if}
-        {#if hasSelection}
-          {@const gc = expandAsColumn ? 1 : 0}
-          {@const isRadio = rowSelection?.type === 'radio'}
-          {@const showSelectAll = !isRadio && !rowSelection?.hideSelectAll}
-          <th
-            rowspan={hasHeaderMerge ? headerDepth : undefined}
-            class="cd-table-row-head cd-table-column-selection {selectionFixedClass || leadingFixedClass}"
-            scope="col"
-            style={mergeHeaderStyle(selectionColStyle ?? leadingStyle('selection'))}
-            role="columnheader"
-            aria-colindex={gc + 1}
-          >
-            {#if showSelectAll}
-              <ColumnSelection
-                {rowSelection}
-                inHeader={true}
-                selected={headerSelect.checked}
-                indeterminate={headerSelect.indeterminate}
-                disabled={rowSelection?.disabled === true}
-                onToggle={() => onToggleAll()}
-              />
-            {/if}
-          </th>
-        {/if}
-        {#if !hasHeaderMerge}
-          {#each leafColumns as col, i (colKeyOf(col, i))}
-            {@render leafHeaderCell(col, i, 1)}
-          {/each}
-        {:else}
-          <!-- 合并模式首行：expand/selection th 已 rowspan 跨满，其后接 headerRows[0] -->
-          {#each headerRows[0] ?? [] as hc (hc.isLeaf ? colKeyOf(hc.col, hc.leafIndex) : `g-${typeof hc.col.title === 'string' ? hc.col.title : (hc.col.key ?? '')}-${hc.leafIndex}`)}
-            {@render headerMergeCell(hc)}
-          {/each}
-        {/if}
-      </svelte:element>
+      <TableHeaderRow
+        variant="leaf"
+        tag={tagHeaderRow}
+        onRowEl={(el) => (headerRowEl0 = el)}
+        {expandAsColumn}
+        {hasSelection}
+        {hasHeaderMerge}
+        {headerDepth}
+        {rowSelection}
+        {headerSelect}
+        {onToggleAll}
+        {leadingFixedClass}
+        {selectionFixedClass}
+        {selectionColStyle}
+        {leadingStyle}
+        {headerRowProps}
+        {leafColumns}
+        mergedRow={headerRows[0] ?? []}
+        {colKeyOf}
+        {alignOf}
+        {mergeHeaderStyle}
+        {mergeCellStyle}
+        {cellStyle}
+        {fixedCellClass}
+        {columnResizable}
+        {ariaSortFor}
+        {isEffectivelyFiltered}
+        {currentSort}
+        {onSort}
+        {openFilterKey}
+        {closingFilterKey}
+        {filterTriggers}
+        {resizeHandles}
+        {resizingKey}
+        {setFilterOpen}
+        {startResize}
+        {selectionEnabled}
+        {resizeOverrides}
+        {columnTitle}
+        {filterDropdownPanel}
+        locT={(key) => loc().t(key)}
+      />
       {#if hasHeaderMerge}
         {#each headerRows.slice(1) as hrow, ri (ri)}
-          <tr class="cd-table-row" bind:this={headerRowElsRest[ri]}>
-            {#each hrow as hc (hc.isLeaf ? colKeyOf(hc.col, hc.leafIndex) : `g-${typeof hc.col.title === 'string' ? hc.col.title : (hc.col.key ?? '')}-${hc.leafIndex}`)}
-              {@render headerMergeCell(hc)}
-            {/each}
-          </tr>
+          <TableHeaderRow
+            variant="group"
+            onRowEl={(el) => (headerRowElsRest[ri] = el)}
+            mergedRow={hrow}
+            {colKeyOf}
+            {alignOf}
+            {mergeHeaderStyle}
+            {mergeCellStyle}
+            {cellStyle}
+            {fixedCellClass}
+            {columnResizable}
+            {ariaSortFor}
+            {isEffectivelyFiltered}
+            {currentSort}
+            {onSort}
+            {openFilterKey}
+            {closingFilterKey}
+            {filterTriggers}
+            {resizeHandles}
+            {resizingKey}
+            {setFilterOpen}
+            {startResize}
+            {selectionEnabled}
+            {resizeOverrides}
+            {columnTitle}
+            {filterDropdownPanel}
+            locT={(key) => loc().t(key)}
+          />
         {/each}
       {/if}
     </svelte:element>
     {/if}
   {/snippet}
-  {#snippet headerMergeCell(hc: HeaderCell)}
-      {#if hc.isLeaf}
-        {@render leafHeaderCell(hc.col, hc.leafIndex, hc.rowSpan)}
-      {:else}
-        <th
-          class="cd-table-row-head cd-table-align-{alignOf(hc.col)}"
-          class:cd-table-row-cell-ellipsis={!!hc.col.ellipsis}
-          scope="colgroup"
-          colspan={hc.colSpan}
-          role="columnheader"
-          style={mergeHeaderStyle(undefined)}
-        >
-          <span class="cd-table-row-head-title">{@render columnTitle(hc.col)}</span>
-        </th>
-      {/if}
-    {/snippet}
-    {#snippet columnTitle(col: ColumnDef<T>)}
-      {#if typeof col.title === 'string'}{col.title}{:else}{@render (col.title as Snippet<[{ filter?: Snippet; sorter?: Snippet; selection?: Snippet }]>)({})}{/if}
-    {/snippet}
+  {#snippet columnTitle(col: ColumnDef<T>)}
+    {#if typeof col.title === 'string'}{col.title}{:else}{@render (col.title as Snippet<[{ filter?: Snippet; sorter?: Snippet; selection?: Snippet }]>)({})}{/if}
+  {/snippet}
     <!-- 筛选浮层面板（string / 自定义 title 复用；触发器绑 filterTriggers[colKey]） -->
     {#snippet filterDropdownPanel(col: ColumnDef<T>, colKey: string)}
       {@const filterMultiple = col.filterMultiple !== false}
@@ -1991,118 +1980,6 @@
         </div>
         {/if}
       </div>
-    {/snippet}
-    {#snippet leafHeaderCell(col: ColumnDef<T>, i: number, thRowSpan: number)}
-          {@const gc = (expandAsColumn ? 1 : 0) + (hasSelection ? 1 : 0) + i}
-          {@const sortable = !!col.sorter}
-          {@const colKey = colKeyOf(col, i)}
-          {@const hasFilter = (!!col.filters && col.filters.length > 0) || !!col.renderFilterDropdown}
-          {@const colResizable = columnResizable(col)}
-          {@const headerCellProps = col.onHeaderCell ? col.onHeaderCell(col, i) : undefined}
-          {@const resizeOverride = resizeOverrides.get(colKey)}
-          {#if col.colSpan !== 0}
-          <th
-            rowspan={thRowSpan > 1 ? thRowSpan : undefined}
-            colspan={col.colSpan !== undefined && col.colSpan > 1 ? col.colSpan : undefined}
-            class="cd-table-row-head cd-table-align-{alignOf(col)} {fixedCellClass(i)} {headerCellProps?.className ?? ''} {resizeOverride?.className ?? ''}"
-            class:cd-table-row-cell-ellipsis={!!col.ellipsis}
-            class:cd-table-row-head-has-filter={hasFilter}
-            class:cd-table-row-head-resizable={colResizable}
-            class:resizing={resizingKey === colKey}
-            scope="col"
-            style={mergeCellStyle(mergeHeaderStyle(cellStyle(col, i)), headerCellProps?.style)}
-            aria-sort={sortable ? ariaSortFor(col, i) : undefined}
-            role="columnheader"
-            aria-colindex={gc + 1}
-            onclick={headerCellProps?.onClick ?? undefined}
-            onmouseenter={headerCellProps?.onMouseEnter ?? undefined}
-            onmouseleave={headerCellProps?.onMouseLeave ?? undefined}
-          >
-            <!-- 对齐 Semi：仅在有 sorter/filter 时套 .semi-table-operate-wrapper（flex），
-                 消除 inline descender 撑高；纯自定义 title（无 sorter）不套 flex，
-                 直接渲染保持其 inline 布局与 Semi 一致（Semi 自定义 title 不套 operate-wrapper）。 -->
-            <div class="cd-table-operate-wrapper" class:cd-table-operate-plain={typeof col.title !== 'string' && !sortable}>
-            {#if sortable}
-              {@const order = col.sortOrder !== undefined ? col.sortOrder : (currentSort.key === colKeyOf(col, i) ? currentSort.order : null)}
-              {@const showTip = col.showSortTip === true && col.sortOrder === undefined}
-              {#snippet sortTitle()}{@render columnTitle(col)}{/snippet}
-              <ColumnSorter {col} {order} {showTip} title={sortTitle} onSort={() => onSort(col, i)} />
-            {:else if typeof col.title !== 'string'}
-              <!-- 自定义 title（函数）：透传 selection/filter 物料，由使用方摆放（对齐 Semi
-                   title({ selection, filter, sorter })）。摆放 selection 全选框会撑高表头至 41px。 -->
-              {#snippet headerSelectionMaterial()}
-                {#if selectionEnabled}
-                  <Checkbox
-                    class="cd-table-selection-checkbox"
-                    aria-label={loc().t('Table.selectAll')}
-                    checked={headerSelect.checked}
-                    disabled={rowSelection?.disabled === true}
-                    indeterminate={headerSelect.indeterminate}
-                    onChange={() => onToggleAll()}
-                  />
-                {/if}
-              {/snippet}
-              {#snippet headerFilterMaterial()}
-                {#if hasFilter}
-                  <button
-                    type="button"
-                    class="cd-table-column-filter"
-                    class:on={isEffectivelyFiltered(col, colKey)}
-                    aria-label={loc().t('Table.filter')}
-                    aria-expanded={openFilterKey === colKey}
-                    bind:this={filterTriggers[colKey]}
-                    onclick={(e) => { e.stopPropagation(); setFilterOpen(col, colKey, openFilterKey !== colKey); }}
-                  >
-                    {#if col.filterIcon}{@render col.filterIcon({ filtered: isEffectivelyFiltered(col, colKey) })}{:else}<IconFilter size="small" aria-hidden="true" />{/if}
-                  </button>
-                {/if}
-              {/snippet}
-              {@render (col.title as Snippet<[{ filter?: Snippet; sorter?: Snippet; selection?: Snippet }]>)(hasFilter ? { selection: headerSelectionMaterial, filter: headerFilterMaterial } : { selection: headerSelectionMaterial })}
-            {:else}
-              <span class="cd-table-row-head-title">{@render columnTitle(col)}</span>
-            {/if}
-
-            {#if hasFilter && typeof col.title === 'string'}
-              <button
-                type="button"
-                class="cd-table-column-filter"
-                class:on={isEffectivelyFiltered(col, colKey)}
-                aria-label={loc().t('Table.filter')}
-                aria-expanded={openFilterKey === colKey}
-                bind:this={filterTriggers[colKey]}
-                onclick={(e) => {
-                  e.stopPropagation();
-                  setFilterOpen(col, colKey, openFilterKey !== colKey);
-                }}
-              >
-                {#if col.filterIcon}
-                  {@render col.filterIcon({ filtered: isEffectivelyFiltered(col, colKey) })}
-                {:else}
-                  <IconFilter size="small" aria-hidden="true" />
-                {/if}
-              </button>
-              {#if (openFilterKey === colKey || closingFilterKey === colKey) && filterTriggers[colKey]}
-                {@render filterDropdownPanel(col, colKey)}
-              {/if}
-            {/if}
-            </div>
-            <!-- 自定义 title 时 filter 按钮由 title snippet 摆放，浮层在此独立渲染（触发器仍绑 filterTriggers[colKey]） -->
-            {#if hasFilter && typeof col.title !== 'string' && (openFilterKey === colKey || closingFilterKey === colKey) && filterTriggers[colKey]}
-              {@render filterDropdownPanel(col, colKey)}
-            {/if}
-
-            {#if colResizable}
-              <span
-                class="react-resizable-handle"
-                role="separator"
-                aria-orientation="vertical"
-                aria-label={loc().t('Table.resizeColumn')}
-                bind:this={resizeHandles[colKey]}
-                onpointerdown={(e) => startResize(e, col, i)}
-              ></span>
-            {/if}
-          </th>
-          {/if}
     {/snippet}
   {#snippet tbodyContent()}
     <svelte:element this={tagTbody} class="cd-table-tbody">
@@ -2708,12 +2585,6 @@
   .cd-table-thead > .cd-table-row > .cd-table-cell-fixed-left,
   .cd-table-thead > .cd-table-row > .cd-table-cell-fixed-right {
     background-color: var(--cd-color-table-th-bg-default);
-  }
-  /* 固定列表头 z 与数据行固定列一致（=fixed，对齐 Semi：表头/数据行固定列同为 101），
-     覆盖 thead-sticky 通配 th 的 fixed+1（那条用于非固定 sticky 表头列盖住固定列滚动） */
-  .cd-table-thead-sticky th.cd-table-cell-fixed-left,
-  .cd-table-thead-sticky th.cd-table-cell-fixed-right {
-    z-index: var(--cd-z-table-fixed-column);
   }
   .cd-table-cell-fixed-left-last {
     border-inline-end: var(--cd-width-table-cell-fixed-left-last) solid var(--cd-color-table-shadow-border-default);
