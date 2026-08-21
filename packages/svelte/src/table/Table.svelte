@@ -44,7 +44,7 @@
   import { tick } from 'svelte';
   import type { Snippet } from 'svelte';
   import { SvelteMap } from 'svelte/reactivity';
-  import { createColumnCollector, setColumnsContext } from './context.js';
+  import { createColumnCollector, setColumnsContext, getCellWidths, headWidthsEqual, arrayAdd, type HeadWidthEntry } from './context.js';
   import { Pagination } from '../pagination/index.js';
   import { IconFilter } from '@chenzy-design/icons';
   import { floating } from '../_floating/use-floating.js';
@@ -1416,8 +1416,9 @@
       : 48,
   );
 
-  // --- 固定列：纯 CSS sticky + 逐列像素偏移计算 ---
-  // selection / expand 前置列宽（与 CSS .cd-table-column-selection/--expand 对齐）
+  // --- 固定列：JS 实测宽度累加（对齐 Semi TableHeaderRow.cacheRef + arrayAdd） ---
+  // selection / expand 前置列宽（与 CSS .cd-table-column-selection/--expand 对齐；
+  // 恒定 48px 非可变宽列，不纳入 headWidths 实测，直接用 token 值作为偏移基数）。
   const LEADING_W = 48;
   // 前置 leading 列（expand + selection）的总宽，作为 left 固定列偏移基数
   const leadingWidth = $derived((expandAsColumn ? LEADING_W : 0) + (hasSelection ? LEADING_W : 0));
@@ -1440,30 +1441,97 @@
     return typeof w === 'number' ? w : 0;
   }
 
-  // 每个数据列的 left 偏移（左固定列）：前置宽 + 之前所有左固定列宽之和
+  // --- headWidths 实测：对齐 Semi state.headWidths（按表头层级分组的 {key,width}[]）。
+  //     TableHeaderRow.cacheRef 等价物——每层表头 <tr> 挂载/更新后测量其叶子 <th>
+  //     宽度（数值 column.width 优先，否则 getBoundingClientRect() 实测），写入本状态。
+  //     写入前做值比较去重（headWidthsEqual），避免"测量→写→触发依赖 headWidths 的
+  //     effect 重跑→再次测量"的自循环（红线 #2：measureHeaderLevel 只在挂载/依赖变化
+  //     的 $effect 里调用，写入的是与测量无关的独立 $state，不读自身触发源）。
+  let headWidths = $state<HeadWidthEntry[][]>([]);
+  function setHeadWidthsLevel(index: number, widths: HeadWidthEntry[]) {
+    const prev = headWidths[index];
+    if (prev && headWidthsEqual(prev, widths)) return;
+    const next = headWidths.slice();
+    next[index] = widths;
+    headWidths = next;
+  }
+  // 单层表头 <tr> 实测：row 是该层表头格序列（含叶子列与分组列，与 DOM 内 .cd-table-row-head
+  // 顺序一一对应，对齐 Semi row/heads 位置映射）。skipLeading 跳过 row 0 前置的
+  // expand/selection th（本库把它们当独立恒宽列处理，不纳入 leafColumns/headWidths，
+  // 与 Semi 把它们规整为合成 column 不同——已知的架构差异，见 Body 侧 leadingWidth 常量）。
+  function measureHeaderRow(node: HTMLElement | null, row: { col: ColumnDef<T>; leafIndex: number; isLeaf: boolean }[], level: number, skipLeading = 0) {
+    if (!node) return;
+    const allHeads = node.querySelectorAll<HTMLElement>('.cd-table-row-head');
+    const heads = skipLeading > 0 ? Array.from(allHeads).slice(skipLeading) : allHeads;
+    const widths: HeadWidthEntry[] = [];
+    heads.forEach((head, i) => {
+      const cell = row[i];
+      if (!cell) return;
+      const key = cell.isLeaf ? colKeyOf(cell.col, cell.leafIndex) : (typeof cell.col.title === 'string' ? cell.col.title : (cell.col.key ?? String(i)));
+      let width = cell.isLeaf ? resolveWidth(cell.col, cell.leafIndex) : undefined;
+      if (typeof width !== 'number') {
+        width = head.getBoundingClientRect().width || 0;
+      }
+      widths.push({ key: String(key), width: width as number });
+    });
+    setHeadWidthsLevel(level, widths);
+  }
+  // 表头行 <tr> DOM 引用：level 0（首行，可能含 expand/selection rowspan 占位后接叶子/分组格）
+  // + 合并模式下 headerRows.slice(1) 的后续层。
+  let headerRowEl0 = $state<HTMLElement | null>(null);
+  let headerRowElsRest: (HTMLElement | null)[] = $state([]);
+  // 该层需要测量的「格序列」：level 0 用 headerRows[0]（合并模式）或 leafColumns 映射的
+  // 叶子格（非合并模式，rowSpan=1 单层），其余层用 headerRows[level]。
+  const headerLevel0Row = $derived.by<{ col: ColumnDef<T>; leafIndex: number; isLeaf: boolean }[]>(() =>
+    hasHeaderMerge ? (headerRows[0] ?? []) : leafColumns.map((col, i) => ({ col, leafIndex: i, isLeaf: true as const })),
+  );
+  const leadingColCount = $derived((expandAsColumn ? 1 : 0) + (hasSelection ? 1 : 0));
+  $effect(() => {
+    // 依赖：列结构变化（leafColumns/headerRows 引用变化）与拖拽覆盖宽度变化触发重测；
+    // 只读 DOM ref 与派生列表，不读 headWidths 自身，避免自触发循环。
+    void headerLevel0Row;
+    void widthOverrides.size;
+    void leadingColCount;
+    if (showHeader && headerRowEl0) {
+      measureHeaderRow(headerRowEl0, headerLevel0Row, 0, leadingColCount);
+    }
+  });
+  $effect(() => {
+    void headerRows;
+    void widthOverrides.size;
+    if (showHeader && hasHeaderMerge) {
+      const rest = headerRows.slice(1);
+      rest.forEach((hrow, ri) => {
+        const el = headerRowElsRest[ri];
+        if (el) measureHeaderRow(el, hrow, ri + 1);
+      });
+    }
+  });
+
+  // Body 侧消费同一份 headWidths：按 leafColumns 的 key 顺序取实测宽度数组
+  // （对齐 Semi Body getCellWidths(flattenedColumns)，表头与单元格共享同一份数据源）。
+  const leafCellWidths = $derived(getCellWidths(leafColumns.map((c, i) => colKeyOf(c, i)), headWidths));
+
+  // 每个数据列的 left 偏移（左固定列）：前置宽 + 之前所有左固定列宽之和（arrayAdd 实测累加）
   const fixedLeftOffsets = $derived.by(() => {
-    const out: (number | null)[] = [];
-    let acc = leadingWidth;
+    const out: (number | null)[] = new Array(leafColumns.length).fill(null);
+    if (!leafCellWidths.length) return out;
     for (let i = 0; i < leafColumns.length; i++) {
       const col = leafColumns[i] as ColumnDef<T>;
       if (fixedOf(col) === 'left') {
-        out.push(acc);
-        acc += colNumWidth(col, i);
-      } else {
-        out.push(null);
+        out[i] = leadingWidth + arrayAdd(leafCellWidths, 0, i);
       }
     }
     return out;
   });
-  // 每个数据列的 right 偏移（右固定列）：之后所有右固定列宽之和
+  // 每个数据列的 right 偏移（右固定列）：之后所有右固定列宽之和（arrayAdd 实测累加）
   const fixedRightOffsets = $derived.by(() => {
     const out: (number | null)[] = new Array(leafColumns.length).fill(null);
-    let acc = 0;
+    if (!leafCellWidths.length) return out;
     for (let i = leafColumns.length - 1; i >= 0; i--) {
       const col = leafColumns[i] as ColumnDef<T>;
       if (fixedOf(col) === 'right') {
-        out[i] = acc;
-        acc += colNumWidth(col, i);
+        out[i] = arrayAdd(leafCellWidths, i + 1);
       }
     }
     return out;
@@ -1785,6 +1853,7 @@
         onclick={headerRowProps?.onClick ?? undefined}
         onmouseenter={headerRowProps?.onMouseEnter ?? undefined}
         onmouseleave={headerRowProps?.onMouseLeave ?? undefined}
+        bind:this={headerRowEl0}
       >
         {#if expandAsColumn}
           {@const gc = 0}
@@ -1834,7 +1903,7 @@
       </svelte:element>
       {#if hasHeaderMerge}
         {#each headerRows.slice(1) as hrow, ri (ri)}
-          <tr class="cd-table-row">
+          <tr class="cd-table-row" bind:this={headerRowElsRest[ri]}>
             {#each hrow as hc (hc.isLeaf ? colKeyOf(hc.col, hc.leafIndex) : `g-${typeof hc.col.title === 'string' ? hc.col.title : (hc.col.key ?? '')}-${hc.leafIndex}`)}
               {@render headerMergeCell(hc)}
             {/each}
