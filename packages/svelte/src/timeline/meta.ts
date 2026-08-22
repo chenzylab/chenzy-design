@@ -120,5 +120,6 @@ export const meta = {
     '--cd-radius-timeline-head',
     '--cd-radius-timeline-head-custom',
     '--cd-motion-timeline-head-custom-transform',
+    '--cd-motion-timeline-head-custom-transform-rtl',
   ],
 } as const;
