@@ -67,8 +67,6 @@ export interface Locale {
     sortOrderAscend: string;
     /** 降序（用于 sortedAnnounce 的 {order}） */
     sortOrderDescend: string;
-    /** grid 行数（虚拟化焦点回收播报），uses {count} */
-    rowCount: string;
     /** 分页 range 文案（对齐 Semi pageText），uses {currentStart} {currentEnd} {total} */
     pageText: string;
   };

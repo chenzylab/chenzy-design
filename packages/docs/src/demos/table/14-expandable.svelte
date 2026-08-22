@@ -74,7 +74,7 @@
   rowKey="name"
   {columns}
   dataSource={data}
-  expandable={{ expandedRowRender }}
+  {expandedRowRender}
   {rowSelection}
   pagination={false}
 />

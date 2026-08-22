@@ -7,7 +7,7 @@ import type { Snippet } from 'svelte';
 import type { RowKey } from '@chenzy-design/core';
 
 export type Align = 'left' | 'center' | 'right';
-export type TableSize = 'small' | 'default' | 'large';
+export type TableSize = 'small' | 'default' | 'middle';
 
 export interface ColumnDef<T> {
   /** 列唯一键，缺省回退 dataIndex / 列索引 */
@@ -31,8 +31,6 @@ export interface ColumnDef<T> {
   width?: number | string;
   /** 固定列：横向滚动时左/右侧 sticky 锁定（需配合 width 数值）。true 等效 'left'（对齐 Semi） */
   fixed?: boolean | 'left' | 'right';
-  /** 列宽可拖拽调整：列头右侧出现拖拽手柄，指针拖拽实时改列宽 */
-  resizable?: boolean;
   /**
    * Table 级 resizable 开启后是否允许本列伸缩（对齐 Semi column.resize）。
    * 默认 true；设置为 false 后本列不再出现拖拽手柄。
@@ -153,31 +151,12 @@ export interface RenderFilterDropdownProps {
   filters?: { text: string; value: string | number }[];
 }
 
-export interface Expandable<T> {
-  /** 展开行内容渲染 */
-  expandedRowRender: Snippet<[{ record: T; index: number }]>;
-  /** 该行是否可展开，默认全部可展开 */
-  rowExpandable?: (record: T) => boolean;
-  /** 受控展开行 key 列表 */
-  expandedRowKeys?: RowKey[];
-  /** 非受控初始展开 */
-  defaultExpandedRowKeys?: RowKey[];
-  /** 展开/收起回调 */
-  onExpand?: (expanded: boolean, record: T) => void;
-}
-
-export interface TreeTable {
-  /** 子行字段名，默认 'children' */
-  childrenColumnName?: string;
-  /** 每层缩进像素，默认 16 */
-  indentSize?: number;
-  /** 非受控初始展开行 key 列表 */
-  defaultExpandedRowKeys?: RowKey[];
-  /** 受控展开行 key 列表；受控时不回写，仅 onExpand 通知 */
-  expandedRowKeys?: RowKey[];
-  /** 展开/收起回调 */
-  onExpand?: (expanded: boolean, key: RowKey) => void;
-}
+// Expandable<T> / TreeTable 已移除（2026-08）：展开状态与展开行渲染收敛到顶层
+// expandedRowKeys / defaultExpandedRowKeys / onExpand / onExpandedRowsChange /
+// expandedRowRender / rowExpandable props（对齐 Semi 单一顶层架构，interface.ts
+// 无 expandable/tree 嵌套对象）。tree prop 本身保留为纯 boolean（本库有意显式
+// opt-in，不像 Semi 靠 dataSource 含 childrenRecordName 字段自动判定——见
+// table-tree-needs-explicit-tree-and-row-key 记忆），故不再需要专属 TreeTable 类型。
 
 export interface RowSelection<T> {
   /** 受控选中行 key 列表 */

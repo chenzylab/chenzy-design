@@ -258,7 +258,12 @@ const components = [
   // 补组合式 <Column>（context 收集树，对齐 Semi Table.Column 双写法）后实测 21.79 KB。
   // 2026-08-12 补齐列筛选浮层进出场动画（对齐 Semi 列筛选复用 Dropdown 即 Tooltip 实例的
   // zoomIn/zoomOut；本库自建 use:floating 之前无任何面板动画），实测 22.12 KB，预算随之上调。
-  ['table', '{ Table }', '22.2 KB'],
+  // 2026-08-22 系列真机 bug 修复批次：展开状态统一为 Semi 单一顶层 expandedRowKeys 架构
+  // （原 expandable/tree 两套状态合并）+ 补齐行可交换树形数据 demo；bordered 外框失效修复
+  // （Spin 包裹导致 `>` 选择器从未命中）+ 横滚未到底容器右边框覆盖层（对齐 Semi #441 fix，
+  // LTR/RTL 各一份）；表头合并分组格补齐固定列 sticky 定位与分割线；sticky 吸顶/固定列
+  // z-index/hover 等一系列跨组件 scoped CSS 修复，实测 24.29 KB，预算按实测上调留 headroom。
+  ['table', '{ Table }', '24.5 KB'],
   ['tag', '{ Tag, TagGroup, SplitTagGroup }', '5 KB'],
   ['timeline', '{ TimelineItem }', '5.4 KB'],
   // 对齐 Semi 破坏性重写：单 path 箭头 + .cd-tooltip-wrapper[x-placement] 12 方位定位 CSS

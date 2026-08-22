@@ -1,6 +1,7 @@
 // Table a11y：数据表格。
-// 纯展示表为原生 <table>（role=table）；交互态（sorter/rowSelection 等）升级为
-// WAI-ARIA Grid Pattern：role=grid + columnheader/row/gridcell。两种都各测一个。
+// 对齐 Semi Body/index.tsx：role 静态标注为 grid/treegrid（有分组/展开行渲染/树形时
+// treegrid，否则 grid），不因交互能力（sorter/rowSelection）与否而切换，也没有方向键
+// 漫游/roving tabindex（Semi 无此实现，本库已移除对应自造能力）。
 // 均传 pagination={false}：默认内嵌的 Pagination 子组件严格对齐 Semi 后自身带有
 // 真实存在于 Semi 源码的 axe 违规（<ul> 直接含 [role=button] 子元素），与本文件
 // 测试 Table 自身语义的目标无关，排除之以聚焦断言。
@@ -25,15 +26,15 @@ const plainColumns = [
 ];
 
 describe('Table a11y', () => {
-  it('纯展示表：原生 table 语义（无 role=grid），无 axe violations', async () => {
+  it('纯展示表：role=grid + columnheader/gridcell（静态标注，无 axe violations）', async () => {
     const { container } = renderWithLocale(Table, {
       props: { columns: plainColumns, dataSource, 'aria-label': 'Users', pagination: false },
     });
     const table = container.querySelector('table');
     expect(table).not.toBeNull();
-    // 纯展示降级：不应有 role=grid
-    expect(table?.getAttribute('role')).toBeNull();
-    expect(container.querySelector('[role="grid"]')).toBeNull();
+    expect(table?.getAttribute('role')).toBe('grid');
+    expect(table?.getAttribute('aria-rowcount')).toBe(String(dataSource.length));
+    expect(table?.getAttribute('aria-colcount')).toBe(String(plainColumns.length));
     // 列头与数据行
     expect(container.querySelectorAll('th[scope="col"]').length).toBe(2);
     await expectNoAxeViolations(container);

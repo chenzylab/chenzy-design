@@ -22,7 +22,7 @@
     getColumnsContext,
     setColumnsContext,
     type ColumnRegistration,
-  } from './context.js';
+  } from './getColumns.js';
 
   let {
     children,

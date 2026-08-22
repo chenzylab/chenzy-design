@@ -129,6 +129,15 @@
     user-select: none;
     cursor: pointer;
   }
+  /* disabled 态覆盖 cursor（对齐 Semi checkbox.scss:310-313
+     `.semi-checkbox-disabled { cursor:not-allowed } .semi-checkbox-disabled .semi-checkbox-inner
+     { cursor:not-allowed }`）：.cd-checkbox-inner 自身有显式 cursor:pointer，仅靠外层
+     .cd-checkbox-disabled 的 cursor 继承不会生效（子元素的显式声明优先于继承），必须在
+     disabled 时单独覆盖。用 :has(:disabled) 直接查询内部 input 的原生 disabled 状态，
+     不需要额外从父组件传 disabled class。 */
+  .cd-checkbox-inner:has(.cd-checkbox-input:disabled) {
+    cursor: not-allowed;
+  }
   /* 原生 input 铺满 inner，opacity:0 承载键盘焦点与 a11y（对齐 Semi checkbox.scss:22-30）。
      input 保持默认可交互（无 pointer-events:none）：点击 input 时浏览器会先原生翻转
      input.checked，但切换的唯一真值来源是外层 Checkbox 根 span 的 onClick（对齐 Semi

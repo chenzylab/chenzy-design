@@ -30,7 +30,7 @@ const expandedRowRender = createRawSnippet(() => ({
 describe('Table 边角 props', () => {
   it('hideExpandedColumn 默认 true：展开按钮并入首列，无独立 expand 列', () => {
     const { container } = renderWithLocale(Table, {
-      props: { columns, dataSource, expandable: { expandedRowRender } },
+      props: { columns, dataSource, expandedRowRender },
     });
     expect(container.querySelector('.cd-table-column-expand')).toBeNull();
     expect(container.querySelector('.cd-table-expand-icon-cell .cd-table-expand-icon')).not.toBeNull();
@@ -38,7 +38,7 @@ describe('Table 边角 props', () => {
 
   it('hideExpandedColumn=false：展开按钮单独成列', () => {
     const { container } = renderWithLocale(Table, {
-      props: { columns, dataSource, hideExpandedColumn: false, expandable: { expandedRowRender } },
+      props: { columns, dataSource, hideExpandedColumn: false, expandedRowRender },
     });
     expect(container.querySelector('.cd-table-column-expand')).not.toBeNull();
     expect(container.querySelector('.cd-table-expand-icon-cell')).toBeNull();
@@ -49,7 +49,7 @@ describe('Table 边角 props', () => {
       render: () => `<i class="my-caret">▶</i>`,
     }));
     const { container } = renderWithLocale(Table, {
-      props: { columns, dataSource, expandIcon, expandable: { expandedRowRender } },
+      props: { columns, dataSource, expandIcon, expandedRowRender },
     });
     expect(container.querySelector('.cd-table-expand-icon .my-caret')).not.toBeNull();
   });
@@ -175,5 +175,89 @@ describe('Table 边角 props', () => {
     const wrapper = container.querySelector('.cd-table-wrapper.my-table');
     expect(wrapper).not.toBeNull();
     expect((wrapper as HTMLElement).style.opacity).toBe('0.5');
+  });
+});
+
+// 展开状态单一顶层架构（对齐 Semi Table.tsx：expandedRowKeys/onExpand/onExpandedRowsChange
+// 均为顶层 prop，同一份状态同时驱动 expandedRowRender 展开行与树形 children 渲染）。
+describe('Table 展开状态：单一顶层 expandedRowKeys 架构', () => {
+  interface TreeRow {
+    key: string;
+    name: string;
+    children?: TreeRow[];
+  }
+  const treeCols = [{ key: 'name', dataIndex: 'name', title: 'Name' }];
+  const treeData: TreeRow[] = [
+    { key: '1', name: 'Parent', children: [{ key: '1-1', name: 'Child' }] },
+    { key: '2', name: 'Leaf' },
+  ];
+
+  it('受控 expandedRowKeys 同时驱动 expandedRowRender 展开行与树形 children 渲染', () => {
+    const { container } = renderWithLocale(Table, {
+      props: {
+        columns: treeCols,
+        dataSource: treeData,
+        tree: true,
+        expandedRowRender,
+        expandedRowKeys: ['1', '2'],
+      },
+    });
+    // 树形子行（Child）已展开可见
+    expect(container.textContent).toContain('Child');
+    // expandedRowRender 展开内容对两行都渲染（rowExpandable 缺省全部可展开）
+    expect(container.querySelectorAll('.cd-table-row-expand').length).toBe(2);
+  });
+
+  it('onExpandedRowsChange 回传完整展开行记录数组（非 key 数组），onExpand 回传单行 (expanded, record)', () => {
+    let changedRecords: TreeRow[] | undefined;
+    let onExpandArgs: [boolean, TreeRow] | undefined;
+    const { container } = renderWithLocale(Table, {
+      props: {
+        columns: treeCols,
+        dataSource: treeData,
+        tree: true,
+        onExpand: (expanded: boolean, record: TreeRow) => {
+          onExpandArgs = [expanded, record];
+        },
+        onExpandedRowsChange: (records: TreeRow[]) => {
+          changedRecords = records;
+        },
+      },
+    });
+    const treeToggle = container.querySelector('.cd-table-expand-icon') as HTMLButtonElement;
+    expect(treeToggle).not.toBeNull();
+    treeToggle.click();
+    expect(onExpandArgs?.[0]).toBe(true);
+    expect(onExpandArgs?.[1]?.key).toBe('1');
+    expect(changedRecords?.map((r) => r.key)).toEqual(['1']);
+  });
+
+  it('defaultExpandedRowKeys 非受控初始展开', () => {
+    const { container } = renderWithLocale(Table, {
+      props: {
+        columns: treeCols,
+        dataSource: treeData,
+        tree: true,
+        defaultExpandedRowKeys: ['1'],
+      },
+    });
+    expect(container.textContent).toContain('Child');
+  });
+
+  it('rowExpandable 同时门控展开行与树形展开图标', () => {
+    const { container } = renderWithLocale(Table, {
+      props: {
+        columns: treeCols,
+        dataSource: treeData,
+        tree: true,
+        expandedRowRender,
+        rowExpandable: (record: TreeRow) => record.key !== '1',
+      },
+    });
+    // key='1' 的行（有 children）应被 rowExpandable 关闭展开按钮，改渲染占位符（非可交互 button）
+    const rows = container.querySelectorAll('.cd-table-tbody > tr.cd-table-row');
+    const firstRow = rows[0] as HTMLElement;
+    expect(firstRow.querySelector('button.cd-table-expand-icon')).toBeNull();
+    expect(firstRow.querySelector('.cd-table-expand-icon-placeholder')).not.toBeNull();
   });
 });

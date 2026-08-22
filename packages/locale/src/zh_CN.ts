@@ -38,7 +38,6 @@ export const zh_CN: Locale = {
     sortClearedAnnounce: '已取消 {column} 排序',
     sortOrderAscend: '升序',
     sortOrderDescend: '降序',
-    rowCount: '{count} 行',
     pageText: '显示第 {currentStart} 条-第 {currentEnd} 条，共 {total} 条',
   },
   Spin: {

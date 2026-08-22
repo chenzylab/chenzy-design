@@ -1,16 +1,23 @@
 <!--
   Table — see specs/components/show/Table.spec.md
   列定义驱动渲染：三态排序、客户端分页、行选择(含半选)，受控/非受控双轨。
-  受控 sortState / rowSelection.selectedRowKeys / pagination.current 不回写，
+  受控 sortState / rowSelection.selectedRowKeys / pagination.currentPage 不回写，
   仅通过 onSortChange / rowSelection.onChange / pagination.onChange 通知 (红线 #1)。
   复用 @chenzy-design/core 纯函数算法与 Pagination 组件，不重复实现。
   固定列：column.fixed='left'|'right'，横滚时 sticky 锁定 + 逐列像素偏移 + 边界阴影。
   列筛选：column.filters + onFilter，列头漏斗弹浮层多选过滤（复用 _floating + useDismiss）。
-  列宽拖拽：column.resizable，列头右侧拖拽手柄，指针几何命令式管理(红线 #3)；
+  列宽拖拽：column.resize，列头右侧拖拽手柄，指针几何命令式管理(红线 #3)；
   覆盖宽度存本地 SvelteMap 不写回 columns prop(红线 #1)，进 cellStyle 宽度计算。
-  树形数据：tree=true 或 tree={{ childrenColumnName, indentSize, expandedRowKeys... }}；
-  行含 children 自动嵌套，第一列内展开三角 + 逐级缩进；排序/分页/筛选作用于顶层行，
-  可见行经 core flattenTreeRows 纯函数扁平化驱动 tbody (红线 #2)；受控展开 keys 不回写 (红线 #1)。
+  树形数据：tree=true 时行含 childrenRecordName（默认 'children'）字段自动嵌套渲染，
+  第一列内展开三角 + 逐级缩进（indentSize）；排序/分页/筛选作用于顶层行，可见行经 core
+  flattenTreeRows 纯函数扁平化驱动 tbody (红线 #2)。展开状态收敛到单一顶层架构（对齐 Semi
+  Table.tsx：expandedRowKeys/defaultExpandedRowKeys/onExpand/onExpandedRowsChange 均为
+  顶层 prop，无 expandable/tree 嵌套状态对象），同一份 expandedRowKeys 同时驱动
+  expandedRowRender 展开行渲染与树形 children 渲染，二者可同时生效、互不排斥（对齐 Semi
+  Body/index.tsx renderBodyRows）；受控 expandedRowKeys 不回写，仅经 onExpand(单行)/
+  onExpandedRowsChange(全量展开记录数组) 通知 (红线 #1)。tree 本身仍是显式 opt-in
+  （不像 Semi 靠 dataSource 是否含 children 字段自动判定，见项目记忆
+  table-tree-needs-explicit-tree-and-row-key，避免恰好带 children 字段的普通表被误判）。
   树形行选择父子联动：rowSelection.checkStrictly 默认 false=联动（勾父连带勾全部后代，
   后代部分选中父行半选 indeterminate），true=父子独立(向后兼容)。联动 {checked,half} 经 core
   conductRows/toggleRowCheck 纯函数据整棵可见行树派生 (红线 #2)；内部存叶子级 base，
@@ -19,7 +26,7 @@
   tbody 仅渲染视口内行切片(复用 core fixedRange 算可见区间)，首尾各一个 padding spacer tr 撑出
   未渲染行总高(保持原生 <table>/<tr>/<td> 语义与 a11y)。scrollTop 命令式 scroll 回调 + rAF 节流写入
   本地 $state，可见区间纯 $derived render 期只读(红线 #2/#3)。virtualized 与 pagination 互斥(虚拟时
-  忽略分页全量滚动)；排序/筛选/行选择/树形/固定列均正常协同。假定行等高，不建议与 expandable 混用。
+  忽略分页全量滚动)；排序/筛选/行选择/树形/固定列均正常协同。假定行等高，不建议与 expandedRowRender 混用。
 -->
 <script lang="ts" generics="T extends Record<string, unknown>">
   import {
@@ -44,32 +51,18 @@
   import { tick } from 'svelte';
   import type { Snippet } from 'svelte';
   import { SvelteMap } from 'svelte/reactivity';
-  import { createColumnCollector, setColumnsContext } from './context.js';
-  import { Pagination } from '../pagination/index.js';
-  import {
-    IconCaretup,
-    IconCaretdown,
-    IconFilter,
-    IconChevronRight,
-    IconTreeTriangleRight,
-  } from '@chenzy-design/icons';
+  import { createColumnCollector, setColumnsContext } from './getColumns.js';
+  import { getCellWidths, headWidthsEqual, arrayAdd, type HeadWidthEntry } from './table-context.js';
+  import TablePagination from './TablePagination.svelte';
+  import { Spin } from '../spin/index.js';
   import { floating } from '../_floating/use-floating.js';
   import { useDismiss, registerOverlayRoot } from '@chenzy-design/core';
   import { useLocale } from '../locale-provider/index.js';
-  import {
-    buildGridCols,
-    nextGridCoord,
-    isFocusCell as isFocusCellPure,
-    rovingTabindexAt,
-    type GridCol,
-  } from './grid-nav.js';
   import type {
     ColumnDef,
     RowSelection,
     ResizableConfig,
     RowAttrs,
-    Expandable,
-    TreeTable,
     Align,
     TableSize,
     TableChangeInfo,
@@ -77,10 +70,16 @@
     TableScrollInfo,
     ScrollConfig,
   } from './types.js';
-  import Tooltip from '../tooltip/Tooltip.svelte';
   import FilterDropdownHost from './FilterDropdownHost.svelte';
-  import Checkbox from '../checkbox/Checkbox.svelte';
-  import Radio from '../radio/Radio.svelte';
+  import ColGroup from './ColGroup.svelte';
+  import HeadTable from './HeadTable.svelte';
+  import Body from './Body.svelte';
+  import ColumnSelection from './ColumnSelection.svelte';
+  import CustomExpandIcon from './CustomExpandIcon.svelte';
+  import BaseRow from './BaseRow.svelte';
+  import TableHeaderRow from './TableHeaderRow.svelte';
+  import ExpandedRow from './ExpandedRow.svelte';
+  import SectionRow from './SectionRow.svelte';
 
   // 泛型组件 props 用内联类型而非具名 interface Props：在 declaration:true 下，
   // 引用泛型参数 T 的具名 interface 会被当作私有名泄漏进生成的 .d.ts 公共签名而报错。
@@ -90,6 +89,7 @@
     dataSource = [],
     rowKey = 'key',
     size = 'default',
+    tableLayout = '',
     bordered = false,
     stripe = false,
     loading = false,
@@ -98,8 +98,13 @@
     onSortChange,
     pagination,
     rowSelection,
-    expandable,
     tree,
+    expandedRowRender,
+    rowExpandable,
+    expandedRowKeys,
+    defaultExpandedRowKeys,
+    onExpand,
+    onExpandedRowsChange,
     rowClassName,
     empty,
     'aria-label': ariaLabel,
@@ -115,7 +120,6 @@
     virtualized = false,
     height = 400,
     rowHeight = 48,
-    gridNav,
     scroll,
     sticky = false,
     showHeader = true,
@@ -163,6 +167,13 @@
     dataSource?: T[];
     rowKey?: string | ((record: T) => RowKey);
     size?: TableSize;
+    /**
+     * 控制 `<table>` 的 table-layout（对齐 Semi tableLayout）。缺省 `''`：沿用本库既有
+     * 行为（存在 fixed 列或双 table 架构时固定为 fixed，`.cd-table-fixed` class）；
+     * 显式传 `'auto'` 强制浏览器按内容自动分配列宽（不加 `.cd-table-fixed`）；
+     * 显式传 `'fixed'` 强制固定布局（等效当前默认对 fixed 场景的行为）。
+     */
+    tableLayout?: '' | 'auto' | 'fixed';
     bordered?: boolean;
     stripe?: boolean;
     loading?: boolean;
@@ -175,12 +186,8 @@
           pageSize?: number;
           /** 受控当前页（对齐 Semi currentPage） */
           currentPage?: number;
-          /** 受控当前页（本库旧名，与 currentPage 等效，currentPage 优先） */
-          current?: number;
           /** 非受控默认当前页（对齐 Semi defaultCurrentPage） */
           defaultCurrentPage?: number;
-          /** 非受控默认当前页（本库旧名，与 defaultCurrentPage 等效） */
-          defaultCurrent?: number;
           /** 数据总数：受控远程分页时覆盖本地数据长度（对齐 Semi total） */
           total?: number;
           /** 分页器位置：底部/顶部/上下都有（对齐 Semi position），默认 bottom */
@@ -195,8 +202,41 @@
           onChange?: (page: number) => void;
         };
     rowSelection?: RowSelection<T>;
-    expandable?: Expandable<T>;
-    tree?: boolean | TreeTable;
+    /**
+     * 树形数据开关（对齐 Semi 语义，但本库有意保留显式 opt-in：Semi 靠 dataSource
+     * 含 childrenRecordName 字段自动判定树形，本库要求显式传 `tree` 才启用树形渲染
+     * ——避免恰好带 children 字段的普通表被误当树形，见 table-tree-needs-explicit-
+     * tree-and-row-key 记忆）。展开状态/展开行渲染已收敛到顶层 expandedRowKeys 等
+     * props（对齐 Semi Table.tsx：expandedRowKeys/onExpand/onExpandedRowsChange 等
+     * 均为顶层 prop，无 tree 嵌套对象），tree 自身仅剩布尔开关语义。
+     */
+    tree?: boolean;
+    /**
+     * 展开行内容渲染（对齐 Semi 顶层 expandedRowRender）。传入即视为该表启用「展开行」
+     * 能力；与 tree（树形）共用同一份 expandedRowKeys 状态与展开图标机制，
+     * 二者可同时生效（对齐 Semi Body/index.tsx renderBodyRows：hasExpandedRowRender
+     * 与 recordHasChildren 各自独立判定，互不排斥）。
+     */
+    expandedRowRender?: Snippet<[{ record: T; index: number }]>;
+    /** 该行是否可展开，默认全部可展开（对齐 Semi 顶层 rowExpandable，同时作用于展开行图标与树形展开图标） */
+    rowExpandable?: (record: T) => boolean;
+    /**
+     * 受控展开行 key 列表（对齐 Semi 顶层 expandedRowKeys）：同时驱动 expandedRowRender
+     * 展开行渲染与树形 children 展开渲染（同一份状态，对齐 Semi handleRowExpanded 单一
+     * expandedRowKeys 数组同时服务两种渲染路径）。受控时不回写，仅经 onExpand /
+     * onExpandedRowsChange 通知（红线 #1）。
+     */
+    expandedRowKeys?: RowKey[];
+    /** 非受控初始展开行 key 列表（对齐 Semi 顶层 defaultExpandedRowKeys） */
+    defaultExpandedRowKeys?: RowKey[];
+    /** 单行展开/收起时触发（对齐 Semi 顶层 onExpand，入参 (expanded, record)） */
+    onExpand?: (expanded: boolean, record: T) => void;
+    /**
+     * 展开行 key 集合变化时触发，入参为完整展开行记录数组（非 key 数组，对齐 Semi
+     * 顶层 onExpandedRowsChange：`(expandedRows?: RecordType[]) => void`，实测于 Semi
+     * 官方「行可交换的树形数据」demo `onExpandedRowsChange={rows => setExpandedRowKeys(rows.map(item => item[rowKey]))}`）。
+     */
+    onExpandedRowsChange?: (records: T[]) => void;
     rowClassName?: (record: T, index: number) => string;
     empty?: string;
     /** 空数据占位自定义渲染（富内容，如 Empty 组件；优先于 empty 文案，对齐 Semi empty: ReactNode） */
@@ -225,24 +265,16 @@
     reachBottomThreshold?: number;
     /** 行虚拟滚动：仅渲染视口内行，适合大数据（1000+ 行）。默认 false（行为不变）。
      *  启用时忽略 pagination（全量滚动），表头 sticky 固定于滚动容器顶部。
-     *  假定行等高（rowHeight）；与 expandable 同用时展开内容行不计入高度，故不建议混用。 */
+     *  假定行等高（rowHeight）；与 expandedRowRender 同用时展开内容行不计入高度，故不建议混用。 */
     virtualized?: boolean;
     /** 虚拟滚动视口高度（px）。virtualized 时生效，默认 400 */
     height?: number;
     /** 虚拟滚动行高（px）。virtualized 时生效，默认 48 */
     rowHeight?: number;
-    /**
-     * 交互态 WAI-ARIA Grid Pattern 开关（role=grid + 单元格二维方向键漫游 +
-     * roving tabindex + 虚拟化焦点回收）。
-     * - 缺省（undefined）：当存在交互能力（排序/筛选/行选择/展开/树形/行点击）时自动启用 grid，
-     *   纯展示表保持 role=table，省去漫游逻辑（spec §3 纯展示降级）。
-     * - 显式 true/false：强制启用/关闭 grid 漫游。
-     */
-    gridNav?: boolean;
     /** 横/纵向滚动配置，x 设最小宽度并横向溢出，y 设最大高度并纵向溢出 */
     scroll?: ScrollConfig;
-    /** 表头吸顶：true 时表头 sticky 定位；对象时可指定 offsetHeader（px） */
-    sticky?: boolean | { offsetHeader?: number };
+    /** 表头吸顶：true 时表头 sticky 定位；对象时可指定 top（距滚动容器顶部偏移 px，对齐 Semi Sticky）。v2.21+ 语义：开启后 Table 自动切换 fixed 布局 */
+    sticky?: boolean | { top?: number };
     /** 是否显示表头，默认 true */
     showHeader?: boolean;
     /** 默认展开全部行（包含树形行），默认 false */
@@ -252,7 +284,7 @@
     /**
      * Table 级列伸缩开关（对齐 Semi resizable）。true 时所有带 width 的列可拖拽伸缩
      * （column.resize=false 单列关闭）；对象态提供 onResize/onResizeStart/onResizeStop
-     * 事件（返回的对象与该列合并，如 className）。与列级 column.resizable 兼容并存。
+     * 事件（返回的对象与该列合并，如 className）。
      */
     resizable?: boolean | ResizableConfig<T>;
     /** 筛选浮层挂载容器，默认跟随触发按钮 */
@@ -267,7 +299,7 @@
     expandCellFixed?: boolean | 'left' | 'right';
     /** keepDOM=true 时保留已展开行 DOM 但隐藏（display:none），默认 false */
     keepDOM?: boolean;
-    /** 树形缩进像素，默认 20（tree.indentSize 优先） */
+    /** 树形缩进像素，默认 20（对齐 Semi 顶层 indentSize） */
     indentSize?: number;
     /** 按字段名或函数对数据行分组，插入分组标题行 */
     groupBy?: string | ((record: T) => string);
@@ -280,7 +312,11 @@
     defaultExpandAllGroupRows?: boolean;
     /** 受控：为 true 展开全部分组、false 折叠全部分组。受控时不回写，仅经 onGroupExpandChange 通知（红线 #1） */
     expandAllGroupRows?: boolean;
-    /** 分组展开/收起变化回调（点击分组标题行触发），回传当前展开的分组 key 集合 */
+    /**
+     * 分组展开/收起变化回调（点击分组标题行触发），回传当前展开的分组 key 集合。
+     * Semi 无此专属回调（Semi 分组仅有 expandAllGroupRows/clickGroupedRowToExpand 等展开控制
+     * props，无逐组变化通知），本库参照 Semi 展开行 onExpand 的模式补充，属合理扩展。
+     */
     onGroupExpandChange?: (info: { groupKey: string; expanded: boolean; expandedGroupKeys: string[] }) => void;
     /** 分组标题行的自定义属性回调（类似 onRow，仅作用于分组头行），返回值合并进分组头行 tr。groupBy 时生效 */
     onGroupedRow?: (group: T[], index: number) => { onClick?: (e: MouseEvent) => void; onDoubleClick?: (e: MouseEvent) => void; onMouseEnter?: (e: MouseEvent) => void; onMouseLeave?: (e: MouseEvent) => void; className?: string; style?: string };
@@ -295,12 +331,12 @@
     renderPagination?: Snippet<[{ total: number; currentPage: number; pageSize: number; onChange: (page: number) => void }]>;
     /**
      * 自定义展开行的展开/收起图标（替换默认三角）。入参 { expanded, record }。
-     * 仅在 expandable 展开列生效（树形行的展开三角另有渲染，不受此影响）。
+     * 仅在 expandedRowRender 展开列生效（树形行的展开三角另有渲染，不受此影响）。
      */
     expandIcon?: Snippet<[{ expanded: boolean; record: T }]>;
     /**
      * 展开按钮是否与首列文案渲染在同一单元格。默认 true（并入首列，对齐 Semi）；
-     * 传 false 时展开按钮单独作为一列渲染（首列前的独立 expand 列）。仅 expandable 时生效。
+     * 传 false 时展开按钮单独作为一列渲染（首列前的独立 expand 列）。仅 expandedRowRender 时生效。
      */
     hideExpandedColumn?: boolean;
     /** 合并单元格（column.render 返回 rowSpan）时 hover 是否高亮整个合并区。默认 false */
@@ -313,7 +349,7 @@
     title?: string;
     /** 表格尾部（字符串；富内容用 footerSnippet） */
     footer?: string;
-    /** 树形 dataSource 中子级字段名，默认 'children'（对齐 Semi childrenRecordName；tree.childrenColumnName 优先） */
+    /** 树形 dataSource 中子级字段名，默认 'children'（对齐 Semi 顶层 childrenRecordName） */
     childrenRecordName?: string;
     /** 最外层 .cd-table-wrapper 自定义样式名（对齐 Semi className） */
     class?: string;
@@ -322,12 +358,20 @@
     /**
      * 覆盖组成元素的 tag 名（对齐 Semi components）。Svelte 侧以标签名字符串生效，
      * 经 <svelte:element> 渲染，内部 class/role/事件仍注入。缺省用原生
-     * table/thead/tbody/tr/th/td。常见用法：body.row='div' 配合拖拽库。
+     * table/thead/tbody/tr/th/td/colgroup/col。常见用法：body.row='div' 配合拖拽库。
+     * body.colgroup.{wrapper,col} 对齐 Semi ColGroup 消费的 components.body.colgroup
+     * （Semi 自身实现里唯一真被消费的 components 子槽位，其余 header.outer/body.outer/
+     * footer.* 在 Semi 源码中也未被消费，本库同步不实现）。
      */
     components?: {
       table?: string;
       header?: { wrapper?: string; row?: string; cell?: string };
-      body?: { wrapper?: string; row?: string; cell?: string };
+      body?: {
+        wrapper?: string;
+        row?: string;
+        cell?: string;
+        colgroup?: { wrapper?: string; col?: string };
+      };
     };
     /**
      * 返回虚拟化滚动控制句柄（对齐 Semi getVirtualizedListRef）。仅 virtualized 时有效。
@@ -347,6 +391,8 @@
   const tagHeaderCell = $derived(components?.header?.cell ?? 'th');
   const tagBodyRow = $derived(components?.body?.row ?? 'tr');
   const tagBodyCell = $derived(components?.body?.cell ?? 'td');
+  const tagColgroupWrapper = $derived(components?.body?.colgroup?.wrapper ?? 'colgroup');
+  const tagCol = $derived(components?.body?.colgroup?.col ?? 'col');
 
   const loc = useLocale();
   // 单例 live region（polite）：排序结果播报给屏幕阅读器（命令式写入在事件回调，红线 #3）。
@@ -411,7 +457,12 @@
       if (!col.children || col.children.length === 0) {
         rows[rowIndex]?.push({ col, colSpan: 1, rowSpan: depth - rowIndex, leafIndex: startLeaf, isLeaf: true });
       } else {
-        rows[rowIndex]?.push({ col, colSpan: leafCount(col), rowSpan: 1, leafIndex: -1, isLeaf: false });
+        // leafIndex 记分组覆盖的起始叶子列索引（而非占位 -1）：分组表头 sticky 定位/
+        // 固定列分割线（TableHeaderRow.svelte headerMergeCell 非叶子分支）需要据此
+        // 结合 colSpan 算出分组覆盖的叶子列范围，判断是否命中固定列及是否为该固定
+        // 方向的最后一组（真机核对发现此前 leafIndex 恒 -1，分组表头完全没有接入
+        // 固定列体系：横向滚动时不会跟着叶子列一起 sticky，也没有分割线）。
+        rows[rowIndex]?.push({ col, colSpan: leafCount(col), rowSpan: 1, leafIndex: startLeaf, isLeaf: false });
         let childLeaf = startLeaf;
         for (const child of col.children) {
           walk(child, rowIndex + 1, childLeaf);
@@ -432,6 +483,11 @@
   const widthOverrides = new SvelteMap<string, number>();
   // 拖拽手柄所在列头引用（用于 pointerdown 读取起始几何）
   const resizeHandles: Record<string, HTMLElement | null> = $state({});
+  // TableHeaderRow.svelte 用此回调写入 resizeHandles（而非直接 mutate 传入的对象引用，
+  // 对齐同文件 onRowEl 的回调式 DOM ref 收集模式，避免 Svelte 5 ownership_invalid_mutation）。
+  function setResizeHandleEl(colKey: string, el: HTMLElement | null) {
+    resizeHandles[colKey] = el;
+  }
   // 当前正在拖拽的列 key（用于手柄高亮 / body class）
   let resizingKey = $state<string | null>(null);
 
@@ -443,9 +499,8 @@
   }
 
   // 某列是否可伸缩：Table 级 resizable 开启时，带 width 且 column.resize!==false 的列
-  // 可伸缩（对齐 Semi）；列级 column.resizable 保持兼容。
+  // 可伸缩（对齐 Semi）。
   function columnResizable(col: ColumnDef<T>): boolean {
-    if (col.resizable) return true;
     if (!resizable) return false;
     if (col.resize === false) return false;
     return col.width !== undefined;
@@ -548,6 +603,10 @@
   let openFilterKey = $state<string | null>(null);
   // 各列漏斗按钮引用（trigger）+ 当前浮层引用（dismiss extraTargets）
   const filterTriggers: Record<string, HTMLButtonElement | null> = $state({});
+  // TableHeaderRow.svelte 用此回调写入 filterTriggers（同上，避免直接 mutate props）。
+  function setFilterTriggerEl(colKey: string, el: HTMLButtonElement | null) {
+    filterTriggers[colKey] = el;
+  }
   let filterPanelEl = $state<HTMLDivElement | null>(null);
 
   // 全局浮层注册（见 core registerOverlayRoot 注释）：filter panel portal 到 body 后
@@ -656,11 +715,6 @@
     if (opts?.closeDropdown !== false) setFilterOpen(col, colKey, false);
     emitFilterChange(colKey, []);
   }
-  function resetFilter(col: ColumnDef<T>, colKey: string) {
-    filterState.set(colKey, new Set());
-    setFilterOpen(col, colKey, false);
-    emitFilterChange(colKey, []);
-  }
   // 筛选变化：单列 onFilterChange + 聚合 onChange。dataIndex 优先列 dataIndex，回退 colKey。
   function emitFilterChange(colKey: string, values: (string | number)[]) {
     const col = leafColumns.find((c, i) => colKeyOf(c, i) === colKey);
@@ -715,7 +769,7 @@
         if (col.filterChildrenRecord) {
           // 树形子级本地过滤：子级命中则父级保留（对齐 Semi filterChildrenRecord）。
           // 递归裁剪 children 字段：自身命中保留整行；否则保留命中的子孙分支。
-          const childKey = typeof tree === 'object' ? (tree.childrenColumnName ?? 'children') : (childrenRecordName ?? 'children');
+          const childKey = childrenRecordName ?? 'children';
           const prune = (records: T[]): T[] => {
             const out: T[] = [];
             for (const rec of records) {
@@ -759,7 +813,7 @@
               };
         if (target.sortChildrenRecord) {
           // 树形子级本地排序：每层 children 也按同一比较器排序（对齐 Semi sortChildrenRecord）。
-          const childKey = typeof tree === 'object' ? (tree.childrenColumnName ?? 'children') : (childrenRecordName ?? 'children');
+          const childKey = childrenRecordName ?? 'children';
           const deepSort = (records: T[]): T[] =>
             applySort(records, order, compare).map((rec) => {
               const kids = rec[childKey];
@@ -777,18 +831,15 @@
     return data;
   });
 
-  // --- 分页：受控 currentPage/current 不回写 (红线 #1) ---
+  // --- 分页：受控 currentPage 不回写 (红线 #1) ---
   // virtualized 与分页互斥：虚拟滚动时全量渲染滚动，忽略 pagination（取舍见 props 注释）。
-  // currentPage（对齐 Semi）优先于旧名 current；defaultCurrentPage 优先于 defaultCurrent。
   const paginationEnabled = $derived(!virtualized && pagination !== false);
   const pageSize = $derived(pagination ? (pagination.pageSize ?? 10) : 10);
-  const controlledPage = $derived(
-    pagination ? (pagination.currentPage ?? pagination.current) : undefined,
-  );
+  const controlledPage = $derived(pagination ? pagination.currentPage : undefined);
   const isPageControlled = $derived(controlledPage !== undefined);
   let innerPage = $state(initPage());
   function initPage(): number {
-    return pagination ? (pagination.defaultCurrentPage ?? pagination.defaultCurrent ?? 1) : 1;
+    return pagination ? (pagination.defaultCurrentPage ?? 1) : 1;
   }
   const currentPage = $derived(controlledPage ?? innerPage);
 
@@ -838,14 +889,11 @@
   // --- 树形数据（嵌套行）---
   // tree 启用时：filter/sort/paginate 作用于顶层行(processed/visibleRows)，
   // 然后据展开态把可见顶层行扁平化为带 level/hasChildren 的渲染行列表。
-  // 受控 tree.expandedRowKeys 不回写，仅 onExpand 通知 (红线 #1)。
-  const treeEnabled = $derived(tree !== undefined && tree !== false);
-  const treeOpts = $derived<TreeTable>(typeof tree === 'object' ? tree : {});
-  const childrenColumnName = $derived(treeOpts.childrenColumnName ?? childrenRecordName ?? 'children');
-  const indentSize = $derived(treeOpts.indentSize ?? indentSizeProp);
+  const treeEnabled = $derived(tree === true);
+  const indentSize = $derived(indentSizeProp);
 
   function getChildren(record: T): T[] | undefined {
-    const kids = record[childrenColumnName];
+    const kids = record[childrenRecordName ?? 'children'];
     return Array.isArray(kids) ? (kids as T[]) : undefined;
   }
 
@@ -868,61 +916,90 @@
     return conductRows(visibleRows, selectedSet, getKey, getChildren, rowDisabledFn);
   });
 
-  const isTreeExpandControlled = $derived(treeOpts.expandedRowKeys !== undefined);
-  let innerTreeExpanded = $state<RowKey[]>(initTreeExpanded());
-  function initTreeExpanded(): RowKey[] {
-    if (typeof tree === 'object' && tree.defaultExpandedRowKeys) {
-      return [...tree.defaultExpandedRowKeys];
+  // --- 展开状态：单一顶层架构（对齐 Semi Table.tsx expandedRowKeys/onExpand/
+  // onExpandedRowsChange 均为顶层 prop，无 expandable/tree 嵌套状态对象，见
+  // foundation.ts handleRowExpanded：一份 expandedRowKeys 数组同时驱动
+  // expandedRowRender 展开行渲染与树形 children 渲染）。受控 expandedRowKeys
+  // 不回写，仅经 onExpand(单行)/onExpandedRowsChange(全量展开记录数组) 通知 (红线 #1)。
+  const hasExpandedRowRender = $derived(expandedRowRender !== undefined);
+  // 展开按钮是否占独立前置列：hideExpandedColumn=false 时独立成列；默认 true 并入首列（对齐 Semi）。
+  const expandAsColumn = $derived(hasExpandedRowRender && hideExpandedColumn === false);
+  const isExpandControlled = $derived(expandedRowKeys !== undefined);
+  let innerExpanded = $state<RowKey[]>(initExpanded());
+  function initExpanded(): RowKey[] {
+    if (defaultExpandedRowKeys) {
+      return [...defaultExpandedRowKeys];
     }
     if (defaultExpandAllRows) {
-      // 递归收集所有含子行的行 key
+      // 递归收集所有「应展开」的行 key：有 expandedRowRender 时全部顶层行；
+      // 树形时额外收集所有含子行的行（含嵌套层级）。
       const keys: RowKey[] = [];
-      const col = typeof tree === 'object' ? (tree.childrenColumnName ?? 'children') : 'children';
-      const walk = (records: T[]): void => {
+      const walk = (records: T[], isTop: boolean): void => {
         for (const r of records) {
-          const k = typeof rowKey === 'function' ? rowKey(r) : (r[rowKey as string] as RowKey);
-          const kids = r[col];
-          if (Array.isArray(kids) && kids.length > 0) {
-            keys.push(k);
-            walk(kids as T[]);
-          }
+          const k = getKey(r);
+          const kids = treeEnabled ? getChildren(r) : undefined;
+          const hasKids = !!kids && kids.length > 0;
+          if ((isTop && hasExpandedRowRender) || hasKids) keys.push(k);
+          if (hasKids) walk(kids!, false);
         }
       };
-      walk(dataSource);
+      walk(dataSource, true);
       return keys;
     }
     return [];
   }
-  // expandAllRows=true 时展开全部含子行的行（对齐 Semi expandAllRows，覆盖其余展开态）。
-  const allTreeExpandableKeys = $derived.by<RowKey[]>(() => {
-    if (expandAllRows !== true || !treeEnabled) return [];
+  // expandAllRows=true 时展开全部「可展开」的行（对齐 Semi expandAllRows，覆盖其余展开态）：
+  // 有 expandedRowRender 时全部顶层行；树形时全部含子行的行（含嵌套层级）。
+  const allExpandableKeys = $derived.by<RowKey[]>(() => {
+    if (expandAllRows !== true) return [];
     const keys: RowKey[] = [];
+    const walk = (records: T[], isTop: boolean): void => {
+      for (const r of records) {
+        const kids = treeEnabled ? getChildren(r) : undefined;
+        const hasKids = !!kids && kids.length > 0;
+        if ((isTop && hasExpandedRowRender) || hasKids) keys.push(getKey(r));
+        if (hasKids) walk(kids!, false);
+      }
+    };
+    walk(dataSource, true);
+    return keys;
+  });
+  const expandedSet = $derived<Set<RowKey>>(
+    expandAllRows === true
+      ? new Set(allExpandableKeys)
+      : new Set(isExpandControlled ? (expandedRowKeys ?? []) : innerExpanded),
+  );
+
+  function canExpand(record: T): boolean {
+    return rowExpandable ? rowExpandable(record) : true;
+  }
+
+  // 据 key 集合解析完整 record 数组（含树形嵌套子行），供 onExpandedRowsChange
+  // 回传（对齐 Semi onExpandedRowsChange：入参为完整 record 数组而非 key 数组，
+  // 实测于 Semi 官方「行可交换的树形数据」demo）。
+  function recordsForExpandedKeys(keys: Set<RowKey>): T[] {
+    const out: T[] = [];
     const walk = (records: T[]): void => {
       for (const r of records) {
-        const kids = getChildren(r);
-        if (kids && kids.length > 0) {
-          keys.push(getKey(r));
-          walk(kids);
-        }
+        if (keys.has(getKey(r))) out.push(r);
+        const kids = treeEnabled ? getChildren(r) : undefined;
+        if (kids) walk(kids);
       }
     };
     walk(dataSource);
-    return keys;
-  });
-  const treeExpandedSet = $derived<Set<RowKey>>(
-    expandAllRows === true
-      ? new Set(allTreeExpandableKeys)
-      : new Set(isTreeExpandControlled ? (treeOpts.expandedRowKeys ?? []) : innerTreeExpanded),
-  );
+    return out;
+  }
 
-  function toggleTreeExpand(record: T) {
+  function toggleExpand(record: T) {
+    if (!canExpand(record)) return;
     const key = getKey(record);
-    const next = new Set(treeExpandedSet);
+    const next = new Set(expandedSet);
     const willExpand = !next.has(key);
     if (willExpand) next.add(key);
     else next.delete(key);
-    if (!isTreeExpandControlled) innerTreeExpanded = [...next];
-    treeOpts.onExpand?.(willExpand, key);
+    if (!isExpandControlled) innerExpanded = [...next];
+    onExpand?.(willExpand, record);
+    onExpandedRowsChange?.(recordsForExpandedKeys(next));
     onExpandChange?.({ expanded: willExpand, record, expandedRowKeys: [...next] });
   }
 
@@ -939,7 +1016,7 @@
         topIndex: i,
       }));
     }
-    return flattenTreeRows(visibleRows, treeExpandedSet, getKey, getChildren);
+    return flattenTreeRows(visibleRows, expandedSet, getKey, getChildren);
   });
 
   // --- 行虚拟滚动：仅渲染视口内行（复用 core fixedRange 纯函数）---
@@ -1044,12 +1121,16 @@
     };
   });
 
-  // 固定列横滚位置检测（对齐 Semi scroll-position-left/right）：横滚容器 scrollLeft
-  // 决定左/右固定列阴影显隐。命令式监听 + 初始同步，写本地 $state 只加 class（红线 #3）。
+  // 横滚位置检测（对齐 Semi scroll-position-left/right）：横滚容器 scrollLeft 决定
+  // 左/右固定列阴影显隐，以及 bordered 模式下容器右边框覆盖层显隐（对齐 Semi #441 fix，
+  // 详见 .cd-table-wrapper-bordered::after 规则）——不限定 hasFixed：Semi 该 class 是
+  // 无条件挂在 wrapCls 上的通用横滚位置状态，服务多个消费场景，不只是固定列阴影；
+  // 此前限定 hasFixed 会导致纯 scroll.x（无 fixed 列）横滚到底时该 class 永不挂载。
+  // 命令式监听 + 初始同步，写本地 $state 只加 class（红线 #3）。
   let hRafId = 0;
   $effect(() => {
     const el = scrollEl;
-    if (!el || !hasFixed) return;
+    if (!el) return;
     const update = () => {
       const { scrollLeft, scrollWidth, clientWidth } = el;
       // scrollLeft 在 RTL 下可能为负，取绝对值判定边缘
@@ -1071,6 +1152,36 @@
       if (hRafId) {
         cancelAnimationFrame(hRafId);
         hRafId = 0;
+      }
+    };
+  });
+
+  // 双 table 场景横向滚动同步（对齐 Semi handleBodyScrollLeft）：Body 是横向滚动的
+  // 权威来源（用户在 Body 上横滚），HeadTable 的 wrapper div 只读不可交互
+  // （overflow-x:hidden），每次 Body scroll 事件命令式把 scrollLeft 写过去。
+  // 与上面固定列阴影检测effect分离（各自关注点独立），同样 rAF 节流 + cleanup（红线 #3）。
+  let headSyncRafId = 0;
+  $effect(() => {
+    const el = scrollEl;
+    const head = headWrapEl;
+    if (!el || !head || !useFixedHeader) return;
+    const sync = () => {
+      head.scrollLeft = el.scrollLeft;
+    };
+    sync(); // 初始同步
+    const onScrollSync = () => {
+      if (headSyncRafId) return;
+      headSyncRafId = requestAnimationFrame(() => {
+        headSyncRafId = 0;
+        sync();
+      });
+    };
+    el.addEventListener('scroll', onScrollSync, { passive: true });
+    return () => {
+      el.removeEventListener('scroll', onScrollSync);
+      if (headSyncRafId) {
+        cancelAnimationFrame(headSyncRafId);
+        headSyncRafId = 0;
       }
     };
   });
@@ -1106,9 +1217,6 @@
   // （配合 useFullRender 把 selection 物料摆进任意单元格，对齐 Semi hidden）。
   const selectionEnabled = $derived(rowSelection !== undefined);
   const hasSelection = $derived(selectionEnabled && rowSelection?.hidden !== true);
-  const hasExpand = $derived(expandable !== undefined);
-  // 展开按钮是否占独立前置列：hideExpandedColumn=false 时独立成列；默认 true 并入首列（对齐 Semi）。
-  const expandAsColumn = $derived(hasExpand && hideExpandedColumn === false);
   const colSpan = $derived(
     leafColumns.length + (hasSelection ? 1 : 0) + (expandAsColumn ? 1 : 0),
   );
@@ -1121,46 +1229,6 @@
       .map(([k, v]) => `${k}:${v}`)
       .join(';');
   });
-
-  // --- 展开行：受控 expandedRowKeys 不回写 (红线 #1) ---
-  const isExpandControlled = $derived(expandable?.expandedRowKeys !== undefined);
-  let innerExpanded = $state<RowKey[]>(initExpanded());
-  function initExpanded(): RowKey[] {
-    if (expandable?.defaultExpandedRowKeys) {
-      return [...expandable.defaultExpandedRowKeys];
-    }
-    if (defaultExpandAllRows && expandable) {
-      return dataSource.map((r) =>
-        typeof rowKey === 'function' ? rowKey(r) : (r[rowKey as string] as RowKey),
-      );
-    }
-    return [];
-  }
-  const expandedSet = $derived<Set<RowKey>>(
-    expandAllRows === true && expandable
-      ? new Set(dataSource.map((r) => getKey(r)))
-      : new Set(
-          isExpandControlled
-            ? (expandable?.expandedRowKeys ?? [])
-            : innerExpanded,
-        ),
-  );
-
-  function canExpand(record: T): boolean {
-    return expandable?.rowExpandable ? expandable.rowExpandable(record) : true;
-  }
-
-  function toggleExpand(record: T) {
-    const key = getKey(record);
-    if (!canExpand(record)) return;
-    const next = new Set(expandedSet);
-    const willExpand = !next.has(key);
-    if (willExpand) next.add(key);
-    else next.delete(key);
-    if (!isExpandControlled) innerExpanded = [...next];
-    expandable?.onExpand?.(willExpand, record);
-    onExpandChange?.({ expanded: willExpand, record, expandedRowKeys: [...next] });
-  }
 
   // --- 选择变更：回调取对应行对象 ---
   // 联动树形需含未展开的子行，故据整棵可见行树建 key→record 映射；
@@ -1275,201 +1343,6 @@
     emitSelection(next);
     rowSelection?.onSelect?.(record, !wasSelected, rowsForKeys([...next]));
   }
-
-  // ===================================================================
-  //  交互态 WAI-ARIA Grid Pattern：role=grid + 二维方向键漫游 + roving
-  //  tabindex + 虚拟化焦点回收。
-  //
-  //  焦点模型（红线 #2/#3）：
-  //  - 焦点坐标 focusRow/focusCol 为「逻辑索引」存本地 $state：
-  //      focusRow = -1 表示表头行，0..displayRows.length-1 表示数据行（逻辑序，
-  //      与虚拟化是否渲染无关）；focusCol 索引进「网格列」扁平表
-  //      [expand?, selection?, ...dataColumns]。
-  //  - 每个渲染单元格的 tabindex 由纯派生函数 rovingTabindex(row,col) 计算：
-  //      命中焦点坐标 → 0，否则 -1；整个 grid 只有一个 tabbable 入口（APG）。
-  //  - 方向键算下一坐标（纯函数 nextRovingIndex），命令式 focusCell() 聚焦：
-  //      虚拟化下目标行未渲染先滚动进视口 + tick() 再 focus（render 期不写 $state）。
-  //  - 被虚拟化回收的焦点行：$effect 监测，焦点回退到 grid 容器并 announce，
-  //      不让焦点掉到 <body>。
-  // ===================================================================
-
-  // grid 是否启用：缺省自动检测交互能力；显式 gridNav 覆盖。
-  const isInteractive = $derived(
-    selectionEnabled ||
-      hasExpand ||
-      treeEnabled ||
-      !!onRowClick ||
-      effectiveColumns.some((c) => !!c.sorter || (!!c.filters && c.filters.length > 0)),
-  );
-  const gridEnabled = $derived(gridNav !== undefined ? gridNav : isInteractive);
-
-  // grid 单元格 id 前缀（稳定、SSR 安全）。
-  const gridId = useId('cd-table-grid');
-  // 网格列扁平表：前置 expand/selection 占位列 + 数据列（纯函数 buildGridCols）。
-  const gridCols = $derived<GridCol[]>(
-    buildGridCols({ hasExpand: expandAsColumn, hasSelection, dataColumnCount: leafColumns.length }),
-  );
-  const gridColCount = $derived(gridCols.length);
-  // 总行数（含表头行）= aria-rowcount，虚拟化时为逻辑总数而非渲染数（spec §6）。
-  const gridRowCount = $derived(displayRows.length + 1);
-
-  // 焦点坐标（逻辑索引）。-1 行 = 表头；col 索引进 gridCols。
-  // 初始未聚焦时为 null，首个 tab 停靠点回退到表头首格。
-  let focusRow = $state(-1);
-  let focusCol = $state(0);
-  let hasFocused = $state(false);
-
-  // 当前是否处于「单元格交互模式」（Enter/F2 进入，Esc 退出）。
-  // 交互模式下单元格内可聚焦控件参与 Tab；导航模式下它们 tabindex=-1。
-  let cellInteractive = $state(false);
-
-  // 某 (row,col) 是否为当前 roving 焦点格（纯派生，render 期只读）。
-  function isFocusCell(row: number, col: number): boolean {
-    if (!gridEnabled) return false;
-    return isFocusCellPure(row, col, { row: focusRow, col: focusCol, hasFocused });
-  }
-  // 单元格 roving tabindex：焦点格 0，其余 -1（仅 grid 启用时）。
-  function rovingTabindex(row: number, col: number): 0 | -1 | undefined {
-    if (!gridEnabled) return undefined;
-    return rovingTabindexAt(row, col, { row: focusRow, col: focusCol, hasFocused });
-  }
-  // 单元格内交互控件的 tabindex：导航模式下 -1（不参与 Tab，靠 Enter/F2 进入），
-  // 交互模式下当前焦点格内控件恢复 0。非 grid 时不接管（undefined）。
-  function childTabindex(row: number, col: number): 0 | -1 | undefined {
-    if (!gridEnabled) return undefined;
-    if (cellInteractive && isFocusCell(row, col)) return 0;
-    return -1;
-  }
-  // 单元格稳定 id（focusCell 命令式聚焦目标）。row=-1 表头记作 'h'。
-  function cellId(row: number, col: number): string {
-    return `${gridId}-r${row === -1 ? 'h' : row}-c${col}`;
-  }
-
-  // grid 容器（table 元素）引用 —— 焦点回收落点。
-  let gridEl = $state<HTMLTableElement | null>(null);
-
-  // 命令式聚焦某逻辑坐标的单元格：虚拟化下若行未渲染先滚动进视口 + tick 再聚焦。
-  async function focusCell(row: number, col: number) {
-    focusRow = row;
-    focusCol = col;
-    hasFocused = true;
-    cellInteractive = false;
-    // 数据行在虚拟化视口外：先滚动使其进入视口（render 期外，事件回调内，红线 #3）。
-    if (virtualized && row >= 0 && scrollEl) {
-      const inView = row >= vRange.startIndex && row < vRange.endIndex;
-      if (!inView) {
-        // 目标行顶部对齐到视口（留一行余量），写 scrollEl.scrollTop 触发 scroll 回调更新区间。
-        const target = Math.max(0, row * vRowHeight);
-        scrollEl.scrollTop = target;
-        scrollTop = target;
-        await tick();
-      }
-    }
-    await tick();
-    const el = gridEl?.querySelector<HTMLElement>(`#${cssEscape(cellId(row, col))}`);
-    if (el) el.focus();
-    else if (gridEl) gridEl.focus(); // 兜底：目标仍不可用，焦点回收到 grid 容器（不掉 body）。
-  }
-
-  // CSS.escape 兜底（id 仅含字母数字与 '-'，本不需转义，留作健壮性）。
-  function cssEscape(id: string): string {
-    return typeof CSS !== 'undefined' && CSS.escape ? CSS.escape(id) : id;
-  }
-
-  // 二维方向键漫游 keydown（绑定在 grid table 上，事件委托冒泡）。
-  function onGridKeydown(e: KeyboardEvent) {
-    if (!gridEnabled) return;
-    const key = e.key;
-
-    // 交互模式：Esc 退出回导航模式并聚焦当前格；其余按键交给单元格内控件处理。
-    if (cellInteractive) {
-      if (key === 'Escape') {
-        e.preventDefault();
-        e.stopPropagation();
-        cellInteractive = false;
-        void focusCellSameCoord();
-      }
-      return;
-    }
-
-    // Enter/F2：进入交互模式（聚焦当前格内首个可聚焦控件，无则不拦截）。
-    if (key === 'Enter' || key === 'F2') {
-      const entered = enterCellInteractive();
-      if (entered) {
-        e.preventDefault();
-        e.stopPropagation();
-      }
-      return;
-    }
-
-    // 导航模式：用纯函数算下一坐标（PageUp/Down 翻一屏行数）。
-    const pageRows = Math.max(1, Math.floor(height / vRowHeight) || 10);
-    const next = nextGridCoord(
-      key,
-      { ctrl: e.ctrlKey, meta: e.metaKey },
-      {
-        current: { row: focusRow, col: focusCol },
-        rowCount: displayRows.length,
-        colCount: gridColCount,
-        pageRows,
-      },
-    );
-    if (!next) return; // 非漫游键
-    e.preventDefault();
-    e.stopPropagation();
-    if (next.row !== focusRow || next.col !== focusCol || !hasFocused) {
-      void focusCell(next.row, next.col);
-    }
-  }
-
-  // 重聚焦当前坐标（退出交互模式时用，避免改坐标）。
-  async function focusCellSameCoord() {
-    await tick();
-    const el = gridEl?.querySelector<HTMLElement>(`#${cssEscape(cellId(focusRow, focusCol))}`);
-    if (el) el.focus();
-  }
-
-  // 进入交互模式：聚焦当前焦点格内首个可聚焦元素。返回是否成功进入。
-  function enterCellInteractive(): boolean {
-    const cell = gridEl?.querySelector<HTMLElement>(`#${cssEscape(cellId(focusRow, focusCol))}`);
-    if (!cell) return false;
-    const focusable = cell.querySelector<HTMLElement>(
-      'button:not([disabled]),a[href],input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"]):not(.cd-table-row-cell)',
-    );
-    if (!focusable) return false;
-    cellInteractive = true;
-    // tabindex 由 childTabindex 派生切到 0；命令式聚焦控件。
-    void tick().then(() => focusable.focus());
-    return true;
-  }
-
-  // 单元格被点击/获得焦点时，同步焦点坐标（鼠标与键盘一致）。
-  function syncFocusCoord(row: number, col: number) {
-    if (!gridEnabled) return;
-    focusRow = row;
-    focusCol = col;
-    hasFocused = true;
-  }
-
-  // --- 虚拟化焦点回收 ---
-  // 当聚焦数据行被滚出渲染区间（虚拟化卸载），焦点会掉到 <body>。监测并回收：
-  // 把焦点移到 grid 容器（table，tabindex=-1）并 announce，保证键盘用户不丢失上下文。
-  $effect(() => {
-    if (!gridEnabled || !virtualized || !hasFocused) return;
-    // 仅当焦点落在数据行、且该行不在渲染区间时回收。
-    const row = focusRow;
-    if (row < 0) return;
-    const inView = row >= vRange.startIndex && row < vRange.endIndex;
-    if (inView) return;
-    const active = typeof document !== 'undefined' ? document.activeElement : null;
-    // 仅当焦点确实在本 grid 内（即将随卸载丢失）时回收。
-    if (gridEl && active && gridEl.contains(active)) {
-      gridEl.focus();
-      announcer.announce(
-        loc().t('Table.rowCount', { count: displayRows.length }),
-      );
-    }
-  });
 
   // --- 聚合 onChange 载荷快照（读 render 期派生态，仅在事件回调内调用，红线 #2）---
   // 当前各列筛选选中值（colKey → values[]），仅含非空筛选列。
@@ -1596,8 +1469,9 @@
       : 48,
   );
 
-  // --- 固定列：纯 CSS sticky + 逐列像素偏移计算 ---
-  // selection / expand 前置列宽（与 CSS .cd-table-column-selection/--expand 对齐）
+  // --- 固定列：JS 实测宽度累加（对齐 Semi TableHeaderRow.cacheRef + arrayAdd） ---
+  // selection / expand 前置列宽（与 CSS .cd-table-column-selection/--expand 对齐；
+  // 恒定 48px 非可变宽列，不纳入 headWidths 实测，直接用 token 值作为偏移基数）。
   const LEADING_W = 48;
   // 前置 leading 列（expand + selection）的总宽，作为 left 固定列偏移基数
   const leadingWidth = $derived((expandAsColumn ? LEADING_W : 0) + (hasSelection ? LEADING_W : 0));
@@ -1613,37 +1487,104 @@
         return sum + (typeof w === 'number' ? w : 120);
       }, 0),
   );
-  const tableStyle = $derived(hasFixed ? `min-inline-size:${totalMinWidth}px` : undefined);
+  const tableStyle = $derived(hasFixed ? `min-width:${totalMinWidth}px` : undefined);
 
   function colNumWidth(col: ColumnDef<T>, index: number): number {
     const w = resolveWidth(col, index);
     return typeof w === 'number' ? w : 0;
   }
 
-  // 每个数据列的 left 偏移（左固定列）：前置宽 + 之前所有左固定列宽之和
+  // --- headWidths 实测：对齐 Semi state.headWidths（按表头层级分组的 {key,width}[]）。
+  //     TableHeaderRow.cacheRef 等价物——每层表头 <tr> 挂载/更新后测量其叶子 <th>
+  //     宽度（数值 column.width 优先，否则 getBoundingClientRect() 实测），写入本状态。
+  //     写入前做值比较去重（headWidthsEqual），避免"测量→写→触发依赖 headWidths 的
+  //     effect 重跑→再次测量"的自循环（红线 #2：measureHeaderLevel 只在挂载/依赖变化
+  //     的 $effect 里调用，写入的是与测量无关的独立 $state，不读自身触发源）。
+  let headWidths = $state<HeadWidthEntry[][]>([]);
+  function setHeadWidthsLevel(index: number, widths: HeadWidthEntry[]) {
+    const prev = headWidths[index];
+    if (prev && headWidthsEqual(prev, widths)) return;
+    const next = headWidths.slice();
+    next[index] = widths;
+    headWidths = next;
+  }
+  // 单层表头 <tr> 实测：row 是该层表头格序列（含叶子列与分组列，与 DOM 内 .cd-table-row-head
+  // 顺序一一对应，对齐 Semi row/heads 位置映射）。skipLeading 跳过 row 0 前置的
+  // expand/selection th（本库把它们当独立恒宽列处理，不纳入 leafColumns/headWidths，
+  // 与 Semi 把它们规整为合成 column 不同——已知的架构差异，见 Body 侧 leadingWidth 常量）。
+  function measureHeaderRow(node: HTMLElement | null, row: { col: ColumnDef<T>; leafIndex: number; isLeaf: boolean }[], level: number, skipLeading = 0) {
+    if (!node) return;
+    const allHeads = node.querySelectorAll<HTMLElement>('.cd-table-row-head');
+    const heads = skipLeading > 0 ? Array.from(allHeads).slice(skipLeading) : allHeads;
+    const widths: HeadWidthEntry[] = [];
+    heads.forEach((head, i) => {
+      const cell = row[i];
+      if (!cell) return;
+      const key = cell.isLeaf ? colKeyOf(cell.col, cell.leafIndex) : (typeof cell.col.title === 'string' ? cell.col.title : (cell.col.key ?? String(i)));
+      let width = cell.isLeaf ? resolveWidth(cell.col, cell.leafIndex) : undefined;
+      if (typeof width !== 'number') {
+        width = head.getBoundingClientRect().width || 0;
+      }
+      widths.push({ key: String(key), width: width as number });
+    });
+    setHeadWidthsLevel(level, widths);
+  }
+  // 表头行 <tr> DOM 引用：level 0（首行，可能含 expand/selection rowspan 占位后接叶子/分组格）
+  // + 合并模式下 headerRows.slice(1) 的后续层。
+  let headerRowEl0 = $state<HTMLElement | null>(null);
+  let headerRowElsRest: (HTMLElement | null)[] = $state([]);
+  // 该层需要测量的「格序列」：level 0 用 headerRows[0]（合并模式）或 leafColumns 映射的
+  // 叶子格（非合并模式，rowSpan=1 单层），其余层用 headerRows[level]。
+  const headerLevel0Row = $derived.by<{ col: ColumnDef<T>; leafIndex: number; isLeaf: boolean }[]>(() =>
+    hasHeaderMerge ? (headerRows[0] ?? []) : leafColumns.map((col, i) => ({ col, leafIndex: i, isLeaf: true as const })),
+  );
+  const leadingColCount = $derived((expandAsColumn ? 1 : 0) + (hasSelection ? 1 : 0));
+  $effect(() => {
+    // 依赖：列结构变化（leafColumns/headerRows 引用变化）与拖拽覆盖宽度变化触发重测；
+    // 只读 DOM ref 与派生列表，不读 headWidths 自身，避免自触发循环。
+    void headerLevel0Row;
+    void widthOverrides.size;
+    void leadingColCount;
+    if (showHeader && headerRowEl0) {
+      measureHeaderRow(headerRowEl0, headerLevel0Row, 0, leadingColCount);
+    }
+  });
+  $effect(() => {
+    void headerRows;
+    void widthOverrides.size;
+    if (showHeader && hasHeaderMerge) {
+      const rest = headerRows.slice(1);
+      rest.forEach((hrow, ri) => {
+        const el = headerRowElsRest[ri];
+        if (el) measureHeaderRow(el, hrow, ri + 1);
+      });
+    }
+  });
+
+  // Body 侧消费同一份 headWidths：按 leafColumns 的 key 顺序取实测宽度数组
+  // （对齐 Semi Body getCellWidths(flattenedColumns)，表头与单元格共享同一份数据源）。
+  const leafCellWidths = $derived(getCellWidths(leafColumns.map((c, i) => colKeyOf(c, i)), headWidths));
+
+  // 每个数据列的 left 偏移（左固定列）：前置宽 + 之前所有左固定列宽之和（arrayAdd 实测累加）
   const fixedLeftOffsets = $derived.by(() => {
-    const out: (number | null)[] = [];
-    let acc = leadingWidth;
+    const out: (number | null)[] = new Array(leafColumns.length).fill(null);
+    if (!leafCellWidths.length) return out;
     for (let i = 0; i < leafColumns.length; i++) {
       const col = leafColumns[i] as ColumnDef<T>;
       if (fixedOf(col) === 'left') {
-        out.push(acc);
-        acc += colNumWidth(col, i);
-      } else {
-        out.push(null);
+        out[i] = leadingWidth + arrayAdd(leafCellWidths, 0, i);
       }
     }
     return out;
   });
-  // 每个数据列的 right 偏移（右固定列）：之后所有右固定列宽之和
+  // 每个数据列的 right 偏移（右固定列）：之后所有右固定列宽之和（arrayAdd 实测累加）
   const fixedRightOffsets = $derived.by(() => {
     const out: (number | null)[] = new Array(leafColumns.length).fill(null);
-    let acc = 0;
+    if (!leafCellWidths.length) return out;
     for (let i = leafColumns.length - 1; i >= 0; i--) {
       const col = leafColumns[i] as ColumnDef<T>;
       if (fixedOf(col) === 'right') {
-        out[i] = acc;
-        acc += colNumWidth(col, i);
+        out[i] = arrayAdd(leafCellWidths, i + 1);
       }
     }
     return out;
@@ -1658,6 +1599,11 @@
   });
   const firstRightFixed = $derived(leafColumns.findIndex((c) => fixedOf(c) === 'right'));
 
+  // RTL：语义上「固定在左端」的列在 RTL 下视觉挂在右边（对齐 Semi TableCell.tsx/
+  // TableHeaderRow.tsx getTdProps()：isRTL 时 sticky 的 CSS 属性名与 -left-last/
+  // -right-first class 归属都互换，非只翻文字方向）。
+  const isRtl = $derived(direction === 'rtl');
+
   // 组合某数据列的 sticky 行内样式（含宽度）
   function cellStyle(col: ColumnDef<T>, i: number): string | undefined {
     const parts: string[] = [];
@@ -1665,28 +1611,51 @@
     if (w) parts.push(w);
     const left = fixedLeftOffsets[i];
     const right = fixedRightOffsets[i];
-    if (left != null) parts.push(`position:sticky`, `inset-inline-start:${left}px`);
-    else if (right != null) parts.push(`position:sticky`, `inset-inline-end:${right}px`);
+    if (left != null) parts.push(`position:sticky`, `${isRtl ? 'right' : 'left'}:${left}px`);
+    else if (right != null) parts.push(`position:sticky`, `${isRtl ? 'left' : 'right'}:${right}px`);
     return parts.length ? parts.join(';') : undefined;
   }
 
-  function fixedCellClass(i: number): string {
+  // 表头合并分组格（headerMergeCell 非叶子分支）的 sticky 定位：只取分组起始叶子列
+  // （leafIndex）的偏移，不含 width（分组宽度由 colSpan 合并的叶子列宽度之和自然决定，
+  // 不能像叶子列那样单独设置固定 width）。此前分组 <th> 完全没有这个函数、也没有
+  // fixedCellClass，横向滚动时分组标题行不会跟着固定列一起 sticky，与它下方已经
+  // sticky 的叶子列表头行为不一致，也没有固定列分割线（真机核对发现的功能性回归，
+  // 不只是视觉缺一条线）。
+  function groupCellStyle(leafIndex: number): string | undefined {
+    const left = fixedLeftOffsets[leafIndex];
+    const right = fixedRightOffsets[leafIndex];
+    if (left != null) return `position:sticky;${isRtl ? 'right' : 'left'}:${left}px`;
+    if (right != null) return `position:sticky;${isRtl ? 'left' : 'right'}:${right}px`;
+    return undefined;
+  }
+
+  // endIndex：合并表头分组格横跨多个叶子列（colSpan>1）时，-last/-right-first 分割线
+  // 应画在分组覆盖范围的最后一个叶子列位置，而非分组自身的起始叶子列 i（对齐 Semi
+  // 分组表头下固定列分割线贯穿整组视觉宽度）。叶子列调用不传时默认 endIndex=i。
+  function fixedCellClass(i: number, endIndex: number = i): string {
     if (fixedLeftOffsets[i] != null) {
-      return `cd-table-cell-fixed cd-table-cell-fixed-left${i === lastLeftFixed ? ' cd-table-cell-fixed-left-last' : ''}`;
+      const lastClass = isRtl ? 'cd-table-cell-fixed-right-first' : 'cd-table-cell-fixed-left-last';
+      const sideClass = isRtl ? 'cd-table-cell-fixed-right' : 'cd-table-cell-fixed-left';
+      return `cd-table-cell-fixed ${sideClass}${endIndex === lastLeftFixed ? ` ${lastClass}` : ''}`;
     }
     if (fixedRightOffsets[i] != null) {
-      return `cd-table-cell-fixed cd-table-cell-fixed-right${i === firstRightFixed ? ' cd-table-cell-fixed-right-first' : ''}`;
+      const firstClass = isRtl ? 'cd-table-cell-fixed-left-last' : 'cd-table-cell-fixed-right-first';
+      const sideClass = isRtl ? 'cd-table-cell-fixed-left' : 'cd-table-cell-fixed-right';
+      return `cd-table-cell-fixed ${sideClass}${i === firstRightFixed ? ` ${firstClass}` : ''}`;
     }
     return '';
   }
 
-  // 前置 leading 列在存在左固定列时也需 sticky 锁定在最左
+  // 前置 leading 列在存在左固定列时也需 sticky 锁定在最左（RTL 下锁在视觉右端）
   function leadingStyle(slot: 'expand' | 'selection'): string | undefined {
     if (!hasFixed || lastLeftFixed < 0) return undefined;
     const offset = slot === 'expand' ? 0 : expandAsColumn ? LEADING_W : 0;
-    return `position:sticky;inset-inline-start:${offset}px`;
+    return `position:sticky;${isRtl ? 'right' : 'left'}:${offset}px`;
   }
-  const leadingFixedClass = $derived(hasFixed && lastLeftFixed >= 0 ? 'cd-table-cell-fixed cd-table-cell-fixed-left' : '');
+  const leadingFixedClass = $derived(
+    hasFixed && lastLeftFixed >= 0 ? `cd-table-cell-fixed ${isRtl ? 'cd-table-cell-fixed-right' : 'cd-table-cell-fixed-left'}` : '',
+  );
 
   // 单元格 style 合并：把 onCell 返回的自定义 style 追加到该 td 已有的 sticky/宽度 style 之后。
   function mergeCellStyle(base: string | undefined, extra: string | undefined): string | undefined {
@@ -1710,13 +1679,31 @@
     };
   }
 
+  // --- 双 table 判定（对齐 Semi useFixedHeader）：存在 fixed 列，或需要吸顶/固定高度
+  // 滚动表头（isStickyHead 已覆盖 sticky/virtualized/scrollBody/scroll.y）时，
+  // thead 与 tbody 拆成两个独立 <table>（HeadTable + Body），JS 同步横向 scrollLeft；
+  // 否则维持单一 <table>（thead+tbody 同表，Body includeHeader=true）。
+  const isStickyHead = $derived(!!sticky || virtualized || scrollBody || scroll?.y != null);
+  const useFixedHeader = $derived(hasFixed || isStickyHead);
+
+  // table-layout：tableLayout 显式传值时覆盖默认推导（对齐 Semi tableLayout）；
+  // 缺省 '' 时沿用 Semi getTableLayout() 推导：存在 fixed/ellipsis 列，或
+  // useFixedHeader（双 table：sticky/virtualized/scrollBody/scroll.y/固定列）时 fixed，否则 auto。
+  const hasEllipsis = $derived(leafColumns.some((c) => !!c.ellipsis));
+  const resolvedFixedLayout = $derived(
+    tableLayout === 'fixed'
+      ? true
+      : tableLayout === 'auto'
+        ? false
+        : hasFixed || hasEllipsis || useFixedHeader,
+  );
   const cls = $derived(
     [
       'cd-table',
       `cd-table-${size}`,
       bordered && 'cd-table-bordered',
       stripe && 'cd-table-stripe',
-      hasFixed && 'cd-table-fixed',
+      resolvedFixedLayout && 'cd-table-fixed',
       rowSpanHover && 'cd-table-row-span-hover',
     ]
       .filter(Boolean)
@@ -1728,11 +1715,11 @@
   const scrollWrapStyle = $derived.by(() => {
     const parts: string[] = [];
     if (virtualized || scrollBody) {
-      parts.push(`block-size:${height}px`, 'overflow:auto');
+      parts.push(`height:${height}px`, 'overflow:auto');
     }
     if (scroll?.y != null) {
       const yVal = typeof scroll.y === 'number' ? `${scroll.y}px` : scroll.y;
-      parts.push(`max-block-size:${yVal}`, 'overflow-y:auto');
+      parts.push(`max-height:${yVal}`, 'overflow-y:auto');
     }
     if (scroll?.x != null) {
       parts.push('overflow-x:auto');
@@ -1754,7 +1741,7 @@
       // 无 scroll.x 但有固定列：min-width 保证固定列不被压缩（窄容器横滚），
       // 同时 width:100% 撑满容器（对齐 Semi：无 scroll.x 时表格 100%，无 width 列
       // 吸收剩余空间，不塌成固定列总宽致右侧留白）。
-      parts.push(tableStyle, 'inline-size:100%');
+      parts.push(tableStyle, 'width:100%');
     }
     return parts.length ? parts.join(';') : undefined;
   });
@@ -1762,25 +1749,29 @@
   // --- sticky prop: thead top offset ---
   const stickyOffset = $derived.by((): number => {
     if (!sticky) return 0;
-    if (typeof sticky === 'object' && sticky.offsetHeader != null) return sticky.offsetHeader;
+    if (typeof sticky === 'object' && sticky.top != null) return sticky.top;
     return 0;
   });
-  const isStickyHead = $derived(!!sticky || virtualized || scrollBody || scroll?.y != null);
+  // HeadTable 外层 div 引用：双 table 场景下，Body 横向滚动时命令式把 scrollLeft
+  // 写到这里（对齐 Semi handleBodyScrollLeft）。单 table 场景不使用。
+  let headWrapEl = $state<HTMLDivElement | null>(null);
 
   // --- selection column width style ---
   const selectionColStyle = $derived.by((): string | undefined => {
     const parts: string[] = [];
     if (rowSelection?.columnWidth != null) {
       const w = rowSelection.columnWidth;
-      parts.push(`inline-size:${typeof w === 'number' ? `${w}px` : w}`);
+      parts.push(`width:${typeof w === 'number' ? `${w}px` : w}`);
     }
     if (rowSelection?.fixed) {
-      // fixed selection column — sticky at start of row
-      parts.push('position:sticky', 'inset-inline-start:0');
+      // fixed selection column — sticky at start of row（RTL 下锁在视觉右端）
+      parts.push('position:sticky', `${isRtl ? 'right' : 'left'}:0`);
     }
     return parts.length ? parts.join(';') : undefined;
   });
-  const selectionFixedClass = $derived(rowSelection?.fixed ? 'cd-table-cell-fixed cd-table-cell-fixed-left' : '');
+  const selectionFixedClass = $derived(
+    rowSelection?.fixed ? `cd-table-cell-fixed ${isRtl ? 'cd-table-cell-fixed-right' : 'cd-table-cell-fixed-left'}` : '',
+  );
 
   // --- groupBy: build grouped display rows ---
   type GroupRow = { type: 'group'; groupKey: string; group: T[]; expanded: boolean; groupIndex: number };
@@ -1788,6 +1779,9 @@
   type RenderRow = DataDisplayRow | GroupRow;
 
   const isGrouped = $derived(groupBy !== undefined);
+  // role=grid/treegrid 静态标注（对齐 Semi Body/index.tsx）：分组/展开行/树形时 treegrid，否则 grid。
+  // 双 table 场景下 HeadTable 与 Body 各自的 <table> 都用同一 role（对齐 Semi 两表 role 一致）。
+  const tableRole = $derived<'grid' | 'treegrid'>(isGrouped || hasExpandedRowRender || treeEnabled ? 'treegrid' : 'grid');
 
   const groupKeyOf = (record: T): string => {
     if (typeof groupBy === 'function') return groupBy(record);
@@ -1868,75 +1862,28 @@
   });
 </script>
 
-<!-- 展开按钮：expandIcon 自定义图标覆盖默认三角。gridTab 为 grid 模式下的 roving tabindex（非 grid 时传 undefined）。 -->
-{#snippet expandButton(record: T, key: RowKey, gridTab: number | undefined)}
-  <button
-    type="button"
-    class="cd-table-expand-icon"
-    class:cd-table-expandedIcon-show={expandedSet.has(key)}
-    aria-expanded={expandedSet.has(key)}
-    aria-label={expandedSet.has(key) ? loc().t('Table.collapseRow') : loc().t('Table.expandRow')}
-    tabindex={gridTab}
-    onclick={(e) => {
-      e.stopPropagation();
-      toggleExpand(record);
-    }}
-  >
-    {#if expandIcon}
-      {@render expandIcon({ expanded: expandedSet.has(key), record })}
-    {:else}
-      <IconChevronRight size="small" aria-hidden="true" />
-    {/if}
-  </button>
+<!-- 展开按钮：expandIcon 自定义图标覆盖默认三角（CustomExpandIcon 组件，对齐 Semi）。 -->
+{#snippet expandButton(record: T, key: RowKey)}
+  <CustomExpandIcon
+    expanded={expandedSet.has(key)}
+    componentType="expand"
+    {expandIcon}
+    {record}
+    onClick={() => toggleExpand(record)}
+  />
 {/snippet}
 
-<!-- 行选择输入框（radio/checkbox，含 rowSelection.renderCell 自定义渲染）。
-     gridTab 为 grid 模式下 roving tabindex（非 grid/物料摆放传 undefined）；
-     radio 型无此机制——Radio 组件严格对齐 Semi 后不再提供 tabindex prop（Semi Radio 无此 API，
-     Semi Table 的 rowSelection 本身也不支持 radio 型，本库该分支属自造超集，grid 模式下降级为
-     浏览器默认可 tab，不参与单元格级 roving）。 -->
-{#snippet rowSelectionInput(record: T, selected: boolean, rowHalf: boolean, rowDisabled: boolean, gridTab: 0 | -1 | undefined)}
-  {#snippet selectionOrigin()}
-    {#if rowSelection?.type === 'radio'}
-      <Radio
-        class="cd-table-selection-checkbox"
-        aria-label={loc().t('Table.selectRow')}
-        checked={selected}
-        disabled={rowDisabled}
-        onChange={() => onToggleRow(record)}
-      />
-    {:else}
-      <Checkbox
-        class="cd-table-selection-checkbox"
-        aria-label={loc().t('Table.selectRow')}
-        checked={selected}
-        disabled={rowDisabled}
-        indeterminate={rowHalf}
-        tabindex={gridTab}
-        onChange={() => onToggleRow(record)}
-      />
-    {/if}
-  {/snippet}
-  <span
-    class="cd-table-selection-wrap"
-    class:cd-table-selection-disabled={rowDisabled}
-    role="presentation"
-    onclick={(e) => e.stopPropagation()}
-  >
-    {#if rowSelection?.renderCell}
-      {@render rowSelection.renderCell({
-        selected,
-        record,
-        originNode: selectionOrigin,
-        inHeader: false,
-        disabled: rowDisabled,
-        indeterminate: rowHalf,
-        selectRow: () => onToggleRow(record),
-      })}
-    {:else}
-      {@render selectionOrigin()}
-    {/if}
-  </span>
+<!-- 行选择输入框（radio/checkbox，含 rowSelection.renderCell 自定义渲染，ColumnSelection 组件对齐 Semi）。 -->
+{#snippet rowSelectionInput(record: T, selected: boolean, rowHalf: boolean, rowDisabled: boolean)}
+  <ColumnSelection
+    {rowSelection}
+    inHeader={false}
+    {selected}
+    indeterminate={rowHalf}
+    disabled={rowDisabled}
+    {record}
+    onToggle={() => onToggleRow(record)}
+  />
 {/snippet}
 
 <!-- 最外层 .semi-table-wrapper（含方向 ltr/rtl），对齐 Semi 分层 -->
@@ -1956,6 +1903,10 @@
       {@render children()}
     </div>
   {/if}
+  <!-- loading 遮罩：对齐 Semi Table.tsx（<Spin spinning={loading} size="large"> 包裹
+       title/pagination/container/footer 整个内容区，非本库此前手写的仅 body 区域遮罩，
+       复用本库自己的 Spin 组件而非重新手写 spinner 视觉）。 -->
+  <Spin spinning={loading} size="large">
   {#if titleSnippet || title}
     <div class="cd-table-title">
       {#if titleSnippet}{@render titleSnippet()}{:else}{title}{/if}
@@ -1966,157 +1917,116 @@
   {/if}
   <!-- .semi-table-container：承载 body + footer -->
   <div class="cd-table-container">
-    <div
-      class="cd-table-body"
-      class:cd-table-body-virtual={virtualized}
-      class:cd-table-body-scroll={scrollBody}
-      class:cd-table-scroll-position-left={hasFixed && scrollPosLeft}
-      class:cd-table-scroll-position-right={hasFixed && scrollPosRight}
-      bind:this={scrollEl}
-      style={scrollWrapStyle}
-    >
-  <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
-  <!-- role=grid 是交互容器；tabindex=-1 仅作虚拟化焦点回收落点，不进 Tab 序列 -->
-  <table
-    bind:this={gridEl}
-    class={cls}
-    style={scrollTableStyle}
-    aria-label={ariaLabel}
-    role={gridEnabled ? 'grid' : undefined}
-    aria-rowcount={gridEnabled ? gridRowCount : undefined}
-    aria-colcount={gridEnabled ? gridColCount : undefined}
-    tabindex={gridEnabled ? -1 : undefined}
-    onkeydown={gridEnabled ? onGridKeydown : undefined}
-  >
-    <!-- ColGroup：对齐 Semi，每列一个 <col>，selection/expand 列带对应 class -->
-    <colgroup class="cd-table-colgroup">
-      {#if expandAsColumn}
-        <col class="cd-table-column-expand" style="width:{LEADING_W}px" />
-      {/if}
-      {#if hasSelection}
-        <col class="cd-table-column-selection" style="width:{selectionColWidth}px" />
-      {/if}
-      {#each leafColumns as col, i (colKeyOf(col, i))}
-        <col class={col.className} style={colGroupStyle(col, i)} />
-      {/each}
-    </colgroup>
+    <!-- role=grid/treegrid 静态标注（对齐 Semi Body/index.tsx：分组/展开行/树形时 treegrid，否则 grid）；
+         aria-rowcount/aria-colcount 为顶层数据源行数/列数（对齐 Semi，非渲染切片数） -->
+    <!-- ColGroup：对齐 Semi，每列一个 <col>，selection/expand 列带对应 class。HeadTable 与 Body
+         两处各自 mount 一份、参数相同保证列宽一致（对齐 Semi 双 table 架构，两表各自独立 colgroup）。 -->
+  {#snippet colgroupContent()}
+    <ColGroup
+      {leafColumns}
+      {expandAsColumn}
+      {hasSelection}
+      {selectionColWidth}
+      leadingWidth={LEADING_W}
+      colKey={colKeyOf}
+      colStyle={colGroupStyle}
+      tagColgroup={tagColgroupWrapper}
+      {tagCol}
+    />
+  {/snippet}
+  {#snippet theadContent()}
     {#if showHeader}
       {@const headerRowProps = onHeaderRow ? onHeaderRow(effectiveColumns, 0) : undefined}
     <svelte:element
       this={tagThead}
       class="cd-table-thead"
-      class:cd-table-thead-sticky={isStickyHead}
-      style={isStickyHead && stickyOffset > 0 ? `top:${stickyOffset}px` : undefined}
     >
-      <svelte:element
-        this={tagHeaderRow}
-        role={gridEnabled ? 'row' : undefined}
-        aria-rowindex={gridEnabled ? 1 : undefined}
-        class="cd-table-row {headerRowProps?.className ?? ''}"
-        style={headerRowProps?.style ?? undefined}
-        onclick={headerRowProps?.onClick ?? undefined}
-        onmouseenter={headerRowProps?.onMouseEnter ?? undefined}
-        onmouseleave={headerRowProps?.onMouseLeave ?? undefined}
-      >
-        {#if expandAsColumn}
-          {@const gc = 0}
-          <th
-            rowspan={hasHeaderMerge ? headerDepth : undefined}
-            class="cd-table-row-head cd-table-column-expand {leadingFixedClass}"
-            scope="col"
-            style={mergeHeaderStyle(leadingStyle('expand'))}
-            role={gridEnabled ? 'columnheader' : undefined}
-            id={gridEnabled ? cellId(-1, gc) : undefined}
-            tabindex={rovingTabindex(-1, gc)}
-            aria-colindex={gridEnabled ? gc + 1 : undefined}
-            onfocusin={gridEnabled ? () => syncFocusCoord(-1, gc) : undefined}
-          ></th>
-        {/if}
-        {#if hasSelection}
-          {@const gc = expandAsColumn ? 1 : 0}
-          {@const isRadio = rowSelection?.type === 'radio'}
-          {@const showSelectAll = !isRadio && !rowSelection?.hideSelectAll}
-          <th
-            rowspan={hasHeaderMerge ? headerDepth : undefined}
-            class="cd-table-row-head cd-table-column-selection {selectionFixedClass || leadingFixedClass}"
-            scope="col"
-            style={mergeHeaderStyle(selectionColStyle ?? leadingStyle('selection'))}
-            role={gridEnabled ? 'columnheader' : undefined}
-            id={gridEnabled ? cellId(-1, gc) : undefined}
-            tabindex={rovingTabindex(-1, gc)}
-            aria-colindex={gridEnabled ? gc + 1 : undefined}
-            onfocusin={gridEnabled ? () => syncFocusCoord(-1, gc) : undefined}
-          >
-            {#if showSelectAll}
-              {#snippet headerSelectionOrigin()}
-                <Checkbox
-                  class="cd-table-selection-checkbox"
-                  aria-label={loc().t('Table.selectAll')}
-                  checked={headerSelect.checked}
-                  disabled={rowSelection?.disabled === true}
-                  indeterminate={headerSelect.indeterminate}
-                  tabindex={childTabindex(-1, gc)}
-                  onChange={() => onToggleAll()}
-                />
-              {/snippet}
-              <span class="cd-table-selection-wrap" class:cd-table-selection-disabled={rowSelection?.disabled === true}>
-                {#if rowSelection?.renderCell}
-                  {@render rowSelection.renderCell({
-                    selected: headerSelect.checked,
-                    originNode: headerSelectionOrigin,
-                    inHeader: true,
-                    disabled: rowSelection?.disabled === true,
-                    indeterminate: headerSelect.indeterminate,
-                    selectAll: () => onToggleAll(),
-                  })}
-                {:else}
-                  {@render headerSelectionOrigin()}
-                {/if}
-              </span>
-            {/if}
-          </th>
-        {/if}
-        {#if !hasHeaderMerge}
-          {#each leafColumns as col, i (colKeyOf(col, i))}
-            {@render leafHeaderCell(col, i, 1)}
-          {/each}
-        {:else}
-          <!-- 合并模式首行：expand/selection th 已 rowspan 跨满，其后接 headerRows[0] -->
-          {#each headerRows[0] ?? [] as hc (hc.isLeaf ? colKeyOf(hc.col, hc.leafIndex) : `g-${typeof hc.col.title === 'string' ? hc.col.title : (hc.col.key ?? '')}-${hc.leafIndex}`)}
-            {@render headerMergeCell(hc)}
-          {/each}
-        {/if}
-      </svelte:element>
+      <TableHeaderRow
+        variant="leaf"
+        tag={tagHeaderRow}
+        onRowEl={(el) => (headerRowEl0 = el)}
+        {expandAsColumn}
+        {hasSelection}
+        {hasHeaderMerge}
+        {headerDepth}
+        {rowSelection}
+        {headerSelect}
+        {onToggleAll}
+        {leadingFixedClass}
+        {selectionFixedClass}
+        {selectionColStyle}
+        {leadingStyle}
+        {headerRowProps}
+        {leafColumns}
+        mergedRow={headerRows[0] ?? []}
+        {colKeyOf}
+        {alignOf}
+        {mergeHeaderStyle}
+        {mergeCellStyle}
+        {cellStyle}
+        {groupCellStyle}
+        {fixedCellClass}
+        {columnResizable}
+        {ariaSortFor}
+        {isEffectivelyFiltered}
+        {currentSort}
+        {onSort}
+        {openFilterKey}
+        {closingFilterKey}
+        {filterTriggers}
+        {resizeHandles}
+        onFilterTriggerEl={setFilterTriggerEl}
+        onResizeHandleEl={setResizeHandleEl}
+        {resizingKey}
+        {setFilterOpen}
+        {startResize}
+        {selectionEnabled}
+        {resizeOverrides}
+        {columnTitle}
+        {filterDropdownPanel}
+        locT={(key) => loc().t(key)}
+      />
       {#if hasHeaderMerge}
         {#each headerRows.slice(1) as hrow, ri (ri)}
-          <tr class="cd-table-row">
-            {#each hrow as hc (hc.isLeaf ? colKeyOf(hc.col, hc.leafIndex) : `g-${typeof hc.col.title === 'string' ? hc.col.title : (hc.col.key ?? '')}-${hc.leafIndex}`)}
-              {@render headerMergeCell(hc)}
-            {/each}
-          </tr>
+          <TableHeaderRow
+            variant="group"
+            onRowEl={(el) => (headerRowElsRest[ri] = el)}
+            mergedRow={hrow}
+            {colKeyOf}
+            {alignOf}
+            {mergeHeaderStyle}
+            {mergeCellStyle}
+            {cellStyle}
+            {groupCellStyle}
+            {fixedCellClass}
+            {columnResizable}
+            {ariaSortFor}
+            {isEffectivelyFiltered}
+            {currentSort}
+            {onSort}
+            {openFilterKey}
+            {closingFilterKey}
+            {filterTriggers}
+            {resizeHandles}
+            onFilterTriggerEl={setFilterTriggerEl}
+            onResizeHandleEl={setResizeHandleEl}
+            {resizingKey}
+            {setFilterOpen}
+            {startResize}
+            {selectionEnabled}
+            {resizeOverrides}
+            {columnTitle}
+            {filterDropdownPanel}
+            locT={(key) => loc().t(key)}
+          />
         {/each}
       {/if}
     </svelte:element>
     {/if}
-    {#snippet headerMergeCell(hc: HeaderCell)}
-      {#if hc.isLeaf}
-        {@render leafHeaderCell(hc.col, hc.leafIndex, hc.rowSpan)}
-      {:else}
-        <th
-          class="cd-table-row-head cd-table-align-{alignOf(hc.col)}"
-          class:cd-table-row-cell-ellipsis={!!hc.col.ellipsis}
-          scope="colgroup"
-          colspan={hc.colSpan}
-          role={gridEnabled ? 'columnheader' : undefined}
-          style={mergeHeaderStyle(undefined)}
-        >
-          <span class="cd-table-row-head-title">{@render columnTitle(hc.col)}</span>
-        </th>
-      {/if}
-    {/snippet}
-    {#snippet columnTitle(col: ColumnDef<T>)}
-      {#if typeof col.title === 'string'}{col.title}{:else}{@render (col.title as Snippet<[{ filter?: Snippet; sorter?: Snippet; selection?: Snippet }]>)({})}{/if}
-    {/snippet}
+  {/snippet}
+  {#snippet columnTitle(col: ColumnDef<T>)}
+    {#if typeof col.title === 'string'}{col.title}{:else}{@render (col.title as Snippet<[{ filter?: Snippet; sorter?: Snippet; selection?: Snippet }]>)({})}{/if}
+  {/snippet}
     <!-- 筛选浮层面板（string / 自定义 title 复用；触发器绑 filterTriggers[colKey]） -->
     {#snippet filterDropdownPanel(col: ColumnDef<T>, colKey: string)}
       {@const filterMultiple = col.filterMultiple !== false}
@@ -2126,7 +2036,7 @@
         class:cd-table-column-filter-dropdown-motion-show={openFilterKey === colKey}
         class:cd-table-column-filter-dropdown-motion-hide={closingFilterKey === colKey}
         onanimationend={() => finalizeFilterClose(colKey)}
-        use:floating={{ trigger: filterTriggers[colKey], placement: 'bottomEnd', autoAdjust: true, offset: 4, getContainer: getPopupContainer }}
+        use:floating={{ trigger: filterTriggers[colKey], placement: 'bottom', autoAdjust: true, offset: 4, getContainer: getPopupContainer }}
         bind:this={filterPanelEl}
       >
         {#if col.renderFilterDropdown}
@@ -2165,172 +2075,29 @@
           {/each}
         </ul>
         </FilterDropdownHost>
+        <!-- 重置/确定按钮仅 confirm 模式显示（对齐 Semi ColumnFilter.tsx:148-152
+             "Show confirm and reset buttons in confirm mode"：immediate 模式点选项
+             立即生效，无需二次确认，Semi 完全不渲染这组按钮；此前本库无条件渲染，
+             与 Semi immediate 语义不符）。 -->
+        {#if confirmMode}
         <div class="cd-table-column-filter-actions">
-          {#if confirmMode}
-            <button type="button" class="cd-table-column-filter-reset" onclick={() => resetTempFilter(col, colKey)}>{loc().t('Table.resetFilter')}</button>
-            <button type="button" class="cd-table-column-filter-confirm" onclick={() => confirmFilter(col, colKey)}>{loc().t('Table.confirmFilter')}</button>
-          {:else}
-            <button type="button" class="cd-table-column-filter-reset" onclick={() => resetFilter(col, colKey)}>{loc().t('Table.resetFilter')}</button>
-            <button type="button" class="cd-table-column-filter-confirm" onclick={() => setFilterOpen(col, colKey, false)}>{loc().t('Table.confirmFilter')}</button>
-          {/if}
+          <button type="button" class="cd-table-column-filter-reset" onclick={() => resetTempFilter(col, colKey)}>{loc().t('Table.resetFilter')}</button>
+          <button type="button" class="cd-table-column-filter-confirm" onclick={() => confirmFilter(col, colKey)}>{loc().t('Table.confirmFilter')}</button>
         </div>
+        {/if}
         {/if}
       </div>
     {/snippet}
-    {#snippet sorterIcons(order: 'ascend' | 'descend' | null, col: ColumnDef<T>)}
-      {#if col.sortIcon}
-        {@render col.sortIcon({ sortOrder: order })}
-      {:else}
-        <span class="cd-table-column-sorter" aria-hidden="true">
-          <span class="cd-table-column-sorter-up" class:on={order === 'ascend'}>
-            <IconCaretup size="small" />
-          </span>
-          <span class="cd-table-column-sorter-down" class:on={order === 'descend'}>
-            <IconCaretdown size="small" />
-          </span>
-        </span>
-      {/if}
-    {/snippet}
-    {#snippet leafHeaderCell(col: ColumnDef<T>, i: number, thRowSpan: number)}
-          {@const gc = (expandAsColumn ? 1 : 0) + (hasSelection ? 1 : 0) + i}
-          {@const sortable = !!col.sorter}
-          {@const colKey = colKeyOf(col, i)}
-          {@const hasFilter = (!!col.filters && col.filters.length > 0) || !!col.renderFilterDropdown}
-          {@const colResizable = columnResizable(col)}
-          {@const headerCellProps = col.onHeaderCell ? col.onHeaderCell(col, i) : undefined}
-          {@const resizeOverride = resizeOverrides.get(colKey)}
-          {#if col.colSpan !== 0}
-          <th
-            rowspan={thRowSpan > 1 ? thRowSpan : undefined}
-            colspan={col.colSpan !== undefined && col.colSpan > 1 ? col.colSpan : undefined}
-            class="cd-table-row-head cd-table-align-{alignOf(col)} {fixedCellClass(i)} {headerCellProps?.className ?? ''} {resizeOverride?.className ?? ''}"
-            class:cd-table-row-cell-ellipsis={!!col.ellipsis}
-            class:cd-table-row-head-has-filter={hasFilter}
-            class:cd-table-row-head-resizable={colResizable}
-            class:resizing={resizingKey === colKey}
-            scope="col"
-            style={mergeCellStyle(mergeHeaderStyle(cellStyle(col, i)), headerCellProps?.style)}
-            aria-sort={sortable ? ariaSortFor(col, i) : undefined}
-            role={gridEnabled ? 'columnheader' : undefined}
-            id={gridEnabled ? cellId(-1, gc) : undefined}
-            tabindex={rovingTabindex(-1, gc)}
-            aria-colindex={gridEnabled ? gc + 1 : undefined}
-            onfocusin={gridEnabled ? () => syncFocusCoord(-1, gc) : undefined}
-            onclick={headerCellProps?.onClick ?? undefined}
-            onmouseenter={headerCellProps?.onMouseEnter ?? undefined}
-            onmouseleave={headerCellProps?.onMouseLeave ?? undefined}
-          >
-            <!-- 对齐 Semi：仅在有 sorter/filter 时套 .semi-table-operate-wrapper（flex），
-                 消除 inline descender 撑高；纯自定义 title（无 sorter）不套 flex，
-                 直接渲染保持其 inline 布局与 Semi 一致（Semi 自定义 title 不套 operate-wrapper）。 -->
-            <div class="cd-table-operate-wrapper" class:cd-table-operate-plain={typeof col.title !== 'string' && !sortable}>
-            {#if sortable}
-              {@const order = col.sortOrder !== undefined ? col.sortOrder : (currentSort.key === colKeyOf(col, i) ? currentSort.order : null)}
-              {@const showTip = col.showSortTip === true && col.sortOrder === undefined}
-              <button
-                type="button"
-                class="cd-table-column-sorter-wrapper"
-                tabindex={childTabindex(-1, gc)}
-                onclick={() => onSort(col, i)}
-              >
-                <span class="cd-table-row-head-title">{@render columnTitle(col)}</span>
-                {#if showTip}
-                  {@const tipKey = order === 'ascend' ? 'Table.descend' : order === 'descend' ? 'Table.cancelSort' : 'Table.ascend'}
-                  <Tooltip content={loc().t(tipKey)}>
-                    {@render sorterIcons(order, col)}
-                  </Tooltip>
-                {:else}
-                  {@render sorterIcons(order, col)}
-                {/if}
-              </button>
-            {:else if typeof col.title !== 'string'}
-              <!-- 自定义 title（函数）：透传 selection/filter 物料，由使用方摆放（对齐 Semi
-                   title({ selection, filter, sorter })）。摆放 selection 全选框会撑高表头至 41px。 -->
-              {#snippet headerSelectionMaterial()}
-                {#if selectionEnabled}
-                  <Checkbox
-                    class="cd-table-selection-checkbox"
-                    aria-label={loc().t('Table.selectAll')}
-                    checked={headerSelect.checked}
-                    disabled={rowSelection?.disabled === true}
-                    indeterminate={headerSelect.indeterminate}
-                    tabindex={childTabindex(-1, gc)}
-                    onChange={() => onToggleAll()}
-                  />
-                {/if}
-              {/snippet}
-              {#snippet headerFilterMaterial()}
-                {#if hasFilter}
-                  <button
-                    type="button"
-                    class="cd-table-column-filter"
-                    class:on={isEffectivelyFiltered(col, colKey)}
-                    aria-label={loc().t('Table.filter')}
-                    aria-expanded={openFilterKey === colKey}
-                    tabindex={childTabindex(-1, gc)}
-                    bind:this={filterTriggers[colKey]}
-                    onclick={(e) => { e.stopPropagation(); setFilterOpen(col, colKey, openFilterKey !== colKey); }}
-                  >
-                    {#if col.filterIcon}{@render col.filterIcon({ filtered: isEffectivelyFiltered(col, colKey) })}{:else}<IconFilter size="small" aria-hidden="true" />{/if}
-                  </button>
-                {/if}
-              {/snippet}
-              {@render (col.title as Snippet<[{ filter?: Snippet; sorter?: Snippet; selection?: Snippet }]>)(hasFilter ? { selection: headerSelectionMaterial, filter: headerFilterMaterial } : { selection: headerSelectionMaterial })}
-            {:else}
-              <span class="cd-table-row-head-title">{@render columnTitle(col)}</span>
-            {/if}
-
-            {#if hasFilter && typeof col.title === 'string'}
-              <button
-                type="button"
-                class="cd-table-column-filter"
-                class:on={isEffectivelyFiltered(col, colKey)}
-                aria-label={loc().t('Table.filter')}
-                aria-expanded={openFilterKey === colKey}
-                tabindex={childTabindex(-1, gc)}
-                bind:this={filterTriggers[colKey]}
-                onclick={(e) => {
-                  e.stopPropagation();
-                  setFilterOpen(col, colKey, openFilterKey !== colKey);
-                }}
-              >
-                {#if col.filterIcon}
-                  {@render col.filterIcon({ filtered: isEffectivelyFiltered(col, colKey) })}
-                {:else}
-                  <IconFilter size="small" aria-hidden="true" />
-                {/if}
-              </button>
-              {#if (openFilterKey === colKey || closingFilterKey === colKey) && filterTriggers[colKey]}
-                {@render filterDropdownPanel(col, colKey)}
-              {/if}
-            {/if}
-            </div>
-            <!-- 自定义 title 时 filter 按钮由 title snippet 摆放，浮层在此独立渲染（触发器仍绑 filterTriggers[colKey]） -->
-            {#if hasFilter && typeof col.title !== 'string' && (openFilterKey === colKey || closingFilterKey === colKey) && filterTriggers[colKey]}
-              {@render filterDropdownPanel(col, colKey)}
-            {/if}
-
-            {#if colResizable}
-              <span
-                class="react-resizable-handle"
-                role="separator"
-                aria-orientation="vertical"
-                aria-label={loc().t('Table.resizeColumn')}
-                bind:this={resizeHandles[colKey]}
-                onpointerdown={(e) => startResize(e, col, i)}
-              ></span>
-            {/if}
-          </th>
-          {/if}
-    {/snippet}
+  {#snippet tbodyContent()}
     <svelte:element this={tagTbody} class="cd-table-tbody">
       {#if visibleRows.length === 0}
-        <tr class="cd-table-row cd-table-row-placeholder" role={gridEnabled ? 'row' : undefined}>
+        <!-- svelte-ignore a11y_no_redundant_roles -- 对齐 Semi：显式 role="row"（Semi BaseRow 同样在原生 tr 上显式设置） -->
+        <tr class="cd-table-row cd-table-row-placeholder" role="row">
           <td
             class="cd-table-row-cell cd-table-placeholder"
             colspan={colSpan}
-            role={gridEnabled ? 'gridcell' : undefined}
-            aria-colindex={gridEnabled ? 1 : undefined}
+            role="gridcell"
+            aria-colindex={1}
           >
             {#if emptySnippet}{@render emptySnippet()}{:else}{empty ?? loc().t('Table.emptyText')}{/if}
           </td>
@@ -2341,97 +2108,36 @@
             {#if groupRow.type === 'group'}
               {@const gRow = groupRow as GroupRow}
               {@const groupedRowProps = onGroupedRow ? onGroupedRow(gRow.group, gRow.groupIndex) : undefined}
-              <tr
-                class="cd-table-row cd-table-row-section {groupedRowProps?.className ?? ''}"
-                class:cd-table-row-section-clickable={clickGroupedRowToExpand}
-                role={gridEnabled ? 'row' : undefined}
-                style={groupedRowProps?.style ?? undefined}
-                ondblclick={groupedRowProps?.onDoubleClick ?? undefined}
-                onmouseenter={groupedRowProps?.onMouseEnter ?? undefined}
-                onmouseleave={groupedRowProps?.onMouseLeave ?? undefined}
-              >
-                <td
-                  class="cd-table-row-cell cd-table-row-cell-section"
-                  colspan={colSpan}
-                  role={clickGroupedRowToExpand ? 'button' : undefined}
-                  tabindex={clickGroupedRowToExpand ? 0 : undefined}
-                  aria-expanded={clickGroupedRowToExpand ? gRow.expanded : undefined}
-                  onclick={(e) => {
-                    if (clickGroupedRowToExpand) toggleGroupExpand(gRow.groupKey);
-                    groupedRowProps?.onClick?.(e);
-                  }}
-                  onkeydown={clickGroupedRowToExpand
-                    ? (e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                          e.preventDefault();
-                          toggleGroupExpand(gRow.groupKey);
-                        }
-                      }
-                    : undefined}
-                >
-                  {#if clickGroupedRowToExpand}
-                    <span
-                      class="cd-table-expand-icon"
-                      class:cd-table-expandedIcon-show={gRow.expanded}
-                      aria-hidden="true"
-                    >
-                      <IconChevronRight size="small" aria-hidden="true" />
-                    </span>
-                  {/if}
-                  {#if renderGroupSection}
-                    {@render renderGroupSection({ groupKey: gRow.groupKey, group: gRow.group })}
-                  {:else}
-                    {gRow.groupKey}
-                  {/if}
-                </td>
-              </tr>
+              <SectionRow
+                groupKey={gRow.groupKey}
+                group={gRow.group}
+                expanded={gRow.expanded}
+                {colSpan}
+                {clickGroupedRowToExpand}
+                {groupedRowProps}
+                {renderGroupSection}
+                onToggle={() => toggleGroupExpand(gRow.groupKey)}
+              />
             {:else}
               {@const row = groupRow as DataDisplayRow}
               {@const record = row.record}
               {@const key = row.key}
               {@const index = row.topIndex}
-              {@const gridRow = index}
               {@const selected = treeCheckable ? conducted.checked.has(key) : selectedSet.has(key)}
               {@const rowHalf = treeCheckable && conducted.half.has(key)}
               {@const rowDisabled = disabledSet.has(key)}
               {@const extra = rowClassName ? rowClassName(record, index) : ''}
               {@const clickable = !!onRowClick || expandRowByClick || rowSelection?.clickRow === true}
               {@const rowProps = onRow ? onRow(record, index, { disabled: rowDisabled, selected }) : undefined}
-              <svelte:element this={tagBodyRow}
-                class="cd-table-row {extra} {rowProps?.className ?? ''}"
-                class:cd-table-row-selected={selected}
-                class:cd-table-row-stripe={stripe && index % 2 === 1}
-                class:cd-table-row-clickable={clickable}
-                class:cd-table-row-child={treeEnabled && row.level > 0}
-                role={gridEnabled ? 'row' : undefined}
-                style={rowProps?.style ?? undefined}
-                onclick={(e) => {
-                  if (expandRowByClick && hasExpand && canExpand(record)) toggleExpand(record);
-                  if (expandRowByClick && treeEnabled && row.hasChildren) toggleTreeExpand(record);
-                  if (rowSelection?.clickRow && !rowDisabled) onToggleRow(record);
-                  if (rowSelection?.clickRow && !rowDisabled) onToggleRow(record);
-              if (onRowClick) onRowClick({ record, index });
-                  if (rowProps?.onClick) rowProps.onClick(e);
-                }}
-                ondblclick={rowProps?.onDoubleClick ?? undefined}
-                onmouseenter={rowProps?.onMouseEnter ?? undefined}
-                onmouseleave={rowProps?.onMouseLeave ?? undefined}
-                draggable={rowProps?.draggable}
-                ondragstart={rowProps?.onDragStart ?? undefined}
-                ondragover={rowProps?.onDragOver ?? ((e) => rowProps?.onDrop && e.preventDefault())}
-                ondragenter={rowProps?.onDragEnter ?? undefined}
-                ondragleave={rowProps?.onDragLeave ?? undefined}
-                ondrop={rowProps?.onDrop ?? undefined}
-                ondragend={rowProps?.onDragEnd ?? undefined}
-              >
+              {#snippet groupedRowCells()}
                 {#if expandAsColumn}
                   <td
                     class="cd-table-row-cell cd-table-column-expand {leadingFixedClass}"
                     style={leadingStyle('expand')}
-                    role={gridEnabled ? 'gridcell' : undefined}
+                    role="gridcell"
                   >
                     {#if canExpand(record)}
-                      {@render expandButton(record, key, undefined)}
+                      {@render expandButton(record, key)}
                     {/if}
                   </td>
                 {/if}
@@ -2439,9 +2145,9 @@
                   <td
                     class="cd-table-row-cell cd-table-column-selection {selectionFixedClass || leadingFixedClass}"
                     style={selectionColStyle ?? leadingStyle('selection')}
-                    role={gridEnabled ? 'gridcell' : undefined}
+                    role="gridcell"
                   >
-                    {@render rowSelectionInput(record, selected, rowHalf, rowDisabled, undefined)}
+                    {@render rowSelectionInput(record, selected, rowHalf, rowDisabled)}
                   </td>
                 {/if}
                 {#each leafColumns as col, i (colKeyOf(col, i))}
@@ -2453,27 +2159,23 @@
                     style={cellStyle(col, i)}
                   >
                     {#snippet gExpandMaterial()}
-                      {#if hasExpand && !expandAsColumn && i === 0}
+                      {#if hasExpandedRowRender && !expandAsColumn && i === 0}
                         <span class="cd-table-expand-icon-cell">
                           {#if canExpand(record)}
-                            {@render expandButton(record, key, undefined)}
+                            {@render expandButton(record, key)}
                           {:else}
                             <span class="cd-table-expand-icon cd-table-expand-icon-placeholder" aria-hidden="true"></span>
                           {/if}
                         </span>
                       {/if}
                       {#if treeEnabled && i === 0}
-                        {#if row.hasChildren}
-                          <button
-                            type="button"
-                            class="cd-table-expand-icon"
-                            class:cd-table-expandedIcon-show={treeExpandedSet.has(key)}
-                            aria-expanded={treeExpandedSet.has(key)}
-                            aria-label={treeExpandedSet.has(key) ? loc().t('Table.collapseRow') : loc().t('Table.expandRow')}
-                            onclick={(e) => { e.stopPropagation(); toggleTreeExpand(record); }}
-                          >
-                            <IconTreeTriangleRight size="small" aria-hidden="true" />
-                          </button>
+                        {#if row.hasChildren && canExpand(record)}
+                          <CustomExpandIcon
+                            expanded={expandedSet.has(key)}
+                            componentType="tree"
+                            {record}
+                            onClick={() => toggleExpand(record)}
+                          />
                         {:else}
                           <span class="cd-table-expand-icon cd-table-expand-icon-placeholder" aria-hidden="true"></span>
                         {/if}
@@ -2481,7 +2183,7 @@
                     {/snippet}
                     {#snippet gIndentMaterial()}
                       {#if treeEnabled && i === 0}
-                        <span class="cd-table-row-indent" style="inline-size:{row.level * indentSize}px" aria-hidden="true"></span>
+                        <span class="cd-table-row-indent" style="width:{row.level * indentSize}px" aria-hidden="true"></span>
                       {/if}
                     {/snippet}
                     {#if col.useFullRender && col.render}
@@ -2496,20 +2198,33 @@
                     {/if}
                   </td>
                 {/each}
-              </svelte:element>
-              {#if hasExpand && canExpand(record)}
+              {/snippet}
+              <BaseRow
+                tag={tagBodyRow}
+                {record}
+                {index}
+                {selected}
+                {stripe}
+                {clickable}
+                isChild={treeEnabled && row.level > 0}
+                extraClassName={extra}
+                {rowProps}
+                onRowClick={(e) => {
+                  if (expandRowByClick && (hasExpandedRowRender || (treeEnabled && row.hasChildren)) && canExpand(record)) toggleExpand(record);
+                  if (rowSelection?.clickRow && !rowDisabled) onToggleRow(record);
+                  if (onRowClick) onRowClick({ record, index });
+                  if (rowProps?.onClick) rowProps.onClick(e);
+                }}
+                cells={groupedRowCells}
+              />
+              {#if hasExpandedRowRender && canExpand(record)}
+                {#snippet expandedContent()}
+                  {@render expandedRowRender!({ record, index })}
+                {/snippet}
                 {#if keepDOM}
-                  <tr class="cd-table-row cd-table-row-expand" role={gridEnabled ? 'row' : undefined} style={expandedSet.has(key) ? undefined : 'display:none'}>
-                    <td class="cd-table-row-cell cd-table-row-cell-expanded-content" colspan={colSpan} role={gridEnabled ? 'gridcell' : undefined} aria-colindex={gridEnabled ? 1 : undefined}>
-                      {@render expandable!.expandedRowRender({ record, index })}
-                    </td>
-                  </tr>
+                  <ExpandedRow {colSpan} displayNone={!expandedSet.has(key)} content={expandedContent} />
                 {:else if expandedSet.has(key)}
-                  <tr class="cd-table-row cd-table-row-expand" role={gridEnabled ? 'row' : undefined}>
-                    <td class="cd-table-row-cell cd-table-row-cell-expanded-content" colspan={colSpan} role={gridEnabled ? 'gridcell' : undefined} aria-colindex={gridEnabled ? 1 : undefined}>
-                      {@render expandable!.expandedRowRender({ record, index })}
-                    </td>
-                  </tr>
+                  <ExpandedRow {colSpan} content={expandedContent} />
                 {/if}
               {/if}
             {/if}
@@ -2517,7 +2232,7 @@
         {:else}
         {#if virtualized && vTopPad > 0}
           <tr class="cd-table-row cd-table-row-spacer" aria-hidden="true">
-            <td colspan={colSpan} style="block-size:{vTopPad}px; padding:0; border:0"></td>
+            <td colspan={colSpan} style="height:{vTopPad}px; padding:0; border:0"></td>
           </tr>
         {/if}
         {#each renderRows as row, ri (row.key)}
@@ -2531,47 +2246,17 @@
           {@const extra = rowClassName ? rowClassName(record, index) : ''}
           {@const clickable = !!onRowClick || expandRowByClick || rowSelection?.clickRow === true}
           {@const rowProps = onRow ? onRow(record, index, { disabled: rowDisabled, selected }) : undefined}
-          <svelte:element this={tagBodyRow}
-            class="cd-table-row {extra} {rowProps?.className ?? ''}"
-            class:cd-table-row-selected={selected}
-            class:cd-table-row-stripe={stripe && index % 2 === 1}
-            class:cd-table-row-clickable={clickable}
-            class:cd-table-row-child={treeEnabled && row.level > 0}
-            role={gridEnabled ? 'row' : undefined}
-            aria-rowindex={gridEnabled ? gridRow + 2 : undefined}
-            aria-selected={gridEnabled && selectionEnabled ? selected : undefined}
-            style={rowProps?.style ?? undefined}
-            onclick={(e) => {
-              if (expandRowByClick && hasExpand && canExpand(record)) toggleExpand(record);
-              if (expandRowByClick && treeEnabled && row.hasChildren) toggleTreeExpand(record);
-              if (rowSelection?.clickRow && !rowDisabled) onToggleRow(record);
-              if (onRowClick) onRowClick({ record, index });
-              if (rowProps?.onClick) rowProps.onClick(e);
-            }}
-            ondblclick={rowProps?.onDoubleClick ?? undefined}
-            onmouseenter={rowProps?.onMouseEnter ?? undefined}
-            onmouseleave={rowProps?.onMouseLeave ?? undefined}
-            draggable={rowProps?.draggable}
-            ondragstart={rowProps?.onDragStart ?? undefined}
-            ondragover={rowProps?.onDragOver ?? ((e) => rowProps?.onDrop && e.preventDefault())}
-            ondragenter={rowProps?.onDragEnter ?? undefined}
-            ondragleave={rowProps?.onDragLeave ?? undefined}
-            ondrop={rowProps?.onDrop ?? undefined}
-            ondragend={rowProps?.onDragEnd ?? undefined}
-          >
+          {#snippet rowCells()}
             {#if expandAsColumn}
               {@const gc = 0}
               <td
                 class="cd-table-row-cell cd-table-column-expand {leadingFixedClass}"
                 style={leadingStyle('expand')}
-                role={gridEnabled ? 'gridcell' : undefined}
-                id={gridEnabled ? cellId(gridRow, gc) : undefined}
-                tabindex={rovingTabindex(gridRow, gc)}
-                aria-colindex={gridEnabled ? gc + 1 : undefined}
-                onfocusin={gridEnabled ? () => syncFocusCoord(gridRow, gc) : undefined}
+                role="gridcell"
+                aria-colindex={gc + 1}
               >
                 {#if canExpand(record)}
-                  {@render expandButton(record, key, childTabindex(gridRow, gc))}
+                  {@render expandButton(record, key)}
                 {/if}
               </td>
             {/if}
@@ -2580,19 +2265,15 @@
               <td
                 class="cd-table-row-cell cd-table-column-selection {selectionFixedClass || leadingFixedClass}"
                 style={selectionColStyle ?? leadingStyle('selection')}
-                role={gridEnabled ? 'gridcell' : undefined}
-                id={gridEnabled ? cellId(gridRow, gc) : undefined}
-                tabindex={rovingTabindex(gridRow, gc)}
-                aria-colindex={gridEnabled ? gc + 1 : undefined}
-                onfocusin={gridEnabled ? () => syncFocusCoord(gridRow, gc) : undefined}
+                role="gridcell"
+                aria-colindex={gc + 1}
               >
-                {@render rowSelectionInput(record, selected, rowHalf, rowDisabled, childTabindex(gridRow, gc))}
+                {@render rowSelectionInput(record, selected, rowHalf, rowDisabled)}
               </td>
             {/if}
             {#each leafColumns as col, i (colKeyOf(col, i))}
               {@const value = cellValue(col, record)}
               {@const gc = (expandAsColumn ? 1 : 0) + (hasSelection ? 1 : 0) + i}
-              {@const isRowHeader = gridEnabled && i === 0 && !hasSelection && !expandAsColumn}
               {@const cellProps = col.onCell ? col.onCell(record, index) : undefined}
               {#if !(cellProps && (cellProps.colSpan === 0 || cellProps.rowSpan === 0))}
               <td
@@ -2602,39 +2283,28 @@
                 colspan={cellProps?.colSpan}
                 rowspan={cellProps?.rowSpan}
                 style={mergeCellStyle(cellStyle(col, i), cellProps?.style)}
-                role={gridEnabled ? (isRowHeader ? 'rowheader' : 'gridcell') : undefined}
-                id={gridEnabled ? cellId(gridRow, gc) : undefined}
-                tabindex={rovingTabindex(gridRow, gc)}
-                aria-colindex={gridEnabled ? gc + 1 : undefined}
-                onfocusin={gridEnabled ? () => syncFocusCoord(gridRow, gc) : undefined}
+                role="gridcell"
+                aria-colindex={gc + 1}
               >
                 <!-- 展开图标 / 树形三角 / 缩进物料：useFullRender 时不自动前置，改注入 render 供自行摆放 -->
                 {#snippet cellExpandMaterial()}
-                  {#if hasExpand && !expandAsColumn && i === 0}
+                  {#if hasExpandedRowRender && !expandAsColumn && i === 0}
                     <span class="cd-table-expand-icon-cell">
                       {#if canExpand(record)}
-                        {@render expandButton(record, key, childTabindex(gridRow, gc))}
+                        {@render expandButton(record, key)}
                       {:else}
                         <span class="cd-table-expand-icon cd-table-expand-icon-placeholder" aria-hidden="true"></span>
                       {/if}
                     </span>
                   {/if}
                   {#if treeEnabled && i === 0}
-                    {#if row.hasChildren}
-                      <button
-                        type="button"
-                        class="cd-table-expand-icon"
-                        class:cd-table-expandedIcon-show={treeExpandedSet.has(key)}
-                        aria-expanded={treeExpandedSet.has(key)}
-                        aria-label={treeExpandedSet.has(key) ? loc().t('Table.collapseRow') : loc().t('Table.expandRow')}
-                        tabindex={childTabindex(gridRow, gc)}
-                        onclick={(e) => {
-                          e.stopPropagation();
-                          toggleTreeExpand(record);
-                        }}
-                      >
-                        <IconTreeTriangleRight size="small" aria-hidden="true" />
-                      </button>
+                    {#if row.hasChildren && canExpand(record)}
+                      <CustomExpandIcon
+                        expanded={expandedSet.has(key)}
+                        componentType="tree"
+                        {record}
+                        onClick={() => toggleExpand(record)}
+                      />
                     {:else}
                       <span class="cd-table-expand-icon cd-table-expand-icon-placeholder" aria-hidden="true"></span>
                     {/if}
@@ -2642,12 +2312,12 @@
                 {/snippet}
                 {#snippet cellIndentMaterial()}
                   {#if treeEnabled && i === 0}
-                    <span class="cd-table-row-indent" style="inline-size:{row.level * indentSize}px" aria-hidden="true"></span>
+                    <span class="cd-table-row-indent" style="width:{row.level * indentSize}px" aria-hidden="true"></span>
                   {/if}
                 {/snippet}
                 {#snippet cellSelectionMaterial()}
                   {#if selectionEnabled}
-                    {@render rowSelectionInput(record, selected, rowHalf, rowDisabled, undefined)}
+                    {@render rowSelectionInput(record, selected, rowHalf, rowDisabled)}
                   {/if}
                 {/snippet}
                 {#if col.useFullRender && col.render}
@@ -2663,52 +2333,113 @@
               </td>
               {/if}
             {/each}
-          </svelte:element>
-          {#if hasExpand && canExpand(record)}
+          {/snippet}
+          <BaseRow
+            tag={tagBodyRow}
+            {record}
+            {index}
+            {selected}
+            {stripe}
+            {clickable}
+            isChild={treeEnabled && row.level > 0}
+            extraClassName={extra}
+            {rowProps}
+            ariaRowIndex={gridRow + 2}
+            onRowClick={(e) => {
+              if (expandRowByClick && (hasExpandedRowRender || (treeEnabled && row.hasChildren)) && canExpand(record)) toggleExpand(record);
+              if (rowSelection?.clickRow && !rowDisabled) onToggleRow(record);
+              if (onRowClick) onRowClick({ record, index });
+              if (rowProps?.onClick) rowProps.onClick(e);
+            }}
+            cells={rowCells}
+          />
+          {#if hasExpandedRowRender && canExpand(record)}
+            {#snippet expandedContent2()}
+              {@render expandedRowRender!({ record, index })}
+            {/snippet}
             {#if keepDOM}
-              <tr
-                class="cd-table-row cd-table-row-expand"
-                role={gridEnabled ? 'row' : undefined}
-                style={expandedSet.has(key) ? undefined : 'display:none'}
-              >
-                <td
-                  class="cd-table-row-cell cd-table-row-cell-expanded-content"
-                  colspan={colSpan}
-                  role={gridEnabled ? 'gridcell' : undefined}
-                  aria-colindex={gridEnabled ? 1 : undefined}
-                >
-                  {@render expandable!.expandedRowRender({ record, index })}
-                </td>
-              </tr>
+              <ExpandedRow {colSpan} displayNone={!expandedSet.has(key)} content={expandedContent2} />
             {:else if expandedSet.has(key)}
-              <tr class="cd-table-row cd-table-row-expand" role={gridEnabled ? 'row' : undefined}>
-                <td
-                  class="cd-table-row-cell cd-table-row-cell-expanded-content"
-                  colspan={colSpan}
-                  role={gridEnabled ? 'gridcell' : undefined}
-                  aria-colindex={gridEnabled ? 1 : undefined}
-                >
-                  {@render expandable!.expandedRowRender({ record, index })}
-                </td>
-              </tr>
+              <ExpandedRow {colSpan} content={expandedContent2} />
             {/if}
           {/if}
         {/each}
         {#if virtualized && vBottomPad > 0}
           <tr class="cd-table-row cd-table-row-spacer" aria-hidden="true">
-            <td colspan={colSpan} style="block-size:{vBottomPad}px; padding:0; border:0"></td>
+            <td colspan={colSpan} style="height:{vBottomPad}px; padding:0; border:0"></td>
           </tr>
         {/if}
         {/if}
       {/if}
     </svelte:element>
-  </table>
-      {#if loading}
-        <div class="cd-table-loading" aria-hidden="true">
-          <span class="cd-table-spinner"></span>
-        </div>
-      {/if}
+  {/snippet}
+  {#if useFixedHeader}
+    <!-- 双 table：HeadTable（独立 thead table，横滚只读，overflow-x:hidden）+
+         Body（独立 tbody table，用户实际横滚交互的容器，includeHeader=false）。
+         HeadTable 的 scrollLeft 由 Table.svelte 的 headSyncRafId effect 命令式同步
+         （对齐 Semi handleBodyScrollLeft），本组件不感知同步逻辑。 -->
+    <HeadTable
+      tag={tagTable}
+      cls={cls}
+      style={scrollTableStyle}
+      ariaLabel={ariaLabel}
+      role={tableRole}
+      ariaRowCount={dataSource.length}
+      ariaColCount={leafColumns.length}
+      colgroup={colgroupContent}
+      thead={theadContent}
+      bind:wrapEl={headWrapEl}
+      sticky={!!sticky}
+      stickyTop={stickyOffset}
+    />
+    <div
+      class="cd-table-body"
+      class:cd-table-body-virtual={virtualized}
+      class:cd-table-body-scroll={scrollBody}
+      class:cd-table-scroll-position-left={scrollPosLeft}
+      class:cd-table-scroll-position-right={scrollPosRight}
+      bind:this={scrollEl}
+      style={scrollWrapStyle}
+    >
+      <Body
+        includeHeader={false}
+        tag={tagTable}
+        cls={cls}
+        style={scrollTableStyle}
+        ariaLabel={ariaLabel}
+        role={tableRole}
+        ariaRowCount={dataSource.length}
+        ariaColCount={leafColumns.length}
+        colgroup={colgroupContent}
+        tbody={tbodyContent}
+      />
     </div>
+  {:else}
+    <!-- 单 table：thead+tbody 同表，Body includeHeader=true（现状路径，DOM 结构不变）。 -->
+    <div
+      class="cd-table-body"
+      class:cd-table-body-virtual={virtualized}
+      class:cd-table-body-scroll={scrollBody}
+      class:cd-table-scroll-position-left={scrollPosLeft}
+      class:cd-table-scroll-position-right={scrollPosRight}
+      bind:this={scrollEl}
+      style={scrollWrapStyle}
+    >
+      <Body
+        includeHeader={true}
+        tag={tagTable}
+        cls={cls}
+        style={scrollTableStyle}
+        ariaLabel={ariaLabel}
+        role={tableRole}
+        ariaRowCount={dataSource.length}
+        ariaColCount={leafColumns.length}
+        colgroup={colgroupContent}
+        thead={theadContent}
+        tbody={tbodyContent}
+      />
+    </div>
+  {/if}
     <!-- footer 在 .cd-table-container 内、body 之后（对齐 Semi） -->
     {#if footerSnippet || footer}
       <div class="cd-table-footer">
@@ -2720,28 +2451,12 @@
   {#if paginationEnabled && total > 0 && (paginationPosition === 'bottom' || paginationPosition === 'both')}
     {@render paginationArea()}
   {/if}
+  </Spin>
 </div>
 <!-- /.cd-table-wrapper -->
 
 {#snippet paginationArea()}
-  {#if renderPagination}
-    {@render renderPagination({ total, currentPage, pageSize, onChange: onPageChange })}
-  {:else}
-    <!-- 对齐 Semi Table 分页：左侧 range 文案（显示第 X-Y 条，共 N 条）+ 右侧 default 页码按钮。
-         表格 size（行高密度）不影响分页器，故分页固定 default 尺寸（不透传表格 size）。 -->
-    <div class="cd-table-pagination-outer">
-      {#if pageRangeText !== null}
-        <span class="cd-table-pagination-total">{pageRangeText}</span>
-      {/if}
-      <Pagination
-        {total}
-        currentPage={currentPage}
-        {pageSize}
-        size="default"
-        onChange={onPageChange}
-      />
-    </div>
-  {/if}
+  <TablePagination {total} {currentPage} {pageSize} onChange={onPageChange} {pageRangeText} {renderPagination} />
 {/snippet}
 
 <style>
@@ -2753,7 +2468,7 @@
     box-sizing: border-box;
     margin: 0;
     padding: 0;
-    inline-size: 100%;
+    width: 100%;
     color: var(--cd-color-table-text-default);
     font-size: var(--cd-font-table-base-fontsize);
     /* 对齐 Semi font-size-regular mixin：line-height 20px，避免继承文档站正文行高致表头/单元格偏高 */
@@ -2763,7 +2478,7 @@
   /* body 滚动容器：.semi-table-body（横向 + 纵向滚动区） */
   .cd-table-body {
     position: relative;
-    inline-size: 100%;
+    width: 100%;
     box-sizing: border-box;
     overflow-x: auto;
   }
@@ -2772,21 +2487,18 @@
     overflow: auto;
   }
 
-  /* 吸顶表头：thead sticky。特异性须 > .cd-table-thead > .cd-table-row >
-     .cd-table-row-head（0,3,0，设了 position:relative 且定义在后，同特异性会赢）。
-     thead 同时带 cd-table-thead 与 cd-table-thead-sticky 两个 class，叠加成 0,4,0。 */
-  .cd-table-thead.cd-table-thead-sticky > .cd-table-row > .cd-table-row-head {
-    position: sticky;
-    inset-block-start: 0;
-    z-index: calc(var(--cd-z-table-fixed-column) + 1);
-  }
   .cd-table-row-spacer:hover {
     background: transparent;
   }
 
-  /* 表格本体：.semi-table */
-  .cd-table {
-    inline-size: 100%;
+  /* 表格本体：.semi-table。真实 <table> 元素由 HeadTable.svelte/Body.svelte（双 table
+     架构）渲染（svelte:element this={tag}），本文件从不直接渲染 <table>——即便"单 table"
+     路径也走 <Body includeHeader> 组件，故这两条规则须整条 :global()，否则 scoped hash
+     永远不命中真实 <table>（真机验证发现 background/border-collapse/table-layout 全部
+     静默失效：table-layout 恒为浏览器默认 auto，长文本列被撑宽，ellipsis 截断与
+     showTooltip 判断依赖的 truncated 测量永远为 false，tooltip 永不触发）。 */
+  :global(.cd-table) {
+    width: 100%;
     text-align: left;
     border-collapse: separate;
     border-spacing: 0;
@@ -2795,14 +2507,17 @@
     background: var(--cd-color-table-bg-default);
   }
   /* fixed 布局：固定列 / 列宽精确 */
-  .cd-table-fixed {
-    inline-size: auto;
-    min-inline-size: 100%;
+  :global(.cd-table-fixed) {
+    width: auto;
+    min-width: 100%;
     table-layout: fixed;
   }
 
-  /* ===== 表头 thead ===== */
-  .cd-table-thead > .cd-table-row > .cd-table-row-head {
+  /* ===== 表头 thead =====
+     .cd-table-row-head 在 TableHeaderRow.svelte 渲染，本文件只是 <thead> 容器，
+     故不再要求 .cd-table-thead > .cd-table-row > 祖先链（那条 <tr> 同样不在本文件，
+     跨组件 scoped hash 不匹配会导致规则失效，见下方 tbody 注释的完整说明）。 */
+  :global(.cd-table-row-head) {
     background-color: var(--cd-color-table-th-bg-default);
     color: var(--cd-color-table-th-text-default);
     font-weight: var(--cd-font-weight-bold, 600);
@@ -2810,182 +2525,254 @@
     vertical-align: middle;
     overflow-wrap: break-word;
     position: relative;
-    padding-inline: var(--cd-spacing-table-row-head-paddingx);
-    padding-block: var(--cd-spacing-table-row-head-paddingy);
-    border-block-end: var(--cd-width-table-header-border) var(--cd-border-table-base-borderstyle) var(--cd-color-table-th-border-default);
+    padding-left: var(--cd-spacing-table-row-head-paddingx);
+    padding-right: var(--cd-spacing-table-row-head-paddingx);
+    padding-top: var(--cd-spacing-table-row-head-paddingy);
+    padding-bottom: var(--cd-spacing-table-row-head-paddingy);
+    border-bottom: var(--cd-width-table-header-border) var(--cd-border-table-base-borderstyle) var(--cd-color-table-th-border-default);
   }
   /* 点击排序表头：clickSort */
-  .cd-table-row-head-clicksort {
+  :global(.cd-table-row-head-clicksort) {
     cursor: pointer;
   }
-  .cd-table-row-head-clicksort:hover {
+  :global(.cd-table-row-head-clicksort:hover) {
     background-image: linear-gradient(0deg, var(--cd-color-table-th-clicksort-bg-hover), var(--cd-color-table-th-clicksort-bg-hover));
     background-color: var(--cd-color-table-cell-bg-hover);
   }
-  .cd-table-row-head.cd-table-column-selection {
+  :global(.cd-table-row-head.cd-table-column-selection) {
     text-align: center;
   }
-  .cd-table-row-head-ellipsis,
-  .cd-table-row-head-ellipsis .cd-table-row-head-title {
+  :global(.cd-table-row-head-ellipsis),
+  :global(.cd-table-row-head-ellipsis) :global(.cd-table-row-head-title) {
     overflow: hidden;
     white-space: nowrap;
     text-overflow: ellipsis;
   }
 
-  /* ===== 表体 tbody ===== */
-  .cd-table-tbody {
+  /* ===== 表体 tbody =====
+     .cd-table-row（<tr>）由 BaseRow.svelte/SectionRow.svelte/ExpandedRow.svelte
+     渲染（批次2文件拆分后），.cd-table-row-cell（<td>）由本文件内联渲染。两者分属
+     不同组件的 scoped 作用域：Svelte 只给「出现在当前文件模板里」的元素追加当前
+     文件 hash，<tr> 不在本文件模板里，若规则写成 `.cd-table-tbody > .cd-table-row >
+     .cd-table-row-cell` 这类祖先链，Svelte 仍会给未被 :global() 包裹的每一段都加
+     本文件 hash，导致 .cd-table-row 那一段永远不可能匹配真实 DOM 上的 tr（它带的
+     是 BaseRow.svelte 自己的 hash）——规则语法合法、typecheck/编译均不报错，只是
+     静默从不生效（真机验证发现：td 实际 padding 只有 1px 的 UA 默认值，说明这里
+     曾经全部失效）。
+
+     以下規則统一改为：只在实际会跨组件的祖先层（.cd-table-row 及其状态修饰类
+     selected/stripe/expand/section/hovered，均由子组件渲染）用 :global()，落到
+     本文件内渲染的目标元素（.cd-table-row-cell 及其子代）时不需要额外 :global()
+     包裹目标本身——但由于父选择器已经是 :global()，Svelte 编译器要求同一条选择器
+     内混用 :global()/非-:global() 时非 global 段仍会独立加 hash 并可能仍然错位，
+     为避免重蹈覆辙，整条选择器统一包在 :global() 内，牺牲一点 scoped 隔离换取
+     跨组件可靠匹配（class 命名本身已足够语义化，不依赖 scoped 隔离防冲突）。 */
+  :global(.cd-table-tbody) {
     display: table-row-group;
   }
-  .cd-table-tbody > .cd-table-row {
+  :global(.cd-table-row) {
     display: table-row;
     background-color: var(--cd-color-table-body-bg-default);
   }
-  .cd-table-tbody > .cd-table-row > .cd-table-row-cell {
+  :global(.cd-table-row-cell) {
     display: table-cell;
     overflow-wrap: break-word;
-    border-inline: none;
-    border-block-end: var(--cd-width-table-base-border) var(--cd-border-table-base-borderstyle) var(--cd-color-table-border-default);
+    border-left: none;
+    border-right: none;
+    border-bottom: var(--cd-width-table-base-border) var(--cd-border-table-base-borderstyle) var(--cd-color-table-border-default);
     padding: var(--cd-spacing-table-tbody-rowcell-padding);
     box-sizing: border-box;
     position: relative;
     vertical-align: middle;
   }
-  /* 尺寸档：middle / small 单元格纵向内边距 */
-  .cd-table-middle .cd-table-tbody > .cd-table-row > .cd-table-row-cell {
-    padding-block: var(--cd-spacing-table-middle-paddingy);
+  /* 尺寸档：middle / small 单元格纵向内边距。.cd-table-middle/.cd-table-small 挂在
+     <table> 上（HeadTable.svelte/Body.svelte 渲染），同样跨组件，须 :global()。 */
+  :global(.cd-table-middle) :global(.cd-table-row-cell) {
+    padding-top: var(--cd-spacing-table-middle-paddingy);
+    padding-bottom: var(--cd-spacing-table-middle-paddingy);
   }
-  .cd-table-small .cd-table-tbody > .cd-table-row > .cd-table-row-cell {
-    padding-block: var(--cd-spacing-table-small-paddingy);
+  :global(.cd-table-small) :global(.cd-table-row-cell) {
+    padding-top: var(--cd-spacing-table-small-paddingy);
+    padding-bottom: var(--cd-spacing-table-small-paddingy);
   }
-  .cd-table-row-cell-ellipsis {
+  :global(.cd-table-row-cell-ellipsis) {
     overflow: hidden;
     white-space: nowrap;
     text-overflow: ellipsis;
   }
 
-  /* 行 hover：Semi 用 background-image+background-color 双层（fill-0 半透 + bg-0 兜底） */
-  .cd-table-tbody > .cd-table-row:hover > .cd-table-row-cell,
-  .cd-table-tbody > .cd-table-row-hovered > .cd-table-row-cell {
+  /* 行 hover：Semi 用 background-image+background-color 双层（fill-0 半透 + bg-0 兜底）。
+     .cd-table-row-hovered 目前代码里没有任何地方会添加这个 class（grep 全库确认），
+     是遗留的死选择器，保留以防未来接线，不在本次范围内新增命令式逻辑去点亮它。 */
+  :global(.cd-table-row):hover > :global(.cd-table-row-cell),
+  :global(.cd-table-row-hovered) > :global(.cd-table-row-cell) {
     background-image: linear-gradient(0deg, var(--cd-color-table-body-bg-hover), var(--cd-color-table-body-bg-hover));
     background-color: var(--cd-color-table-cell-bg-hover);
   }
-  /* 固定列 hover：底色保持 body-default，避免透出横滚内容 */
-  .cd-table-tbody > .cd-table-row:hover > .cd-table-cell-fixed-left,
-  .cd-table-tbody > .cd-table-row:hover > .cd-table-cell-fixed-right,
-  .cd-table-tbody > .cd-table-row-hovered > .cd-table-cell-fixed-left,
-  .cd-table-tbody > .cd-table-row-hovered > .cd-table-cell-fixed-right {
+  /* 固定列 hover：底色保持 body-default，避免透出横滚内容。
+     须限定 .cd-table-tbody 祖先（对齐 Semi table.scss &-tbody > &-row:hover 嵌套写法）——
+     .cd-table-cell-fixed-left/-right 同时命中表头 th 与 tbody td（固定列定位 class
+     不分头尾），且表头 <tr> 与 tbody <tr> 同名 .cd-table-row，缺少祖先限定会导致
+     hover 表头固定列（含筛选/复选框列）时也被这条 tbody 专属规则误染灰。 */
+  :global(.cd-table-tbody) :global(.cd-table-row):hover > :global(.cd-table-cell-fixed-left),
+  :global(.cd-table-tbody) :global(.cd-table-row):hover > :global(.cd-table-cell-fixed-right),
+  :global(.cd-table-tbody) :global(.cd-table-row-hovered) > :global(.cd-table-cell-fixed-left),
+  :global(.cd-table-tbody) :global(.cd-table-row-hovered) > :global(.cd-table-cell-fixed-right) {
     background-image: linear-gradient(0deg, var(--cd-color-table-body-bg-hover), var(--cd-color-table-body-bg-hover));
     background-color: var(--cd-color-table-body-bg-default);
   }
 
   /* 对齐 */
-  .cd-table-align-center {
+  :global(.cd-table-align-center) {
     text-align: center;
   }
-  .cd-table-align-right {
+  :global(.cd-table-align-right) {
     text-align: right;
   }
 
   /* 选择列 / 展开列固定宽度（对齐 Semi $width-table_column_selection = 48px） */
-  .cd-table-column-selection,
-  .cd-table-column-expand {
-    inline-size: var(--cd-width-table-column-selection);
+  :global(.cd-table-column-selection),
+  :global(.cd-table-column-expand) {
+    width: var(--cd-width-table-column-selection);
     text-align: center;
     white-space: nowrap;
   }
 
-  /* 斑马纹（chenzy-design 扩展；Semi 靠 demo onRow className 实现，此处保留组件级开关） */
-  .cd-table-stripe .cd-table-tbody > .cd-table-row-stripe > .cd-table-row-cell {
+  /* 斑马纹（chenzy-design 扩展；Semi 靠 demo onRow className 实现，此处保留组件级开关）。
+     .cd-table-stripe 挂在 <table> 上，.cd-table-row-stripe 挂在 <tr> 上，均跨组件。 */
+  :global(.cd-table-stripe) :global(.cd-table-row-stripe) > :global(.cd-table-row-cell) {
     background-color: var(--cd-color-table-selection-bg-default);
   }
 
   /* 选中行 */
-  .cd-table-tbody > .cd-table-row-selected > .cd-table-row-cell {
+  :global(.cd-table-row-selected) > :global(.cd-table-row-cell) {
     background-color: var(--cd-color-primary-light-default);
   }
-  .cd-table-row-clickable {
+  :global(.cd-table-row-clickable) {
     cursor: pointer;
   }
 
   /* ===== 展开行 / 分组行 ===== */
-  .cd-table-tbody > .cd-table-row-expand > .cd-table-row-cell {
+  :global(.cd-table-row-expand) > :global(.cd-table-row-cell) {
     background-color: var(--cd-color-table-row-expanded-bg-default);
   }
-  .cd-table-row-cell-expanded-content {
-    padding-inline: var(--cd-spacing-table-expand-row-paddingleft) var(--cd-spacing-table-expand-row-paddingright);
-    padding-block: var(--cd-spacing-table-expand-row-paddingtop) var(--cd-spacing-table-expand-row-paddingbottom);
+  :global(.cd-table-row-cell-expanded-content) {
+    padding-left: var(--cd-spacing-table-expand-row-paddingleft);
+    padding-right: var(--cd-spacing-table-expand-row-paddingright);
+    padding-top: var(--cd-spacing-table-expand-row-paddingtop);
+    padding-bottom: var(--cd-spacing-table-expand-row-paddingbottom);
     background-color: var(--cd-color-table-row-expanded-bg-default);
   }
-  .cd-table-row-hidden {
+  :global(.cd-table-row-hidden) {
     display: none;
   }
 
   /* 分组表头行 .semi-table-row-section */
-  .cd-table-tbody > .cd-table-row-section > .cd-table-row-cell {
+  :global(.cd-table-row-section) > :global(.cd-table-row-cell) {
     background-color: var(--cd-color-table-selection-bg-default);
-    border-block-end: var(--cd-width-table-base-border) var(--cd-border-table-base-borderstyle) var(--cd-color-table-border-default);
+    border-bottom: var(--cd-width-table-base-border) var(--cd-border-table-base-borderstyle) var(--cd-color-table-border-default);
   }
-  .cd-table-tbody > .cd-table-row-section > .cd-table-row-cell:not(.cd-table-column-selection) {
+  :global(.cd-table-row-section) > :global(.cd-table-row-cell):not(:global(.cd-table-column-selection)) {
     padding: var(--cd-spacing-table-tbody-rowselection-rowcell-notselection-paddingy) var(--cd-spacing-table-tbody-rowselection-rowcell-notselection-paddingx);
   }
-  .cd-table-section-inner {
+  :global(.cd-table-section-inner) {
     display: inline-flex;
     align-items: center;
   }
-  .cd-table-row-section-clickable .cd-table-row-cell-section {
+  :global(.cd-table-row-section-clickable) :global(.cd-table-row-cell-section) {
     cursor: pointer;
     user-select: none;
   }
-  .cd-table-row-cell-section:focus-visible {
+  :global(.cd-table-row-cell-section):focus-visible {
     outline: 2px solid var(--cd-focus-ring, currentColor);
     outline-offset: -2px;
   }
 
-  /* ===== 固定列：sticky + 边界阴影 ===== */
-  .cd-table-cell-fixed-left,
-  .cd-table-cell-fixed-right {
+  /* ===== 固定列：sticky + 边界阴影 =====
+     .cd-table-cell-fixed-* 都命中本文件内渲染的 <td>（数据单元格）或
+     TableHeaderRow.svelte 渲染的 <th>（表头单元格），后者跨组件须 :global()——
+     此前漏了 :global()，真机核对发现表头固定列 z-index 恒为 auto（未命中这条
+     规则），横向滚动时表头分割线/阴影被非固定列内容盖住，与 tbody 表现不一致。 */
+  :global(.cd-table-cell-fixed-left),
+  :global(.cd-table-cell-fixed-right) {
     z-index: var(--cd-z-table-fixed-column);
     position: sticky;
     background-color: var(--cd-color-table-bg-default);
   }
-  .cd-table-thead > .cd-table-row > .cd-table-cell-fixed-left,
-  .cd-table-thead > .cd-table-row > .cd-table-cell-fixed-right {
+  /* 复合选择器（同一元素上两个 class）：不能只把 .cd-table-row-head 单独包 :global()——
+     Svelte 仍会给同一复合选择器里未被包裹的 .cd-table-cell-fixed-left/-right 追加本文件
+     hash，而 <th> 实际携带的是 TableHeaderRow.svelte 的 hash，两段 hash 要求无法同时
+     满足，整条规则永远不命中（真机核对发现：th 背景色退回 .cd-table-bg-default 兜底，
+     恰好与 .cd-table-th-bg-default 引用同一底层 token 才没有肉眼可见的差异，但语义上
+     这条规则本身确实失效，不能依赖这种数值巧合）。须整条 :global()。 */
+  :global(.cd-table-row-head.cd-table-cell-fixed-left),
+  :global(.cd-table-row-head.cd-table-cell-fixed-right) {
     background-color: var(--cd-color-table-th-bg-default);
   }
-  /* 固定列表头 z 与数据行固定列一致（=fixed，对齐 Semi：表头/数据行固定列同为 101），
-     覆盖 thead-sticky 通配 th 的 fixed+1（那条用于非固定 sticky 表头列盖住固定列滚动） */
-  .cd-table-thead-sticky th.cd-table-cell-fixed-left,
-  .cd-table-thead-sticky th.cd-table-cell-fixed-right {
-    z-index: var(--cd-z-table-fixed-column);
-  }
-  .cd-table-cell-fixed-left-last {
-    border-inline-end: var(--cd-width-table-cell-fixed-left-last) solid var(--cd-color-table-shadow-border-default);
+  /* .cd-table-cell-fixed-left-last/-right-first 同时命中表头 th（TableHeaderRow.svelte
+     渲染）与 tbody td（本文件 tbodyContent 渲染），跨组件须整条 :global()——此前是
+     普通 scoped 规则，真机核对发现分割线/阴影从未命中过表头（computed border-right
+     恒为 0，box-shadow 恒为 none），只在 tbody 生效，表头视觉上完全没有固定列分割线。 */
+  :global(.cd-table-cell-fixed-left-last) {
+    border-right: var(--cd-width-table-cell-fixed-left-last) solid var(--cd-color-table-shadow-border-default);
     box-shadow: var(--cd-shadow-table-right);
   }
-  .cd-table-cell-fixed-right-first {
-    border-inline-start: var(--cd-width-table-cell-fixed-right-first) solid var(--cd-color-table-shadow-border-default);
+  :global(.cd-table-cell-fixed-right-first) {
+    border-left: var(--cd-width-table-cell-fixed-right-first) solid var(--cd-color-table-shadow-border-default);
     box-shadow: var(--cd-shadow-table-left);
   }
   /* 横滚到边隐藏对应阴影 */
-  .cd-table-scroll-position-left .cd-table-cell-fixed-left-last {
+  :global(.cd-table-scroll-position-left) :global(.cd-table-cell-fixed-left-last) {
     box-shadow: none;
   }
-  .cd-table-scroll-position-right .cd-table-cell-fixed-right-first {
+  :global(.cd-table-scroll-position-right) :global(.cd-table-cell-fixed-right-first) {
     box-shadow: none;
   }
 
   /* ===== 带边框 bordered ===== */
   /* bordered 表格外框：container 是 wrapper 的子、table 的祖先，故用 wrapper 的 bordered
      class 选中（此前误用 table 上的 .cd-table-bordered > container，方向反致外框全丢）。
+     须用普通后代选择器而非 `>` 直接子代——wrapper 与 container 之间隔着 <Spin> 组件的
+     .cd-spin 包裹 div（loading 遮罩），并非真实直接父子关系；真机核对发现 `>` 版本的
+     选择器从未命中过，container 的 border computed 值恒为 0，外框视觉上从未生效
+     （更早的既有 bug，与本次改动无关但顺带一并修正）。
      对齐 Semi：保留上/左边框（含表头上边框），右/下由单元格 border 补齐避免双线。 */
-  .cd-table-wrapper-bordered > .cd-table-container {
+  .cd-table-wrapper-bordered .cd-table-container {
+    position: relative;
     border: var(--cd-width-table-base-border) var(--cd-border-table-base-borderstyle) var(--cd-color-table-border-default);
-    border-inline-end: 0;
-    border-block-end: 0;
+    border-right: 0;
+    border-bottom: 0;
   }
-  .cd-table-bordered .cd-table-thead > .cd-table-row > .cd-table-row-head,
-  .cd-table-bordered .cd-table-tbody > .cd-table-row > .cd-table-row-cell {
-    border-inline-end: var(--cd-width-table-base-border) var(--cd-border-table-base-borderstyle) var(--cd-color-table-border-default);
+  /* .cd-table-bordered 挂在 <table>（HeadTable.svelte/Body.svelte 渲染），
+     .cd-table-row-head 在 TableHeaderRow.svelte，.cd-table-row-cell 在本文件——
+     三者两两跨组件，整条选择器须 :global()。 */
+  :global(.cd-table-bordered) :global(.cd-table-row-head),
+  :global(.cd-table-bordered) :global(.cd-table-row-cell) {
+    border-right: var(--cd-width-table-base-border) var(--cd-border-table-base-borderstyle) var(--cd-color-table-border-default);
+  }
+  /* 横滚未到底时右边框在视口外不可见修复（对齐 Semi #441 fix，table.scss &-bordered
+     :not(&-scroll-position-right)）：单元格自身 border-right 只画在该单元格实际位置，
+     scroll.x 超宽且未滚到底时最后一列被横滚裁切到可视区外，右边框随之不可见。
+     用容器级 ::after 覆盖层在视口固定右侧画一条常驻边框；滚到底时
+     .cd-table-scroll-position-right 存在，不画该层避免与单元格边框重复。
+     :not(.cd-table-wrapper-rtl) 排除 RTL——RTL 镜像版本（画左边框）见下方 RTL 覆盖层
+     规则，两者互斥，避免同一元素 ::after 被两条规则争抢定义。 */
+  .cd-table-wrapper-bordered:not(.cd-table-wrapper-rtl):not(:has(.cd-table-scroll-position-right)) .cd-table-container::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: var(--cd-width-table-base-border);
+    background-color: var(--cd-color-table-border-default);
+    display: block;
+    z-index: calc(var(--cd-z-table-fixed-column) + 2);
+    pointer-events: none;
+  }
+  /* 双 table 架构下表头（.cd-table-head，见 HeadTable.svelte）也须补右边框：原生滚动条
+     在部分浏览器可能盖住容器 ::after 覆盖层，用 inset box-shadow 兜底表头自身可见。 */
+  .cd-table-wrapper-bordered:not(.cd-table-wrapper-rtl):not(:has(.cd-table-scroll-position-right)) .cd-table-container :global(.cd-table-head) {
+    box-shadow: inset calc(var(--cd-width-table-base-border) * -1) 0 0 0 var(--cd-color-table-border-default);
   }
 
   /* ===== 空数据占位 .semi-table-placeholder ===== */
@@ -2995,28 +2782,36 @@
     font-size: var(--cd-font-table-base-fontsize);
     text-align: center;
     background: var(--cd-color-table-pl-bg-default);
-    border-block-end: var(--cd-width-table-base-border) var(--cd-border-table-base-borderstyle) var(--cd-color-table-border-default);
+    border-bottom: var(--cd-width-table-base-border) var(--cd-border-table-base-borderstyle) var(--cd-color-table-border-default);
   }
 
-  /* ===== 排序 ColumnSorter ===== */
+  /* ===== 排序 ColumnSorter =====
+     .cd-table-operate-wrapper/.cd-table-operate-plain 由 TableHeaderRow.svelte 渲染
+     （批次3阶段B补做拆出的表头行组件），跨组件须 :global()（同一类坑：此前只修了这两个
+     class 的 RTL 覆盖版本，漏了基础版本本身——真机验证发现 display:flex 不生效，
+     表头排序/筛选按钮区域退化为默认 inline 布局，line-box 撑高表头）。 */
   /* 对齐 Semi .semi-table-operate-wrapper：flex 行容器，消除 inline line-box 撑高（表头恒 38px） */
-  .cd-table-operate-wrapper {
+  :global(.cd-table-operate-wrapper) {
     display: flex;
     align-items: center;
   }
   /* 纯自定义 title（无 sorter/filter）：不产生布局盒，title 直接在 th 内 inline 布局，
      对齐 Semi（Semi 自定义 title 不套 operate-wrapper，其 inline-flex 内容自然撑高表头）。 */
-  .cd-table-operate-plain {
+  :global(.cd-table-operate-plain) {
     display: contents;
   }
-  .cd-table-align-center .cd-table-operate-wrapper {
+  :global(.cd-table-align-center) :global(.cd-table-operate-wrapper) {
     justify-content: center;
   }
-  .cd-table-align-right .cd-table-operate-wrapper {
+  :global(.cd-table-align-right) :global(.cd-table-operate-wrapper) {
     justify-content: flex-end;
   }
 
-  .cd-table-column-sorter-wrapper {
+  /* .cd-table-column-sorter* 全部由 ColumnSorter.svelte 渲染（批次1拆出），跨组件
+     须 :global()（同一类坑：真机核对时发现遗漏，此前只顾着修 tbody/表头/展开图标
+     几处，排序按钮的基础样式——flex 布局/gap/字重/cursor——从未被系统性核对过，
+     实际全部静默失效）。 */
+  :global(.cd-table-column-sorter-wrapper) {
     display: inline-flex;
     align-items: center;
     /* baseline 对齐会留 descender 空间撑高 th 1px；middle 消除，对齐 Semi 恒 38px 表头 */
@@ -3031,37 +2826,41 @@
     background: none;
     border: none;
   }
-  .cd-table-column-sorter-wrapper:focus-visible {
+  :global(.cd-table-column-sorter-wrapper):focus-visible {
     outline: none;
     box-shadow: var(--cd-focus-ring);
     border-radius: var(--cd-border-radius-small);
   }
-  .cd-table-column-sorter {
+  :global(.cd-table-column-sorter) {
     display: inline-block;
-    inline-size: var(--cd-width-table-column-sorter-icon);
-    block-size: var(--cd-height-table-column-sorter-icon);
+    width: var(--cd-width-table-column-sorter-icon);
+    height: var(--cd-height-table-column-sorter-icon);
     vertical-align: middle;
     text-align: center;
   }
-  .cd-table-column-sorter-up,
-  .cd-table-column-sorter-down {
+  :global(.cd-table-column-sorter-up),
+  :global(.cd-table-column-sorter-down) {
     display: block;
-    block-size: 0;
+    height: 0;
     color: var(--cd-color-table-sorter-text-default);
   }
-  .cd-table-column-sorter-up.on,
-  .cd-table-column-sorter-down.on {
+  :global(.cd-table-column-sorter-up.on),
+  :global(.cd-table-column-sorter-down.on) {
     color: var(--cd-color-table-sorter-on-text-default);
   }
-  .cd-table-column-sorter-up :global(svg),
-  .cd-table-column-sorter-down :global(svg) {
-    inline-size: var(--cd-width-table-column-sorter-icon);
-    block-size: var(--cd-height-table-column-sorter-icon);
+  :global(.cd-table-column-sorter-up) :global(svg),
+  :global(.cd-table-column-sorter-down) :global(svg) {
+    width: var(--cd-width-table-column-sorter-icon);
+    height: var(--cd-height-table-column-sorter-icon);
   }
 
-  /* ===== 列筛选 ColumnFilter ===== */
-  .cd-table-column-filter {
-    margin-inline-start: var(--cd-spacing-table-column-filter-marginleft);
+  /* ===== 列筛选 ColumnFilter =====
+     .cd-table-column-filter（触发按钮基础样式）由 ColumnFilter.svelte 渲染（批次4
+     拆出），跨组件须 :global()；.cd-table-column-filter-dropdown 及其内部结构
+     （list/label/actions/reset/confirm）仍在本文件内联渲染（filterDropdownPanel
+     snippet），保持 scoped 不受影响。 */
+  :global(.cd-table-column-filter) {
+    margin-left: var(--cd-spacing-table-column-filter-marginleft);
     display: inline-flex;
     align-items: center;
     /* 同 sorter：消除 baseline descender，避免撑高 th */
@@ -3072,22 +2871,23 @@
     border: none;
     background: transparent;
   }
-  .cd-table-column-filter :global(svg) {
-    inline-size: var(--cd-width-table-column-filter-icon);
-    block-size: var(--cd-height-table-column-filter-icon);
+  :global(.cd-table-column-filter) :global(svg) {
+    width: var(--cd-width-table-column-filter-icon);
+    height: var(--cd-height-table-column-filter-icon);
   }
-  .cd-table-column-filter.on {
+  :global(.cd-table-column-filter.on) {
     color: var(--cd-color-table-filter-on-text-default);
   }
-  .cd-table-column-filter:focus-visible {
+  :global(.cd-table-column-filter):focus-visible {
     outline: none;
     box-shadow: var(--cd-focus-ring);
   }
   /* 筛选下拉面板 .semi-table-column-filter-dropdown */
   .cd-table-column-filter-dropdown {
     z-index: var(--cd-z-dropdown, 1060);
-    min-inline-size: 10rem;
-    padding-block: var(--cd-spacing-extra-tight);
+    min-width: 10rem;
+    padding-top: var(--cd-spacing-extra-tight);
+    padding-bottom: var(--cd-spacing-extra-tight);
     background: var(--cd-color-bg-3, #fff);
     border-radius: var(--cd-border-radius-medium, 6px);
     box-shadow: var(--cd-shadow-elevated, 0 4px 12px rgba(0, 0, 0, 0.12));
@@ -3144,7 +2944,7 @@
     margin: 0;
     padding: 0;
     list-style: none;
-    max-block-size: var(--cd-height-table-column-filter-dropdown);
+    max-height: var(--cd-height-table-column-filter-dropdown);
     overflow-y: auto;
   }
   .cd-table-column-filter-label {
@@ -3162,7 +2962,7 @@
     justify-content: space-between;
     gap: var(--cd-spacing-tight);
     padding: var(--cd-spacing-extra-tight) var(--cd-spacing-base-tight);
-    border-block-start: var(--cd-width-table-base-border) var(--cd-border-table-base-borderstyle) var(--cd-color-table-border-default);
+    border-top: var(--cd-width-table-base-border) var(--cd-border-table-base-borderstyle) var(--cd-color-table-border-default);
   }
   .cd-table-column-filter-reset,
   .cd-table-column-filter-confirm {
@@ -3180,61 +2980,45 @@
     color: var(--cd-color-table-filter-on-text-default);
   }
 
-  /* ===== 列宽拖拽手柄 .react-resizable-handle ===== */
-  .cd-table-row-head-resizable {
-    position: relative;
-  }
-  .react-resizable-handle {
-    position: absolute;
-    inline-size: var(--cd-width-table-react-resizable-handle);
-    block-size: calc(100% - var(--cd-spacing-table-resizable-offset-y) * 2);
-    inset-block-end: var(--cd-spacing-table-resizable-bottom);
-    inset-inline-end: var(--cd-spacing-table-react-resizable-handle-right);
-    cursor: col-resize;
-    z-index: 0;
-    touch-action: none;
-    user-select: none;
-    background-color: var(--cd-color-table-border-default);
-  }
-  .react-resizable-handle:hover {
-    background-color: var(--cd-color-table-resizer-bg-default);
-  }
-  /* bordered 表格：手柄恒透明（默认 + hover 都透明），对齐 Semi table.scss &-bordered 内
-     `.react-resizable-handle { background: transparent }`（无 hover 变色，该规则特异性
-     覆盖了非 bordered 的 handle:hover primary 蓝）。列分隔靠单元格 border-right，
-     避免灰手柄条/hover 蓝竖条 + 边框双重竖线。 */
-  .cd-table-bordered .react-resizable-handle,
-  .cd-table-bordered .react-resizable-handle:hover {
-    background-color: transparent;
-  }
-  /* 拖拽中列：resizing 标示线 */
-  .resizing.cd-table-row-head,
+  /* ===== 列宽拖拽：.react-resizable-handle 自身样式迁至 ResizableHeaderCell.svelte
+     （Svelte scoped CSS 不跨组件生效，该 <span> 元素已不在本文件模板里）。
+     .cd-table-row-head-resizable（位置基准）与 .resizing.cd-table-row-head（表头拖拽中
+     标示线）挂载点在 TableHeaderRow.svelte，规则同理迁至该文件。此处只保留数据行
+     .resizing.cd-table-row-cell（若未来数据行也标 resizing class 时生效，目前无挂载点，
+     保留是为了不丢 Semi 对齐语义，非死代码故意保留供后续对齐）。 */
   .resizing.cd-table-row-cell {
-    border-inline-end: var(--cd-width-table-resizer-border) solid var(--cd-color-table-resizer-bg-default);
+    border-right: var(--cd-width-table-resizer-border) solid var(--cd-color-table-resizer-bg-default);
   }
 
-  /* ===== 行选择 checkbox 包裹 .semi-table-selection-wrap ===== */
-  .cd-table-selection-wrap {
+  /* ===== 行选择 checkbox 包裹 .semi-table-selection-wrap =====
+     全部由 ColumnSelection.svelte 渲染（批次1拆出），跨组件须 :global()。 */
+  :global(.cd-table-selection-wrap) {
     display: inline-flex;
     vertical-align: bottom;
   }
-  .cd-table-selection-disabled {
+  :global(.cd-table-selection-disabled) {
     cursor: not-allowed;
   }
-  .cd-table-selection-checkbox {
+  :global(.cd-table-selection-checkbox) {
     cursor: pointer;
     accent-color: var(--cd-color-primary);
   }
-  .cd-table-selection-checkbox:disabled {
+  :global(.cd-table-selection-checkbox):disabled {
     cursor: not-allowed;
   }
-  .cd-table-selection-checkbox:focus-visible {
+  :global(.cd-table-selection-checkbox):focus-visible {
     outline: none;
     box-shadow: var(--cd-focus-ring);
   }
 
-  /* ===== 展开图标 .semi-table-expand-icon ===== */
-  .cd-table-expand-icon {
+  /* ===== 展开图标 .semi-table-expand-icon =====
+     可交互的展开按钮实际由 CustomExpandIcon.svelte（批次1拆出）/SectionRow.svelte
+     （批次2拆出）渲染，本文件内只有不可交互的 -placeholder 占位符。以下规则统一
+     :global()（同一类"拆组件后普通scoped CSS祖先链全面失效"的坑：此前是普通 scoped
+     规则，命中真实按钮时因 scoped hash 不匹配从不生效——真机验证发现点击展开后
+     class 正确切到 cd-table-expandedIcon-show，但 computed transform 仍是 none，
+     旋转动画完全未生效）。 */
+  :global(.cd-table-expand-icon) {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -3246,27 +3030,27 @@
     vertical-align: middle;
     background: var(--cd-color-table-expanded-bg-default);
     color: var(--cd-color-table-expanded-icon-default);
-    margin-inline-end: var(--cd-spacing-table-expand-icon-marginright);
+    margin-right: var(--cd-spacing-table-expand-icon-marginright);
     transition: transform 150ms cubic-bezier(0.62, 0.05, 0.36, 0.95);
   }
-  .cd-table-expand-icon:hover {
+  :global(.cd-table-expand-icon):hover {
     color: var(--cd-color-table-text-default);
   }
-  .cd-table-expand-icon:focus-visible {
+  :global(.cd-table-expand-icon):focus-visible {
     outline: none;
     box-shadow: var(--cd-focus-ring);
     border-radius: var(--cd-border-radius-small);
   }
   /* 旋转态：展开 90°（对齐 Semi -expandedIcon-show/-hide） */
-  .cd-table-expandedIcon-show {
+  :global(.cd-table-expandedIcon-show) {
     transform: rotate(90deg);
   }
-  .cd-table-expandedIcon-hide {
+  :global(.cd-table-expandedIcon-hide) {
     transform: rotate(0deg);
   }
   .cd-table-expand-icon-placeholder {
-    inline-size: 16px;
-    block-size: 16px;
+    width: 16px;
+    height: 16px;
     background: transparent;
     pointer-events: none;
     cursor: default;
@@ -3284,16 +3068,17 @@
     vertical-align: middle;
   }
 
-  /* ===== 分页器 .semi-table-pagination-outer ===== */
-  .cd-table-pagination-outer {
+  /* ===== 分页器 .semi-table-pagination-outer =====
+     全部由 TablePagination.svelte 渲染（批次4拆出），跨组件须 :global()。 */
+  :global(.cd-table-pagination-outer) {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    min-block-size: var(--cd-height-table-pagination-outer-min);
+    min-height: var(--cd-height-table-pagination-outer-min);
     color: var(--cd-color-table-page-text-default);
   }
   /* 分页左侧 range 文案（显示第 X-Y 条，共 N 条），对齐 Semi 灰色说明文字。 */
-  .cd-table-pagination-total {
+  :global(.cd-table-pagination-total) {
     color: var(--cd-color-table-page-text-default);
     font-size: var(--cd-font-size-regular, 14px);
   }
@@ -3301,8 +3086,10 @@
   /* ===== 标题 / footer ===== */
   .cd-table-title {
     position: relative;
-    padding-block: var(--cd-spacing-table-title-paddingy);
-    padding-inline: var(--cd-spacing-table-title-paddingx);
+    padding-top: var(--cd-spacing-table-title-paddingy);
+    padding-bottom: var(--cd-spacing-table-title-paddingy);
+    padding-left: var(--cd-spacing-table-title-paddingx);
+    padding-right: var(--cd-spacing-table-title-paddingx);
   }
   .cd-table-footer {
     background-color: var(--cd-color-table-footer-bg-default);
@@ -3311,52 +3098,98 @@
     position: relative;
   }
 
-  /* ===== 加载态遮罩 ===== */
-  .cd-table-loading {
-    position: absolute;
-    inset: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: var(--cd-color-table-bg-default);
-    opacity: 0.6;
-  }
-  .cd-table-spinner {
-    inline-size: 28px;
-    block-size: 28px;
-    border: 3px solid var(--cd-color-fill-1, rgba(0, 0, 0, 0.1));
-    border-top-color: var(--cd-color-primary);
-    border-radius: 50%;
-    animation: cd-table-spin 0.8s linear infinite;
-  }
-  @keyframes cd-table-spin {
-    to {
-      transform: rotate(360deg);
-    }
-  }
+  /* 加载态：复用 Spin 组件（对齐 Semi <Spin spinning={loading} size="large">），
+     不再手写遮罩/spinner 视觉与 @keyframes，样式由 Spin.svelte 自己承担。 */
 
   @media (prefers-reduced-motion: reduce) {
-    .cd-table-spinner {
-      animation: none;
-    }
-    .cd-table-expand-icon,
-    .react-resizable-handle {
+    .cd-table-expand-icon {
       transition: none;
     }
   }
 
-  /* —— RTL（对齐 Semi table/rtl.scss）——
-     表体与表头的默认文字方向由左改右；`-align-right` 修饰类在 RTL 下
-     语义仍是「行末对齐」，故翻成 left（Semi 同）。
-     单元格内边距本库已用 padding-inline，会自己翻，不重复覆盖。 */
-  :global(.cd-rtl) .cd-table {
+  /* —— RTL（对齐 Semi table/rtl.scss，完整覆盖，非此前 3 条精简版）——
+     选择器锚点用 .cd-table-wrapper-rtl（挂在本组件最外层 wrapper，同批同时带
+     dir="rtl"），对齐本库 Modal/SideSheet 已用惯例（class:cd-{component}-rtl +
+     :global(.cd-{component}-rtl) 祖先选择器），非全局 .cd-rtl。 */
+
+  /* 表体默认文字方向由左改右（表头文字方向 + align-left/right operate-wrapper 镜像
+     已移至 TableHeaderRow.svelte——.cd-table-row-head/.cd-table-operate-wrapper
+     都在该组件渲染，同样是跨组件祖先链失效的坑，见该文件对应规则注释）。
+     真实 <table> 元素由 HeadTable.svelte/Body.svelte 渲染（同批修复 .cd-table 基础
+     规则时的同一根因），故 .cd-table 部分也须 :global()，不能只包裹 .cd-table-wrapper-rtl
+     ——"部分 global"（只包一段，复合选择器里其余段仍会被加本文件 hash）不可靠，
+     整条选择器统一 :global() 才是唯一可靠写法。 */
+  :global(.cd-table-wrapper-rtl .cd-table) {
     direction: rtl;
     text-align: right;
   }
-  :global(.cd-rtl) .cd-table-thead > .cd-table-row > .cd-table-row-head {
-    text-align: right;
+
+  /* 固定列边框 + 阴影：class 归属已在 fixedCellClass()/leadingFixedClass 按
+     isRtl 交换（-left-last↔-right-first 語義随视觉左右重新分配，对齐 Semi
+     TableCell.tsx/TableHeaderRow.tsx 的 isRTL 分支），但 Semi rtl.scss 在此基础上
+     仍对同一对 class 显式重写了 border-left/right（tbody 见 rtl.scss L74-88，
+     独立于 JS 端已完成的 class 语义交换）。两处是否重复镜像存疑——按 Semi 实际
+     产物（rtl.scss 源码字面量）照抄，不按自己的推导省略，避免主观判断引入偏差。
+     若未来有条件真机对比 Semi RTL 固定列渲染，可用于校验此处是否需要精简。
+
+     选择器省去 Semi 原文的 `.cd-table-tbody > .cd-table-row >` 祖先链：这条 <tr> 由
+     BaseRow.svelte 渲染（批次2拆分后），带的是该组件自己的 scoped hash，不是本文件
+     的 hash；`:global()` 只包在最外层 `.cd-table-wrapper-rtl` 时，Svelte 仍会给链条
+     中间未被 :global() 包裹的 `.cd-table-tbody`/`.cd-table-row` 追加本文件 hash，
+     导致这段祖先链在真实 DOM 里永远不可能匹配（真机验证发现：computed border 值与
+     规则定义正好相反，命中的是未加 RTL 覆盖前的 LTR 基础规则）。.cd-table-cell-fixed-
+     left-last/-right-first 在语义上已经唯一（只出现在固定列单元格），无需祖先链
+     消歧——但目标 class 自身同样须 :global()：它同时命中表头 th（TableHeaderRow.svelte）
+     与 tbody td（本文件），未包裹时只对本文件内元素生效，RTL 覆盖在表头侧同样会
+     静默失效（与上方基础规则同一类坑）。 */
+  :global(.cd-table-wrapper-rtl) :global(.cd-table-cell-fixed-left-last) {
+    border-right: 0;
+    border-left: var(--cd-width-table-cell-fixed-left-last) solid var(--cd-color-table-shadow-border-default);
   }
-  :global(.cd-rtl) .cd-table-align-right {
-    text-align: left;
+  :global(.cd-table-wrapper-rtl) :global(.cd-table-cell-fixed-right-first) {
+    border-left: 0;
+    border-right: var(--cd-width-table-cell-fixed-right-first) solid var(--cd-color-table-shadow-border-default);
   }
+
+  /* bordered 模式：容器/单元格/placeholder 边框左右互换。
+     表头 <th> 一侧（.cd-table-row-head）已移至 TableHeaderRow.svelte（该 class 命中
+     该文件内高频渲染点，:global()+长组合链在此处曾实测触发 svelte.compile() 编译
+     卡死不返回，详见 TableHeaderRow.svelte 对应规则注释）。 */
+  :global(.cd-table-wrapper-rtl.cd-table-wrapper-bordered) .cd-table-container {
+    border-left: 0;
+    border-right: var(--cd-width-table-base-border) var(--cd-border-table-base-borderstyle) var(--cd-color-table-border-default);
+  }
+  /* 条件前缀用 .cd-table-wrapper-bordered（挂在最外层 wrapper，与 .cd-table-wrapper-rtl
+     同级）而非 .cd-table-bordered（table 元素上的 class）：双 table 架构下 <table> 由
+     HeadTable.svelte/Body.svelte 渲染，.cd-table-bordered 前缀会被加上本文件 hash，
+     与 table 元素实际携带的 hash 不同，导致祖先链在真实 DOM 里不可能匹配（同一类
+     "跨组件祖先链失效"坑，详见 TableHeaderRow.svelte 对应规则注释）。 */
+  :global(.cd-table-wrapper-rtl.cd-table-wrapper-bordered) .cd-table-row-cell {
+    border-right: 0;
+    border-left: var(--cd-width-table-base-border) var(--cd-border-table-base-borderstyle) var(--cd-color-table-border-default);
+  }
+  /* RTL 镜像：LTR 覆盖层画右边框（阅读方向下会被裁切的是右侧），RTL 画左边框
+     （对齐 Semi rtl.scss #441 fix，条件也镜像为 scroll-position-left）。 */
+  :global(.cd-table-wrapper-rtl.cd-table-wrapper-bordered):not(:has(:global(.cd-table-scroll-position-left))) .cd-table-container::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: var(--cd-width-table-base-border);
+    background-color: var(--cd-color-table-border-default);
+    display: block;
+    z-index: calc(var(--cd-z-table-fixed-column) + 2);
+    pointer-events: none;
+  }
+  :global(.cd-table-wrapper-rtl.cd-table-wrapper-bordered):not(:has(:global(.cd-table-scroll-position-left))) .cd-table-container :global(.cd-table-head) {
+    box-shadow: inset var(--cd-width-table-base-border) 0 0 0 var(--cd-color-table-border-default);
+  }
+  :global(.cd-table-wrapper-rtl) .cd-table-placeholder {
+    border-left: var(--cd-width-table-base-border) var(--cd-border-table-base-borderstyle) var(--cd-color-table-border-default);
+    border-right: 0;
+  }
+
+  /* Spin/loading 遮罩：对齐 Semi rtl.scss `.semi-spin { direction: rtl }`。
+     本库加载态用简单转圈 spinner（非 Spin 组件实例），无方向敏感内容，跳过。 */
 </style>

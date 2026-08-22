@@ -34,7 +34,7 @@
 
 <Table
   rowSelection={{ fixed: true }}
-  expandable={{ expandedRowRender }}
+  {expandedRowRender}
   dataSource={data}
   scroll={{ y: 400 }}
 >

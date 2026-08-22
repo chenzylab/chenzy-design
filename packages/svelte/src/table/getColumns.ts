@@ -2,8 +2,9 @@ import { getContext, setContext } from 'svelte';
 import type { ColumnDef } from './types.js';
 
 /**
- * 组合式 <Column> 的 context 收集机制。对齐 Semi 的 Table.Column 组合式写法，
- * 与配置式 `columns` prop 并存（照本库 Tabs/TabPane、Steps/Step 的双写法惯例）。
+ * 组合式 <Column> 的 context 收集机制（对齐 Semi table/getColumns.tsx 文件结构，
+ * 语义对齐 Semi 的 Table.Column 组合式写法，与配置式 `columns` prop 并存，照本库
+ * Tabs/TabPane、Steps/Step 的双写法惯例）。
  *
  * 每个 <Column> 只做一件事：把自身 props 收集成与配置式 ColumnDef 等价的列树，
  * 喂给 Table 内部现有派生（leafColumns/headerRows...），渲染管道零改动。嵌套
