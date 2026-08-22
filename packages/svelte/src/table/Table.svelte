@@ -457,7 +457,12 @@
       if (!col.children || col.children.length === 0) {
         rows[rowIndex]?.push({ col, colSpan: 1, rowSpan: depth - rowIndex, leafIndex: startLeaf, isLeaf: true });
       } else {
-        rows[rowIndex]?.push({ col, colSpan: leafCount(col), rowSpan: 1, leafIndex: -1, isLeaf: false });
+        // leafIndex 记分组覆盖的起始叶子列索引（而非占位 -1）：分组表头 sticky 定位/
+        // 固定列分割线（TableHeaderRow.svelte headerMergeCell 非叶子分支）需要据此
+        // 结合 colSpan 算出分组覆盖的叶子列范围，判断是否命中固定列及是否为该固定
+        // 方向的最后一组（真机核对发现此前 leafIndex 恒 -1，分组表头完全没有接入
+        // 固定列体系：横向滚动时不会跟着叶子列一起 sticky，也没有分割线）。
+        rows[rowIndex]?.push({ col, colSpan: leafCount(col), rowSpan: 1, leafIndex: startLeaf, isLeaf: false });
         let childLeaf = startLeaf;
         for (const child of col.children) {
           walk(child, rowIndex + 1, childLeaf);
@@ -1611,11 +1616,28 @@
     return parts.length ? parts.join(';') : undefined;
   }
 
-  function fixedCellClass(i: number): string {
+  // 表头合并分组格（headerMergeCell 非叶子分支）的 sticky 定位：只取分组起始叶子列
+  // （leafIndex）的偏移，不含 width（分组宽度由 colSpan 合并的叶子列宽度之和自然决定，
+  // 不能像叶子列那样单独设置固定 width）。此前分组 <th> 完全没有这个函数、也没有
+  // fixedCellClass，横向滚动时分组标题行不会跟着固定列一起 sticky，与它下方已经
+  // sticky 的叶子列表头行为不一致，也没有固定列分割线（真机核对发现的功能性回归，
+  // 不只是视觉缺一条线）。
+  function groupCellStyle(leafIndex: number): string | undefined {
+    const left = fixedLeftOffsets[leafIndex];
+    const right = fixedRightOffsets[leafIndex];
+    if (left != null) return `position:sticky;${isRtl ? 'right' : 'left'}:${left}px`;
+    if (right != null) return `position:sticky;${isRtl ? 'left' : 'right'}:${right}px`;
+    return undefined;
+  }
+
+  // endIndex：合并表头分组格横跨多个叶子列（colSpan>1）时，-last/-right-first 分割线
+  // 应画在分组覆盖范围的最后一个叶子列位置，而非分组自身的起始叶子列 i（对齐 Semi
+  // 分组表头下固定列分割线贯穿整组视觉宽度）。叶子列调用不传时默认 endIndex=i。
+  function fixedCellClass(i: number, endIndex: number = i): string {
     if (fixedLeftOffsets[i] != null) {
       const lastClass = isRtl ? 'cd-table-cell-fixed-right-first' : 'cd-table-cell-fixed-left-last';
       const sideClass = isRtl ? 'cd-table-cell-fixed-right' : 'cd-table-cell-fixed-left';
-      return `cd-table-cell-fixed ${sideClass}${i === lastLeftFixed ? ` ${lastClass}` : ''}`;
+      return `cd-table-cell-fixed ${sideClass}${endIndex === lastLeftFixed ? ` ${lastClass}` : ''}`;
     }
     if (fixedRightOffsets[i] != null) {
       const firstClass = isRtl ? 'cd-table-cell-fixed-left-last' : 'cd-table-cell-fixed-right-first';
@@ -1942,6 +1964,7 @@
         {mergeHeaderStyle}
         {mergeCellStyle}
         {cellStyle}
+        {groupCellStyle}
         {fixedCellClass}
         {columnResizable}
         {ariaSortFor}
@@ -1974,6 +1997,7 @@
             {mergeHeaderStyle}
             {mergeCellStyle}
             {cellStyle}
+            {groupCellStyle}
             {fixedCellClass}
             {columnResizable}
             {ariaSortFor}

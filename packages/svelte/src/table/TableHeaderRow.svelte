@@ -64,6 +64,7 @@
     mergeHeaderStyle,
     mergeCellStyle,
     cellStyle,
+    groupCellStyle,
     fixedCellClass,
     columnResizable,
     ariaSortFor,
@@ -118,7 +119,9 @@
     mergeHeaderStyle: (base: string | undefined) => string | undefined;
     mergeCellStyle: (base: string | undefined, extra: string | undefined) => string | undefined;
     cellStyle: (col: ColumnDef<T>, i: number) => string | undefined;
-    fixedCellClass: (i: number) => string;
+    /** 表头合并分组格 sticky 定位：仅取分组起始叶子列 leafIndex 的偏移，不含 width。 */
+    groupCellStyle: (leafIndex: number) => string | undefined;
+    fixedCellClass: (i: number, endIndex?: number) => string;
     columnResizable: (col: ColumnDef<T>) => boolean;
     ariaSortFor: (col: ColumnDef<T>, index: number) => 'ascending' | 'descending' | 'none';
     isEffectivelyFiltered: (col: ColumnDef<T>, colKey: string) => boolean;
@@ -161,13 +164,18 @@
   {#if hc.isLeaf}
     {@render leafHeaderCell(hc.col, hc.leafIndex, hc.rowSpan)}
   {:else}
+    <!-- 分组表头格（跨 hc.colSpan 个叶子列）：固定列 sticky 定位/分割线此前完全缺失
+         （真机核对发现横向滚动时分组标题行不会跟着固定列一起 sticky，与它下方已经
+         sticky 的叶子列表头行为不一致；也没有画分割线区分固定/非固定分组，对齐
+         Semi 截图对比发现的功能性回归，非仅视觉缺一条线）。endIndex 传分组覆盖的
+         最后一个叶子列索引（leafIndex + colSpan - 1），分割线画在整组视觉宽度末端。 -->
     <th
-      class="cd-table-row-head cd-table-align-{alignOf(hc.col)}"
+      class="cd-table-row-head cd-table-align-{alignOf(hc.col)} {fixedCellClass(hc.leafIndex, hc.leafIndex + hc.colSpan - 1)}"
       class:cd-table-row-cell-ellipsis={!!hc.col.ellipsis}
       scope="colgroup"
       colspan={hc.colSpan}
       role="columnheader"
-      style={mergeHeaderStyle(undefined)}
+      style={mergeHeaderStyle(groupCellStyle(hc.leafIndex))}
     >
       <span class="cd-table-row-head-title">{@render columnTitle(hc.col)}</span>
     </th>
