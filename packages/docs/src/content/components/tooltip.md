@@ -116,7 +116,7 @@ Tooltip、Popconfirm、Popover 都需要劫持 children 的相关事件（pointe
 | arrowPointAtCenter | “小三角”是否指向元素中心，需要同时传入"showArrow=true" | boolean | true |
 | class | 弹出层的样式类名 | string | - |
 | clickToHide | 点击弹出层及内部任一元素时是否自动关闭弹层 | boolean | false |
-| closeOnEsc | 按 Esc 键是否关闭浮层（WCAG 1.4.13 可关闭要求） | boolean | true |
+| closeOnEsc | 按 Esc 键是否关闭浮层（对齐 Semi Tooltip 默认关闭；Popover/Popconfirm 默认 true） | boolean | false |
 | condition | 是否允许 Tooltip 触发显示。仅当显式设置为 false 时，hover/click/focus 等触发行为不生效（trigger='custom' 场景不受影响） | boolean | true |
 | content | 弹出层内容 | string \| Snippet | - |
 | defaultVisible | 非受控时初始是否展示弹出层 | boolean | false |
@@ -167,7 +167,7 @@ Tooltip、Popconfirm、Popover 都需要劫持 children 的相关事件（pointe
 ### 键盘和焦点
 
 - Tab 键聚焦触发元素时显示 Tooltip，失去焦点时隐藏（`disableFocusListener` 可关闭该行为）
-- Esc 键关闭 Tooltip，符合 WCAG 1.4.13 的「可关闭（Dismissible）」要求；鼠标悬停至 Tooltip 内容区仍保持显示，满足「可悬停（Hoverable）」要求
+- `closeOnEsc` 默认 `false`（对齐 Semi Tooltip），Esc 默认不关闭浮层；显式传 `closeOnEsc={true}` 可开启（Popover/Popconfirm 默认已开启）。鼠标悬停至 Tooltip 内容区仍保持显示，满足「可悬停（Hoverable）」要求
 - Tooltip 为纯信息展示，不创建焦点陷阱
 
 ## 文案规范
