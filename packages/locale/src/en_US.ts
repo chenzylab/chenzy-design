@@ -37,7 +37,6 @@ export const en_US: Locale = {
     sortClearedAnnounce: 'Sorting cleared for {column}',
     sortOrderAscend: 'ascending',
     sortOrderDescend: 'descending',
-    rowCount: '{count} rows',
     pageText: 'Showing {currentStart} - {currentEnd} of {total}',
   },
   Spin: {
