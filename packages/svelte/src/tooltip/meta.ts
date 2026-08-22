@@ -60,7 +60,7 @@ export const meta = {
     { name: 'class', type: 'string', default: "''", desc: '浮层自定义类名' },
     { name: 'style', type: 'string', default: "''", desc: '浮层自定义内联样式（如覆盖 max-width）' },
     { name: 'stopPropagation', type: 'boolean', default: 'false', desc: '阻止浮层上的点击事件冒泡' },
-    { name: 'closeOnEsc', type: 'boolean', default: 'true', desc: 'Esc 关闭浮层（WCAG 1.4.13）' },
+    { name: 'closeOnEsc', type: 'boolean', default: 'false', desc: 'Esc 是否关闭浮层（对齐 Semi Tooltip 默认关闭；Popover/Popconfirm 默认 true）' },
     { name: 'preventScroll', type: 'boolean', default: 'false', desc: '显示时阻止页面滚动' },
     { name: 'rePosKey', type: 'string | number', default: 'undefined', desc: '更新该值手动触发浮层重新定位' },
     {
@@ -77,11 +77,11 @@ export const meta = {
   ],
   a11y: {
     role: 'tooltip',
-    keyboard: ['Escape'],
+    keyboard: [],
     notes: [
       '浮层 role=tooltip，使用 useId 生成唯一 id',
       '触发元素 visible 时加 aria-describedby 指向浮层',
-      'focus 触发支持键盘聚焦展示；closeOnEsc 时 click/custom 触发用 useDismiss 处理 Escape 与外部点击',
+      'focus 触发支持键盘聚焦展示；closeOnEsc 默认 false（对齐 Semi Tooltip），显式传 true 时用 useDismiss 处理 Escape；外部点击关闭 click/custom/contextMenu 触发生效',
       'custom 触发不绑定 hover/click/focus，显隐完全由受控 visible + onVisibleChange 控制',
       'condition=false 时禁止一切自动触发（custom 不受影响）',
     ],

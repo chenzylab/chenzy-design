@@ -94,7 +94,7 @@
     style?: string;
     /** 阻止浮层上的点击事件冒泡，默认 false（对齐 Semi） */
     stopPropagation?: boolean;
-    /** Esc 关闭浮层，默认 true（WCAG 1.4.13：hover/focus 浮层也须可由 Esc 关闭） */
+    /** Esc 关闭浮层，默认 false（对齐 Semi Tooltip defaultProps.closeOnEsc；Popover/Popconfirm 默认 true） */
     closeOnEsc?: boolean;
     /** 显示时阻止页面滚动 */
     preventScroll?: boolean;
@@ -213,7 +213,7 @@
   const spacing = $derived(resolveDefault(spacingProp, 'Tooltip', 'spacing', 8));
   const margin = $derived(resolveDefault(marginProp, 'Tooltip', 'margin', 0));
   const showArrow = $derived(resolveDefault(showArrowProp, 'Tooltip', 'showArrow', true));
-  const closeOnEsc = $derived(resolveDefault(closeOnEscProp, 'Tooltip', 'closeOnEsc', true));
+  const closeOnEsc = $derived(resolveDefault(closeOnEscProp, 'Tooltip', 'closeOnEsc', false));
   const returnFocusOnClose = $derived(resolveDefault(returnFocusOnCloseProp, 'Tooltip', 'returnFocusOnClose', true));
   const disableFocusListener = $derived(resolveDefault(disableFocusListenerProp, 'Tooltip', 'disableFocusListener', false));
   const keepDOM = $derived(resolveDefault(keepDOMProp, 'Tooltip', 'keepDOM', false));
@@ -415,11 +415,11 @@
     return registerOverlayRoot(popEl);
   });
 
-  // --- useDismiss (红线 #3)：Esc 对所有触发模式生效（WCAG 1.4.13 Content on Hover/Focus：
-  //     hover/focus 浮层也须可由 Esc 关闭；Semi closeOnEsc 默认关仅指 click 触发的专用行为，
-  //     此处 Esc 关闭是无障碍底线，不受 closeOnEsc 门控）。外部点击关闭仅 click/custom/contextMenu
-  //     生效（对齐 Semi；hover/focus 自然离开即关）。popup portal 列入 extraTargets。
-  //     外部点击先触发 onClickOutSide（仅 custom/click）。 ---
+  // --- useDismiss (红线 #3)：closeOnEsc 默认 false（对齐 Semi Tooltip defaultProps），
+  //     Esc 默认不关闭浮层；显式传 closeOnEsc=true 时才关闭。onEscKeyDown 回调独立于
+  //     关闭行为（对齐 Semi Popover：closeOnEsc=false 时 Esc 仍触发回调但不关闭）。
+  //     外部点击关闭仅 click/custom/contextMenu 生效（对齐 Semi；hover/focus 自然离开即关）。
+  //     popup portal 列入 extraTargets。外部点击先触发 onClickOutSide（仅 custom/click）。 ---
   $effect(() => {
     if (!isOpen || !rootEl) return;
     const allowOutsideClick =
