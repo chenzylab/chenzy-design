@@ -276,7 +276,16 @@
     </div>
     {/snippet}
     {#if showTip && clickToSort}
-      <Tooltip content={locT(thTipKey)}>
+      <!-- triggerStyle 用 inset:0 绝对定位撑满整个 <th>（含 padding 区域），触发区域覆盖
+           范围对齐 Semi（Tooltip 直接包整个 <th>，天然含 padding；本库包裹的是 <th> 内部
+           内容容器，仅 width:100% 只到 content box 边界，不含 th 自身 16px 左右 padding，
+           hover 到内侧留白不触发提示）。<th> 自身 position:relative 作为 inset:0 基准。
+           inset:0 覆盖层本身脱离文档流，须显式还原 th 的 padding，否则内容会贴着容器
+           左边缘失去原有留白（flex 布局保证垂直居中，故只需水平方向 padding + 高度撑满）。 -->
+      <Tooltip
+        content={locT(thTipKey)}
+        triggerStyle="position:absolute;inset:0;display:flex;align-items:center;padding:0 var(--cd-spacing-table-row-head-paddingx);box-sizing:border-box;"
+      >
         {@render operateContent()}
       </Tooltip>
     {:else}
