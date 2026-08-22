@@ -72,7 +72,8 @@
   rowKey="name"
   {columns}
   dataSource={data}
-  expandable={{ expandedRowRender, rowExpandable: (record) => record.name !== '设计文档' }}
+  {expandedRowRender}
+  rowExpandable={(record) => record.name !== '设计文档'}
   hideExpandedColumn={false}
   {rowSelection}
   pagination={false}

@@ -69,5 +69,5 @@
   {rowSelection}
   {columns}
   dataSource={data}
-  expandable={{ expandedRowRender }}
+  {expandedRowRender}
 />

@@ -39,7 +39,7 @@ Table 是结构化二维数据的核心展示与操作组件，是整个组件�
 - 排序状态机（单列/多列、`ascend|descend|null` 三态循环、`sortOrder` 受控合并）。
 - 筛选状态机（多值筛选、`filteredValue` 受控、`onFilter` 谓词执行）。
 - 选择状态机（`selectedRowKeys` 维护、半选 indeterminate 计算、跨页保留、`getCheckboxProps` 禁用合并、shift 范围选择）。
-- 展开状态机（`expandedRowKeys`、树形 `childrenColumnName` 递归展平为可视行序列）。
+- 展开状态机（顶层 `expandedRowKeys`、树形 `childrenRecordName` 递归展平为可视行序列，二者共用同一份状态）。
 - 数据管道（client 模式下 filter → sort → paginate 的纯函数组合 pipeline，memoized）。
 - **虚拟化引擎**：复用通用 `createVirtualizer`（rowHeight 固定/动态测量、overscan、scrollTop → 可视区间 startIndex/endIndex、累积偏移 translateY）。
 - 复用原语：`useId`（生成 table id / aria-describedby）、`useLiveAnnouncer`（排序/筛选/分页/选择结果播报）、`useScrollLock`（不适用，省）。
@@ -76,13 +76,19 @@ Table 是结构化二维数据的核心展示与操作组件，是整个组件�
 | onSortChange | `(state: SortState) => void` | `undefined` |  |
 | pagination | `false \| { pageSize?: number; currentPage?: number; defaultCurrentPage?: number; onPageChange?: (page: number) => void }` | `undefined` | false 关闭；对象/缺省启用内置分页(pageSize 默认 10)。currentPage 受控不回写 |
 | rowSelection | `RowSelection<T>` | `undefined` | selectedRowKeys 受控不回写；defaultSelectedRowKeys / onChange / getCheckboxProps；checkStrictly(默认 false) 树形父子联动开关：false 勾父连带勾后代+后代部分选中父行半选，true 父子独立 |
-| expandable | `Expandable<T>` | `undefined` | expandedRowRender / rowExpandable / expandedRowKeys 受控不回写 / defaultExpandedRowKeys / onExpand |
-| tree | `boolean \| TreeTable` | `undefined` | 树形数据：true 或 { childrenColumnName(默认 children) / indentSize(默认 16) / expandedRowKeys 受控不回写 / defaultExpandedRowKeys / onExpand }。第一列内展开三角+逐级缩进；排序/分页/筛选作用于顶层行 |
+| expandedRowRender | `Snippet<[{ record: T; index: number }]>` | `undefined` | 展开行内容渲染（对齐 Semi 顶层 expandedRowRender）。传入即启用展开行能力，与 tree 树形共用同一份 expandedRowKeys 状态 |
+| rowExpandable | `(record: T) => boolean` | `undefined` | 该行是否可展开，默认全部可展开（对齐 Semi 顶层 rowExpandable，同时作用于展开行与树形展开图标） |
+| expandedRowKeys | `RowKey[]` | `undefined` | 受控展开行 key 列表（对齐 Semi 顶层 expandedRowKeys）：同时驱动 expandedRowRender 展开行与树形 children 渲染。受控时不回写，仅经 onExpand / onExpandedRowsChange 通知 |
+| defaultExpandedRowKeys | `RowKey[]` | `undefined` | 非受控初始展开行 key 列表（对齐 Semi 顶层 defaultExpandedRowKeys） |
+| onExpand | `(expanded: boolean, record: T) => void` | `undefined` | 单行展开/收起时触发（对齐 Semi 顶层 onExpand） |
+| onExpandedRowsChange | `(records: T[]) => void` | `undefined` | 展开行 key 集合变化时触发，入参为完整展开行记录数组而非 key 数组（对齐 Semi 顶层 onExpandedRowsChange） |
+| tree | `boolean` | `undefined` | 树形数据开关（本库保持显式 opt-in，不像 Semi 靠 dataSource 含 childrenRecordName 字段自动判定）。开启后行含 childrenRecordName 字段自动嵌套，第一列内展开三角+逐级缩进；排序/分页/筛选作用于顶层行；子级字段名见 childrenRecordName、缩进见 indentSize |
+| childrenRecordName | `string` | `'children'` | 树形 dataSource 中子级字段名（对齐 Semi childrenRecordName） |
 | rowClassName | `(record: T, index: number) => string` | `undefined` |  |
 | empty | `string` | `'暂无数据'` | 空数据占位文案 |
 | aria-label | `string` | `undefined` | table aria-label |
 | onRowClick | `(info: { record: T; index: number }) => void` | `undefined` |  |
-| virtualized | `boolean` | `false` | 行虚拟滚动：仅渲染视口内行，适合大数据(1000+)。启用时忽略 pagination(全量滚动)、表头 sticky 固定顶部；假定行等高，不建议与 expandable 混用 |
+| virtualized | `boolean` | `false` | 行虚拟滚动：仅渲染视口内行，适合大数据(1000+)。启用时忽略 pagination(全量滚动)、表头 sticky 固定顶部；假定行等高，不建议与 expandedRowRender 混用 |
 | height | `number` | `400` | 虚拟滚动视口高度(px)，virtualized 时生效 |
 | rowHeight | `number` | `48` | 虚拟滚动行高(px)，virtualized 时生效 |
 | onChange | `(info: TableChangeInfo) => void` | `undefined` | 聚合事件：排序/筛选/分页任一变化的主入口（受控数据回流） |
@@ -105,7 +111,7 @@ Table 是结构化二维数据的核心展示与操作组件，是整个组件�
 | expandRowByClick | `boolean` | `false` | 点击行体触发展开/收起 |
 | expandCellFixed | `boolean \| 'left' \| 'right'` | `undefined` | 展开图标列固定方向 |
 | keepDOM | `boolean` | `false` | true 时保留已展开行 DOM 但隐藏（display:none） |
-| indentSize | `number` | `20` | 树形缩进像素（tree.indentSize 优先） |
+| indentSize | `number` | `20` | 树形缩进像素（对齐 Semi 顶层 indentSize） |
 | groupBy | `string \| ((record: T) => string)` | `undefined` | 按字段名或函数对数据行分组，插入分组标题行 |
 | renderGroupSection | `Snippet<[{ groupKey: string; group: T[] }]>` | `undefined` | 自定义分组标题渲染 |
 | clickGroupedRowToExpand | `boolean` | `false` | 点击分组标题行折叠/展开该组内数据行（groupBy 时生效，disclosure 模式 role=button+aria-expanded+Enter/Space 可达） |
@@ -116,7 +122,7 @@ Table 是结构化二维数据的核心展示与操作组件，是整个组件�
 | titleSnippet | `Snippet` | `undefined` | 表格顶部标题区域 |
 | footerSnippet | `Snippet<[{ currentData: T[] }]>` | `undefined` | 表格底部内容区域（接收 currentData） |
 | renderPagination | `Snippet<[{ total: number; currentPage: number; pageSize: number; onChange: (page: number) => void }]>` | `undefined` | 自定义分页器渲染，替换内置 Pagination UI；调用 onChange(page) 触发内部翻页（受控 currentPage 不回写） |
-| expandIcon | `Snippet<[{ expanded: boolean; record: T }]>` | `undefined` | 自定义展开行的展开/收起图标（替换默认三角），仅 expandable 展开列生效 |
+| expandIcon | `Snippet<[{ expanded: boolean; record: T }]>` | `undefined` | 自定义展开行的展开/收起图标（替换默认三角），仅 expandedRowRender 展开列生效 |
 | hideExpandedColumn | `boolean` | `true` | 展开按钮是否并入首列。默认 true（并入首列，对齐 Semi）；false 时展开按钮单独成列 |
 | rowSpanHover | `boolean` | `false` | 合并单元格（rowSpan）时 hover 高亮整个合并区（渐进能力，依赖单元格合并） |
 | headerStyle | `string \| Record<string, string>` | `undefined` | 表头单元格（所有 th，含 fixed 表头）自定义内联样式 |
@@ -274,7 +280,7 @@ Table 是结构化二维数据的核心展示与操作组件，是整个组件�
 策略：
 
 - **虚拟化**：行数 > 阈值（默认 100 或显式 `virtualized`）启用，仅渲染视口 + overscan；固定 `itemHeight` 走 O(1) 偏移计算，动态高度走测量缓存。
-- **惰性渲染**：`expandable.destroyOnClose`（默认 true）收起即卸载展开内容；筛选浮层惰性挂载。
+- **惰性渲染**：`keepDOM`（默认 false）收起即卸载展开内容，true 时保留 DOM 隐藏；筛选浮层惰性挂载。
 - **memoization**：数据管道（filter→sort→paginate）纯函数 + 引用相等短路；列模型仅在 `columns` 变更重算。
 - **渲染最小化**：行级 keyed each，选择/hover 仅切换行级 class，不重建单元格。
 - **避免布局抖动**：固定列同步与虚拟 spacer 用 `transform`/`translate` 而非 `top/left`；`will-change` 受控启用。
@@ -309,7 +315,7 @@ Table 是结构化二维数据的核心展示与操作组件，是整个组件�
 - [ ] 筛选多值 + 自定义 `onFilter` + `filteredValue` 受控，浮层遵循 `open + on:openChange`。
 - [ ] 分页内置/受控/`false` 三态；`pagination:false` 与虚拟化兼容。
 - [ ] 行选择 checkbox/radio、半选、shift 范围、跨页 preserve、禁用项；事件载荷符合表。
-- [ ] 行展开 + 树形数据（`childrenColumnName`）+ `destroyOnClose` 默认卸载。
+- [ ] 行展开 + 树形数据（`childrenRecordName`）+ `keepDOM` 默认卸载。
 - [ ] 固定列 left/right + 固定表头（`scroll.x/y`），阴影仅滚动时显现，RTL 镜像正确。
 - [ ] 虚拟化：1k+ 行仅渲染视口，滚动 60fps，满足 Perf Budget 全部指标。
 - [ ] 全部组件 Token 回退 Alias，无写死值，深色/密度切换正确。

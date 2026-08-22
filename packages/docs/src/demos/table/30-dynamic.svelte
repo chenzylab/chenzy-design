@@ -78,15 +78,11 @@
         }
       : undefined,
   );
-  // 行展开 / 展开当前所有行：对齐 Semi expandedRowRender + expandedRowKeys。
-  const expandable = $derived(
-    expandRow || expandAll
-      ? {
-          expandedRowRender: expandedRow,
-          expandCellFixed: fixColumns ? ('left' as const) : undefined,
-          ...(expandAll ? { expandedRowKeys: dataSource.map((d) => d.key) } : {}),
-        }
-      : undefined,
+  // 行展开 / 展开当前所有行：对齐 Semi 顶层 expandedRowRender + expandedRowKeys。
+  const expandedRowRenderProp = $derived(expandRow || expandAll ? expandedRow : undefined);
+  const expandCellFixedProp = $derived(expandRow || expandAll ? (fixColumns ? ('left' as const) : undefined) : undefined);
+  const expandedRowKeysProp = $derived(
+    expandAll ? dataSource.map((d) => d.key) : undefined,
   );
   const pagination = $derived(
     paginationPosition === false ? false : { pageSize: 8, position: paginationPosition },
@@ -153,7 +149,9 @@
   {bordered}
   {loading}
   {resizable}
-  {expandable}
+  expandedRowRender={expandedRowRenderProp}
+  expandCellFixed={expandCellFixedProp}
+  expandedRowKeys={expandedRowKeysProp}
   {pagination}
   showHeader={!hideHeader}
   title={showTitle ? 'This is title.' : undefined}

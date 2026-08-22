@@ -15,8 +15,6 @@ export type {
   RowSelection,
   ResizableConfig,
   RenderFilterDropdownProps,
-  Expandable,
-  TreeTable,
   TableChangeInfo,
   TableChangeAction,
   TableScrollInfo,

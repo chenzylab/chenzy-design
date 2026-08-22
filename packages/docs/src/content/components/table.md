@@ -43,6 +43,8 @@ brief: 表格用于呈现结构化的数据内容，通常会伴随提供对数�
   import expandableColumnSrc from '../../demos/table/31-expandable-column.svelte?raw';
   import Tree from '../../demos/table/15-tree.svelte';
   import treeSrc from '../../demos/table/15-tree.svelte?raw';
+  import TreeSwapRows from '../../demos/table/36-tree-swap-rows.svelte';
+  import treeSwapRowsSrc from '../../demos/table/36-tree-swap-rows.svelte?raw';
   import TreeSelect from '../../demos/table/33-tree-select.svelte';
   import treeSelectSrc from '../../demos/table/33-tree-select.svelte?raw';
   import TreeCheckRelation from '../../demos/table/32-tree-check-relation.svelte';
@@ -277,7 +279,7 @@ interface RenderFilterDropdownProps {
 
 #### 一般可展开行
 
-如果需要渲染可以展开的表格，除了需要在 Table 传 `expandable.expandedRowRender` 这个 Snippet 外，还必须要指定 `rowKey`（默认为 `key`），Table 会根据 `rowKey` 取得行唯一标识符。
+如果需要渲染可以展开的表格，除了需要在 Table 传 `expandedRowRender` 这个 Snippet 外，还必须要指定 `rowKey`（默认为 `key`），Table 会根据 `rowKey` 取得行唯一标识符。
 
 - 如果 `rowKey` 为 `Function`，则会把 `rowKey(record)` 的结果作为行唯一 ID
 - 如果 `rowKey` 为 `string` 类型，则会把 `record[rowKey]` 作为行唯一 ID
@@ -286,17 +288,23 @@ interface RenderFilterDropdownProps {
 
 #### 展开按钮渲染为单独列 / 关闭某一行的可展开按钮
 
-默认情况，展开按钮会与第一列文案渲染在同一个单元格内，你可以通过传入 `hideExpandedColumn={false}` 来渲染为单独一列；可传入 `expandable.rowExpandable` 方法，入参为 `record`，返回 `false` 时关闭某一行的可展开按钮的渲染。
+默认情况，展开按钮会与第一列文案渲染在同一个单元格内，你可以通过传入 `hideExpandedColumn={false}` 来渲染为单独一列；可传入 `rowExpandable` 方法，入参为 `record`，返回 `false` 时关闭某一行的可展开按钮的渲染。
 
 <DemoBox code={expandableColumnSrc}><ExpandableColumn /></DemoBox>
 
 ### 树形数据展示
 
-表格支持树形数据的展示，当数据中有 `children` 字段时会自动展示为树形表格，如果不需要或使用其他字段可以用 `tree.childrenColumnName`（或 `childrenRecordName`）进行配置。另外可以通过设置 `tree.indentSize` 以控制每一层的缩进宽度。
+表格支持树形数据的展示：传入 `tree` 开启树形渲染后，当数据中有 `children` 字段时会自动嵌套展示为树形表格，如果不需要或使用其他字段可以用 `childrenRecordName` 进行配置。另外可以通过设置 `indentSize` 以控制每一层的缩进宽度。
 
 > **注意：** 请务必为每行数据提供一个与其他行值不同的 `key`，或者使用 `rowKey` 参数指定一个作为主键的属性名。
 
 <DemoBox code={treeSrc}><Tree /></DemoBox>
+
+#### 行可交换的树形数据
+
+你可以通过改变 `dataSource` 元素的顺序来实现行交换操作。展开状态由顶层 `expandedRowKeys`（受控）/ `onExpandedRowsChange`（回传完整展开行记录数组）驱动，与普通可展开行共用同一套状态。
+
+<DemoBox code={treeSwapRowsSrc}><TreeSwapRows /></DemoBox>
 
 #### 树形选择
 
@@ -456,8 +464,10 @@ Semi 借助 React 的 `dnd-kit` 搭配 `components.body.row` 注入自定义 `So
 | direction | RTL、LTR 方向 | 'ltr' \| 'rtl' | 'ltr' |
 | empty | 无数据时展示的文案 | string | '暂无数据' |
 | emptySnippet | 无数据时展示的自定义内容（优先于 empty，对齐 Semi `empty: ReactNode`） | Snippet | - |
-| expandable | 行展开配置，详见 [Expandable](#expandable) | `Expandable<T>` | - |
 | expandAllRows | 是否展开所有行 | boolean | false |
+| expandedRowKeys | 受控展开行 key 列表：同时驱动 expandedRowRender 展开行与树形 children 渲染，与普通展开、树形共用同一份状态。受控时不回写，仅经 onExpand / onExpandedRowsChange 通知 | RowKey[] | - |
+| expandedRowRender | 展开行内容渲染 Snippet。传入即启用展开行能力，与 tree 树形共用同一份 expandedRowKeys 状态 | `Snippet<[{ record, index }]>` | - |
+| defaultExpandedRowKeys | 非受控初始展开行 key 列表 | RowKey[] | - |
 | expandRowByClick | 点击行时是否展开可展开行 | boolean | false |
 | footer / footerSnippet | 表格尾部（字符串 / Snippet 接收 currentData） | string \| Snippet | - |
 | getPopupContainer | 筛选浮层挂载容器 | () => HTMLElement | - |
@@ -474,6 +484,7 @@ Semi 借助 React 的 `dnd-kit` 搭配 `components.body.row` 注入自定义 `So
 | renderPagination | 自定义分页器渲染 Snippet | Snippet | - |
 | resizable | 是否开启伸缩列功能，需要进行伸缩的列必须提供 width；对象态含 onResize/Start/Stop | boolean \| `ResizableConfig<T>` | false |
 | rowClassName | 行样式名生成函数 | (record: T, index: number) => string | - |
+| rowExpandable | 该行是否可展开，默认全部可展开；同时作用于展开行与树形展开图标 | (record: T) => boolean | - |
 | rowHeight | 虚拟滚动行高（px），virtualized 时生效 | number | 48 |
 | rowKey | 表格行 key 的取值 | string \| ((record: T) => RowKey) | 'key' |
 | rowSelection | 表格行是否可选择，详见 [rowSelection](#rowselection) | `RowSelection<T>` | - |
@@ -485,10 +496,12 @@ Semi 借助 React 的 `dnd-kit` 搭配 `components.body.row` 注入自定义 `So
 | stripe | 斑马纹 | boolean | false |
 | tableLayout | 控制 `<table>` 的 table-layout。缺省沿用推导：存在 fixed/ellipsis 列，或触发双 table（sticky/virtualized/scrollBody/scroll.y）时 fixed，否则 auto；显式传值覆盖推导 | '' \| 'auto' \| 'fixed' | '' |
 | title / titleSnippet | 表格标题（字符串 / Snippet） | string \| Snippet | - |
-| tree | 树形数据：true 或 `{ childrenColumnName / indentSize / expandedRowKeys / defaultExpandedRowKeys / onExpand }` | boolean \| TreeTable | - |
+| tree | 树形数据开关：开启后行含 childrenRecordName 字段自动嵌套渲染，第一列展开三角+缩进 | boolean | - |
 | virtualized | 行虚拟滚动 | boolean | false |
 | onChange | 分页、排序、筛选变化时触发 | (info: TableChangeInfo) => void | - |
+| onExpand | 单行展开/收起时触发 | (expanded: boolean, record: T) => void | - |
 | onExpandChange | 行展开/收起（展开行与树形行均触发） | (info) => void | - |
+| onExpandedRowsChange | 展开行 key 集合变化时触发，入参为完整展开行记录数组而非 key 数组 | (records: T[]) => void | - |
 | onGroupedRow | 分组表头行属性回调 | (group: T[], index: number) => RowAttrs | - |
 | onHeaderRow | 设置头部行属性 | (columns, index) => RowAttrs | - |
 | onReachBottom | 纵向触底（懒加载触发） | () => void | - |
@@ -557,16 +570,6 @@ Semi 借助 React 的 `dnd-kit` 搭配 `components.body.row` 注入自定义 `So
 | onSelect | 用户手动点击某行选择框的回调 | (record, selected, selectedRows) => void | - |
 | onSelectAll | 用户手动点击表头选择框的回调 | (selected, selectedRows, changedRows) => void | - |
 
-### Expandable
-
-| 属性 | 说明 | 类型 | 默认值 |
-| --- | --- | --- | --- |
-| expandedRowRender | 额外的展开行渲染 Snippet | `Snippet<[{ record, index }]>` | - |
-| rowExpandable | 该行是否可展开 | (record: T) => boolean | - |
-| expandedRowKeys | 受控展开行 key 列表 | RowKey[] | - |
-| defaultExpandedRowKeys | 非受控初始展开 | RowKey[] | - |
-| onExpand | 展开/收起回调 | (expanded: boolean, record: T) => void | - |
-
 ### scroll
 
 | 属性 | 说明 | 类型 | 默认值 |
@@ -593,7 +596,7 @@ Semi 借助 React 的 `dnd-kit` 搭配 `components.body.row` 注入自定义 `So
 
 ### ARIA
 
-- table 的 role 静态标注为 `grid` 或 `treegrid`（分组 `groupBy` / 展开行 `expandable.expandedRowRender` / 树形 `tree` 任一存在时为 `treegrid`，否则 `grid`），不因排序/筛选/行选择等交互能力而切换；并带 `aria-rowcount`（顶层数据源行数）/`aria-colcount`（叶子列数）。
+- table 的 role 静态标注为 `grid` 或 `treegrid`（分组 `groupBy` / 展开行 `expandedRowRender` / 树形 `tree` 任一存在时为 `treegrid`，否则 `grid`），不因排序/筛选/行选择等交互能力而切换；并带 `aria-rowcount`（顶层数据源行数）/`aria-colcount`（叶子列数）。
 - 表头行 role 为 `row`（含 `aria-rowindex`），表头格 role 为 `columnheader`（含 `aria-colindex`）；数据行 role 为 `row`（含 `aria-rowindex`），数据格 role 为 `gridcell`（含 `aria-colindex`）；展开按钮与可点击展开的分组标题行自带 `aria-expanded`（树形层级仅体现为视觉缩进，无 `aria-level`）。
 - 可排序列头带 `aria-sort`（`ascending`/`descending`/`none`）。
 - 排序、筛选、分页、选择操作结果通过 live region（polite）向屏幕阅读器播报；行复选框使用原生 `<input type="checkbox">`，全选提供 `aria-label`「全选」、行选提供「选择此行」，半选态命令式设置 `indeterminate`。

@@ -8,9 +8,16 @@
   列筛选：column.filters + onFilter，列头漏斗弹浮层多选过滤（复用 _floating + useDismiss）。
   列宽拖拽：column.resize，列头右侧拖拽手柄，指针几何命令式管理(红线 #3)；
   覆盖宽度存本地 SvelteMap 不写回 columns prop(红线 #1)，进 cellStyle 宽度计算。
-  树形数据：tree=true 或 tree={{ childrenColumnName, indentSize, expandedRowKeys... }}；
-  行含 children 自动嵌套，第一列内展开三角 + 逐级缩进；排序/分页/筛选作用于顶层行，
-  可见行经 core flattenTreeRows 纯函数扁平化驱动 tbody (红线 #2)；受控展开 keys 不回写 (红线 #1)。
+  树形数据：tree=true 时行含 childrenRecordName（默认 'children'）字段自动嵌套渲染，
+  第一列内展开三角 + 逐级缩进（indentSize）；排序/分页/筛选作用于顶层行，可见行经 core
+  flattenTreeRows 纯函数扁平化驱动 tbody (红线 #2)。展开状态收敛到单一顶层架构（对齐 Semi
+  Table.tsx：expandedRowKeys/defaultExpandedRowKeys/onExpand/onExpandedRowsChange 均为
+  顶层 prop，无 expandable/tree 嵌套状态对象），同一份 expandedRowKeys 同时驱动
+  expandedRowRender 展开行渲染与树形 children 渲染，二者可同时生效、互不排斥（对齐 Semi
+  Body/index.tsx renderBodyRows）；受控 expandedRowKeys 不回写，仅经 onExpand(单行)/
+  onExpandedRowsChange(全量展开记录数组) 通知 (红线 #1)。tree 本身仍是显式 opt-in
+  （不像 Semi 靠 dataSource 是否含 children 字段自动判定，见项目记忆
+  table-tree-needs-explicit-tree-and-row-key，避免恰好带 children 字段的普通表被误判）。
   树形行选择父子联动：rowSelection.checkStrictly 默认 false=联动（勾父连带勾全部后代，
   后代部分选中父行半选 indeterminate），true=父子独立(向后兼容)。联动 {checked,half} 经 core
   conductRows/toggleRowCheck 纯函数据整棵可见行树派生 (红线 #2)；内部存叶子级 base，
@@ -19,7 +26,7 @@
   tbody 仅渲染视口内行切片(复用 core fixedRange 算可见区间)，首尾各一个 padding spacer tr 撑出
   未渲染行总高(保持原生 <table>/<tr>/<td> 语义与 a11y)。scrollTop 命令式 scroll 回调 + rAF 节流写入
   本地 $state，可见区间纯 $derived render 期只读(红线 #2/#3)。virtualized 与 pagination 互斥(虚拟时
-  忽略分页全量滚动)；排序/筛选/行选择/树形/固定列均正常协同。假定行等高，不建议与 expandable 混用。
+  忽略分页全量滚动)；排序/筛选/行选择/树形/固定列均正常协同。假定行等高，不建议与 expandedRowRender 混用。
 -->
 <script lang="ts" generics="T extends Record<string, unknown>">
   import {
@@ -56,8 +63,6 @@
     RowSelection,
     ResizableConfig,
     RowAttrs,
-    Expandable,
-    TreeTable,
     Align,
     TableSize,
     TableChangeInfo,
@@ -93,8 +98,13 @@
     onSortChange,
     pagination,
     rowSelection,
-    expandable,
     tree,
+    expandedRowRender,
+    rowExpandable,
+    expandedRowKeys,
+    defaultExpandedRowKeys,
+    onExpand,
+    onExpandedRowsChange,
     rowClassName,
     empty,
     'aria-label': ariaLabel,
@@ -192,8 +202,41 @@
           onChange?: (page: number) => void;
         };
     rowSelection?: RowSelection<T>;
-    expandable?: Expandable<T>;
-    tree?: boolean | TreeTable;
+    /**
+     * 树形数据开关（对齐 Semi 语义，但本库有意保留显式 opt-in：Semi 靠 dataSource
+     * 含 childrenRecordName 字段自动判定树形，本库要求显式传 `tree` 才启用树形渲染
+     * ——避免恰好带 children 字段的普通表被误当树形，见 table-tree-needs-explicit-
+     * tree-and-row-key 记忆）。展开状态/展开行渲染已收敛到顶层 expandedRowKeys 等
+     * props（对齐 Semi Table.tsx：expandedRowKeys/onExpand/onExpandedRowsChange 等
+     * 均为顶层 prop，无 tree 嵌套对象），tree 自身仅剩布尔开关语义。
+     */
+    tree?: boolean;
+    /**
+     * 展开行内容渲染（对齐 Semi 顶层 expandedRowRender）。传入即视为该表启用「展开行」
+     * 能力；与 tree（树形）共用同一份 expandedRowKeys 状态与展开图标机制，
+     * 二者可同时生效（对齐 Semi Body/index.tsx renderBodyRows：hasExpandedRowRender
+     * 与 recordHasChildren 各自独立判定，互不排斥）。
+     */
+    expandedRowRender?: Snippet<[{ record: T; index: number }]>;
+    /** 该行是否可展开，默认全部可展开（对齐 Semi 顶层 rowExpandable，同时作用于展开行图标与树形展开图标） */
+    rowExpandable?: (record: T) => boolean;
+    /**
+     * 受控展开行 key 列表（对齐 Semi 顶层 expandedRowKeys）：同时驱动 expandedRowRender
+     * 展开行渲染与树形 children 展开渲染（同一份状态，对齐 Semi handleRowExpanded 单一
+     * expandedRowKeys 数组同时服务两种渲染路径）。受控时不回写，仅经 onExpand /
+     * onExpandedRowsChange 通知（红线 #1）。
+     */
+    expandedRowKeys?: RowKey[];
+    /** 非受控初始展开行 key 列表（对齐 Semi 顶层 defaultExpandedRowKeys） */
+    defaultExpandedRowKeys?: RowKey[];
+    /** 单行展开/收起时触发（对齐 Semi 顶层 onExpand，入参 (expanded, record)） */
+    onExpand?: (expanded: boolean, record: T) => void;
+    /**
+     * 展开行 key 集合变化时触发，入参为完整展开行记录数组（非 key 数组，对齐 Semi
+     * 顶层 onExpandedRowsChange：`(expandedRows?: RecordType[]) => void`，实测于 Semi
+     * 官方「行可交换的树形数据」demo `onExpandedRowsChange={rows => setExpandedRowKeys(rows.map(item => item[rowKey]))}`）。
+     */
+    onExpandedRowsChange?: (records: T[]) => void;
     rowClassName?: (record: T, index: number) => string;
     empty?: string;
     /** 空数据占位自定义渲染（富内容，如 Empty 组件；优先于 empty 文案，对齐 Semi empty: ReactNode） */
@@ -222,7 +265,7 @@
     reachBottomThreshold?: number;
     /** 行虚拟滚动：仅渲染视口内行，适合大数据（1000+ 行）。默认 false（行为不变）。
      *  启用时忽略 pagination（全量滚动），表头 sticky 固定于滚动容器顶部。
-     *  假定行等高（rowHeight）；与 expandable 同用时展开内容行不计入高度，故不建议混用。 */
+     *  假定行等高（rowHeight）；与 expandedRowRender 同用时展开内容行不计入高度，故不建议混用。 */
     virtualized?: boolean;
     /** 虚拟滚动视口高度（px）。virtualized 时生效，默认 400 */
     height?: number;
@@ -256,7 +299,7 @@
     expandCellFixed?: boolean | 'left' | 'right';
     /** keepDOM=true 时保留已展开行 DOM 但隐藏（display:none），默认 false */
     keepDOM?: boolean;
-    /** 树形缩进像素，默认 20（tree.indentSize 优先） */
+    /** 树形缩进像素，默认 20（对齐 Semi 顶层 indentSize） */
     indentSize?: number;
     /** 按字段名或函数对数据行分组，插入分组标题行 */
     groupBy?: string | ((record: T) => string);
@@ -288,12 +331,12 @@
     renderPagination?: Snippet<[{ total: number; currentPage: number; pageSize: number; onChange: (page: number) => void }]>;
     /**
      * 自定义展开行的展开/收起图标（替换默认三角）。入参 { expanded, record }。
-     * 仅在 expandable 展开列生效（树形行的展开三角另有渲染，不受此影响）。
+     * 仅在 expandedRowRender 展开列生效（树形行的展开三角另有渲染，不受此影响）。
      */
     expandIcon?: Snippet<[{ expanded: boolean; record: T }]>;
     /**
      * 展开按钮是否与首列文案渲染在同一单元格。默认 true（并入首列，对齐 Semi）；
-     * 传 false 时展开按钮单独作为一列渲染（首列前的独立 expand 列）。仅 expandable 时生效。
+     * 传 false 时展开按钮单独作为一列渲染（首列前的独立 expand 列）。仅 expandedRowRender 时生效。
      */
     hideExpandedColumn?: boolean;
     /** 合并单元格（column.render 返回 rowSpan）时 hover 是否高亮整个合并区。默认 false */
@@ -306,7 +349,7 @@
     title?: string;
     /** 表格尾部（字符串；富内容用 footerSnippet） */
     footer?: string;
-    /** 树形 dataSource 中子级字段名，默认 'children'（对齐 Semi childrenRecordName；tree.childrenColumnName 优先） */
+    /** 树形 dataSource 中子级字段名，默认 'children'（对齐 Semi 顶层 childrenRecordName） */
     childrenRecordName?: string;
     /** 最外层 .cd-table-wrapper 自定义样式名（对齐 Semi className） */
     class?: string;
@@ -721,7 +764,7 @@
         if (col.filterChildrenRecord) {
           // 树形子级本地过滤：子级命中则父级保留（对齐 Semi filterChildrenRecord）。
           // 递归裁剪 children 字段：自身命中保留整行；否则保留命中的子孙分支。
-          const childKey = typeof tree === 'object' ? (tree.childrenColumnName ?? 'children') : (childrenRecordName ?? 'children');
+          const childKey = childrenRecordName ?? 'children';
           const prune = (records: T[]): T[] => {
             const out: T[] = [];
             for (const rec of records) {
@@ -765,7 +808,7 @@
               };
         if (target.sortChildrenRecord) {
           // 树形子级本地排序：每层 children 也按同一比较器排序（对齐 Semi sortChildrenRecord）。
-          const childKey = typeof tree === 'object' ? (tree.childrenColumnName ?? 'children') : (childrenRecordName ?? 'children');
+          const childKey = childrenRecordName ?? 'children';
           const deepSort = (records: T[]): T[] =>
             applySort(records, order, compare).map((rec) => {
               const kids = rec[childKey];
@@ -841,14 +884,11 @@
   // --- 树形数据（嵌套行）---
   // tree 启用时：filter/sort/paginate 作用于顶层行(processed/visibleRows)，
   // 然后据展开态把可见顶层行扁平化为带 level/hasChildren 的渲染行列表。
-  // 受控 tree.expandedRowKeys 不回写，仅 onExpand 通知 (红线 #1)。
-  const treeEnabled = $derived(tree !== undefined && tree !== false);
-  const treeOpts = $derived<TreeTable>(typeof tree === 'object' ? tree : {});
-  const childrenColumnName = $derived(treeOpts.childrenColumnName ?? childrenRecordName ?? 'children');
-  const indentSize = $derived(treeOpts.indentSize ?? indentSizeProp);
+  const treeEnabled = $derived(tree === true);
+  const indentSize = $derived(indentSizeProp);
 
   function getChildren(record: T): T[] | undefined {
-    const kids = record[childrenColumnName];
+    const kids = record[childrenRecordName ?? 'children'];
     return Array.isArray(kids) ? (kids as T[]) : undefined;
   }
 
@@ -871,61 +911,90 @@
     return conductRows(visibleRows, selectedSet, getKey, getChildren, rowDisabledFn);
   });
 
-  const isTreeExpandControlled = $derived(treeOpts.expandedRowKeys !== undefined);
-  let innerTreeExpanded = $state<RowKey[]>(initTreeExpanded());
-  function initTreeExpanded(): RowKey[] {
-    if (typeof tree === 'object' && tree.defaultExpandedRowKeys) {
-      return [...tree.defaultExpandedRowKeys];
+  // --- 展开状态：单一顶层架构（对齐 Semi Table.tsx expandedRowKeys/onExpand/
+  // onExpandedRowsChange 均为顶层 prop，无 expandable/tree 嵌套状态对象，见
+  // foundation.ts handleRowExpanded：一份 expandedRowKeys 数组同时驱动
+  // expandedRowRender 展开行渲染与树形 children 渲染）。受控 expandedRowKeys
+  // 不回写，仅经 onExpand(单行)/onExpandedRowsChange(全量展开记录数组) 通知 (红线 #1)。
+  const hasExpandedRowRender = $derived(expandedRowRender !== undefined);
+  // 展开按钮是否占独立前置列：hideExpandedColumn=false 时独立成列；默认 true 并入首列（对齐 Semi）。
+  const expandAsColumn = $derived(hasExpandedRowRender && hideExpandedColumn === false);
+  const isExpandControlled = $derived(expandedRowKeys !== undefined);
+  let innerExpanded = $state<RowKey[]>(initExpanded());
+  function initExpanded(): RowKey[] {
+    if (defaultExpandedRowKeys) {
+      return [...defaultExpandedRowKeys];
     }
     if (defaultExpandAllRows) {
-      // 递归收集所有含子行的行 key
+      // 递归收集所有「应展开」的行 key：有 expandedRowRender 时全部顶层行；
+      // 树形时额外收集所有含子行的行（含嵌套层级）。
       const keys: RowKey[] = [];
-      const col = typeof tree === 'object' ? (tree.childrenColumnName ?? 'children') : 'children';
-      const walk = (records: T[]): void => {
+      const walk = (records: T[], isTop: boolean): void => {
         for (const r of records) {
-          const k = typeof rowKey === 'function' ? rowKey(r) : (r[rowKey as string] as RowKey);
-          const kids = r[col];
-          if (Array.isArray(kids) && kids.length > 0) {
-            keys.push(k);
-            walk(kids as T[]);
-          }
+          const k = getKey(r);
+          const kids = treeEnabled ? getChildren(r) : undefined;
+          const hasKids = !!kids && kids.length > 0;
+          if ((isTop && hasExpandedRowRender) || hasKids) keys.push(k);
+          if (hasKids) walk(kids!, false);
         }
       };
-      walk(dataSource);
+      walk(dataSource, true);
       return keys;
     }
     return [];
   }
-  // expandAllRows=true 时展开全部含子行的行（对齐 Semi expandAllRows，覆盖其余展开态）。
-  const allTreeExpandableKeys = $derived.by<RowKey[]>(() => {
-    if (expandAllRows !== true || !treeEnabled) return [];
+  // expandAllRows=true 时展开全部「可展开」的行（对齐 Semi expandAllRows，覆盖其余展开态）：
+  // 有 expandedRowRender 时全部顶层行；树形时全部含子行的行（含嵌套层级）。
+  const allExpandableKeys = $derived.by<RowKey[]>(() => {
+    if (expandAllRows !== true) return [];
     const keys: RowKey[] = [];
+    const walk = (records: T[], isTop: boolean): void => {
+      for (const r of records) {
+        const kids = treeEnabled ? getChildren(r) : undefined;
+        const hasKids = !!kids && kids.length > 0;
+        if ((isTop && hasExpandedRowRender) || hasKids) keys.push(getKey(r));
+        if (hasKids) walk(kids!, false);
+      }
+    };
+    walk(dataSource, true);
+    return keys;
+  });
+  const expandedSet = $derived<Set<RowKey>>(
+    expandAllRows === true
+      ? new Set(allExpandableKeys)
+      : new Set(isExpandControlled ? (expandedRowKeys ?? []) : innerExpanded),
+  );
+
+  function canExpand(record: T): boolean {
+    return rowExpandable ? rowExpandable(record) : true;
+  }
+
+  // 据 key 集合解析完整 record 数组（含树形嵌套子行），供 onExpandedRowsChange
+  // 回传（对齐 Semi onExpandedRowsChange：入参为完整 record 数组而非 key 数组，
+  // 实测于 Semi 官方「行可交换的树形数据」demo）。
+  function recordsForExpandedKeys(keys: Set<RowKey>): T[] {
+    const out: T[] = [];
     const walk = (records: T[]): void => {
       for (const r of records) {
-        const kids = getChildren(r);
-        if (kids && kids.length > 0) {
-          keys.push(getKey(r));
-          walk(kids);
-        }
+        if (keys.has(getKey(r))) out.push(r);
+        const kids = treeEnabled ? getChildren(r) : undefined;
+        if (kids) walk(kids);
       }
     };
     walk(dataSource);
-    return keys;
-  });
-  const treeExpandedSet = $derived<Set<RowKey>>(
-    expandAllRows === true
-      ? new Set(allTreeExpandableKeys)
-      : new Set(isTreeExpandControlled ? (treeOpts.expandedRowKeys ?? []) : innerTreeExpanded),
-  );
+    return out;
+  }
 
-  function toggleTreeExpand(record: T) {
+  function toggleExpand(record: T) {
+    if (!canExpand(record)) return;
     const key = getKey(record);
-    const next = new Set(treeExpandedSet);
+    const next = new Set(expandedSet);
     const willExpand = !next.has(key);
     if (willExpand) next.add(key);
     else next.delete(key);
-    if (!isTreeExpandControlled) innerTreeExpanded = [...next];
-    treeOpts.onExpand?.(willExpand, key);
+    if (!isExpandControlled) innerExpanded = [...next];
+    onExpand?.(willExpand, record);
+    onExpandedRowsChange?.(recordsForExpandedKeys(next));
     onExpandChange?.({ expanded: willExpand, record, expandedRowKeys: [...next] });
   }
 
@@ -942,7 +1011,7 @@
         topIndex: i,
       }));
     }
-    return flattenTreeRows(visibleRows, treeExpandedSet, getKey, getChildren);
+    return flattenTreeRows(visibleRows, expandedSet, getKey, getChildren);
   });
 
   // --- 行虚拟滚动：仅渲染视口内行（复用 core fixedRange 纯函数）---
@@ -1139,9 +1208,6 @@
   // （配合 useFullRender 把 selection 物料摆进任意单元格，对齐 Semi hidden）。
   const selectionEnabled = $derived(rowSelection !== undefined);
   const hasSelection = $derived(selectionEnabled && rowSelection?.hidden !== true);
-  const hasExpand = $derived(expandable !== undefined);
-  // 展开按钮是否占独立前置列：hideExpandedColumn=false 时独立成列；默认 true 并入首列（对齐 Semi）。
-  const expandAsColumn = $derived(hasExpand && hideExpandedColumn === false);
   const colSpan = $derived(
     leafColumns.length + (hasSelection ? 1 : 0) + (expandAsColumn ? 1 : 0),
   );
@@ -1154,46 +1220,6 @@
       .map(([k, v]) => `${k}:${v}`)
       .join(';');
   });
-
-  // --- 展开行：受控 expandedRowKeys 不回写 (红线 #1) ---
-  const isExpandControlled = $derived(expandable?.expandedRowKeys !== undefined);
-  let innerExpanded = $state<RowKey[]>(initExpanded());
-  function initExpanded(): RowKey[] {
-    if (expandable?.defaultExpandedRowKeys) {
-      return [...expandable.defaultExpandedRowKeys];
-    }
-    if (defaultExpandAllRows && expandable) {
-      return dataSource.map((r) =>
-        typeof rowKey === 'function' ? rowKey(r) : (r[rowKey as string] as RowKey),
-      );
-    }
-    return [];
-  }
-  const expandedSet = $derived<Set<RowKey>>(
-    expandAllRows === true && expandable
-      ? new Set(dataSource.map((r) => getKey(r)))
-      : new Set(
-          isExpandControlled
-            ? (expandable?.expandedRowKeys ?? [])
-            : innerExpanded,
-        ),
-  );
-
-  function canExpand(record: T): boolean {
-    return expandable?.rowExpandable ? expandable.rowExpandable(record) : true;
-  }
-
-  function toggleExpand(record: T) {
-    const key = getKey(record);
-    if (!canExpand(record)) return;
-    const next = new Set(expandedSet);
-    const willExpand = !next.has(key);
-    if (willExpand) next.add(key);
-    else next.delete(key);
-    if (!isExpandControlled) innerExpanded = [...next];
-    expandable?.onExpand?.(willExpand, record);
-    onExpandChange?.({ expanded: willExpand, record, expandedRowKeys: [...next] });
-  }
 
   // --- 选择变更：回调取对应行对象 ---
   // 联动树形需含未展开的子行，故据整棵可见行树建 key→record 映射；
@@ -1729,7 +1755,7 @@
   const isGrouped = $derived(groupBy !== undefined);
   // role=grid/treegrid 静态标注（对齐 Semi Body/index.tsx）：分组/展开行/树形时 treegrid，否则 grid。
   // 双 table 场景下 HeadTable 与 Body 各自的 <table> 都用同一 role（对齐 Semi 两表 role 一致）。
-  const tableRole = $derived<'grid' | 'treegrid'>(isGrouped || hasExpand || treeEnabled ? 'treegrid' : 'grid');
+  const tableRole = $derived<'grid' | 'treegrid'>(isGrouped || hasExpandedRowRender || treeEnabled ? 'treegrid' : 'grid');
 
   const groupKeyOf = (record: T): string => {
     if (typeof groupBy === 'function') return groupBy(record);
@@ -2105,7 +2131,7 @@
                     style={cellStyle(col, i)}
                   >
                     {#snippet gExpandMaterial()}
-                      {#if hasExpand && !expandAsColumn && i === 0}
+                      {#if hasExpandedRowRender && !expandAsColumn && i === 0}
                         <span class="cd-table-expand-icon-cell">
                           {#if canExpand(record)}
                             {@render expandButton(record, key)}
@@ -2115,12 +2141,12 @@
                         </span>
                       {/if}
                       {#if treeEnabled && i === 0}
-                        {#if row.hasChildren}
+                        {#if row.hasChildren && canExpand(record)}
                           <CustomExpandIcon
-                            expanded={treeExpandedSet.has(key)}
+                            expanded={expandedSet.has(key)}
                             componentType="tree"
                             {record}
-                            onClick={() => toggleTreeExpand(record)}
+                            onClick={() => toggleExpand(record)}
                           />
                         {:else}
                           <span class="cd-table-expand-icon cd-table-expand-icon-placeholder" aria-hidden="true"></span>
@@ -2156,17 +2182,16 @@
                 extraClassName={extra}
                 {rowProps}
                 onRowClick={(e) => {
-                  if (expandRowByClick && hasExpand && canExpand(record)) toggleExpand(record);
-                  if (expandRowByClick && treeEnabled && row.hasChildren) toggleTreeExpand(record);
+                  if (expandRowByClick && (hasExpandedRowRender || (treeEnabled && row.hasChildren)) && canExpand(record)) toggleExpand(record);
                   if (rowSelection?.clickRow && !rowDisabled) onToggleRow(record);
                   if (onRowClick) onRowClick({ record, index });
                   if (rowProps?.onClick) rowProps.onClick(e);
                 }}
                 cells={groupedRowCells}
               />
-              {#if hasExpand && canExpand(record)}
+              {#if hasExpandedRowRender && canExpand(record)}
                 {#snippet expandedContent()}
-                  {@render expandable!.expandedRowRender({ record, index })}
+                  {@render expandedRowRender!({ record, index })}
                 {/snippet}
                 {#if keepDOM}
                   <ExpandedRow {colSpan} displayNone={!expandedSet.has(key)} content={expandedContent} />
@@ -2235,7 +2260,7 @@
               >
                 <!-- 展开图标 / 树形三角 / 缩进物料：useFullRender 时不自动前置，改注入 render 供自行摆放 -->
                 {#snippet cellExpandMaterial()}
-                  {#if hasExpand && !expandAsColumn && i === 0}
+                  {#if hasExpandedRowRender && !expandAsColumn && i === 0}
                     <span class="cd-table-expand-icon-cell">
                       {#if canExpand(record)}
                         {@render expandButton(record, key)}
@@ -2245,12 +2270,12 @@
                     </span>
                   {/if}
                   {#if treeEnabled && i === 0}
-                    {#if row.hasChildren}
+                    {#if row.hasChildren && canExpand(record)}
                       <CustomExpandIcon
-                        expanded={treeExpandedSet.has(key)}
+                        expanded={expandedSet.has(key)}
                         componentType="tree"
                         {record}
-                        onClick={() => toggleTreeExpand(record)}
+                        onClick={() => toggleExpand(record)}
                       />
                     {:else}
                       <span class="cd-table-expand-icon cd-table-expand-icon-placeholder" aria-hidden="true"></span>
@@ -2293,17 +2318,16 @@
             {rowProps}
             ariaRowIndex={gridRow + 2}
             onRowClick={(e) => {
-              if (expandRowByClick && hasExpand && canExpand(record)) toggleExpand(record);
-              if (expandRowByClick && treeEnabled && row.hasChildren) toggleTreeExpand(record);
+              if (expandRowByClick && (hasExpandedRowRender || (treeEnabled && row.hasChildren)) && canExpand(record)) toggleExpand(record);
               if (rowSelection?.clickRow && !rowDisabled) onToggleRow(record);
               if (onRowClick) onRowClick({ record, index });
               if (rowProps?.onClick) rowProps.onClick(e);
             }}
             cells={rowCells}
           />
-          {#if hasExpand && canExpand(record)}
+          {#if hasExpandedRowRender && canExpand(record)}
             {#snippet expandedContent2()}
-              {@render expandable!.expandedRowRender({ record, index })}
+              {@render expandedRowRender!({ record, index })}
             {/snippet}
             {#if keepDOM}
               <ExpandedRow {colSpan} displayNone={!expandedSet.has(key)} content={expandedContent2} />
