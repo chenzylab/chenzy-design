@@ -1,8 +1,9 @@
 <script lang="ts">
   import { TagGroup } from '@chenzy-design/svelte';
+  import type { TagItem } from '@chenzy-design/svelte';
 
   // 可删除的 TagGroup：在 onTagClose 中依据回传的 tagKey 处理 tagList。
-  const defaultList = [
+  const defaultList: TagItem[] = [
     { tagKey: '1', color: 'light-blue', children: '抖音', closable: true },
     { tagKey: '3', color: 'cyan', children: '剪映', closable: true },
     { tagKey: '2', color: 'violet', children: '醒图', closable: true },

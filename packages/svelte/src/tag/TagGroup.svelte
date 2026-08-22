@@ -2,34 +2,20 @@
   TagGroup — 严格对齐 Semi semi-ui/tag/group.tsx。
   一组 Tag 成组渲染；超过 maxTagCount 折叠剩余为「+N」标签，
   showPopover 时 hover 在 Popover（showArrow / trigger=hover / position=top）弹层展示被折叠的 Tag。
-  数据驱动（tagList）或 mode='custom'（每项自带 `tag` Snippet 承载完整 Tag 节点）两种用法。复用本库 Tag / Popover。
+  数据驱动（tagList）或 mode='custom'（每项经 renderTagItem(item) 渲染完整 Tag 节点）两种用法。复用本库 Tag / Popover。
+  Semi 的 custom 模式是把预构建好的 ReactNode 直接放进 tagList 数组；Svelte 的 Snippet 是运行时受控的模板
+  函数，不能被 bind/包装后脱离 {#snippet} 声明处随意转发调用（会抛 invalid_snippet_arguments），故改用
+  renderTagItem(item) 参数化 snippet 承接，这是本库对齐该 API 语义的唯一可行实现。
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
   import { useLocale } from '../locale-provider/index.js';
   import Tag from './Tag.svelte';
   import Popover from '../popover/Popover.svelte';
-
-  type TagSize = 'small' | 'default' | 'large';
-  type AvatarShape = 'circle' | 'square';
-
-  /** 单个 Tag 的数据项（tagList 普通用法）。透传给 Tag 的常用 props 子集。
-   *  mode='custom' 时改由 `tag` Snippet 承载已构建好的 Tag 节点（对齐 Semi 传入 prebuilt ReactNode）。 */
-  interface TagItem {
-    tagKey?: string | number;
-    children?: string;
-    color?: string;
-    type?: 'light' | 'solid' | 'ghost';
-    closable?: boolean;
-    avatarSrc?: string;
-    size?: TagSize;
-    avatarShape?: AvatarShape;
-    onClose?: (tagChildren: unknown, e: unknown, tagKey: string | number | undefined) => void;
-    [key: string]: unknown;
-  }
+  import type { TagItem, TagSize, AvatarShape } from './interface.js';
 
   interface Props {
-    /** 数据驱动的标签数据（对齐 Semi tagList）。mode='custom' 时元素含 `tag` Snippet 承载 Tag 节点 */
+    /** 数据驱动的标签数据（对齐 Semi tagList）。mode='custom' 时每项经 renderTagItem 渲染完整 Tag 节点 */
     tagList?: TagItem[];
     /**
      * 渲染模式（对齐 Semi mode）：
@@ -117,11 +103,12 @@
     return p;
   }
 
-  function handleClose(item: TagItem, e: unknown) {
+  function handleClose(item: TagItem, e: MouseEvent | KeyboardEvent) {
     const key = item.tagKey ?? (typeof item.children === 'string' ? item.children : undefined);
     item.onClose?.(item.children, e, key);
     onTagClose?.(item.children, e, key);
   }
+
 </script>
 
 <div class={rootCls} {style}>

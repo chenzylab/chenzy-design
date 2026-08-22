@@ -8,29 +8,7 @@
   import type { Snippet } from 'svelte';
   import Avatar from '../avatar/Avatar.svelte';
   import { IconClose } from '@chenzy-design/icons';
-
-  type TagType = 'light' | 'solid' | 'ghost';
-  type TagColor =
-    | 'amber'
-    | 'blue'
-    | 'cyan'
-    | 'green'
-    | 'grey'
-    | 'indigo'
-    | 'light-blue'
-    | 'light-green'
-    | 'lime'
-    | 'orange'
-    | 'pink'
-    | 'purple'
-    | 'red'
-    | 'teal'
-    | 'violet'
-    | 'yellow'
-    | 'white';
-  type TagSize = 'small' | 'default' | 'large';
-  type TagShape = 'square' | 'circle';
-  type AvatarShape = 'square' | 'circle';
+  import type { TagType, TagColor, TagSize, TagShape, AvatarShape } from './interface.js';
 
   interface Props {
     /** 视觉风格：light 浅色底 / solid 深色底 / ghost 白色底镂空。默认 light（对齐 Semi） */
@@ -130,17 +108,6 @@
   // clickable：有自定义 onClick 或 closable（对齐 Semi：onClick !== defaultProps.onClick || closable）
   const clickable = $derived(!!onClick || closable);
 
-  // avatar 尺寸随 tag 尺寸（circle 头像用专属尺寸，方形头像跟随 tag 高）
-  const avatarSize = $derived(
-    avatarShape === 'circle'
-      ? size === 'large'
-        ? 20
-        : 16
-      : size === 'large'
-        ? 24
-        : 20,
-  );
-
   const cls = $derived(
     [
       'cd-tag',
@@ -227,7 +194,7 @@
     <div class="cd-tag-prefix-icon">{@render prefixIcon()}</div>
   {/if}
   {#if avatarSrc}
-    <Avatar src={avatarSrc} shape={avatarShape} size={avatarSize} />
+    <Avatar src={avatarSrc} shape={avatarShape} />
   {/if}
   <div class="cd-tag-content cd-tag-content-{contentAlign}">
     {#if children}{@render children()}{/if}
@@ -519,9 +486,33 @@
     -webkit-background-clip: text;
     color: transparent;
   }
+  /*
+    渐变描边（对齐 Semi &.gradient::before + mask-composite）：
+    border-image 不支持 border-radius，circle 形状会退化成直角边框、与内容圆角错位；
+    改用 ::before 伪元素 + mask 抠出边框环，圆角/胶囊形状均能正确显示渐变描边。
+  */
   .cd-tag-colorful.cd-tag-gradient.cd-tag-ghost {
     border-color: transparent;
-    border-image: var(--cd-tag-colorful-ghost-border) 1;
+  }
+  .cd-tag-colorful.cd-tag-gradient.cd-tag-ghost::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: var(--cd-tag-radius);
+    padding: var(--cd-tag-border-width);
+    background: var(--cd-tag-colorful-ghost-border);
+    -webkit-mask:
+      linear-gradient(var(--cd-tag-colorful-ghost-bg) 0 0) content-box,
+      linear-gradient(var(--cd-tag-colorful-ghost-bg) 0 0);
+    mask:
+      linear-gradient(var(--cd-tag-colorful-ghost-bg) 0 0) content-box,
+      linear-gradient(var(--cd-tag-colorful-ghost-bg) 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+  }
+  .cd-tag-colorful.cd-tag-gradient.cd-tag-ghost.cd-tag-circle::before {
+    border-radius: var(--cd-tag-radius-circle);
   }
 
   /* —— RTL（逐条对齐 Semi tag/rtl.scss）——

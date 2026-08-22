@@ -5,20 +5,14 @@
   语义等价且无运行时开销。circle 形状子标签首末用 radius-tag_circle。
 -->
 <script lang="ts">
-  import type { Snippet } from 'svelte';
+  import type { SplitTagGroupProps } from './interface.js';
 
-  interface Props {
-    /** 组的可访问名（对齐 Semi aria-label） */
-    'aria-label'?: string;
-    /** 透传根类名（对齐 Semi className） */
-    class?: string;
-    /** 透传根内联样式（对齐 Semi style） */
-    style?: string;
-    /** 子 Tag（对齐 Semi children） */
-    children?: Snippet;
-  }
-
-  let { 'aria-label': ariaLabel, class: className, style, children }: Props = $props();
+  let {
+    'aria-label': ariaLabel,
+    class: className,
+    style,
+    children,
+  }: SplitTagGroupProps = $props();
 
   const rootCls = $derived(['cd-tag-split', className].filter(Boolean).join(' '));
 </script>
