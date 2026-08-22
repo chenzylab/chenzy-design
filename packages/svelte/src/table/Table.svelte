@@ -1116,12 +1116,16 @@
     };
   });
 
-  // 固定列横滚位置检测（对齐 Semi scroll-position-left/right）：横滚容器 scrollLeft
-  // 决定左/右固定列阴影显隐。命令式监听 + 初始同步，写本地 $state 只加 class（红线 #3）。
+  // 横滚位置检测（对齐 Semi scroll-position-left/right）：横滚容器 scrollLeft 决定
+  // 左/右固定列阴影显隐，以及 bordered 模式下容器右边框覆盖层显隐（对齐 Semi #441 fix，
+  // 详见 .cd-table-wrapper-bordered::after 规则）——不限定 hasFixed：Semi 该 class 是
+  // 无条件挂在 wrapCls 上的通用横滚位置状态，服务多个消费场景，不只是固定列阴影；
+  // 此前限定 hasFixed 会导致纯 scroll.x（无 fixed 列）横滚到底时该 class 永不挂载。
+  // 命令式监听 + 初始同步，写本地 $state 只加 class（红线 #3）。
   let hRafId = 0;
   $effect(() => {
     const el = scrollEl;
-    if (!el || !hasFixed) return;
+    if (!el) return;
     const update = () => {
       const { scrollLeft, scrollWidth, clientWidth } = el;
       // scrollLeft 在 RTL 下可能为负，取绝对值判定边缘
@@ -2368,8 +2372,8 @@
       class="cd-table-body"
       class:cd-table-body-virtual={virtualized}
       class:cd-table-body-scroll={scrollBody}
-      class:cd-table-scroll-position-left={hasFixed && scrollPosLeft}
-      class:cd-table-scroll-position-right={hasFixed && scrollPosRight}
+      class:cd-table-scroll-position-left={scrollPosLeft}
+      class:cd-table-scroll-position-right={scrollPosRight}
       bind:this={scrollEl}
       style={scrollWrapStyle}
     >
@@ -2392,8 +2396,8 @@
       class="cd-table-body"
       class:cd-table-body-virtual={virtualized}
       class:cd-table-body-scroll={scrollBody}
-      class:cd-table-scroll-position-left={hasFixed && scrollPosLeft}
-      class:cd-table-scroll-position-right={hasFixed && scrollPosRight}
+      class:cd-table-scroll-position-left={scrollPosLeft}
+      class:cd-table-scroll-position-right={scrollPosRight}
       bind:this={scrollEl}
       style={scrollWrapStyle}
     >
@@ -2704,8 +2708,13 @@
   /* ===== 带边框 bordered ===== */
   /* bordered 表格外框：container 是 wrapper 的子、table 的祖先，故用 wrapper 的 bordered
      class 选中（此前误用 table 上的 .cd-table-bordered > container，方向反致外框全丢）。
+     须用普通后代选择器而非 `>` 直接子代——wrapper 与 container 之间隔着 <Spin> 组件的
+     .cd-spin 包裹 div（loading 遮罩），并非真实直接父子关系；真机核对发现 `>` 版本的
+     选择器从未命中过，container 的 border computed 值恒为 0，外框视觉上从未生效
+     （更早的既有 bug，与本次改动无关但顺带一并修正）。
      对齐 Semi：保留上/左边框（含表头上边框），右/下由单元格 border 补齐避免双线。 */
-  .cd-table-wrapper-bordered > .cd-table-container {
+  .cd-table-wrapper-bordered .cd-table-container {
+    position: relative;
     border: var(--cd-width-table-base-border) var(--cd-border-table-base-borderstyle) var(--cd-color-table-border-default);
     border-right: 0;
     border-bottom: 0;
@@ -2716,6 +2725,30 @@
   :global(.cd-table-bordered) :global(.cd-table-row-head),
   :global(.cd-table-bordered) :global(.cd-table-row-cell) {
     border-right: var(--cd-width-table-base-border) var(--cd-border-table-base-borderstyle) var(--cd-color-table-border-default);
+  }
+  /* 横滚未到底时右边框在视口外不可见修复（对齐 Semi #441 fix，table.scss &-bordered
+     :not(&-scroll-position-right)）：单元格自身 border-right 只画在该单元格实际位置，
+     scroll.x 超宽且未滚到底时最后一列被横滚裁切到可视区外，右边框随之不可见。
+     用容器级 ::after 覆盖层在视口固定右侧画一条常驻边框；滚到底时
+     .cd-table-scroll-position-right 存在，不画该层避免与单元格边框重复。
+     :not(.cd-table-wrapper-rtl) 排除 RTL——RTL 镜像版本（画左边框）见下方 RTL 覆盖层
+     规则，两者互斥，避免同一元素 ::after 被两条规则争抢定义。 */
+  .cd-table-wrapper-bordered:not(.cd-table-wrapper-rtl):not(:has(.cd-table-scroll-position-right)) .cd-table-container::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: var(--cd-width-table-base-border);
+    background-color: var(--cd-color-table-border-default);
+    display: block;
+    z-index: calc(var(--cd-z-table-fixed-column) + 2);
+    pointer-events: none;
+  }
+  /* 双 table 架构下表头（.cd-table-head，见 HeadTable.svelte）也须补右边框：原生滚动条
+     在部分浏览器可能盖住容器 ::after 覆盖层，用 inset box-shadow 兜底表头自身可见。 */
+  .cd-table-wrapper-bordered:not(.cd-table-wrapper-rtl):not(:has(.cd-table-scroll-position-right)) .cd-table-container :global(.cd-table-head) {
+    box-shadow: inset calc(var(--cd-width-table-base-border) * -1) 0 0 0 var(--cd-color-table-border-default);
   }
 
   /* ===== 空数据占位 .semi-table-placeholder ===== */
@@ -3098,7 +3131,7 @@
      表头 <th> 一侧（.cd-table-row-head）已移至 TableHeaderRow.svelte（该 class 命中
      该文件内高频渲染点，:global()+长组合链在此处曾实测触发 svelte.compile() 编译
      卡死不返回，详见 TableHeaderRow.svelte 对应规则注释）。 */
-  :global(.cd-table-wrapper-rtl.cd-table-wrapper-bordered) > .cd-table-container {
+  :global(.cd-table-wrapper-rtl.cd-table-wrapper-bordered) .cd-table-container {
     border-left: 0;
     border-right: var(--cd-width-table-base-border) var(--cd-border-table-base-borderstyle) var(--cd-color-table-border-default);
   }
@@ -3110,6 +3143,23 @@
   :global(.cd-table-wrapper-rtl.cd-table-wrapper-bordered) .cd-table-row-cell {
     border-right: 0;
     border-left: var(--cd-width-table-base-border) var(--cd-border-table-base-borderstyle) var(--cd-color-table-border-default);
+  }
+  /* RTL 镜像：LTR 覆盖层画右边框（阅读方向下会被裁切的是右侧），RTL 画左边框
+     （对齐 Semi rtl.scss #441 fix，条件也镜像为 scroll-position-left）。 */
+  :global(.cd-table-wrapper-rtl.cd-table-wrapper-bordered):not(:has(:global(.cd-table-scroll-position-left))) .cd-table-container::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: var(--cd-width-table-base-border);
+    background-color: var(--cd-color-table-border-default);
+    display: block;
+    z-index: calc(var(--cd-z-table-fixed-column) + 2);
+    pointer-events: none;
+  }
+  :global(.cd-table-wrapper-rtl.cd-table-wrapper-bordered):not(:has(:global(.cd-table-scroll-position-left))) .cd-table-container :global(.cd-table-head) {
+    box-shadow: inset var(--cd-width-table-base-border) 0 0 0 var(--cd-color-table-border-default);
   }
   :global(.cd-table-wrapper-rtl) .cd-table-placeholder {
     border-left: var(--cd-width-table-base-border) var(--cd-border-table-base-borderstyle) var(--cd-color-table-border-default);
