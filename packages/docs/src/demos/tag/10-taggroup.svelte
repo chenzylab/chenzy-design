@@ -1,8 +1,9 @@
 <script lang="ts">
   import { TagGroup } from '@chenzy-design/svelte';
+  import type { TagItem } from '@chenzy-design/svelte';
 
   // 通过 tagList 传入配置，maxTagCount 超出后显示为 +N；showPopover 控制 hover +N 弹层展示剩余。
-  const tagList = [
+  const tagList: TagItem[] = [
     { color: 'light-blue', children: '抖音' },
     { color: 'cyan', children: '火山' },
     { color: 'violet', children: '剪映' },
@@ -10,7 +11,7 @@
   ];
   const src =
     'https://lf3-static.bytednsdoc.com/obj/eden-cn/ptlz_zlp/ljhwZthlaukjlkulzlp/root-web-sites/dy.png';
-  const tagList2 = [
+  const tagList2: TagItem[] = [
     { color: 'white', children: 'Douyin', avatarSrc: src },
     { color: 'white', children: 'Hotsoon', avatarSrc: src },
     { color: 'white', children: 'Capcut', avatarSrc: src },

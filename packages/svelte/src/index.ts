@@ -192,7 +192,20 @@ export {
 } from './anchor/index.js';
 
 // --- M4 Show ---
-export { Tag, TagGroup, SplitTagGroup, tagMeta } from './tag/index.js';
+export {
+  Tag,
+  TagGroup,
+  SplitTagGroup,
+  tagMeta,
+  type TagColor,
+  type TagType,
+  type TagSize,
+  type TagShape,
+  type TagProps,
+  type TagItem,
+  type TagGroupProps,
+  type SplitTagGroupProps,
+} from './tag/index.js';
 export {
   ScrollList,
   ScrollItem,
