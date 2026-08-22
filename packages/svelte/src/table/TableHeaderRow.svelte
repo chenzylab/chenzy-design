@@ -26,6 +26,7 @@
   import ColumnFilter from './ColumnFilter.svelte';
   import ResizableHeaderCell from './ResizableHeaderCell.svelte';
   import Checkbox from '../checkbox/Checkbox.svelte';
+  import Tooltip from '../tooltip/Tooltip.svelte';
 
   interface HeaderCell {
     col: ColumnDef<T>;
@@ -182,6 +183,15 @@
   {@const headerCellProps = col.onHeaderCell ? col.onHeaderCell(col, i) : undefined}
   {@const resizeOverride = resizeOverrides?.get(colKey)}
   {@const clickToSort = sortable && !hasFilter && !col.useFullRender}
+  {@const order = sortable ? (col.sortOrder !== undefined ? col.sortOrder : (currentSort.key === colKeyOf(col, i) ? currentSort.order : null)) : null}
+  {@const showTip = sortable && col.showSortTip === true && col.sortOrder === undefined}
+  <!-- 对齐 Semi TableHeaderRow.tsx：clickToSort 为函数（即本库 clickToSort 为真，仅排序
+       无筛选）且 showSortTip 时，Tooltip 包裹整条表头单元格内容，鼠标移到表头任意位置
+       都出现提示；否则（有筛选等）仅移到排序图标本身才出现提示（ColumnSorter 内部处理，
+       此处 showTip 传 false 避免重复包裹）。本库用 Tooltip 包裹 .cd-table-operate-wrapper
+       （<th> 内部内容容器）而非 <th> 本身——Tooltip.svelte 会额外包一层 <span> 触发器，
+       直接包 <th> 会产出非法 <tr> 子元素破坏表格 DOM 结构。 -->
+  {@const thTipKey = order === 'ascend' ? 'Table.descend' : order === 'descend' ? 'Table.cancelSort' : 'Table.ascend'}
   {#if col.colSpan !== 0}
   <th
     rowspan={thRowSpan > 1 ? thRowSpan : undefined}
@@ -207,16 +217,15 @@
     <!-- 对齐 Semi：仅在有 sorter/filter 时套 .semi-table-operate-wrapper（flex），
          消除 inline descender 撑高；纯自定义 title（无 sorter）不套 flex，
          直接渲染保持其 inline 布局与 Semi 一致（Semi 自定义 title 不套 operate-wrapper）。 -->
+    {#snippet operateContent()}
     <div class="cd-table-operate-wrapper" class:cd-table-operate-plain={typeof col.title !== 'string' && !sortable}>
     {#if sortable}
-      {@const order = col.sortOrder !== undefined ? col.sortOrder : (currentSort.key === colKeyOf(col, i) ? currentSort.order : null)}
-      {@const showTip = col.showSortTip === true && col.sortOrder === undefined}
       {#snippet sortTitle()}{@render columnTitle(col)}{/snippet}
       <!-- clickToSort 为真时排序点击热区扩大到整个 <th>（见上方 onclick），ColumnSorter
            自身不再响应点击，避免与 th 的 onclick 冒泡重复触发（对齐 Semi Table.tsx 里
            ColumnSorter onClick={useFullRender || hasFilter ? handleSort : null} 的互斥
            关系：仅 useFullRender/hasFilter 时按钮自己承担点击职责）。 -->
-      <ColumnSorter {col} {order} {showTip} title={sortTitle} onSort={clickToSort ? undefined : () => onSort(col, i)} />
+      <ColumnSorter {col} {order} showTip={showTip && !clickToSort} title={sortTitle} onSort={clickToSort ? undefined : () => onSort(col, i)} />
     {:else if typeof col.title !== 'string'}
       <!-- 自定义 title（函数）：透传 selection/filter 物料，由使用方摆放（对齐 Semi
            title({ selection, filter, sorter })）。摆放 selection 全选框会撑高表头至 41px。 -->
@@ -265,6 +274,14 @@
       />
     {/if}
     </div>
+    {/snippet}
+    {#if showTip && clickToSort}
+      <Tooltip content={locT(thTipKey)}>
+        {@render operateContent()}
+      </Tooltip>
+    {:else}
+      {@render operateContent()}
+    {/if}
     <!-- 自定义 title 时 filter 按钮由 title snippet 摆放，浮层在此独立渲染（触发器仍绑 filterTriggers[colKey]） -->
     {#if hasFilter && typeof col.title !== 'string' && (openFilterKey === colKey || closingFilterKey === colKey) && filterTriggers[colKey]}
       {@render filterDropdownPanel(col, colKey)}
