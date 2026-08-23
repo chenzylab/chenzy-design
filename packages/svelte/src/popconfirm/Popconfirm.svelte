@@ -390,7 +390,7 @@
      结构/token/spacing 全量对齐 Semi popconfirm.scss（$module = semi-popconfirm）。 */
   .cd-popconfirm {
     box-sizing: border-box;
-    max-inline-size: var(--cd-width-popconfirm-maxwidth);
+    max-width: var(--cd-width-popconfirm-maxwidth);
   }
   /* inner padding: top top top bottom（对齐 Semi：右=top，左=bottom；底=top）。 */
   .cd-popconfirm-inner {
@@ -405,9 +405,9 @@
     justify-content: flex-start;
   }
   .cd-popconfirm-header-icon {
-    inline-size: var(--cd-width-popconfirm-icon);
-    block-size: var(--cd-width-popconfirm-icon);
-    margin-inline-end: var(--cd-spacing-popconfirm-header-icon-marginright);
+    width: var(--cd-width-popconfirm-icon);
+    height: var(--cd-width-popconfirm-icon);
+    margin-right: var(--cd-spacing-popconfirm-header-icon-marginright);
   }
   /* IconAlertTriangle 警示色（对齐 Semi .semi-icon-alert_triangle { color: warning }）。 */
   .cd-popconfirm-header-icon :global(.cd-icon-alert_triangle) {
@@ -417,12 +417,12 @@
     display: inline-flex;
     flex-grow: 1;
     flex-direction: column;
-    min-inline-size: 0;
+    min-width: 0;
   }
   .cd-popconfirm-header-title {
     font-size: var(--cd-font-size-header-6);
     font-weight: var(--cd-font-popconfirm-header-title-fontweight);
-    margin-block-end: var(--cd-spacing-popconfirm-header-title-marginbottom);
+    margin-bottom: var(--cd-spacing-popconfirm-header-title-marginbottom);
     color: var(--cd-color-popconfirm-header-text);
   }
   .cd-popconfirm-body {
@@ -430,7 +430,7 @@
   }
   /* 有图标时正文缩进对齐标题（图标宽 + 右外边距，对齐 Semi body-withIcon margin-left）。 */
   .cd-popconfirm-body-withIcon {
-    margin-inline-start: calc(
+    margin-left: calc(
       var(--cd-width-popconfirm-icon) + var(--cd-spacing-popconfirm-header-icon-marginright)
     );
   }
@@ -439,12 +439,37 @@
     padding: var(--cd-spacing-popconfirm-body-p-padding);
   }
   .cd-popconfirm-footer {
-    margin-block-start: var(--cd-spacing-popconfirm-footer-margintop);
+    margin-top: var(--cd-spacing-popconfirm-footer-margintop);
     display: flex;
     justify-content: flex-end;
   }
   /* footer 首按钮（非唯一）右外边距（对齐 Semi first-child:not(:last-child)）。 */
   .cd-popconfirm-footer :global(.cd-button:first-child:not(:last-child)) {
-    margin-inline-end: var(--cd-spacing-popconfirm-footer-btn-marginright);
+    margin-right: var(--cd-spacing-popconfirm-footer-btn-marginright);
+  }
+
+  /* 带箭头浮层时的 inner padding（对齐 Semi .semi-popover-with-arrow .inner）。 */
+  :global(.cd-popover-with-arrow) .cd-popconfirm-inner {
+    padding: var(--cd-spacing-popconfirm-popover-with-arrow-inner-padding);
+  }
+
+  /* RTL（对齐 Semi rtl.scss）。 */
+  :global(.cd-rtl) .cd-popconfirm {
+    direction: rtl;
+  }
+  :global(.cd-rtl) .cd-popconfirm-inner {
+    padding: var(--cd-spacing-popconfirm-top) var(--cd-spacing-popconfirm-bottom)
+      var(--cd-spacing-popconfirm-top) var(--cd-spacing-popconfirm-top);
+  }
+  :global(.cd-rtl) .cd-popconfirm-header-icon {
+    margin-right: 0;
+    margin-left: var(--cd-spacing-popconfirm-header-icon-marginright);
+  }
+  :global(.cd-rtl) .cd-popconfirm-footer :global(.cd-button:first-child:not(:last-child)) {
+    margin-right: 0;
+    margin-left: var(--cd-spacing-popconfirm-footer-btn-marginright);
+  }
+  :global(.cd-rtl) :global(.cd-popover-with-arrow) .cd-popconfirm-inner {
+    padding: var(--cd-spacing-popconfirm-popover-with-arrow-inner-rtl-padding);
   }
 </style>
