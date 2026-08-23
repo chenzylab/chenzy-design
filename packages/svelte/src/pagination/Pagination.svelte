@@ -7,9 +7,10 @@
   受控 currentPage/pageSize 永不回写，仅经回调上报（红线 #1）。
   文案走 locale-provider 上下文（仅 Semi 4 个 key：pageSize/total/jumpTo/page）；
   页码为原始数字（对齐 Semi，不做 Intl 本地化）。
-  a11y 严格对齐 Semi：<li role="button" aria-disabled>，硬编码英文 aria-label
-  （"Previous"/"Next"/"Page size selector"/"Page X"/"More"），无 roving tabindex、
-  无 LiveAnnouncer、无键盘导航（Semi handleKeyDown 为空实现）。
+  a11y：<li role="button" aria-disabled>，硬编码英文 aria-label
+  （"Previous"/"Next"/"Page size selector"/"Page X"/"More"）对齐 Semi；
+  但键盘可达性不复制 Semi 缺陷（Semi handleKeyDown 为空实现）——本库补 tabindex +
+  Enter/Space 触发点击，disabled 态 tabindex=-1 移出 Tab 序列。无 LiveAnnouncer。
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
@@ -264,24 +265,43 @@
 </script>
 
 {#snippet prevBtn()}
+  <!-- role="button" 恒为字面量，语义上安全覆盖 <li> 默认 listitem 角色（对齐 Semi
+       renderPrevBtn 的 <li role="button">），svelte-check 静态规则仍保守报 non-interactive
+       标签持 interactive role + tabindex，键盘处理已就绪，误报。 -->
+  <!-- svelte-ignore a11y_no_noninteractive_element_to_interactive_role -->
   <li
     role="button"
+    tabindex={disabled || isFirst ? -1 : 0}
     aria-disabled={disabled || isFirst}
     aria-label="Previous"
     class="cd-page-item cd-page-prev"
     class:cd-page-item-disabled={disabled || isFirst}
     onclick={() => !(disabled || isFirst) && goto(current - 1)}
+    onkeydown={(e) => {
+      if ((e.key === 'Enter' || e.key === ' ') && !(disabled || isFirst)) {
+        e.preventDefault();
+        goto(current - 1);
+      }
+    }}
   >{#if prevText}{#if typeof prevText === 'function'}{@render prevText()}{:else}{prevText}{/if}{:else}<IconChevronLeft size="large" />{/if}</li>
 {/snippet}
 
 {#snippet nextBtn()}
+  <!-- svelte-ignore a11y_no_noninteractive_element_to_interactive_role -->
   <li
     role="button"
+    tabindex={disabled || isLast ? -1 : 0}
     aria-disabled={disabled || isLast}
     aria-label="Next"
     class="cd-page-item cd-page-next"
     class:cd-page-item-disabled={disabled || isLast}
     onclick={() => !(disabled || isLast) && goto(current + 1)}
+    onkeydown={(e) => {
+      if ((e.key === 'Enter' || e.key === ' ') && !(disabled || isLast)) {
+        e.preventDefault();
+        goto(current + 1);
+      }
+    }}
   >{#if nextText}{#if typeof nextText === 'function'}{@render nextText()}{:else}{nextText}{/if}{:else}<IconChevronRight size="large" />{/if}</li>
 {/snippet}
 
@@ -328,11 +348,22 @@
 {#snippet restList(nums: number[])}
   <div class="cd-page-rest-list">
     {#each nums as n (n)}
+      <!-- role="listitem" 对齐 Semi renderRestPageList；补 tabindex/onkeydown 键盘可达但
+           listitem 是 non-interactive role，svelte-check 保守报警，误报。 -->
+      <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+      <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
       <div
         role="listitem"
+        tabindex={0}
         class="cd-page-rest-item"
         aria-label={`${n}`}
         onclick={() => goto(n)}
+        onkeydown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            goto(n);
+          }
+        }}
       >{n}</div>
     {/each}
   </div>
@@ -377,7 +408,10 @@
             </Popover>
           {/if}
         {:else}
+          <!-- svelte-ignore a11y_no_noninteractive_element_to_interactive_role -->
           <li
+            role="button"
+            tabindex={disabled ? -1 : 0}
             class="cd-page-item"
             class:cd-page-item-active={cell === current}
             class:cd-page-item-all-disabled={disabled}
@@ -385,6 +419,12 @@
             aria-current={cell === current ? 'page' : false}
             aria-label={`Page ${cell}`}
             onclick={() => !disabled && goto(cell)}
+            onkeydown={(e) => {
+              if ((e.key === 'Enter' || e.key === ' ') && !disabled) {
+                e.preventDefault();
+                goto(cell);
+              }
+            }}
           >{cell}</li>
         {/if}
       {/each}
