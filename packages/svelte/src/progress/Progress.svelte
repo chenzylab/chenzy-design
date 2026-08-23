@@ -361,13 +361,23 @@
   }
 
   /* —— RTL（对齐 Semi progress/rtl.scss）——
-     只有横向进度条的文字外边距是单侧的，需换边；
-     垂直条的 margin-left/right 同值（都取 marginx），互换等于空操作，不写。 */
+     横向进度条的文字外边距是单侧的，需换边；
+     垂直条的 margin-left/right 同值（都取 marginx），互换等于空操作，不写。
+     circle：ring-inner 起始旋转角与文本锚点镜像到右侧（物理属性 left→right）。 */
   :global(.cd-rtl) .cd-progress {
     direction: rtl;
   }
   :global(.cd-rtl) .cd-progress-horizontal .cd-progress-line-text {
     margin-left: 0;
     margin-right: var(--cd-spacing-progress-line-text-marginleft);
+  }
+  :global(.cd-rtl) .cd-progress-circle-ring-inner {
+    transform: rotate(-90deg);
+    transform-origin: 50% 50%;
+  }
+  :global(.cd-rtl) .cd-progress-circle-text {
+    left: auto;
+    right: 50%;
+    transform: translate(50%, -50%);
   }
 </style>
