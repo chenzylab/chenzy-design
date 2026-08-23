@@ -382,9 +382,20 @@
   let triggerEl = $state<HTMLSpanElement | null>(null);
   let popEl = $state<HTMLDivElement | null>(null);
 
-  // 浮层定位基准：优先内层 children 真实首元素（不含 margin，对齐 Semi），回退包裹 span。
+  // 浮层定位基准：传了 triggerStyle 时调用方已显式声明"rootEl 直接承载触发盒"（见上方
+  // triggerStyle 的 JSDoc："避免子元素 position:fixed 使包裹 span 塌缩为 0 尺寸导致
+  // floating 定位错位"）——此时应优先用 rootEl，而非 children 首元素。UserGuide 等
+  // 合成锚点场景的 children 只是语义占位（无独立像素尺寸语义），用 rootEl 才是调用方
+  // 真正定位的那个盒子（真机核实：真正导致 UserGuide 箭头首次定位偏差 90px+、几百毫秒后
+  // 才被 ResizeObserver 修正的根因是 Svelte $effect 时序——挂载 Popover 时 spotlightRect
+  // 尚未就绪，已在 UserGuide.svelte 用 $effect.pre 修复；此处改用 rootEl 是架构层面的
+  // 独立修正，让 anchorEl 语义与 triggerStyle 的设计意图保持一致）。未传 triggerStyle 的
+  // 常规场景（真实可见 trigger 元素）维持原行为：优先 children 真实首元素，不含其
+  // margin，对齐 Semi getTriggerBounding。
   const anchorEl = $derived<HTMLElement | null>(
-    (triggerEl?.firstElementChild as HTMLElement | null) ?? rootEl,
+    triggerStyle
+      ? (rootEl ?? (triggerEl?.firstElementChild as HTMLElement | null))
+      : ((triggerEl?.firstElementChild as HTMLElement | null) ?? rootEl),
   );
 
   // 解析后的实际方位（flip 后），驱动箭头朝向与 x-placement。初值仅取 placement 一次。

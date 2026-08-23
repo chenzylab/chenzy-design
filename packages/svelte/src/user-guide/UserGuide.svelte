@@ -244,7 +244,14 @@
     );
   }
 
-  $effect(() => {
+  // $effect.pre（非普通 $effect）：Svelte 5 里普通 $effect 在 DOM 更新之后才运行，而
+  // {#key activeCurrent} 触发的 Popover 重新挂载正是这次 DOM 更新的一部分——若 measure()
+  // 放在普通 $effect 里，新 Popover 挂载时读到的 anchorStyle（衍生自 spotlightRect）仍是
+  // 上一步的旧值，use:floating 首次同步定位的 trigger 参数因此错误，直到几百毫秒后某个
+  // ResizeObserver 尺寸变化事件间接触发二次定位才修正——用户可感知箭头位置跳变（真机核实：
+  // 首次定位偏差可达 90px+，收敛耗时 0.7~1s）。$effect.pre 保证在 DOM 更新前完成测量，
+  // Popover 挂载时 anchorStyle 已是当前 step 的正确值，从根源避免这次竞态。
+  $effect.pre(() => {
     if (!popupTarget) {
       spotlightRect = null;
       return;
