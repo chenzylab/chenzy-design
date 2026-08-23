@@ -20,7 +20,7 @@
   <Button onclick={() => Toast.info({ content: '无关闭按钮的提示', showClose: false })}>
     隐藏关闭按钮
   </Button>
-  <Button onclick={() => Toast.open({ content: '已发布到生产环境', icon: rocket })}>
+  <Button onclick={() => Toast.info({ content: '已发布到生产环境', icon: rocket })}>
     自定义图标
   </Button>
 </Space>

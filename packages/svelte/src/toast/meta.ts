@@ -6,7 +6,7 @@ export const meta = {
   name: 'Toast',
   category: 'feedback',
   description:
-    '轻提示：命令式全局反馈 API（Toast.info/success/warning/error/open/close/destroyAll/config/useToast + ToastFactory.create），严格对齐 Semi Design。单例容器惰性挂载到 body（wrapper 固定顶部居中，config 的 top/left/bottom/right 整体偏移）；type=info/success/warning/error/default（default 无内置图标）；theme=normal（白）/light（多色填充+描边）；stack 多条堆叠、Hover 展开（3D 透视折叠）；duration 自动关闭（0 常驻）、mouseenter 暂停/mouseleave 从头计时；showClose 关闭按钮（复用 IconButton）；textMaxWidth 内容最大宽度；content/icon 支持 string 或 Snippet；对已存在 id 再调 info/success 即原地更新。useToast() 返回 [api, holderStore] 经 <ToastHolder> 渲染在组件树内继承上下文；ToastFactory.create(config) 创建带独立 config 的新实例（如 getPopupContainer）。a11y：卡片 role=alert + aria-label="{type} type"（对齐 Semi），关闭按钮 IconButton 带可访问名。',
+    '轻提示：命令式全局反馈 API（Toast.info/success/warning/error/close/destroyAll/config/useToast + ToastFactory.create），严格对齐 Semi Design。单例容器惰性挂载到 body（wrapper 固定顶部居中，config 的 top/left/bottom/right 整体偏移）；type=info/success/warning/error/default（default 无内置图标）；theme=normal（白）/light（多色填充+描边）；stack 多条堆叠、Hover 展开（3D 透视折叠）；duration 自动关闭（0 常驻）、mouseenter 暂停/mouseleave 从头计时；showClose 关闭按钮（复用 IconButton）；textMaxWidth 内容最大宽度；content/icon 支持 string 或 Snippet；对已存在 id 再调 info/success 即原地更新。useToast() 返回 [api, holderStore]（含 info/success/warning/error/open/close，open 展示 type=default 的 toast，对齐 Semi 该方法仅存在于 useToast，顶层 Toast 无 open）经 <ToastHolder> 渲染在组件树内继承上下文；ToastFactory.create(config) 创建带独立 config 的新实例（如 getPopupContainer）。a11y：卡片 role=alert + aria-label="{type} type"（对齐 Semi），关闭按钮 IconButton 带可访问名。',
   exports: ['Toast', 'ToastFactory', 'useToast', 'ToastHolder'],
   imperative: true,
   props: [

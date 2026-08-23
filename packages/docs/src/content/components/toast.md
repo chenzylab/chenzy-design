@@ -127,9 +127,8 @@ import { Toast } from '@chenzy-design/svelte';
 - `Toast.error(options || string)`
 - `Toast.warning(options || string)`
 - `Toast.success(options || string)`
-- `Toast.open(options || string)`
 
-**`info` `error` `warning` `success` `open` 返回值为 `toastId`，可用于手动关闭**
+**`info` `error` `warning` `success` 返回值为 `toastId`，可用于手动关闭**
 
 `const toastId = Toast.info({ /*...options*/ })`
 
@@ -142,7 +141,7 @@ import { Toast } from '@chenzy-design/svelte';
 **消费 Context**
 
 - `Toast.useToast()`
-  当你需要使用 Context 时，可以通过 Toast.useToast 创建一个 contextHolder 插入相应的节点中。此时通过 hooks 创建的 Toast 将会得到 contextHolder 所在位置的所有上下文。创建的 toast 对象拥有以下方法：`info`、`success`、`warning`、`error`、`open`、`close`。
+  当你需要使用 Context 时，可以通过 Toast.useToast 创建一个 contextHolder 插入相应的节点中。此时通过 hooks 创建的 Toast 将会得到 contextHolder 所在位置的所有上下文。创建的 toast 对象拥有以下方法：`info`、`success`、`warning`、`error`、`open`（展示 `type=default` 的提示）、`close`。
 
 ## Options
 

@@ -27,7 +27,7 @@
 <script lang="ts">
   import type { ToastStore, ToastItem } from '@chenzy-design/core';
   import ToastItemView from './ToastItem.svelte';
-  import type { ToastPositionConfig } from './store.js';
+  import type { ToastPositionConfig } from './toast.js';
 
   interface Props {
     store: ToastStore;
