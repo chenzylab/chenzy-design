@@ -99,7 +99,7 @@ Events 见 Props 中 `onChange`/`onNext`/`onPrev`/`onFinish`/`onSkip`。Slots：
 
 ## 6. 无障碍
 
-严格对齐 Semi（Semi 无 focus-trap / Esc / inert / 键盘导航 / role=dialog 契约，故本组件亦不含）：
+严格对齐 Semi（Semi 无 focus-trap / Esc / inert / 箭头键导航 / role=dialog 契约 / 进度 aria-label / live-announcer，故本组件亦不含，破坏性移除旧版自造能力）：
 
 - **气泡对话框语义**：popup 复用 Popover（`trigger="custom"`），浮层由 Popover 提供对话框语义；定位锚点是空 div，Popover 将其包成 role=button 宿主，故给一个视觉隐藏可访问名（step.title 优先）避免 aria-command-name 违规。
 - **聚光挖孔可交互**：spotlight 高亮区通过四块透明 rect 让出指针事件（对齐 Semi），用户可点击被高亮目标。
@@ -107,6 +107,7 @@ Events 见 Props 中 `onChange`/`onNext`/`onPrev`/`onFinish`/`onSkip`。Slots：
 - **body 滚动锁**：对齐 Semi `disabledBodyScroll`（getPopupContainer 时跳过）。
 - **对比度**：气泡文字、圆点激活态达标；遮罩对比保证高亮区可辨。
 - **reduced-motion**：spotlight 移动过渡在 reduced-motion 下移除。
+- **步进控制**：上一步 / 下一步 / 跳过 / 完成均为标准 Button，可键盘 Tab 聚焦与 Enter/Space 激活；无自造快捷键。
 
 ## 7. 国际化
 
@@ -132,22 +133,20 @@ Events 见 Props 中 `onChange`/`onNext`/`onPrev`/`onFinish`/`onSkip`。Slots：
 
 ## 10. AI 元数据
 
-`component.meta.ts`：
+`meta.ts`：
 - `name: 'UserGuide'`、`category: 'show'`、`stage: 'M4'`、`semiEquivalent: 'UserGuide'`。
-- props/steps schema；标注 current 受控开关、popup 无 target 跳过、onFinish/onSkip 不自动关闭。
-- `a11yPattern: 'dialog + spotlight'`；`keyboardMap`（Esc 跳过 / ←→ 步进）。
-- `examples`：popup 分步高亮、modal 图文引导、受控 current、无遮罩轻提示、primary 主题、自定义按钮文案。
-- `doNot`：不要忘记 onFinish/onSkip 里关 visible、popup 步骤别漏 target、不要绕过 focus trap/inert。
+- props/stepItem schema；标注 current 受控开关、popup 无 target 该步不渲染（导航仍 +1/-1）、onFinish/onSkip 不自动关闭。
+- `examples`：popup 分步高亮、primary 主题、12 方位 + showArrow、高亮区大小、自定义按钮文案、受控 current、modal 图文引导、无遮罩。
+- `doNot`：不要忘记 onFinish/onSkip 里关 visible、popup 步骤别漏 target。
 
 ## 11. 测试
 
-- **单元（core）**：步进 next/prev/skip/finish 及回调去重；受控不改内部；visible 重置；popup 无 target 跳过；padding/theme/position 三层覆盖；按钮显隐规则（首/末步）。
-- **组件**：popup spotlight 矩形随 target；modal 圆点指示器；气泡定位；Esc 跳过；←→ 步进；焦点 trap 与归还；背景 inert；滚动锁定与 getPopupContainer 跳过。
-- **a11y**：axe 无违规；role=dialog + aria-modal + labelledby/describedby；键盘全流程；焦点管理正确；inert 背景不可达；进度 aria-label。
+- **单元（core）**：步进 next/prev/skip/finish 及回调去重；受控不改内部；visible 重置；popup 无 target 该步不渲染但导航仍 +1/-1；padding/theme/position 三层覆盖；按钮显隐规则（首/末步）。
+- **组件 + a11y**（`UserGuide.a11y.test.ts`）：popup-content 结构（title/description/indicator/buttons）；spotlight 矩形随 target getBoundingClientRect + padding；mask=false 不渲染遮罩 rect；按钮显隐（首步无 Prev、末步无 Skip 且下一步文案变 Finish）；modal-body 结构；圆点指示器随 current；axe 无违规。
 - **视觉回归**：popup × modal × primary 主题 × 暗色 × RTL。
-- **i18n**：按钮 + 进度文案随 locale；RTL 镜像。
+- **i18n**：按钮文案随 locale（进度指示器为纯文本 n/total，无 i18n）；RTL 镜像。
 
 ## 12. 验收标准（对照 AGENTS.md §5 DoD）
 
-- [ ] 分层正确（core 步进 + svelte 复用 Popover/Modal + a11y 原语） · [ ] 类型+JSDoc · [ ] Token 注册 · [ ] a11y 通过（dialog/focus-trap/inert/Esc/键盘/播报）
-- [ ] i18n 无硬编码（含进度） · [ ] core/组件/a11y 测试达标 · [ ] Perf 达标 · [ ] meta 提供 · [ ] 文档页 + demo 完成
+- [x] 分层正确（core 步进状态机 + svelte 复用 Popover/Modal） · [x] 类型+JSDoc · [x] Token 注册（`user-guide.ts`，逐条镜像 Semi variables.scss） · [x] a11y 通过（axe 0 violations；无自造 focus-trap/inert/Esc/键盘，对齐 Semi）
+- [x] i18n 无硬编码（skip/next/prev/finish；进度指示器对齐 Semi 无 i18n） · [x] core/组件 a11y 测试达标 · [ ] Perf 达标（需实测 gzip） · [x] meta 提供 · [x] 文档页 + 8 个 demo 完成
