@@ -184,14 +184,13 @@
   {:else if type === 'emoji'}
     <div class="cd-feedback-emoji-container">
       {#each EMOJI_LIST as emoji (emoji)}
+        <!-- svelte-ignore a11y_click_events_have_key_events -->
+        <!-- svelte-ignore a11y_no_static_element_interactions -->
         <span
           class="cd-feedback-emoji-item"
           class:cd-feedback-emoji-item-selected={emoji === selectedEmoji}
           data-value={emoji}
-          role="button"
-          tabindex="0"
           onclick={() => handleEmojiClick(emoji)}
-          onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleEmojiClick(emoji); } }}
         >{emoji}</span>
       {/each}
     </div>
@@ -236,7 +235,7 @@
     cancelText={cancelText}
     onOk={handleModalOk}
     onCancel={handleModalCancel}
-    okButtonProps={{ disabled: disableSubmit, ...(okButtonProps ?? {}) }}
+    okButtonProps={okButtonProps ?? { disabled: disableSubmit }}
     {...cancelButtonProps ? { cancelButtonProps } : {}}
     {...afterClose ? { afterClose } : {}}
     {...footer !== undefined ? { footer } : {}}
@@ -253,7 +252,7 @@
     placement="bottom"
     height="auto"
     onCancel={handleCancelClick}
-    footer={footer ?? defaultFooter}
+    footer={footer === undefined ? defaultFooter : footer}
     {...className ? { class: `cd-feedback cd-feedback-${type} ${className}` } : { class: `cd-feedback cd-feedback-${type}` }}
     {...rest}
   >
@@ -275,6 +274,7 @@
   :global(.cd-feedback-emoji-item) {
     user-select: none;
     cursor: pointer;
+    font-family: var(--cd-font-family-regular);
     font-size: var(--cd-font-feedback-emoji-font-size);
     line-height: var(--cd-font-feedback-emoji-font-size);
     height: var(--cd-font-feedback-emoji-font-size);
@@ -326,5 +326,32 @@
   :global(.cd-feedback.cd-sidesheet-bottom) {
     right: var(--cd-spacing-feedback-sidesheet-bottom-right);
     left: auto;
+  }
+  /* 底部弹窗离视口悬浮（对齐 Semi .feedback.sidesheet-bottom .sidesheet-inner-wrap{bottom:50px}），
+     而非贴底 0（SideSheet 默认）；实测 semi.design 官方 Feedback demo inner.bottom=50px 确认。
+     选择器加 .cd-sidesheet-fixed（Feedback 恒 mask=false 故恒具备）+ 双类复合，令特异性稳赢
+     SideSheet 自身 .cd-sidesheet-fixed.cd-sidesheet-bottom :global(.cd-sidesheet-inner){bottom:0}，
+     不依赖打包后的模块顺序。 */
+  :global(.cd-feedback.cd-sidesheet-bottom.cd-sidesheet-fixed .cd-sidesheet-inner.cd-sidesheet-inner-wrap) {
+    bottom: var(--cd-spacing-feedback-sidesheet-bottom-inner-wrap-bottom);
+  }
+
+  /* 入/出场动画位移量须叠加上方悬浮偏移（对齐 Semi @keyframes sidesheet-slideShow_bottom /
+     slideHide_bottom 在 feedback.scss 内的同名覆盖：translateY(100%) → translateY(calc(100% + 50px))）。
+     选择器限定在 .cd-feedback 祖先下，不复刻 Semi 因 @keyframes 全局命名冲突而意外污染
+     站内其他 bottom 方向 SideSheet 动画的架构缺陷——只对齐 Feedback 自身可观察的动画效果。 */
+  @keyframes cd-feedback-sidesheet-slideShow_bottom {
+    from { transform: translateY(calc(100% + var(--cd-spacing-feedback-sidesheet-bottom-inner-wrap-bottom))); }
+    to { transform: translateY(0); }
+  }
+  @keyframes cd-feedback-sidesheet-slideHide_bottom {
+    from { transform: translateY(0); }
+    to { transform: translateY(calc(100% + var(--cd-spacing-feedback-sidesheet-bottom-inner-wrap-bottom))); }
+  }
+  :global(.cd-feedback.cd-sidesheet-bottom .cd-sidesheet-animation-content_show_bottom) {
+    animation-name: cd-feedback-sidesheet-slideShow_bottom;
+  }
+  :global(.cd-feedback.cd-sidesheet-bottom .cd-sidesheet-animation-content_hide_bottom) {
+    animation-name: cd-feedback-sidesheet-slideHide_bottom;
   }
 </style>

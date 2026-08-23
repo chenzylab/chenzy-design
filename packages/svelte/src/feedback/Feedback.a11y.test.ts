@@ -1,7 +1,8 @@
 // Feedback a11y + 行为（jsdom/dom project）：
 //  - 外壳 role=dialog（modal→Modal / popup→SideSheet），axe 0 violations。
 //  - type 五种渲染分发（text/emoji/radio/checkbox/custom）。
-//  - emoji 评分为裸 span（role=button，对齐 Semi，无 radiogroup/radio），点击触发 onValueChange。
+//  - emoji 评分严格对齐 Semi：裸 span，无 role/tabindex/aria-label，键盘不可达（Semi 官方无障碍缺口，
+//    真机核实 semi.design 亦如此，本库不自造键盘增强），点击触发 onValueChange。
 //  - 选中 😞(bad) 时额外出可选 TextArea；提交 onOk 异步时 popup 按钮 loading。
 import { describe, it, expect, vi } from 'vitest';
 import { flushSync, tick, createRawSnippet } from 'svelte';
@@ -18,10 +19,12 @@ describe('Feedback a11y', () => {
     expect(dialog).not.toBeNull();
     expect(dialog?.getAttribute('aria-modal')).toBe('true');
 
-    // 对齐 Semi：3 档 emoji（😞😐😃），裸 span（本库补 role=button 键盘可达）。
+    // 对齐 Semi：3 档 emoji（😞😐😃），裸 span，无 role/tabindex（键盘不可达，对齐 Semi 原样）。
     const items = document.querySelectorAll('.cd-feedback-emoji-item');
     expect(items.length).toBe(3);
     expect((items[0] as HTMLElement).dataset.value).toBe('😞');
+    expect(items[0]!.getAttribute('role')).toBeNull();
+    expect(items[0]!.getAttribute('tabindex')).toBeNull();
 
     await expectNoAxeViolations(document.body);
   });
@@ -125,6 +128,31 @@ describe('Feedback a11y', () => {
     await tick();
     flushSync();
     expect(submit.className).not.toContain('loading');
+  });
+
+  it('mode=popup + footer=null（对齐 Semi 反馈完成态）：隐藏默认底部按钮而非回退默认 footer', async () => {
+    renderWithLocale(Feedback, {
+      props: { visible: true, mode: 'popup', type: 'custom', title: ' ', footer: null },
+    });
+    // footer=null 须与「未传（undefined）」区分：undefined 才回退默认取消/提交按钮。
+    expect(document.querySelector('.cd-sidesheet-footer')).toBeNull();
+  });
+
+  it('mode=modal + 传 okButtonProps（不含 disabled）：整体替换内置禁用值（对齐 Semi 展开顺序）', async () => {
+    renderWithLocale(Feedback, {
+      props: {
+        visible: true,
+        mode: 'modal',
+        type: 'emoji',
+        title: 'F',
+        okButtonProps: { 'data-testid': 'ok-btn' },
+      },
+    });
+    // Semi: okButtonProps={{disabled}} 在前、{...restProps} 在后，用户传 okButtonProps 时整体覆盖，
+    // 即使不含 disabled 字段也会丢失内置禁用逻辑（未选 emoji 本应禁用，此处应变为不禁用）。
+    const submit = document.querySelector('[data-testid="ok-btn"]') as HTMLButtonElement | null;
+    expect(submit).not.toBeNull();
+    expect(submit?.disabled).toBe(false);
   });
 
   it('type=custom：children 渲染自定义内容', async () => {

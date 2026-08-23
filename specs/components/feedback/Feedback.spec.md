@@ -55,31 +55,56 @@ Feedback 弹出一个反馈收集面板，用户可选 emoji 表情评分、填�
 
 ## 5. 主题 / Token 表
 
-| Token | 含义 | 默认引用 |
-| --- | --- | --- |
-| `--cd-feedback-emoji-size` | emoji 表情尺寸 | `--cd-font-size-header-3` |
-| `--cd-feedback-emoji-gap` | emoji 行间距 | `--cd-spacing-base` |
-| `--cd-feedback-emoji-active-scale` | 选中 emoji 放大 | `1.2` |
-| `--cd-feedback-content-gap` | 内容区块间距 | `--cd-spacing-base` |
+> 本表按 `packages/svelte/src/feedback/meta.ts` 的 `tokens` 数组真源重写（2026-08-23），逐条镜像 Semi
+> `semi-foundation/feedback/variables.scss`（名称/值/公式），此前列的 `--cd-feedback-emoji-size` 等均为
+> Semi 对齐前的编造名，从未被实现消费。
 
-外壳视觉复用 Modal/SideSheet token。
+| Token | 含义 | 默认值 / 引用 |
+| --- | --- | --- |
+| `--cd-color-feedback-thank-text` | 感谢文字颜色 | `var(--cd-color-text-2)` |
+| `--cd-width-feedback` | 除文本类型外的弹窗宽度（modal 恒用；popup 非 text 用） | `400px` |
+| `--cd-width-feedback-text` | 文本类型（type=text）popup 宽度 | `600px` |
+| `--cd-spacing-feedback-emoji-container-column-gap` | emoji 容器内间距 | `24px` |
+| `--cd-spacing-feedback-emoji-container-margin-y` | emoji 容器上下外边距 | `24px` |
+| `--cd-spacing-feedback-thank-text-margin-top` | 感谢文字顶部间距 | `24px` |
+| `--cd-spacing-feedback-thank-text-margin-bottom` | 感谢文字底部间距 | `0px` |
+| `--cd-spacing-feedback-checkbox-group-vertical-row-gap` | 多选框组行间距 | `16px` |
+| `--cd-spacing-feedback-footer-column-gap` | 底部按钮间距 | `12px` |
+| `--cd-spacing-feedback-sidesheet-bottom-right` | popup 底部弹窗右间距 | `20px` |
+| `--cd-spacing-feedback-sidesheet-bottom-inner-wrap-bottom` | popup 底部弹窗离视口底部悬浮间距（非贴底 0） | `50px` |
+| `--cd-font-feedback-emoji-font-size` | emoji 尺寸 | `36px` |
+| `--cd-font-feedback-thank-text-font-size` | 感谢文字字号 | `var(--cd-font-size-regular)` |
+| `--cd-font-feedback-thank-text-line-height` | 感谢文字行高 | `20px` |
+| `--cd-font-feedback-thank-text-font-weight` | 感谢文字字重 | `var(--cd-font-weight-regular)` |
+| `--cd-radius-feedback-sidesheet-inner` | popup 面板圆角 | `12px` |
+
+外壳其余视觉（modal 400px 宽、footer 布局等）复用 Modal/SideSheet 自身 token；emoji 字体族对齐 Semi
+硬编码 `font-family: Inter`，走本库 `--cd-font-family-regular`（含 Inter + 系统回退链）。
 
 ## 6. 无障碍
 
+> 以下如实反映 Semi 官方实现（2026-08-23 于 semi.design 真机核实），而非规划态描述。
+
 - 外壳复用 Modal/SideSheet 的 a11y（role=dialog + focus-trap + Esc + 背景 inert，已有）。
-- emoji 评分：`role="radiogroup"` + 每个 emoji `role="radio"` + aria-label（表情语义文本，如「满意」）+ 键盘方向键选择（对齐 Rating 模式）。
+- **emoji 评分对齐 Semi 原样，无 `role`/`tabindex`/`aria-label`**：真机核实 semi.design 官方 emoji 为纯裸
+  `<span data-value="..." onClick>`，无任何无障碍属性，键盘不可达。本库严格对齐此行为，不自造
+  `role="radio"`/`role="button"`/keydown 键盘增强——那属于超出 Semi 的自造能力，已移除。
 - 文本区：TextArea 已有 a11y。
 - radio/checkbox 类型复用 Radio/Checkbox 的 a11y。
-- 提交/取消按钮键盘可达；onOk loading 时 aria-busy。
+- 提交/取消按钮键盘可达（原生 `<button>`）；onOk/onCancel 返回 Promise 时按钮 `loading` 态（视觉态，非
+  `aria-busy`，对齐 Semi 未加 aria-busy）。
 
 ## 7. 国际化
 
-- i18n key（locale `Feedback`）：`submit`（提交）、`cancel`（取消）、`placeholder`（文本占位）、emoji 表情默认 aria-label（如 `emojiVeryBad/bad/neutral/good/veryGood`）。
-- 提交/取消文案 + emoji 语义走 locale。
+- i18n key（locale `Feedback`）：仅 `submit`（提交）、`cancel`（取消），对齐 Semi locale 定义。
+- **emoji 占位文案硬编码英文，不走 locale**：对齐 Semi 源码 `placeholder='Provider additional feedback'` /
+  `'Provider additional feedback(optional)'` 字面硬编码（Semi 自身未国际化此文案，本库如实对齐，非缺陷）。
+- emoji 语义（😞😐😃）无 aria-label，故无对应 i18n key（对齐 Semi 无障碍缺口，见 §6）。
 
 ## 8. 文案
 
-- 内置提交/取消/占位/emoji 语义走 i18n，遵循 content-guidelines（简洁、动作明确）。
+- 提交/取消走 i18n（见 §7）；emoji 占位文案对齐 Semi 硬编码英文（非 i18n，见 §7）；文案内容遵循
+  content-guidelines（简洁、动作明确）。
 
 ## 9. 性能（Perf Budget）
 
@@ -95,14 +120,16 @@ Feedback 弹出一个反馈收集面板，用户可选 emoji 表情评分、填�
 `component.meta.ts`：
 - `name: 'Feedback'`、`category: 'feedback'`、`stage: 'M5'`、`semiEquivalent: 'Feedback'`。
 - props schema；`FeedbackValue` 联合类型说明；`examples`：emoji 满意度、文本反馈、单选原因、多选、自定义内容、popup 抽屉形态。
-- `doNot`：不要用它做通用表单（用 Form）；emoji 必须有语义 aria-label。
+- `doNot`：不要用它做通用表单（用 Form）；`type=custom` 时须自行经 `okButtonProps.disabled` 控制提交禁用
+  （对齐 Semi）；不要给 emoji 补 role/aria-label/键盘增强（超出 Semi 的自造能力，见 §6）。
 
 ## 11. 测试
 
-- **单元（core，如建）**：FeedbackValue 归一化（string/string[]/EmojiResult）、onValueChange 触发。
-- **组件**：mode 切换 Modal vs SideSheet；type 五种渲染；emoji 选择；文本输入；radio/checkbox；onOk 异步 loading；renderContent 自定义。
-- **a11y**：axe 无违规；emoji radiogroup + 键盘；外壳 dialog/focus-trap；提交按钮 aria-busy。
-- **视觉回归**：五种 type × modal/popup × 暗色。
+- **组件**：mode 切换 Modal vs SideSheet；type 五种渲染；emoji 选择（裸 span+click，无键盘）；文本输入；
+  radio/checkbox；onOk/onCancel 异步 loading；renderContent 自定义；modal 模式下用户传 `okButtonProps`
+  整体替换内置 `disabled` 强制值（对齐 Semi `{...restProps}` 展开顺序）。
+- **a11y**：外壳 dialog/focus-trap/Esc 正常；emoji 无 role/aria-label 属预期行为（非回归）。
+- **视觉回归**：五种 type × modal/popup × 暗色；popup 底部悬浮 50px 偏移与滑入/滑出动画位移量。
 - **i18n**：提交/取消/emoji 语义随 locale。
 
 ## 12. 验收标准（对照 AGENTS.md §5 DoD）

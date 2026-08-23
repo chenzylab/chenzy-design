@@ -30,7 +30,7 @@ export const meta = {
     keyboard: ['Esc'],
     notes: [
       '外壳复用 Modal/SideSheet 的 role=dialog + focus-trap + Esc + 背景 inert',
-      'emoji 为裸 span + click（对齐 Semi，无 role=radio / roving tabindex），补 Enter/Space 键盘触发',
+      'emoji 严格对齐 Semi：裸 span + click，无 role/tabindex/aria-label，键盘不可达（Semi 官方无障碍缺口，本库不自造键盘增强）',
     ],
   },
   examples: [
