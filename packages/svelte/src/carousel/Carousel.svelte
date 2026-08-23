@@ -110,12 +110,14 @@
   // 函数类型 prop 传给 CarouselArrow（`prev={prev} next={next}`），静态分析误判
   // 为潜在双向绑定目标。核实为误报——`$props()` 解构变量没有 `$bindable()` 声明
   // 不可能被子组件写回，且拆分前单文件版本无此告警（子组件消费触发的分析路径）。
+  // svelte-ignore non_reactive_update
   function next() {
     if (count === 0) return;
     const target = getValidIndex(current + 1);
     isReverse = false;
     commit(target);
   }
+  // svelte-ignore non_reactive_update
   function prev() {
     if (count === 0) return;
     const target = getValidIndex(current - 1);

@@ -117,6 +117,9 @@
   );
 </script>
 
+<!-- role 为可选 string prop（对齐 Semi，消费方自行传入），svelte-check 无法从类型
+     静态确认恒为 interactive role，保守报 a11y_no_noninteractive_tabindex，误报。 -->
+<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
 <div
   {role}
   aria-label={ariaLabel}
