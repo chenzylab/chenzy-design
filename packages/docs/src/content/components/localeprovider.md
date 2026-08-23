@@ -13,8 +13,8 @@ brief: 国际化组件，为组件提供多语言支持。
   import basicSrc from '../../demos/locale-provider/01-basic.svelte?raw';
   import CustomComponent from '../../demos/locale-provider/02-string-code.svelte';
   import customComponentSrc from '../../demos/locale-provider/02-string-code.svelte?raw';
-  import AllComponents from '../../demos/locale-provider/03-nested-override.svelte';
-  import allComponentsSrc from '../../demos/locale-provider/03-nested-override.svelte?raw';
+  import AllComponents from '../../demos/locale-provider/03-all-components.svelte';
+  import allComponentsSrc from '../../demos/locale-provider/03-all-components.svelte?raw';
   import RegisterCustom from '../../demos/locale-provider/04-register-custom.svelte';
   import registerCustomSrc from '../../demos/locale-provider/04-register-custom.svelte?raw';
 </script>
@@ -64,11 +64,19 @@ import { LocaleProvider, en_US } from '@chenzy-design/svelte';
 ### 自定义国际化组件
 
 当你的自定义组件，也希望消费 LocaleProvider Context 中的 localeCode 或者读取具体某个组件的 i18n 文本 localeData 时，
-可以使用 `useLocale()` 获取（等价 Semi 的 `LocaleConsumer`：React 用 render-props，Svelte 用初始化期调用的 helper）。
+可以使用 `useLocale()` 获取（等价 Semi 的 `LocaleConsumer`：React 用 render-props 组件，Svelte 用初始化期调用的 helper）。
 
 - `loc().component('TimePicker')` 取整片语言包（对应 Semi 的 `localeData`），可读嵌套/数组值；
-- `loc().t('X.y')` 按点号路径取单条，**支持语言包里自行注入的自定义键**（不必先在 `Locale` 类型中声明）；
 - `loc().code` 即当前生效的语言码（对应 Semi 的 `localeCode`）。
+
+<Notice type="primary" title="本库补充">
+
+`loc().t('X.y')`（点号路径取单条文案）、`loc().formatDate()` / `loc().formatNumber()`（Intl 格式化）、
+`loc().direction`（文本方向）均为本库补充：Semi `LocaleConsumer` 只透传 `localeData`/`localeCode`/`dateFnsLocale`/`currency`，
+格式化与方向推断分散在各消费组件内部自行实现；本库把这套逻辑收敛到 `@chenzy-design/locale` 的 `createLocale`，
+供全部消费组件复用同一份格式化/回退实现，而非重复散落在每个组件里。
+
+</Notice>
 
 <DemoBox code={customComponentSrc}><CustomComponent /></DemoBox>
 
@@ -92,25 +100,18 @@ Semi 的 `locale` 只接受语言包对象；本库额外提供 `registerLocale(
 
 ## API 参考
 
+严格对齐 Semi `localeProvider.tsx`：唯一 prop 是 `locale`，`children` 是普通子树、无作用域参数。
+
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
-| currency | 默认 ISO 4217 货币（如 `'CNY'`）用于 currency 风格 formatNumber；未设时继承父级 | string | - |
-| direction | 文本方向；`'auto'` 按语言包的 `rtl` 字段推断 | `'ltr'` \| `'rtl'` \| `'auto'` | `'auto'` |
-| fallback | 缺失 key 的回退语言包 | `Locale` | `en_US` |
-| inherit | 嵌套时是否深合并父级 LocaleProvider 的语言包（子覆盖父、未覆盖继承父）；`false` 则整体替换 | boolean | `true` |
 | locale | 语言包对象，或内置/已注册的字符串码（如 `'zh_CN'` / `'en-US'`）；未知码回退 `en_US` | `Locale` \| string | - |
-| onLocaleChange | locale / direction 变化时的通知回调（受控，不回写） | `(info: { locale: string; direction: Direction }) => void` | - |
-| timeZone | 默认 IANA 时区（如 `'Asia/Shanghai'`）注入 formatDate；未设时继承父级 | string | - |
 
-`children` 作为带参 snippet 时可直接拿到 locale 能力（本库补充，Semi 无对应用法）：
+<Notice type="primary" title="与 Semi 的差异">
 
-| 参数 | 说明 | 类型 |
-| --- | --- | --- |
-| direction | 当前生效的文本方向 | `Direction` |
-| formatDate | 按当前 locale / timeZone 格式化日期 | `LocaleApi['formatDate']` |
-| formatNumber | 按当前 locale / currency 格式化数字 | `LocaleApi['formatNumber']` |
-| locale | 当前生效的语言码 | string |
-| t | 按点号路径取文案 | `LocaleApi['t']` |
+Semi `LocaleProvider` 无 prop 默认值时用内置 `zh_CN`（`defaultProps.locale = DefaultLocale`）；
+本库未包 `LocaleProvider` 时组件回退 `en_US`（`useLocale()` 的无 Provider 回退），沿用本库既定的默认语言约定。
+
+</Notice>
 
 ### 相关工具
 
@@ -125,6 +126,6 @@ Semi 的 `locale` 只接受语言包对象；本库额外提供 `registerLocale(
 ## Accessibility
 
 - 本组件无 DOM 输出，不持有 role / aria 属性，不打断辅助技术的可访问性树。
-- **lang / dir 同步**：推荐宿主监听 `onLocaleChange` 把 `lang`、`dir` 同步到对应子树根元素或 `<html>`，
-  满足 WCAG 3.1.2 Language of Parts，屏幕阅读器据 `lang` 切换发音引擎。
+- **lang / dir 同步**：LocaleProvider 本身不提供变更回调（对齐 Semi，Semi `LocaleProvider` 同样无此能力）；
+  需要 RTL / `lang` 同步时用 `ConfigProvider`（提供 `direction` prop，并在 `direction='rtl'` 时渲染镜像容器）。
 - locale 切换为纯文本替换，不移动 / 丢失焦点。
