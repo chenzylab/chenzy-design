@@ -353,12 +353,8 @@
 
   // 把覆盖后的 LocaleApi 注入子树，让各自 useLocale() 的子组件（MonthsGrid/Footer/YearAndMonth/
   // QuickControl/Month）同样吃到 locale/localeCode 覆盖（对齐 Semi 由 LocaleConsumer 统一注入）。
-  const parentLocaleCtx = getContext<LocaleContextValue | undefined>(LOCALE_CONTEXT_KEY);
   setContext<LocaleContextValue>(LOCALE_CONTEXT_KEY, {
     get current() { return loc(); },
-    get resolved() { return parentLocaleCtx?.resolved as LocaleContextValue['resolved']; },
-    get timeZone() { return parentLocaleCtx?.timeZone; },
-    get currency() { return parentLocaleCtx?.currency; },
   });
 
   // ConfigProvider timeZone 注入（自身 timeZone 优先，对齐 Semi index.tsx）。

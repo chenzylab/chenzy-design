@@ -17,65 +17,54 @@ LocaleProvider 是一个**纯上下文注入组件**，用于在组件树的某�
 
 - **零视觉**：组件本身无样式、无 token、无可见输出，仅 `<slot/>`。设计语义体现在「契约」而非「外观」。
 - **就近覆盖（nearest-wins）**：子组件消费 locale 时取离自己最近的 LocaleProvider/ConfigProvider，符合 React/Svelte context 的层叠直觉。
-- **回退链（fallback chain）**：`zh-HK` 缺失 key → 回退 `zh-CN` → 回退内置 `defaultLocale`（默认 `en-US`），保证永不出现裸 key。
-- **格式化一致性**：locale 不仅是文案表，还携带 `dateFnsLocale`/时区与一组缓存的 `Intl.DateTimeFormat`/`Intl.NumberFormat` 实例，确保区块内日期、数字、货币格式与文案语种一致。
-- **不可见即不可主题**：因无 DOM，不引入任何 `--cd-localeprovider-*` token；reduced-motion/RTL 等不直接作用于本组件，但本组件负责把 `rtl` 方向信息写入 context 供子组件读取。
+- **单向覆盖（无深合并）**：本组件严格对齐 Semi——每层 `LocaleProvider` 把自己的 `locale` 原样注入子树，不与父级语言包深合并（Semi `localeProvider.tsx` 同样只是 `<LocaleContext.Provider value={locale}>`，不存在"继承父级未覆盖字段"的语义）。需要携带自定义键的完整语言包时，由使用方自行用 `mergeLocale` 拼好整份对象再传入。
+- **回退链（fallback chain）**：单条文案缺失 key → 回退内置 `en_US`，保证永不出现裸 key（回退逻辑在 `createLocale`/`t()` 内部，与本组件的 props 层无关）。
+- **格式化一致性**：locale 不仅是文案表，还携带 `dateFnsLocale`，配合缓存的 `Intl.DateTimeFormat`/`Intl.NumberFormat` 实例，确保区块内日期、数字格式与文案语种一致。
+- **不可见即不可主题**：因无 DOM，不引入任何 `--cd-localeprovider-*` token；`rtl`/`timeZone` 等归属 `ConfigProvider`（Semi 同样将 `direction`/`timeZone` 放在 `configProvider` 而非 `locale` 目录），本组件不感知方向、不下发 timeZone。
 
 ## 3. 分层实现
 
 本组件**逻辑大于渲染**，主体放 core，Svelte 层仅做薄封装。
 
-**@chenzy-design/core · `createLocale(options)`**
-- 输入：`locale`（语言包对象或语言码字符串）、`fallbackLocale`、`timeZone`、`currency`。
+**@chenzy-design/locale · `createLocale(options)`**
+- 输入：`locale`（语言包对象或语言码字符串）；`fallback`/`direction`/`timeZone`/`currency` 均为可选，供 `ConfigProvider`/`useLocale()` 内部构造格式化能力用，`LocaleProvider` 组件本身不透传这些 option。
 - 职责：
-  - 解析/合并语言包，构建回退链 `resolveMessage(key, params)`。
-  - 惰性创建并缓存 `Intl.DateTimeFormat` / `Intl.NumberFormat`（按 `locale+options` 作为 cache key），避免每次 render 新建 Intl 实例（昂贵）。
-  - 推导 `direction`（ltr/rtl，依据语言码 he/ar/fa）。
-  - 暴露 `t(key, params)`、`formatDate(date, opts)`、`formatNumber(n, opts)`、`subscribe`（store 接口）。
-- 复用原语：`useId`（生成 provider 实例 id，便于 devtools/嵌套调试）。不需要 useFocusTrap/useRovingTabindex/useDismiss/useScrollLock（无交互、无浮层）；`useLiveAnnouncer` 不在此层，由消费组件按需使用。
+  - 构建回退链 `t(key, params)`（缺失 key 回退 en_US）。
+  - 惰性创建并缓存 `Intl.DateTimeFormat` / `Intl.NumberFormat`（按 `locale+options` 作为 cache key），避免每次调用新建 Intl 实例（昂贵）。
+  - 暴露 `t(key, params)`、`component(name)`、`formatDate(date, opts)`、`formatNumber(n, opts)`。
+- 这套格式化 API（`t`/`component`/`formatDate`/`formatNumber`）是本库补充：Semi 把等价逻辑分散在各消费组件内部自行实现（如 `LocaleConsumer` 里手写 `get(locale, 'dateFnsLocale', ...)`），本库收敛到一处供全部消费组件复用，避免重复实现。
 
 **@chenzy-design/svelte · `<LocaleProvider>`**
-- 调用 `createLocale`，将返回的可订阅 locale 上下文通过 `setContext(LOCALE_CONTEXT_KEY, store)` 注入。
-- props 变化时更新 store（响应式 `$:`），子组件自动收到新 locale。
-- 仅渲染 `<slot/>`，不产生包裹元素（无 `<div>`，避免破坏布局/flex/grid）。
-- 导出辅助 `getLocaleContext()` 供组件库内部及用户自定义组件读取。
+- 严格对齐 Semi `localeProvider.tsx`：唯一 prop 是 `locale`，调用 `createLocale({ locale: resolved })` 构造 `LocaleApi`，通过 `setContext(LOCALE_CONTEXT_KEY, { get current() })` 注入，不做深合并/方向推断/时区货币继承/变更回调。
+- `locale` 变化时 `$derived` 自动重建 `LocaleApi`，子组件自动收到新值。
+- 仅渲染子树，不产生包裹元素（无 `<div>`，避免破坏布局/flex/grid）。
+- 导出辅助 `getLocaleContext()` / `useLocale()` 供组件库内部及用户自定义组件读取（对应 Semi 的 `LocaleConsumer`：React 用 render-props 组件，Svelte 用初始化期调用的 hook）。
 
-约定：`ConfigProvider` 复用同一 `LOCALE_CONTEXT_KEY` 与 `createLocale`，因此 `LocaleProvider` 嵌套在 `ConfigProvider` 内可正确覆盖。
+约定：`ConfigProvider` 复用同一 `LOCALE_CONTEXT_KEY` 与 `createLocale`，注入相同形状的 `{ current }`，因此 `LocaleProvider` 嵌套在 `ConfigProvider` 内可正确覆盖（就近 wins）。
 
 ## 4. API
 
 ### Props
 
-> 本表由 `packages/svelte/src/locale-provider/meta.ts` 真源生成（2026-07-30 重校）。此前本表列的 prop 多为 Semi 对齐前的旧名或已删除项（如 `value`→`activeKey`、`change`→`onChange`），改 prop 时请同步 meta.ts，勿手写「规划中」的 prop。
+> 本表由 `packages/svelte/src/locale-provider/meta.ts` 真源生成（2026-08-23 重校，严格对齐 Semi `locale/localeProvider.tsx`）。
+> Semi `LocaleProvider` 唯一 prop 是 `locale`，无 `fallback`/`direction`/`inherit`/`timeZone`/`currency`/`onLocaleChange`——
+> 这些字段此前是本库自造的超集，已删除。`direction`/`timeZone` 的对应能力归属 `ConfigProvider`（Semi 同样将其放在 `configProvider` 而非 `locale` 目录）。
 
 | Prop | 类型 | 默认值 | 说明 |
 | --- | --- | --- | --- |
-| locale | `Locale \| string` | `undefined` | 语言包对象或字符串码（如 'zh_CN'/'en-US'）；字符串经 registerLocale 注册表 + 内置查表解析，未知码回退 en_US |
-| fallback | `Locale` | `undefined` | 缺失 key 回退包，默认内部用 en_US |
-| direction | `'ltr'\|'rtl'\|'auto'` | `'auto'` | 文本方向，'auto' 按 locale.rtl 推断 |
-| inherit | `boolean` | `true` | 嵌套时深合并父级 LocaleProvider 语言包（子覆盖父，未覆盖继承父）；false 则整体替换 |
-| timeZone | `string` | `undefined` | 默认 IANA 时区（如 'Asia/Shanghai'）注入 formatDate；未设时继承父级 |
-| currency | `string` | `undefined` | 默认 ISO 4217 货币（如 'CNY'）用于 currency 风格 formatNumber；未设时继承父级 |
-
-**事件**（回调 prop 形式，对齐 Semi）：
-
-| 事件 | 说明 |
-| --- | --- |
-| `onLocaleChange` | locale/direction 变化时通知（受控，不回写） |
+| locale | `Locale \| string` | `undefined` | 语言包对象或字符串码（如 'zh_CN'/'en-US'）；字符串经 registerLocale 注册表 + 内置查表解析，未知码回退 en_US（registerLocale 为本库补充能力，Semi locale 只接受语言包对象） |
 
 > 无 `value`/`open` 类受控 API：本组件非输入、非浮层，故不套用 `value+on:change` / `open+on:openChange` 约定（横切约定按组件实际不适用）。
 
 ### Events
 
-| 事件 | 说明 |
-| --- | --- |
-| `onLocaleChange` | locale/direction 变化时通知（受控，不回写） |
+无。Semi `LocaleProvider` 不提供变更通知；需要在语言切换时联动 `lang`/`dir` 等宿主状态，由使用方自行在切换 `locale` prop 的同一处处理。
 
 ### Slots
 
-| 名称 | 作用域参数（let:） | 说明 |
-|---|---|---|
-| `default` | `let:locale`（生效语言码）、`let:t`（翻译函数）、`let:formatDate`、`let:formatNumber`、`let:direction` | 被覆盖语言环境的子树。作用域参数为方便就地格式化的便捷出口，可不使用。 |
+| 名称 | 说明 |
+|---|---|
+| `default` | 被覆盖语言环境的子树，无作用域参数（对齐 Semi `children` 为普通 `ReactNode`）。 |
 
 ## 5. 主题 / Token 表
 
@@ -92,8 +81,8 @@ LocaleProvider 是一个**纯上下文注入组件**，用于在组件树的某�
 ## 6. 无障碍 (WCAG 2.1 AA)
 
 - **role/aria**：本组件无 DOM，不持有 role/aria 属性。
-- **`lang` / `dir` 同步（关键）**：本组件不强制写 DOM，但推荐宿主监听 `on:localeChange` 将 `lang`、`dir` 同步到对应子树根元素或 `<html>`，以满足 **WCAG 3.1.2 Language of Parts**。可选提供 `setHtmlLang` 用法示例由宿主决定。屏幕阅读器据 `lang` 切换发音引擎。
-- **RTL**：`direction` 推断并下传，消费组件使用逻辑属性（`margin-inline-start` 等）实现镜像；本组件保证语种与方向一致。
+- **`lang` / `dir` 同步**：本组件不提供变更回调（对齐 Semi，Semi `LocaleProvider` 同样无此能力）；需要将 `lang`/`dir` 同步到 `<html>` 满足 **WCAG 3.1.2 Language of Parts** 时，由使用方在切换 `locale` prop 的同一处自行处理。
+- **RTL**：本组件不感知/不下发方向；RTL 由 `ConfigProvider` 的 `direction` prop 负责（消费组件使用逻辑属性如 `margin-inline-start` 实现镜像）。
 - **对比度**：不适用（无视觉）。
 - **reduced-motion**：不适用（无动效）；但 locale 切换不应触发布局抖动，宿主切换语言时建议保留容器尺寸。
 - **焦点管理**：locale 切换为纯文本替换，不移动/丢失焦点；实现保证 `<slot/>` 内元素引用稳定（不重建子树），避免焦点丢失（WCAG 3.2 一致性）。
@@ -109,8 +98,8 @@ LocaleProvider 是一个**纯上下文注入组件**，用于在组件树的某�
   - `Table.emptyText`、`Table.filterConfirm`
   - `Upload.uploading`、`Upload.fail`
   - `Form.required`（带 `{label}` 占位）
-- **日期/数字**：强制通过 `Intl.DateTimeFormat`/`Intl.NumberFormat`，禁止手写格式串；`timeZone`、`currency` 作为格式化默认参数。
-- 内置语言包至少：`en-US`、`zh-CN`，其余按需懒加载注册（`registerLocale(code, bundle)`）。
+- **日期/数字**：强制通过 `Intl.DateTimeFormat`/`Intl.NumberFormat`，禁止手写格式串；`timeZone` 归属 `ConfigProvider`（经其 context 下发给 DatePicker/TimePicker 等时间类组件），不经 `LocaleProvider`。
+- 内置语言包：`en_US`、`zh_CN`（Semi 内置 57 个，本库暂两个），其余按需懒加载注册（`registerLocale(code, bundle)`，本库补充能力，Semi `locale` 只接受语言包对象）。
 - 占位符插值统一 `{name}` 语法，由 `t(key, params)` 处理，复数走 `Intl.PluralRules`。
 
 ## 8. 文案
@@ -123,17 +112,17 @@ LocaleProvider 是一个**纯上下文注入组件**，用于在组件树的某�
 
 | 指标 | 预算 | 说明 |
 |---|---|---|
-| gzip 体积（svelte 层） | ≤ 1.0 KB | 仅 context 注入 + slot，无样式。 |
+| gzip 体积（svelte 层） | ≤ 0.5 KB | 仅 context 注入 + 子树渲染，无样式，单一 prop。 |
 | gzip 体积（core `createLocale`） | ≤ 2.5 KB | 不含语言包；语言包独立 chunk 懒加载。 |
-| 单语言包 gzip | ~1–3 KB / 语种 | 通过 `registerLocale` 按需加载，默认仅打包 `en-US`。 |
-| 首次 mount 运行时 | < 0.2 ms | 解析回退链 + 惰性 Intl 占位，不预建全部 formatter。 |
-| locale 切换 | < 1 ms（不含子树重渲染） | store 更新 + Intl 缓存命中；缓存未命中时新建 Intl ~0.1–0.3 ms。 |
+| 单语言包 gzip | ~1–3 KB / 语种 | 通过 `registerLocale` 按需加载，默认仅打包 `zh_CN`/`en_US`。 |
+| 首次 mount 运行时 | < 0.2 ms | 解析语言包 + 惰性 Intl 占位，不预建全部 formatter。 |
+| locale 切换 | < 1 ms（不含子树重渲染） | `$derived` 重建 LocaleApi + Intl 缓存命中；缓存未命中时新建 Intl ~0.1–0.3 ms。 |
 | 内存 | 每实例 < 5 KB | Intl 实例按 `locale+options` 缓存复用，避免重复创建。 |
 
 - **无 DOM 渲染**：不需要虚拟化。
 - **惰性渲染**：Intl formatter 惰性创建并缓存（按 key），不在 mount 时全量预建。
-- **destroyOnClose**：不适用（无浮层）；卸载时清理 store 订阅与 Intl 缓存引用。
-- **避免重建子树**：locale 变更仅更新 context store，不重挂载 `<slot/>`，保护子组件状态与焦点。
+- **destroyOnClose**：不适用（无浮层）；卸载时清理 Intl 缓存引用。
+- **避免重建子树**：locale 变更仅更新 context，不重挂载子树，保护子组件状态与焦点。
 
 ## 10. AI 元数据
 
@@ -142,40 +131,34 @@ LocaleProvider 是一个**纯上下文注入组件**，用于在组件树的某�
 - `relationships: [{ type: 'subsetOf', target: 'ConfigProvider', note: 'locale-only injection' }]`。
 - `renderless: true`（标记无 DOM，AI 生成代码时不应期望可见输出/不应加包裹元素）。
 - `props` schema（类型、默认、是否继承）、`events`、`slotProps`。
-- `usageHints`：「整站语言用 ConfigProvider，局部覆盖用 LocaleProvider」「不要用 LocaleProvider 设置主题」。
-- `antiPatterns`：「不要为切换主题而使用」「不要在其外层重复包裹同语种」「不要硬编码日期格式，使用 slot 暴露的 formatDate」。
+- `usageHints`：「整站语言用 ConfigProvider，局部覆盖用 LocaleProvider」「不要用 LocaleProvider 设置主题」「需要 RTL/timeZone 用 ConfigProvider，不在 LocaleProvider 上找」。
+- `antiPatterns`：「不要为切换主题而使用」「不要在其外层重复包裹同语种」「不要硬编码日期格式，改用 useLocale() 的 formatDate」。
 - `i18nKeysProvided`：所列消费组件 key 命名空间清单。
 
 ## 11. 测试
 
 - **单元（core `createLocale`）**：
-  - 回退链：`zh-HK` 缺失 key 回退 `zh-CN` 再回退 `en-US`；裸 key 永不出现。
-  - `inherit: true/false` 的深合并行为。
+  - 回退链：缺失 key 回退 `en_US`；裸 key 永不出现。
   - Intl 缓存命中：相同 `locale+options` 返回同一 formatter 实例。
-  - `direction` 推断：`ar`/`he` → rtl，其余 → ltr；显式 `direction` 覆盖推断。
-  - `t(key, params)` 占位插值与 `Intl.PluralRules` 复数。
+  - `t(key, params)` 占位插值。
 - **组件（svelte）**：
-  - `setContext` 注入正确 store；嵌套 LocaleProvider 就近覆盖。
+  - `setContext` 注入正确的 `{ current }`；嵌套 LocaleProvider 就近覆盖（子层完全替换父层，无深合并）。
   - 嵌套在 ConfigProvider 内可覆盖其 locale。
-  - 不产生包裹 DOM 元素（断言 `container` 仅有 slot 内容）。
-  - `on:localeChange` 在 prop 变更/继承变更时触发，payload 正确。
-  - slot 作用域参数 `t/formatDate/formatNumber/direction` 可用。
+  - 不产生包裹 DOM 元素（断言 `container` 仅有子树内容）。
+  - `locale` prop 变更时子组件通过 `useLocale()` 拿到新值。
 - **集成**：DatePicker / Pagination 在 LocaleProvider 子树内文案与格式随之切换；切换 locale 不丢失子组件焦点与内部状态。
 - **SSR**：服务端按请求注入 locale 渲染，hydration 无 lang 不匹配警告。
 
 ## 12. 验收标准 checklist
 
-- [ ] core `createLocale` 实现回退链、Intl 缓存、direction 推断、`t/formatDate/formatNumber`。
-- [ ] svelte `<LocaleProvider>` 仅注入 context 且**不渲染任何包裹 DOM**。
-- [ ] 与 ConfigProvider 共享 `LOCALE_CONTEXT_KEY` 与 `createLocale`，嵌套覆盖正确（就近 wins）。
-- [ ] Props（locale/fallbackLocale/timeZone/currency/direction/inherit）全部生效，含 `inherit` 深合并。
-- [ ] `on:localeChange` 事件 payload 含生效 locale 与 direction。
-- [ ] slot 暴露 `locale/t/formatDate/formatNumber/direction` 作用域参数。
+- [ ] core `createLocale` 实现回退链、Intl 缓存、`t/component/formatDate/formatNumber`。
+- [ ] svelte `<LocaleProvider>` 仅注入 context 且**不渲染任何包裹 DOM**，唯一 prop 为 `locale`（严格对齐 Semi，无 fallback/direction/inherit/timeZone/currency/onLocaleChange）。
+- [ ] 与 ConfigProvider 共享 `LOCALE_CONTEXT_KEY`，注入同形状 `{ current }`，嵌套覆盖正确（就近 wins，无深合并）。
 - [ ] 自身无 `--cd-*` token、无硬编码可见文案。
-- [ ] 内置 `en-US`/`zh-CN`，支持 `registerLocale` 懒加载其余语种。
+- [ ] 内置 `zh_CN`/`en_US`，支持 `registerLocale` 懒加载其余语种。
 - [ ] 日期/数字一律走 `Intl.*`，无手写格式串。
 - [ ] 危险操作类 locale key 各语种保留「后果 + 动词」表述。
-- [ ] Perf：svelte ≤ 1.0KB、core ≤ 2.5KB（不含语言包）；Intl 实例缓存复用。
+- [ ] Perf：svelte ≤ 0.5KB、core ≤ 2.5KB（不含语言包）；Intl 实例缓存复用。
 - [ ] locale 切换不重建子树、不丢失焦点与子组件状态。
 - [ ] SSR 注入与 hydration 无 lang/dir 不匹配警告。
 - [ ] 提供 `component.meta.ts`（含 `renderless: true`、与 ConfigProvider 的 `subsetOf` 关系、usageHints/antiPatterns）。
