@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Skeleton, SkeletonParagraph, Table } from '@chenzy-design/svelte';
+  import { Skeleton, SkeletonTitle, SkeletonParagraph, Table } from '@chenzy-design/svelte';
 
   type Row = {
     key: string;
@@ -24,22 +24,41 @@
 
   type SkRow = { key: string; [k: string]: unknown };
 
-  // 占位表格：每个单元格用骨架段落填充
-  const skColumns = [
-    { dataIndex: 'c1', title: 'Name', render: cell },
-    { dataIndex: 'c2', title: 'Age', render: cell },
-    { dataIndex: 'c3', title: 'Address', render: cell },
-  ];
-  const skData: SkRow[] = [{ key: '1' }, { key: '2' }, { key: '3' }, { key: '4' }];
+  // 骨架表格：表头/单元格均用骨架块拼出（对齐 Semi，非真实表格套 render）
+  const skColumns = [1, 2, 3].map((key) => ({
+    dataIndex: `${key}`,
+    title: skTitle,
+  }));
+  const skData: SkRow[] = [1, 2, 3, 4].map((key) => {
+    const row: SkRow = { key: `${key}` };
+    [1, 2, 3].forEach((i) => {
+      row[i] = 50 * i;
+    });
+    return row;
+  });
 </script>
 
-{#snippet cell(_ctx: { value: unknown; record: SkRow; index: number })}
-  <SkeletonParagraph rows={1} style="width:120px" />
+{#snippet skTitle()}
+  <SkeletonTitle style="width:0" />
+{/snippet}
+
+{#snippet skCell({ value }: { value: unknown; record: SkRow; index: number })}
+  <SkeletonParagraph style="width:{value}px" rows={1} />
 {/snippet}
 
 <Skeleton loading active>
   {#snippet placeholder()}
-    <Table columns={skColumns} dataSource={skData} pagination={false} />
+    <div style="position:relative">
+      <Table
+        style="background-color: var(--cd-color-bg-1)"
+        columns={skColumns.map((c) => ({ ...c, render: skCell }))}
+        dataSource={skData}
+        pagination={false}
+      />
+      <div style="position:absolute; left:0; right:0; top:0; bottom:0"></div>
+    </div>
   {/snippet}
-  <Table {columns} {dataSource} pagination={false} />
+  <div>
+    <Table {columns} dataSource={dataSource} pagination={false} />
+  </div>
 </Skeleton>
