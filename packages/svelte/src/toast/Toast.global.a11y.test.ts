@@ -7,7 +7,7 @@
 // 断言落在 store item 上而非 DOM：合并就发生在入口，item 拿到值即等价于默认值生效。
 import { afterEach, describe, expect, it } from 'vitest';
 import { cdGlobal, resetGlobalConfig } from '@chenzy-design/core';
-import { useToast } from './store.js';
+import { useToast } from './useToast.js';
 
 afterEach(() => resetGlobalConfig());
 
