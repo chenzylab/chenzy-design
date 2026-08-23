@@ -11,7 +11,7 @@
 
   const steps: UserGuideStep[] = [
     { target: () => el1, title: '新手引导', description: 'Hello ByteDancer!', position: 'bottom' },
-    { target: () => el2, title: 'Switch', description: 'This is a Semi Switch', position: 'bottom' },
+    { target: () => el2, title: 'Tag', description: 'This is a Semi Tag', position: 'bottom' },
     { target: () => el3, title: 'Button', description: 'This is a Semi Button', position: 'bottom' },
   ];
 </script>
