@@ -113,6 +113,44 @@ describe('UserGuide popup', () => {
     expect(document.querySelector('.cd-userGuide-popup-content')).toBeNull();
     expect(document.querySelector('.cd-userGuide-spotlight')).toBeNull();
   });
+
+  // 基础正确性：切步后锚点 span 的 triggerStyle 确实更新为新 target 的 rect，不残留旧值。
+  // 注意：这条测试测不出 $effect.pre vs 普通 $effect 的真实回归——实测两者在 jsdom 下
+  // 断言结果一致（jsdom 的响应式/DOM 更新调度顺序与真实浏览器不同，不会重现"Popover
+  // 挂载时读到上一步残留触发盒"这个真实渲染管线时序竞态）。该竞态的回归防护见
+  // UserGuide.metrics.kbd.test.ts（browser project 真实 chromium，验证挂载后单帧内
+  // 箭头即精确对齐 target，不需要几百毫秒的二次收敛）。
+  it('切换 step 后单次 tick 内锚点 triggerStyle 立即反映新 target（不滞后一步）', async () => {
+    renderWithLocale(UserGuide, { props: { steps: popupSteps(), visible: true } });
+    await new Promise((r) => requestAnimationFrame(() => r(null)));
+    await tick();
+
+    // t1 固定 rect left=100（beforeEach 里 makeTarget 设定），第一步锚点应含 left:90
+    // （padding 默认 numbers.DEFAULT_SPOTLIGHT_PADDING，此处只关心 left 是否对应 t1 非 t2/t3）。
+    const anchorSelector = 'span.cd-tooltip[style*="position: fixed"]';
+    const anchorStep1 = document.querySelector(anchorSelector) as HTMLElement | null;
+    expect(anchorStep1).not.toBeNull();
+    const leftStep1 = anchorStep1?.style.left;
+
+    // t2 换一个明显不同的 rect，验证切步后锚点不会残留 t1 的 left。
+    const t2 = document.getElementById('t2') as HTMLElement;
+    t2.getBoundingClientRect = () =>
+      ({ left: 500, top: 200, width: 60, height: 20, right: 560, bottom: 220, x: 500, y: 200, toJSON() {} }) as DOMRect;
+
+    const nextBtn = Array.from(
+      document.querySelectorAll('.cd-userGuide-popup-content-buttons button'),
+    ).find((b) => b.textContent?.trim() === 'Next') as HTMLButtonElement;
+    nextBtn.click();
+    // 仅一次 tick（对齐真实场景：Popover 挂载与 spotlightRect 更新须在同一渲染批次内完成，
+    // 不额外等待 rAF/ResizeObserver 那类修复前才需要的"二次收敛"）。
+    await tick();
+
+    const anchorStep2 = document.querySelector(anchorSelector) as HTMLElement | null;
+    expect(anchorStep2).not.toBeNull();
+    const leftStep2 = anchorStep2?.style.left;
+    expect(leftStep2).not.toBe(leftStep1); // 已切到 t2 的新位置，非 t1 残留值
+    expect(leftStep2).toBe('495px'); // t2.left(500) - DEFAULT_SPOTLIGHT_PADDING(5)
+  });
 });
 
 describe('UserGuide modal', () => {
