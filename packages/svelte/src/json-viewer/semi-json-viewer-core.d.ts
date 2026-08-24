@@ -54,13 +54,16 @@ declare module '@douyinfe/semi-json-viewer-core' {
     eol?: string;
   }
 
-  /** 自定义渲染规则（仅只读模式生效）。 */
+  export type TokenRenderType = 'key' | 'value';
+
+  /** 自定义渲染规则（仅只读模式生效）。match 为函数时 value 会尽量传入解析后的原始类型。 */
   export interface CustomRenderRule {
-    match: (value: string, path?: string) => boolean;
+    match:
+      | string
+      | RegExp
+      | ((value: string | number | boolean | null, path: string, tokenType: TokenRenderType) => boolean);
     render: (value: string) => HTMLElement;
   }
-
-  export type TokenRenderType = 'key' | 'value';
 
   /** 编辑器配置。 */
   export interface JsonViewerOptions {

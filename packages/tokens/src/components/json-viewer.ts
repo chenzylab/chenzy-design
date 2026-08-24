@@ -22,14 +22,20 @@
 import type { TokenGroup } from './token-def.js';
 
 export const jsonViewerTokens = {
-  // —— 容器（对齐 Semi variables.scss：background=color-default，padding 12px/0） ——
+  // —— 容器（对齐 Semi variables.scss：background=color-default，padding 12px/0；
+  //   Semi 编辑器容器本体无 border/border-radius，故本库不设——加边框圆角是自造超集，已移除） ——
   'color-json-viewer-bg': { value: 'var(--cd-color-default)', category: 'color', label: '背景', usage: '编辑器容器背景（Semi $color-json-viewer-background = var(--semi-color-default)）' },
   'color-json-viewer-text': { value: 'var(--cd-color-text-0)', category: 'color', label: '默认文字', usage: '编辑器默认文字色（标点等未着色内容）' },
-  'radius-json-viewer': { value: 'var(--cd-border-radius-medium)', category: 'radius', label: '圆角', usage: '编辑器容器圆角' },
-  'color-json-viewer-border': { value: 'var(--cd-color-border)', category: 'color', label: '边框', usage: '编辑器容器边框色' },
-  'font-json-viewer-fontsize': { value: 'var(--cd-font-size-regular)', category: 'font', label: '字号', usage: '编辑器文本字号' },
-  'font-json-viewer-fontfamily': { value: "'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace", category: 'font', label: '字体', usage: '编辑器等宽字体' },
   'spacing-json-viewer-paddingY': { value: '12px', category: 'spacing', label: '纵向内边距', usage: '编辑器容器纵向内边距（对齐 Semi 12px）' },
+  // 内容行/行号等宽字体（对齐 Semi jsonViewer.scss &-view-line / &-line-number，二者字体栈与
+  // 字号完全相同：ui-monospace 系列栈 + 12px，仅作用于内容/行号，不施加于外层容器）。
+  'font-json-viewer-mono-fontfamily': {
+    value: "ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Monaco, 'Fira Code', Consolas, 'Liberation Mono', 'DejaVu Sans Mono', 'Courier New', monospace",
+    category: 'font',
+    label: '等宽字体',
+    usage: '内容行 / 行号等宽字体（对齐 Semi -view-line / -line-number font-family）',
+  },
+  'font-json-viewer-mono-fontsize': { value: '12px', category: 'font', label: '等宽字号', usage: '内容行 / 行号字号（对齐 Semi 12px）' },
 
   // —— JSON 语法着色（严格对齐 Semi variables.scss 色板阶梯值，rgba(--semi-X-N,1)→var(--cd-color-X-N)） ——
   'color-json-viewer-key': { value: 'var(--cd-color-red-5)', category: 'color', label: '键名', usage: 'string-key：对象键名（对齐 Semi red-5）' },
@@ -58,9 +64,9 @@ export const jsonViewerTokens = {
   'color-json-viewer-error': { value: 'var(--cd-color-danger)', category: 'color', label: '错误提示', usage: 'error：语法错误波浪线色' },
 
   // —— 自研搜索/替换工具条（Svelte 壳自渲染，内核仅提供 API；对齐 Semi 交互） ——
-  'color-json-viewer-toolbar-bg': { value: 'var(--cd-color-bg-0)', category: 'color', label: '工具条背景', usage: '搜索/替换工具条背景' },
+  'color-json-viewer-toolbar-bg': { value: 'var(--cd-color-bg-0)', category: 'color', label: '工具条背景', usage: '搜索/替换工具条背景（对齐 Semi search-bar-container = bg-0）' },
   'color-json-viewer-toolbar-border': { value: 'var(--cd-color-border)', category: 'color', label: '工具条边框', usage: '搜索/替换工具条边框' },
-  'radius-json-viewer-toolbar': { value: 'var(--cd-border-radius-small)', category: 'radius', label: '工具条圆角', usage: '搜索/替换工具条圆角' },
+  'radius-json-viewer-toolbar': { value: 'var(--cd-border-radius-small)', category: 'radius', label: '工具条圆角', usage: '搜索/替换工具条圆角（对齐 Semi search-bar-container/search-options-item = border-radius-small）' },
   'spacing-json-viewer-toolbar-gap': { value: 'var(--cd-spacing-extra-tight)', category: 'spacing', label: '工具条间距', usage: '工具条控件间距' },
   'spacing-json-viewer-toolbar-padding': { value: 'var(--cd-spacing-tight)', category: 'spacing', label: '工具条内边距', usage: '工具条内边距' },
   // 搜索选项按钮（大小写/正则/全词）——对齐 Semi jsonViewer.scss search-options-item：
@@ -69,4 +75,8 @@ export const jsonViewerTokens = {
   'color-json-viewer-search-options-item-hover': { value: 'var(--cd-color-default)', category: 'color', label: '搜索选项悬浮', usage: 'search-options-item hover 背景（Semi jsonViewer.scss:175 = var(--semi-color-default)）' },
   'color-json-viewer-search-options-item-active-text': { value: 'var(--cd-color-primary)', category: 'color', label: '搜索选项激活文字', usage: 'search-options-item-active 文字色（对齐 Semi primary）' },
   'color-json-viewer-search-options-item-active-bg': { value: 'var(--cd-color-primary-light-default)', category: 'color', label: '搜索选项激活背景', usage: 'search-options-item-active 背景（对齐 Semi primary-light-default）' },
+  // 自动补全下拉（对齐 Semi jsonViewer.scss &-complete-suggestions-container：
+  //   radius-medium + bg-3，与搜索/替换工具条的 radius-small + bg-0 不同，不可复用同一 token）。
+  'color-json-viewer-complete-bg': { value: 'var(--cd-color-bg-3)', category: 'color', label: '补全下拉背景', usage: 'complete-suggestions-container 背景（对齐 Semi bg-3）' },
+  'radius-json-viewer-complete': { value: 'var(--cd-border-radius-medium)', category: 'radius', label: '补全下拉圆角', usage: 'complete-suggestions-container 圆角（对齐 Semi border-radius-medium）' },
 } satisfies TokenGroup;
