@@ -109,9 +109,12 @@
   });
 </script>
 
-<!-- DOM 对齐 Semi：div.cd-code-highlight > pre > code。 -->
+<!-- DOM 对齐 Semi：div.cd-code-highlight > pre > code。line-numbers class 只加在 <code>
+     上（对齐 Semi highlightCode），由 Prism line-numbers 插件的 complete hook 在高亮完成后
+     自行搬到 <pre>（见 prism-line-numbers.js）；<pre> 不手动加，避免高亮完成前出现
+     只有缩进、无行号内容的过渡态，与 Semi 时序保持一致。 -->
 <div class={rootClass} style={style || undefined}
-><pre class:line-numbers={lineNumber}><code bind:this={codeEl}></code></pre></div>
+><pre><code bind:this={codeEl}></code></pre></div>
 
 <style>
   /* —— 容器 —— 对齐 Semi codeHighlight.scss：overflow:auto 只在 defaultTheme 的
