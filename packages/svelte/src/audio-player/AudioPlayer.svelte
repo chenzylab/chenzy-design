@@ -484,13 +484,19 @@
     user-select: none;
   }
 
-  .cd-audio-player :global(.cd-audio-player-control-speed-menu) {
+  /* 双类选择器（.cd-dropdown 同为该节点真实 class）令特异性追平 Dropdown 自身的
+     .cd-dropdown.svelte-hash 背景规则，不靠 !important（对齐 Semi scss 单类写法的效果，
+     Semi 因是全局 CSS 无此竞争，本库 scoped 架构下需补齐特异性）。 */
+  :global(.cd-audio-player-control-speed-menu.cd-dropdown) {
     background: var(--cd-color-audio-player-font-color-speed);
     width: var(--cd-width-audio-player-speed-menu);
   }
-  :global(.cd-audio-player-control-speed-menu-item) {
+  /* 双类选择器追平 DropdownItem 自身 .cd-dropdown-item.svelte-hash 的文字色特异性（同上）。 */
+  :global(.cd-audio-player-control-speed-menu-item.cd-dropdown-item) {
     color: var(--cd-color-audio-player-text-default);
   }
+  /* 照搬 Semi scss 原文 &-control-speed-menu-item:hover { !important }：不区分 active/非 active，
+     统一压过 DropdownItem 自身 :not(.cd-dropdown-item-active):hover 的默认极淡背景（含选中项）。 */
   :global(.cd-audio-player-control-speed-menu-item:hover) {
     background: var(--cd-color-tertiary-active) !important;
   }
