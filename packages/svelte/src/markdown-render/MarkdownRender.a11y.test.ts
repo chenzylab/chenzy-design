@@ -43,11 +43,9 @@ describe('MarkdownRender render', () => {
     expect(root.querySelector('h1')?.textContent).toContain('Title');
     expect(root.querySelector('strong')?.textContent).toBe('world');
 
-    // 链接：a→MdLink→Typography.Text link，外链自动补 rel/target。
+    // 链接：a→MdLink→Typography.Text link（严格对齐 Semi a.tsx，不自造外链 rel/target 行为）。
     const link = root.querySelector('a');
     expect(link?.getAttribute('href')).toBe('https://example.com');
-    expect(link?.getAttribute('rel')).toContain('noopener');
-    expect(link?.getAttribute('target')).toBe('_blank');
 
     // 列表：markdown 无序列表直接在根下（对齐 Semi ul,li）；用直接子 ul 限定，避免统计 Table 内部 li。
     const topUl = root.querySelector(':scope > ul');
