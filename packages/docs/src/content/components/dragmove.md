@@ -37,7 +37,7 @@ import { DragMove } from '@chenzy-design/svelte';
 
 <Notice type="primary" title="注意事项">
 
-1. DragMove 会将可拖拽的元素设置为 absolute 定位
+1. DragMove 默认会将可拖拽的元素设置为 absolute 定位；需要保留元素原有布局位置（例如居中的 Modal）时，可设置 `positionStrategy="relative"`
 2. DragMove 需要把 DOM 事件监听器应用到子元素上。Svelte 的 snippet 无法像 React 那样被 `cloneElement` 注入 ref，因此本库渲染一层包裹元素来承载事件与定位，子元素本身无需做任何透传处理——这与 Semi 要求 children 必须能透传 props/ref 的约束不同。
 3. **由此带来一条使用约定**：被强制 `absolute` 的是那层包裹元素（等价于 Semi 里的「可拖拽元素」本身），所以**初始 `top` / `left` 要写在 `<DragMove style="...">` 上，子元素保持默认静态定位**。若给子元素也加 `position: absolute`，它会脱离包裹层、使包裹层塌成 `0×0`，进而撑不起父容器、内容溢出。同理，`customMove` 回调收到的 `element` 也是这层包裹元素。
 
@@ -78,6 +78,7 @@ constrainer 设置的元素需要为 relative 定位。
 | constrainer | 返回限制可拖拽的范围的元素 | `() => HTMLElement \| 'parent'` | - |
 | customMove | 自定义拖动后的位置处理 | `(element: HTMLElement, top: number, left: number) => void` | - |
 | handler | 返回触发拖动的元素 | `() => HTMLElement` | - |
+| positionStrategy | 拖拽元素的定位策略，relative 可保留元素原有布局位置 | `'absolute' \| 'relative'` | 'absolute' |
 | onMouseDown | 鼠标按下时的回调 | `(e: MouseEvent) => void` | - |
 | onMouseMove | 鼠标移动时的回调 | `(e: MouseEvent) => void` | - |
 | onMouseUp | 鼠标抬起时的回调 | `(e: MouseEvent) => void` | - |
