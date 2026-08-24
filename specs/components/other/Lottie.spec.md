@@ -31,12 +31,24 @@
 
 ## 3. 分层实现
 
-- **core**：无。Semi foundation（`semi-foundation/lottie/foundation.ts`）极简且强依赖 `lottie-web`（浏览器），无跨框架复用价值，逻辑内联于 Svelte 层。
-- **svelte**：`Lottie.svelte` 单文件。`<script module>` 导出 `getLottie()` 与 `LottieParams` 类型。
-  - mount：动态 `import('lottie-web')` → `loadAnimation(loadParams)`，回调 `getAnimationInstance(animation)` + `getLottie(lottie)`
-  - params 变（JSON 深比较）：`destroy` 旧实例 → 重新 `loadAnimation` → 回调 `getAnimationInstance`
-  - unmount：`destroy`
-  - `params.container` 存在 → 渲染 null（用户自管容器）；否则渲染 `<div class="cd-lottie">`
+文件拆分严格对齐 Semi 的三文件结构（`semi-foundation/lottie/{foundation.ts,constants.ts}` + `semi-ui/lottie/index.tsx`）：
+
+| Semi | 本库 |
+| --- | --- |
+| `semi-foundation/lottie/foundation.ts`（`LottieFoundation`） | `packages/core/src/lottie/foundation.ts`（`createLottie`） |
+| `semi-foundation/lottie/constants.ts`（`cssClasses.PREFIX`） | `packages/core/src/lottie/constants.ts`（`LOTTIE_PREFIX`） |
+| `semi-ui/lottie/index.tsx`（渲染层） | `packages/svelte/src/lottie/Lottie.svelte` |
+
+- **core**（`packages/core/src/lottie/`）：`createLottie({ adapter })` 工厂函数（本库 core 统一用闭包工厂而非 Semi 的 class 继承，与 anchor/upload/scroll-list 等同构），逐行对齐 Semi `LottieFoundation` 的 `init`/`handleParamsUpdate`/`destroy`：
+  - `init`：`adapter.getLottie().loadAnimation(adapter.getLoadParams())`，回调 `notifyAnimationInstance` + `notifyLottie`
+  - `handleParamsUpdate`：`destroy` 旧实例 → 重新 `loadAnimation` → 回调 `notifyAnimationInstance`（不重复回调 `notifyLottie`，对齐 Semi）
+  - `destroy`：销毁当前实例
+  - DOM I/O（容器节点获取）与 `lottie-web` 包本体经 adapter 注入，core 本身不碰 DOM、不感知 SSR
+- **svelte**：`Lottie.svelte` 消费 core `createLottie`，只负责 DOM/生命周期桥接。`<script module>` 导出 `getLottie()` 与 `LottieParams` 类型。
+  - mount：动态 `import('lottie-web')`（SSR 安全，Semi 是同步静态 import）→ 注入 adapter → `foundation.init()`
+  - params 变（JSON 深比较）：`foundation.handleParamsUpdate()`
+  - unmount：`foundation.destroy()`
+  - `params.container` 存在 → 渲染 null（用户自管容器）；否则渲染 `<div class="cd-lottie">`（class 名对齐 core `LOTTIE_PREFIX`）
 - **tokens**：无。严格对齐 Semi（Semi 仅一个无样式的 `.semi-lottie` class）。
 - **locale**：无 i18n 文案。
 

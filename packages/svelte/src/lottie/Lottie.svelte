@@ -2,14 +2,16 @@
   Lottie — 严格对齐 Semi Design Lottie。在网页中展示 Lottie 动画，内部基于 lottie-web 渲染。
   相较直接用 lottie-web：无需关心动画容器的创建与销毁、无需关心动画生命周期。
 
-  镜像 Semi 逻辑（semi-foundation/lottie/foundation.ts）：
+  逻辑拆分对齐 Semi 三文件结构（semi-foundation/lottie/{foundation.ts,constants.ts} +
+  semi-ui/lottie/index.tsx）：本文件（渲染层）↔ index.tsx；core createLottie ↔
+  LottieFoundation；core LOTTIE_PREFIX ↔ constants.ts cssClasses.PREFIX。
   - mount：lottie.loadAnimation(loadParams)，回调 getAnimationInstance(animation) + getLottie(lottie)
   - params 变（深比较）：destroy 旧实例 → 重新 loadAnimation → 回调 getAnimationInstance
   - unmount：destroy
   - loadParams 默认 renderer:'svg' / loop:true / autoplay:true，被 params 覆盖
   - params.container 存在 → 渲染 null（用户自管容器）；否则渲染 <div class="cd-lottie">
-  Semi foundation 极简且强依赖 lottie-web(浏览器)，无跨框架复用价值，逻辑内联于此（不设 core headless）。
-  SSR：lottie-web 依赖 window，动态 import + onMount 加载（服务端只渲染空容器 div）。
+  Semi foundation 同步调用（假设 lottie-web 已静态 import）；本库需 SSR 安全，改为动态
+  import + onMount 加载 lottie-web 后再调用 core foundation.init（服务端只渲染空容器 div）。
   零 scss / 零 token —— 严格对齐 Semi（Semi 仅一个无样式的 .semi-lottie class）。
 -->
 <script lang="ts" module>
@@ -34,6 +36,7 @@
 
 <script lang="ts">
   import { onMount } from 'svelte';
+  import { createLottie, LOTTIE_PREFIX, type LottiePlayerLike } from '@chenzy-design/core';
 
   interface Props {
     /** 用于配置动画相关参数，透传 lottie.loadAnimation（path / animationData / renderer / loop / autoplay / container 等）。**必填**。 */
@@ -65,41 +68,36 @@
   }: Props = $props();
 
   let containerEl = $state<HTMLDivElement | null>(null);
-  let animation: AnimationItem | null = null;
-  let lottie: LottiePlayer | null = null;
+  let lottiePlayer: LottiePlayerLike | null = null;
 
   // —— loadParams：默认 svg/loop/autoplay 被用户 params 覆盖；container 缺省用组件自管的 div，
   //    用户 params.container 优先（故 container 放 spread 之后，用 ?? 兜底缺省值）。
-  //    返回 loadAnimation 的完整入参类型（已补全必填的 container）——
-  type LoadParams = Parameters<LottiePlayer['loadAnimation']>[0];
-  function loadParams(): LoadParams {
-    return {
-      renderer: 'svg',
-      loop: true,
-      autoplay: true,
-      ...params,
-      container: params.container ?? (containerEl as Element),
-    } as LoadParams;
-  }
-
-  function load(): void {
-    if (!lottie) return;
-    animation = lottie.loadAnimation(loadParams());
-    getAnimationInstance?.(animation);
-  }
+  const foundation = createLottie({
+    adapter: {
+      getLottie: () => lottiePlayer as LottiePlayerLike,
+      getLoadParams: () => ({
+        renderer: 'svg',
+        loop: true,
+        autoplay: true,
+        ...params,
+        container: params.container ?? (containerEl as Element),
+      }),
+      notifyAnimationInstance: (instance) =>
+        getAnimationInstance?.(instance as unknown as AnimationItem | null),
+      notifyLottie: (lottie) => getLottieProp?.(lottie as unknown as LottiePlayer),
+    },
+  });
 
   onMount(() => {
     let disposed = false;
     void (async () => {
-      lottie = (await import('lottie-web')).default;
+      lottiePlayer = ((await import('lottie-web')).default as unknown) as LottiePlayerLike;
       if (disposed) return;
-      load();
-      getLottieProp?.(lottie);
+      foundation.init();
     })();
     return () => {
       disposed = true;
-      animation?.destroy();
-      animation = null;
+      foundation.destroy();
     };
   });
 
@@ -114,8 +112,7 @@
     }
     if (json !== prevParamsJSON) {
       prevParamsJSON = json;
-      animation?.destroy();
-      load();
+      if (lottiePlayer) foundation.handleParamsUpdate();
     }
   });
 
@@ -128,7 +125,7 @@
     }
   }
 
-  const cls = $derived(['cd-lottie', className].filter(Boolean).join(' '));
+  const cls = $derived([LOTTIE_PREFIX, className].filter(Boolean).join(' '));
   const wrapperStyle = $derived(
     [width && `width:${width}`, height && `height:${height}`, style].filter(Boolean).join(';'),
   );

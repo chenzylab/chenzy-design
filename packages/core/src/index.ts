@@ -543,6 +543,14 @@ export {
   type VideoMarker,
 } from './video-player.js';
 export {
+  createLottie,
+  LOTTIE_PREFIX,
+  type LottieFoundation,
+  type LottieAdapter,
+  type LottieAnimationItem,
+  type LottiePlayerLike,
+} from './lottie/index.js';
+export {
   buildRange as buildTimeRange,
   to12Hour,
   meridiemOf,
