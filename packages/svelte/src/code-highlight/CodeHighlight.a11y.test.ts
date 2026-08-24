@@ -54,17 +54,23 @@ describe('CodeHighlight render', () => {
   });
 
   it('lineNumber 控制 <pre> 上的 line-numbers class', async () => {
-    // line-numbers class 加在内部 <pre> 上（对齐 Semi），非根 div。
+    // 对齐 Semi：line-numbers class 只由 CodeHighlight 加在 <code> 上；Prism line-numbers
+    // 插件的 complete hook 高亮完成后再把它从 <code> 搬到 <pre>（见 prism-line-numbers.js），
+    // 本组件模板不手动给 <pre> 加此 class。故断言需等待插件跑完（轮询 .line-numbers-rows）。
     const on = renderWithLocale(CodeHighlight, {
       props: { code: 'a;', language: 'javascript', lineNumber: true },
     });
-    await tick();
-    expect(on.container.querySelector('pre')?.classList.contains('line-numbers')).toBe(true);
+    await vi.waitFor(() => {
+      expect(on.container.querySelector('pre')?.classList.contains('line-numbers')).toBe(true);
+    });
+    expect(on.container.querySelector('code')?.className).not.toContain('line-numbers');
 
     const off = renderWithLocale(CodeHighlight, {
       props: { code: 'a;', language: 'javascript', lineNumber: false },
     });
-    await tick();
+    await vi.waitFor(() => {
+      expect(off.container.querySelectorAll('code .token').length).toBeGreaterThan(0);
+    });
     expect(off.container.querySelector('pre')?.classList.contains('line-numbers')).toBe(false);
     const code = off.container.querySelector('code');
     expect(code?.className).not.toContain('line-numbers');
