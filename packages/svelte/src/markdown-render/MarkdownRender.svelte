@@ -12,7 +12,7 @@
     a→Typography.Text link、img→div>Image+alt、table→Table、code→按 className 是否含 language-* 分流
     （有→CodeHighlight、无→span.simple-code，行内 code 与无语言围栏代码块共用同一组件）。
     不覆盖 pre 键（Semi 无此键，围栏代码块最终 DOM 是原生 <pre> 包裹 CodeHighlight/span，而非替换 pre）。
-  - token 镜像 Semi variables.scss（20 个：simpleCode/image/header1-5 margin/list color/p strong）；
+  - token 镜像 Semi variables.scss（21 个：simpleCode/image/header1-5 margin/list color/p strong）；
     标题字号/行高/颜色由 Typography 承担（Semi 也如此），故不自造这些 token。
   - 默认不渲染 raw HTML（对齐 Semi format='md' 剥离）；保留 HTML 由使用方传 rehype-raw 自负 XSS。
   - 不支持 md 正文里任意 JSX 表达式求值（Semi format='mdx' 深度能力，Svelte 无 jsx-runtime）。
