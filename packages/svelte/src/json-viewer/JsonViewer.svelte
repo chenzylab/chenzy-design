@@ -447,31 +447,28 @@
 </div>
 
 <style>
-  /* 外层容器（对齐 Semi 最外层 relative div）：只负责定位/边框/背景，
-     承载搜索栏浮层（absolute）；height/padding 落在内核挂载层（-editor）。 */
+  /* 外层容器（对齐 Semi 最外层 relative div）：只负责定位，
+     承载搜索栏浮层（absolute）；height/padding/背景落在内核挂载层（-editor）。
+     不设字体：Semi 最外层 div 继承 body 常规字体，等宽字体只作用于内容行/行号
+     （由内核自身样式与 -view-line/-line-number token 承担），外层不应统一设等宽。 */
   .cd-json-viewer {
     position: relative;
     box-sizing: border-box;
     inline-size: var(--cd-json-viewer-width, 100%);
     color: var(--cd-color-json-viewer-text);
-    font-family: var(--cd-font-json-viewer-fontfamily);
-    font-size: var(--cd-font-json-viewer-fontsize);
     /* 不设 overflow:hidden：对齐 Semi 最外层 relative div，让搜索栏浮层可溢出编辑器显示
-       （458px 宽 + 两行的搜索栏否则被裁）。边框/背景/圆角/裁剪落在内核挂载层 -editor。 */
+       （458px 宽 + 两行的搜索栏否则被裁）。 */
   }
 
   /* 内核挂载层（对齐 Semi .semi-json-viewer-background）：height=传入值 + padding:12px 0
-     （border-box）→ 内核 json-viewer-container 填充剩余内容区（height - 24）。走 token 公式。 */
+     （border-box）→ 内核 json-viewer-container 填充剩余内容区（height - 24）。走 token 公式。
+     Semi 本体无 border/border-radius/overflow 裁剪（scss 里只有 padding+background），
+     滚动由内核内部 .json-viewer-container 自身 overflow:auto 承担，此层不重复裁剪。 */
   .cd-json-viewer-editor {
     box-sizing: border-box;
     block-size: var(--cd-json-viewer-height, 400px);
     padding: var(--cd-spacing-json-viewer-paddingY) 0;
-    /* 边框/背景/圆角落在内核挂载层（视觉容器），overflow:auto 兼作圆角裁剪；
-       外层不裁，搜索栏浮层可溢出。 */
     background: var(--cd-color-json-viewer-bg);
-    border: 1px solid var(--cd-color-json-viewer-border);
-    border-radius: var(--cd-radius-json-viewer);
-    overflow: auto;
   }
 
   .cd-json-viewer-editor[data-loading='true'],
@@ -597,7 +594,8 @@
   .cd-json-viewer :global(.cd-json-viewer-keyword) {
     color: var(--cd-color-json-viewer-keyword);
   }
-  .cd-json-viewer :global(.cd-json-viewer-delimiter-colon),
+  /* 对齐 Semi：仅 delimiter-comma 单独上色，delimiter-colon 内核虽产出该 class，
+     但 Semi scss 未给其定义颜色规则，冒号继承外层默认文字色（非自造统一上色）。 */
   .cd-json-viewer :global(.cd-json-viewer-delimiter-comma) {
     color: var(--cd-color-json-viewer-punctuation);
   }
@@ -624,9 +622,16 @@
     opacity: 0.7;
     transition: opacity 0.8s;
   }
+  /* 对齐 Semi &-line-number：等宽字体 12px + 居中 + user-select:none（对齐 Semi text-align/font 全套）。 */
   .cd-json-viewer :global(.cd-json-viewer-line-number) {
+    font-family: var(--cd-font-json-viewer-mono-fontfamily);
+    font-size: var(--cd-font-json-viewer-mono-fontsize);
+    font-weight: normal;
     color: var(--cd-color-json-viewer-line-number);
     text-align: center;
+    user-select: none;
+    word-wrap: normal !important;
+    overflow-wrap: normal !important;
   }
   .cd-json-viewer :global(.cd-json-viewer-line-number-container) {
     background: var(--cd-color-json-viewer-line-number-bg);
@@ -645,8 +650,8 @@
     z-index: 1000;
   }
   .cd-json-viewer :global(.cd-json-viewer-complete-suggestions-container) {
-    border-radius: var(--cd-radius-json-viewer-toolbar);
-    background-color: var(--cd-color-json-viewer-toolbar-bg);
+    border-radius: var(--cd-radius-json-viewer-complete);
+    background-color: var(--cd-color-json-viewer-complete-bg);
     box-shadow: var(--cd-shadow-elevated);
     z-index: 1000;
     min-inline-size: 200px;
@@ -671,8 +676,17 @@
     text-decoration-thickness: 1px;
     text-underline-position: under;
   }
-  /* 容器纵向内边距（对齐 Semi paddingY 12px / paddingX 0） */
+  /* 内容行（对齐 Semi &-view-line：等宽字体 12px + 各类排版细节 + 强制换行）。 */
   .cd-json-viewer :global(.cd-json-viewer-view-line) {
+    font-family: var(--cd-font-json-viewer-mono-fontfamily);
+    font-size: var(--cd-font-json-viewer-mono-fontsize);
+    font-weight: normal;
+    font-feature-settings: 'liga' 0, 'calt' 0;
+    letter-spacing: 0;
     color: #237893;
+    /* !important 对齐 Semi：内核给 span 内联写死 white-space:pre（view.ts），
+       必须靠 !important 覆盖才能让 autoWrap 场景下的自动换行生效。 */
+    word-break: break-all !important;
+    white-space: pre-wrap !important;
   }
 </style>
