@@ -12,7 +12,7 @@
   全 token，类名前缀 cd-。
 -->
 <script lang="ts">
-  import type { Snippet } from 'svelte';
+  import type { Component, Snippet } from 'svelte';
   import { untrack } from 'svelte';
   import {
     CHAT_ALIGN,
@@ -20,6 +20,7 @@
     SHOW_SCROLL_GAP,
     SCROLL_ANIMATION_TIME,
     shouldShowBackBottom,
+    isLastChatOnGoing,
     resolveEnableUpload,
     buildSendContent,
     appendDivider,
@@ -85,6 +86,8 @@
     uploadTipProps?: Record<string, unknown>;
     /** 透传 MarkdownRender props。 */
     markdownRenderProps?: Record<string, unknown>;
+    /** 自定义 markdown 组件覆盖（对齐 Semi customMarkDownComponents），与内置 code/file/img 覆盖合并。 */
+    customMarkDownComponents?: Record<string, Component<any> | string>;
     /** 是否对用户消息中的 HTML 标签进行转义，防止被 Markdown 解析器当作 HTML 处理导致内容丢失。 */
     escapeHtml?: boolean;
     /** 输入框占位。 */
@@ -142,6 +145,7 @@
     uploadProps,
     uploadTipProps,
     markdownRenderProps,
+    customMarkDownComponents,
     escapeHtml = true,
     placeholder,
     inputBoxCls = '',
@@ -194,11 +198,50 @@
   let inner = $state<Message[]>([]);
   const currentChats = $derived(isControlled ? (chats ?? []) : inner);
 
+  // 对齐 Semi index.tsx：showStopGenerateFlag = showStopGenerate && lastChatOnGoing，
+  // 且此时联动禁用发送（disableSend），二者与 backBottomVisible 互斥显示。
+  const lastChatOnGoing = $derived(isLastChatOnGoing(currentChats));
+  const showStopGenerateFlag = $derived(showStopGenerate && lastChatOnGoing);
+
   const uploadModes = $derived(resolveEnableUpload(enableUpload));
 
   // back-bottom 显隐：专用 state，仅 scroll / resize 事件命令式写入（红线：不在 effect 回读派生做二次 set）。
   let backBottomVisible = $state(false);
   let containerEl: HTMLDivElement | null = $state(null);
+
+  // —— 拖拽上传遮罩（对齐 Semi handleDragOver/handleContainerDrop 等，挂在根节点覆盖整个组件）——
+  let uploadAreaVisible = $state(false);
+  let dragStatus = false; // 组件内部元素自身被拖拽时（原生 dragstart/dragend）不弹出上传遮罩，非响应式簿记。
+  let dropAreaEl: HTMLDivElement | null = $state(null);
+  let inputBoxApi = $state<{ insertFiles: (files: File[]) => void } | undefined>();
+
+  function handleDragOver(): void {
+    if (dragStatus) return;
+    uploadAreaVisible = true;
+  }
+  function handleDragStart(): void {
+    dragStatus = true;
+  }
+  function handleDragEnd(): void {
+    dragStatus = false;
+  }
+  function handleContainerDragOver(e: DragEvent): void {
+    e.preventDefault();
+  }
+  function handleContainerDrop(e: DragEvent): void {
+    e.preventDefault();
+    uploadAreaVisible = false;
+    const files = e.dataTransfer?.files;
+    if (files && files.length > 0) inputBoxApi?.insertFiles(Array.from(files));
+  }
+  function handleContainerDragLeave(e: DragEvent): void {
+    e.preventDefault();
+    const enterTarget = e.relatedTarget as Node | null;
+    if (dropAreaEl && enterTarget && dropAreaEl.contains(enterTarget)) return;
+    setTimeout(() => {
+      uploadAreaVisible = false;
+    });
+  }
 
   // 滚动条视觉（对齐 Semi wheelScroll）：容器恒为 overflow:scroll（预留固定轨道宽度，
   // 避免内容区域宽度随「有无滚动条」跳动——hint/消息气泡的可用宽度需要稳定），但初始
@@ -271,6 +314,15 @@
         updateBackBottom();
       });
     }
+  });
+
+  // 容器尺寸变化时重新计算 backBottom 显隐（对齐 Semi ResizeObserver + handleScrollContainerResize）。
+  $effect(() => {
+    const el = containerEl;
+    if (!el) return;
+    const observer = new ResizeObserver(() => updateBackBottom());
+    observer.observe(el);
+    return () => observer.disconnect();
   });
 
   // UploadFileItem → core ChatAttachment（字段名已同构对齐 Semi：fileInstance/size 等）。
@@ -356,8 +408,28 @@
 </script>
 
 <!-- DOM 对齐 Semi：.cd-chat > .cd-chat-inner > .cd-chat-content > .cd-chat-container；
-     -action 容器承载 backBottom/stop（Button + 具名图标）。 -->
-<div class="cd-chat {className}" {style}>
+     -action 容器承载 backBottom/stop（Button + 具名图标）。拖拽遮罩 -dropArea 挂在根节点，
+     覆盖整个组件（对齐 Semi index.tsx，非仅输入区）。 -->
+<div
+  class="cd-chat {className}"
+  {style}
+  role="presentation"
+  ondragover={uploadModes.dragUpload ? handleDragOver : undefined}
+  ondragstart={uploadModes.dragUpload ? handleDragStart : undefined}
+  ondragend={uploadModes.dragUpload ? handleDragEnd : undefined}
+>
+  {#if uploadModes.dragUpload && uploadAreaVisible}
+    <div
+      bind:this={dropAreaEl}
+      class="cd-chat-dropArea"
+      role="presentation"
+      ondragover={handleContainerDragOver}
+      ondrop={handleContainerDrop}
+      ondragleave={handleContainerDragLeave}
+    >
+      <span class="cd-chat-dropArea-text">{loc().t('Chat.dropAreaText')}</span>
+    </div>
+  {/if}
   <div class="cd-chat-inner">
     {#if topSlot}
       <div class="cd-chat-topSlot">{@render topSlot()}</div>
@@ -384,6 +456,7 @@
             {toast}
             lastChat={i === currentChats.length - 1}
             {markdownRenderProps}
+            {customMarkDownComponents}
             {escapeHtml}
             onMessageCopy={(m) => onMessageCopy?.(m)}
             onMessageDelete={doDelete}
@@ -413,7 +486,7 @@
 
       <!-- 回到底部 / 停止生成悬浮按钮（对齐 Semi -action，Button + 具名图标） -->
       <div class="cd-chat-action">
-        {#if backBottomVisible && !showStopGenerate}
+        {#if backBottomVisible && !showStopGenerateFlag}
           <Button
             class="cd-chat-action-content cd-chat-action-backBottom"
             theme="light"
@@ -424,7 +497,7 @@
             icon={backBottomIcon}
           />
         {/if}
-        {#if showStopGenerate}
+        {#if showStopGenerateFlag}
           <Button
             class="cd-chat-action-content cd-chat-action-stop"
             theme="light"
@@ -443,10 +516,12 @@
     {/if}
 
     <InputBox
+      bind:this={inputBoxApi}
       {sendHotKey}
       {placeholder}
       {showClearContext}
       {canSend}
+      disableSend={showStopGenerateFlag}
       clickUpload={uploadModes.clickUpload}
       pasteUpload={uploadModes.pasteUpload}
       dragUpload={uploadModes.dragUpload}
@@ -462,8 +537,8 @@
   </div>
 </div>
 
-{#snippet backBottomIcon()}<IconChevronDown />{/snippet}
-{#snippet stopIcon()}<IconDisc />{/snippet}
+{#snippet backBottomIcon()}<IconChevronDown size="extra-large" />{/snippet}
+{#snippet stopIcon()}<IconDisc size="extra-large" />{/snippet}
 
 <style>
   /* —— 根（对齐 Semi .semi-chat：paddingY + max-width + flex column） —— */
@@ -482,6 +557,25 @@
     display: flex;
     flex-direction: column;
     height: 100%;
+  }
+
+  /* —— dropArea 拖拽遮罩（对齐 Semi -dropArea：覆盖整个根节点） —— */
+  .cd-chat-dropArea {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: var(--cd-chat-dropArea-bg);
+    z-index: var(--cd-chat-dropArea-z);
+    border: var(--cd-chat-dropArea-border-width) dotted var(--cd-chat-dropArea-border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--cd-chat-dropArea-radius);
+  }
+  .cd-chat-dropArea-text {
+    font-size: var(--cd-chat-dropArea-text-font-size);
   }
 
   /* —— 内容滚动区（对齐 Semi -content > -container） —— */

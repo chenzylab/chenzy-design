@@ -158,6 +158,19 @@ export function shouldShowBackBottom(
 }
 
 /**
+ * 最后一条消息是否仍在生成中（对齐 Semi index.tsx lastChatOnGoing）。
+ * status 为 loading/incomplete 时视为进行中。
+ */
+export function isLastChatOnGoing(chats: Message[]): boolean {
+  const lastChat = chats.length > 0 ? chats[chats.length - 1] : undefined;
+  return Boolean(
+    lastChat?.status &&
+      (lastChat.status === MESSAGE_STATUS.LOADING ||
+        lastChat.status === MESSAGE_STATUS.INCOMPLETE),
+  );
+}
+
+/**
  * enableUpload 三态归一（对齐 Semi getUploadProps）。
  * - boolean → 三态同值。
  * - 对象 → 缺省字段各默认 true。

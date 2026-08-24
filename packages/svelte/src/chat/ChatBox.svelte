@@ -5,7 +5,7 @@
   divider 消息渲染分割线（renderDivider 可覆盖）；renderFullChatBox 整块覆盖（提供拆分节点）。
 -->
 <script lang="ts">
-  import type { Snippet } from 'svelte';
+  import type { Component, Snippet } from 'svelte';
   import {
     CHAT_ROLE,
     CHAT_ALIGN,
@@ -43,6 +43,8 @@
     toast?: ToastHookApi | undefined;
     lastChat?: boolean;
     markdownRenderProps?: Record<string, unknown> | undefined;
+    /** 自定义 markdown 组件覆盖（对齐 Semi customMarkDownComponents）。 */
+    customMarkDownComponents?: Record<string, Component<any> | string> | undefined;
     /** 是否转义用户消息中的 HTML 标签（对齐 Semi escapeHtml）。 */
     escapeHtml?: boolean;
     onMessageCopy?: ((message: Message) => void) | undefined;
@@ -67,6 +69,7 @@
     toast,
     lastChat = false,
     markdownRenderProps,
+    customMarkDownComponents,
     escapeHtml = true,
     onMessageCopy,
     onMessageDelete,
@@ -99,7 +102,7 @@
   // 保留布局占位、仅视觉隐藏，非 display:none）。
   const continueSend = $derived(message.role === previousMessage?.role);
 
-  const title = $derived(role?.name ?? message.name ?? message.role ?? '');
+  const title = $derived(role?.name ?? '');
 
   // 供 action 复制用的纯文本（与 content 内部归一一致）。
   const contentText = $derived.by(() => {
@@ -154,6 +157,7 @@
     {isError}
     {showBubble}
     {markdownRenderProps}
+    {customMarkDownComponents}
     {escapeHtml}
     {renderChatBoxContent}
   />

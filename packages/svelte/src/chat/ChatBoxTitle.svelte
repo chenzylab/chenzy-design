@@ -24,9 +24,7 @@
 {/if}
 
 {#snippet defaultTitle()}
-  {#if title}
-    <div class="cd-chat-chatBox-title">{title}</div>
-  {/if}
+  <span class="cd-chat-chatBox-title">{title}</span>
 {/snippet}
 
 <style>

@@ -5,7 +5,7 @@
   renderChatBoxContent 可覆盖（提供 defaultContent 供包裹）。
 -->
 <script lang="ts">
-  import type { Snippet } from 'svelte';
+  import type { Component, Snippet } from 'svelte';
   import {
     MESSAGE_STATUS,
     escapeHtmlInMarkdown,
@@ -27,6 +27,8 @@
     isError: boolean;
     showBubble: boolean;
     markdownRenderProps?: Record<string, unknown> | undefined;
+    /** 自定义 markdown 组件覆盖（对齐 Semi customMarkDownComponents），与内置 code/file/img 覆盖合并。 */
+    customMarkDownComponents?: Record<string, Component<any> | string> | undefined;
     renderChatBoxContent?: Snippet<[RenderContentProps]> | undefined;
     /** 是否转义用户消息中的 HTML 标签（对齐 Semi escapeHtml，仅作用于 user 角色）。 */
     escapeHtml?: boolean;
@@ -40,9 +42,17 @@
     isError,
     showBubble,
     markdownRenderProps,
+    customMarkDownComponents,
     renderChatBoxContent,
     escapeHtml = true,
   }: Props = $props();
+
+  const markdownComponents = $derived({
+    code: ChatCode,
+    file: FileAttachment,
+    img: ImageAttachment,
+    ...customMarkDownComponents,
+  });
 
   // 对齐 Semi chatBoxContent：仅 user 角色的消息做转义，助手输出的 markdown 原样渲染。
   const shouldEscapeHtml = $derived(escapeHtml && isUser);
@@ -97,13 +107,9 @@
       </div>
     {:else}
       {#if contentText}
-        <!-- 代码块用 chat 专属 ChatCode 覆盖（深色 topSlot + 语言标签 + 复制，对齐 Semi chat/code.tsx 挂 code 键）。 -->
-        <MarkdownRender
-          raw={contentText}
-          format="md"
-          components={{ code: ChatCode }}
-          {...markdownRenderProps}
-        />
+        <!-- 代码块用 chat 专属 ChatCode 覆盖（深色 topSlot + 语言标签 + 复制，对齐 Semi chat/code.tsx 挂 code 键）；
+             markdown 正文内联的 <file> 自定义标签、img 语法分别对齐 Semi 挂 SemiFile/img 键，走 chat 专属附件渲染。 -->
+        <MarkdownRender raw={contentText} format="md" components={markdownComponents} {...markdownRenderProps} />
       {/if}
       {#each contentAttachments as att, i (i)}
         {#if att.type === 'image_url'}

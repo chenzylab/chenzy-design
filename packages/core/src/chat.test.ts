@@ -6,6 +6,7 @@ import {
   SHOW_SCROLL_GAP,
   SCROLL_ANIMATION_TIME,
   shouldShowBackBottom,
+  isLastChatOnGoing,
   resolveEnableUpload,
   shouldSendOnEnter,
   isImageAttachment,
@@ -46,6 +47,32 @@ describe('shouldShowBackBottom', () => {
   });
   it('boundary: one px beyond gap → visible', () => {
     expect(shouldShowBackBottom(1000, 849, 50)).toBe(true);
+  });
+});
+
+describe('isLastChatOnGoing', () => {
+  it('empty chats → false', () => {
+    expect(isLastChatOnGoing([])).toBe(false);
+  });
+  it('last chat loading → true', () => {
+    expect(isLastChatOnGoing([{ status: MESSAGE_STATUS.LOADING }])).toBe(true);
+  });
+  it('last chat incomplete → true', () => {
+    expect(isLastChatOnGoing([{ status: MESSAGE_STATUS.INCOMPLETE }])).toBe(true);
+  });
+  it('last chat complete → false', () => {
+    expect(isLastChatOnGoing([{ status: MESSAGE_STATUS.COMPLETE }])).toBe(false);
+  });
+  it('last chat error → false', () => {
+    expect(isLastChatOnGoing([{ status: MESSAGE_STATUS.ERROR }])).toBe(false);
+  });
+  it('last chat without status → false', () => {
+    expect(isLastChatOnGoing([{ role: CHAT_ROLE.USER }])).toBe(false);
+  });
+  it('only the last message matters', () => {
+    expect(
+      isLastChatOnGoing([{ status: MESSAGE_STATUS.LOADING }, { status: MESSAGE_STATUS.COMPLETE }]),
+    ).toBe(false);
   });
 });
 
