@@ -118,8 +118,7 @@
     onclick={disabled ? undefined : (e) => handleClick(e, e.currentTarget as HTMLElement)}
     onkeydown={disabled ? undefined : (e) => handleKeydown(e, e.currentTarget as HTMLElement)}
     onmousemove={disabled ? undefined : (e) => handleHover(e as MouseEvent & { currentTarget: HTMLElement })}
-  >
-    {#if allowHalf && !isEmpty}
+  >{#if allowHalf && !isEmpty}
       <div
         bind:this={firstStarEl}
         class="{prefixCls}-first cd-rating-no-focus"
@@ -145,8 +144,7 @@
           <IconStar size={iconSize} style="display:block" aria-hidden="true" />
         {/if}
       </div>
-    {/if}
-    <div
+    {/if}<div
       bind:this={secondStarEl}
       class="{prefixCls}-second cd-rating-no-focus"
       data-star="second"
@@ -161,8 +159,7 @@
       tabindex={!disabled && (value === index + 1 || (isEmpty && value === 0)) ? 0 : -1}
       onfocus={isEmpty && !disabled ? onFocus : undefined}
       onblur={isEmpty && !disabled ? onBlur : undefined}
-    >
-      {#if isEmpty}
+    >{#if isEmpty}
         <!-- 空项不渲染可见内容，仅作 0 分焦点/radio 停靠点 -->
       {:else if typeof character === 'string'}
         <span class="cd-rating-char">{character}</span>
