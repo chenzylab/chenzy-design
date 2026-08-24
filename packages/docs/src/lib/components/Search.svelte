@@ -27,11 +27,19 @@
   // hover 时动态设 closable=true 才显示 ×（纯 prop 驱动，无 :global 改组件内部）。
   let hoveredHistory = $state<string | null>(null);
 
-  // 快捷键修饰键：Mac 用 Meta(⌘)，其余平台用 Control。HotKeys 严格区分 Meta/Ctrl（对齐 Semi），
-  // 故按平台选一个渲染；HotKeys 自动把 Meta→⌘、Control→Ctrl 按平台显示。
+  // 快捷键修饰键：Mac 用 Meta，其余平台用 Control。HotKeys 严格区分 Meta/Ctrl（对齐 Semi），
+  // 故按平台选一个传给 hotKeys 做事件匹配。HotKeys 不做平台符号转换（对齐 Semi：组件只原样
+  // 渲染 content ?? hotKeys，展示文案由消费方自己决定），故另传 content 显示 ⌘ / Ctrl。
+  // SSR 阶段 navigator 不可用，真实平台要等 hydration 后才能判断；若在 SSR 就先渲染 Control
+  // 兜底，会在挂载瞬间跳变成 ⌘（Mac 用户可见闪烁）。故提示节点延后到 mounted 才挂载。
+  let mounted = $state(false);
+  $effect(() => {
+    mounted = true;
+  });
   const modifierKey = $derived<'Meta' | 'Control'>(
-    browser && /Mac|iPhone|iPad/.test(navigator.platform) ? 'Meta' : 'Control',
+    mounted && /Mac|iPhone|iPad/.test(navigator.platform) ? 'Meta' : 'Control',
   );
+  const modifierLabel = $derived(modifierKey === 'Meta' ? '⌘' : 'Ctrl');
 
   // 组件元信息查表（lowercase name → 驼峰 displayName / 分类 / 标题）：
   // 最近浏览用它渲染彩色图标与本地化名称。
@@ -244,15 +252,21 @@
     </svg>
     <span class="search-label">{t('nav.search', lang)}</span>
   </button>
-  <!-- 快捷键提示 + 监听合一：HotKeys 渲染键位提示（Meta→⌘ / Control→Ctrl 按平台）并全局监听，
-       命中即打开弹窗。preventDefault 拦截浏览器默认；用组件自带 style prop 绝对定位到触发器右侧
-       （HotKeys 与触发器同处 position:relative 的 .search-wrap），pointer-events:none 让点击穿透到触发器。 -->
-  <HotKeys
-    hotKeys={[modifierKey, 'K']}
-    preventDefault
-    onHotKey={() => (open = true)}
-    style="position: absolute; top: 50%; right: 10px; transform: translateY(-50%); pointer-events: none;"
-  />
+  <!-- 快捷键提示 + 监听合一：hotKeys 传语义键名做事件匹配，content 单独传展示文案
+       （⌘ / Ctrl，对齐 Semi：组件不做平台符号转换，由消费方决定 content）。命中即打开弹窗。
+       preventDefault 拦截浏览器默认；用组件自带 style prop 绝对定位到触发器右侧
+       （HotKeys 与触发器同处 position:relative 的 .search-wrap），pointer-events:none 让点击穿透到触发器。
+       延后到 mounted 才挂载：SSR 阶段无法判断真实平台，若先渲染 Control 兜底再于客户端跳变成
+       ⌘，Mac 用户会看到一次可见闪烁；延后挂载以牺牲毫秒级监听空窗换取零跳变。 -->
+  {#if mounted}
+    <HotKeys
+      hotKeys={[modifierKey, 'K']}
+      content={[modifierLabel, 'K']}
+      preventDefault
+      onHotKey={() => (open = true)}
+      style="position: absolute; top: 50%; right: 10px; transform: translateY(-50%); pointer-events: none;"
+    />
+  {/if}
   <!-- 弹窗外壳复用库内 Modal（自带遮罩/点遮罩关闭/Esc 关闭/portal/焦点管理）。
        header/footer 置 null、closable=false：无标题栏、无底部按钮、无右上角关闭按钮（对齐搜索面板）。 -->
   <Modal
