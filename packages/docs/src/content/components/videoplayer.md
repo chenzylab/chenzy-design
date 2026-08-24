@@ -133,7 +133,7 @@ import { VideoPlayer } from '@chenzy-design/svelte';
 | onRateChange | 切换速率回调 | `(rate: number) => void` | - |
 | onRouteChange | 切换线路回调 | `(route: string) => void` | - |
 | onVolumeChange | 调整音量回调 | `(volume: number) => void` | - |
-| playbackRateList | 速率列表，默认展示 6 种播放速率，分别为 0.5、0.75、1.0、1.25、1.5 和 2.0 | `Array<{ label: string; value: number }>` | - |
+| playbackRateList | 速率列表，默认展示 5 种播放速率，分别为 0.75、1.0、1.25、1.5 和 2.0 | `Array<{ label: string; value: number }>` | - |
 | poster | 封面图 | string | - |
 | qualityList | 清晰度列表 | `Array<{ label: string; value: string }>` | - |
 | routeList | 线路列表 | `Array<{ label: string; value: string }>` | - |

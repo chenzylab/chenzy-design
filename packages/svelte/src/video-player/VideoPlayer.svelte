@@ -746,13 +746,16 @@
     text-align: center;
   }
 
-  /* 弹层菜单（Dropdown className）+ 项 hover/active。 */
-  :global(.cd-videoPlayer-controls-popup-menu) {
+  /* 弹层菜单（Dropdown className）+ 项 hover/active。
+     双类选择器追平 Dropdown/DropdownItem 自身 scoped 规则的特异性（单类 :global() 会被
+     .cd-dropdown.svelte-xxx / .cd-dropdown-item.svelte-xxx 稳定盖过，非 !important 不可解——
+     故直接用双类组合追平，同 audio-player 倍速菜单先例）。 */
+  :global(.cd-videoPlayer-controls-popup-menu.cd-dropdown) {
     width: var(--cd-width-videoPlayer-controls-popup-default);
     background-color: var(--cd-color-videoPlayer-controls-item-popup-bg-default);
     border-radius: var(--cd-radius-videoPlayer-controls-popup);
   }
-  :global(.cd-videoPlayer-controls-popup-menu-item) {
+  :global(.cd-videoPlayer-controls-popup-menu-item.cd-dropdown-item) {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -762,7 +765,7 @@
     color: var(--cd-color-videoPlayer-controls-text);
     font-size: var(--cd-font-videoPlayer-controls-item-fontSize);
   }
-  :global(.cd-videoPlayer-controls-popup-menu-item:hover) {
+  :global(.cd-videoPlayer-controls-popup-menu-item.cd-dropdown-item:hover) {
     background-color: var(--cd-color-videoPlayer-controls-item-popup-bg-hover) !important;
   }
   /* 选中态（对齐 Semi .semi-dropdown-item-active 覆盖，写法对齐 NavPopupNode 同类先例）。 */
