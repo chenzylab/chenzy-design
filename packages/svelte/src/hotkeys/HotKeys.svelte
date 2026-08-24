@@ -106,13 +106,12 @@
     white-space: nowrap;
     vertical-align: bottom;
   }
-  /* 键位块（对齐 Semi -content：12px/radius 2px/height 20px/padding 2px 8px/fill-0 底 text-2 字） */
+  /* 键位块（对齐 Semi -content：12px/radius 2px/height 20px/padding 2px 8px/fill-0 底 text-2 字，
+     display 不声明——保留 span 默认 inline，对齐 Semi 未设 display） */
   .cd-hotKeys :global(.cd-hotKeys-content) {
     font-size: var(--cd-font-size-small);
     border-radius: var(--cd-radius-hotkeys);
     height: var(--cd-height-hotkeys);
-    display: inline-flex;
-    align-items: center;
     padding: var(--cd-spacing-hotkeys-paddingY) var(--cd-spacing-hotkeys-paddingX);
     background: var(--cd-color-hotkeys-bg);
     color: var(--cd-color-hotkeys-text);
