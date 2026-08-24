@@ -29,6 +29,7 @@ DragMove 包裹一个子元素，使其可被拖拽在页面/约束容器内自�
 | --- | --- | --- | --- |
 | `handler` | `() => HTMLElement` | — | 拖拽触发元素（缺省为整个被包裹子元素）。返回把手 DOM。 |
 | `constrainer` | `() => HTMLElement \| 'parent'` | — | 移动约束区。`'parent'`=父元素，或返回具体容器 DOM；缺省不约束（视口）。 |
+| `positionStrategy` | `'absolute' \| 'relative'` | `'absolute'` | 拖拽元素的定位读写策略（对齐 Semi）。`'absolute'` 强制 `position:absolute`，以 offsetLeft/offsetTop 为基准；`'relative'` 保留元素原始文档流位置（`position:relative`），拖拽在其上叠加偏移——用于需要保留原有布局位置的场景（如居中的 Modal），避免首次拖拽跳走。 |
 | `allowMove` | `(e, element) => boolean` | — | 谓词：本次是否允许拖拽（如点在特定区域才允许）。 |
 | `customMove` | `(el: HTMLElement, top: number, left: number) => void` | — | 自定义位置应用（缺省组件直接写 `el.style.top/left`）。 |
 | `allowInputDrag` | `boolean` | `false` | 是否允许从 input/textarea 等表单元素上发起拖拽（默认 false，避免干扰文本选择）。 |
