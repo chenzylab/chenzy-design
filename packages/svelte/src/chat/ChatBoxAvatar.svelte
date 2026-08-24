@@ -17,7 +17,7 @@
     renderChatBoxAvatar?: Snippet<[RenderAvatarProps]> | undefined;
   }
 
-  let { message, role, title, continueSend = false, renderChatBoxAvatar }: Props = $props();
+  let { message, role, continueSend = false, renderChatBoxAvatar }: Props = $props();
 </script>
 
 {#if renderChatBoxAvatar}
@@ -27,16 +27,20 @@
 {/if}
 
 {#snippet defaultAvatar()}
-  {@const avatarSrc = typeof role?.avatar === 'string' ? role.avatar : ''}
-  {@const avatarStyle =
-    role?.color && typeof role.avatar !== 'string' ? `background:${role.color};` : ''}
-  <Avatar
-    class={continueSend ? 'cd-chat-chatBox-avatar cd-chat-chatBox-avatar-hidden' : 'cd-chat-chatBox-avatar'}
-    size="extra-small"
-    src={avatarSrc}
-    alt={title}
-    style={avatarStyle}
-  >
-    {(title || '?').slice(0, 1).toUpperCase()}
-  </Avatar>
+  {@const isAvatarString = typeof role?.avatar === 'string'}
+  {@const avatarStyle = role?.color && !isAvatarString ? `background:${role.color};` : ''}
+  {@const avatarClass =
+    continueSend ? 'cd-chat-chatBox-avatar cd-chat-chatBox-avatar-hidden' : 'cd-chat-chatBox-avatar'}
+  {#if !isAvatarString && role?.avatar}
+    <Avatar class={avatarClass} size="extra-small" style={avatarStyle}>
+      {@render (role.avatar as Snippet)()}
+    </Avatar>
+  {:else}
+    <Avatar
+      class={avatarClass}
+      size="extra-small"
+      src={isAvatarString ? (role?.avatar as string) : ''}
+      style={avatarStyle}
+    />
+  {/if}
 {/snippet}

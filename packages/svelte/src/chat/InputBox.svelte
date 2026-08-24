@@ -6,7 +6,9 @@
   按钮用本库 Button + 具名图标（对齐 Semi）：clear=IconDeleteStroked、upload=IconChainStroked、
   send=IconArrowUp(旋转 45deg)。textarea 用本库 TextArea（autosize）。
   - sendHotKey 走 core.shouldSendOnEnter。enableUpload 三态由父级归一透传。
-  - disableSend 对齐 Semi getDisableSend + canSend。拖拽上传整容器遮罩（dropArea）。
+  - disableSend 对齐 Semi getDisableSend + canSend。
+  拖拽上传遮罩对齐 Semi 挂在 Chat 根节点（覆盖整个组件，非仅输入区）：本组件只导出
+  insertFiles() 供 Chat.svelte 在 drop 时调用底层 Upload。
   自定义整块渲染走 renderInputArea snippet。
 -->
 <script lang="ts">
@@ -29,8 +31,8 @@
     disableSend?: boolean;
     canSend?: boolean | undefined;
     clickUpload?: boolean;
-    pasteUpload?: boolean;
     dragUpload?: boolean;
+    pasteUpload?: boolean;
     uploadProps?: Record<string, unknown> | undefined;
     /** 上传按钮 Tooltip 提示（对齐 Semi uploadTipProps）。 */
     uploadTipProps?: Record<string, unknown> | undefined;
@@ -49,8 +51,8 @@
     disableSend = false,
     canSend,
     clickUpload = true,
-    pasteUpload = true,
     dragUpload = true,
+    pasteUpload = true,
     uploadProps,
     uploadTipProps,
     onSend,
@@ -65,9 +67,13 @@
 
   let content = $state('');
   let attachment = $state<UploadFileItem[]>([]);
-  let dragActive = $state(false);
   let uploadApi = $state<{ insert: (files: File[], index?: number) => void } | undefined>();
   let textareaApi = $state<{ focus: () => void } | undefined>();
+
+  // 供 Chat.svelte 根节点级别拖拽遮罩 drop 时调用（对齐 Semi manualUpload → uploadRef.current.insert）。
+  export function insertFiles(files: File[]): void {
+    uploadApi?.insert(files);
+  }
 
   // 点击输入区容器空白处聚焦文本框（对齐 Semi InputBox.onClick，挂在 -inner 上）。
   function focusInput(): void {
@@ -119,35 +125,6 @@
 
   function handleClear(): void {
     onClearContext?.();
-  }
-
-  // —— 拖拽上传（对齐 Semi handleContainerDragOver/Drop/DragLeave）——
-  let dragDepth = 0;
-  function handleDragEnter(e: DragEvent): void {
-    if (!dragUpload) return;
-    if (!e.dataTransfer?.types?.includes('Files')) return;
-    e.preventDefault();
-    dragDepth += 1;
-    dragActive = true;
-  }
-  function handleDragOver(e: DragEvent): void {
-    if (!dragUpload) return;
-    if (!e.dataTransfer?.types?.includes('Files')) return;
-    e.preventDefault();
-  }
-  function handleDragLeave(e: DragEvent): void {
-    if (!dragUpload) return;
-    e.preventDefault();
-    dragDepth = Math.max(0, dragDepth - 1);
-    if (dragDepth === 0) dragActive = false;
-  }
-  function handleDrop(e: DragEvent): void {
-    if (!dragUpload) return;
-    e.preventDefault();
-    dragDepth = 0;
-    dragActive = false;
-    const files = e.dataTransfer?.files;
-    if (files && files.length > 0) uploadApi?.insert(Array.from(files));
   }
 
   // 严格对齐 Semi：placeholder 原样透传，**无内置兜底文案**
@@ -259,23 +236,7 @@
 {#snippet sendIcon()}<span class="cd-chat-inputBox-sendButton-icon"><IconArrowUp size="large" /></span>{/snippet}
 
 {#snippet defaultNode()}
-  <div
-    class="cd-chat-inputBox {className}"
-    class:cd-chat-inputBox-drag-active={dragActive}
-    {style}
-    role="group"
-    ondragenter={handleDragEnter}
-    ondragover={handleDragOver}
-    ondragleave={handleDragLeave}
-    ondrop={handleDrop}
-  >
-    {#if dragUpload && dragActive}
-      <div class="cd-chat-dropArea" aria-hidden="true">
-        <!-- 对齐 Semi：拖拽遮罩用专用 dropAreaText（「将文件放到这里」），
-             原先误用 Chat.upload（那是上传按钮的 aria-label「上传附件」）。 -->
-        <span class="cd-chat-dropArea-text">{loc().t('Chat.dropAreaText')}</span>
-      </div>
-    {/if}
+  <div class="cd-chat-inputBox {className}" {style} role="group">
     <!-- 点击空白处聚焦输入框是辅助行为，非必需交互路径（真正可交互元素是内部的按钮/文本框），
          role=presentation 表明此 div 不承担独立的可交互语义（对齐 Semi InputBox.onClick）。 -->
     <div class="cd-chat-inputBox-inner" role="presentation" onclick={focusInput}>
@@ -292,7 +253,6 @@
 <style>
   /* —— inputBox（对齐 Semi .semi-chat-inputBox paddingX/Y） —— */
   .cd-chat-inputBox {
-    position: relative;
     padding-left: var(--cd-chat-inputBox-paddingX);
     padding-right: var(--cd-chat-inputBox-paddingX);
     padding-top: var(--cd-chat-inputBox-paddingTop);
@@ -387,26 +347,6 @@
   .cd-chat-inputBox-sendButton-icon {
     display: inline-flex;
     transform: rotate(45deg);
-  }
-
-  /* —— dropArea 拖拽遮罩（对齐 Semi -dropArea） —— */
-  .cd-chat-dropArea {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: var(--cd-chat-dropArea-bg);
-    z-index: var(--cd-chat-dropArea-z);
-    border: var(--cd-chat-dropArea-border-width) dotted var(--cd-chat-dropArea-border);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: var(--cd-chat-dropArea-radius);
-    pointer-events: none;
-  }
-  .cd-chat-dropArea-text {
-    font-size: var(--cd-chat-dropArea-text-font-size);
   }
 
   /* —— RTL（对齐 Semi chat/rtl.scss）——

@@ -572,6 +572,7 @@ export {
   SHOW_SCROLL_GAP,
   SCROLL_ANIMATION_TIME,
   shouldShowBackBottom,
+  isLastChatOnGoing,
   resolveEnableUpload,
   shouldSendOnEnter,
   isImageAttachment,

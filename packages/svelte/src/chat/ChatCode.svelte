@@ -66,8 +66,7 @@
           </button>
         {/if}
       </span>
-    </div>
-    <Code {...(node ? { node } : {})} />
+    </div><Code {...(node ? { node } : {})} />
   </div>
 {:else}
   <Code {...(node ? { node } : {})} />
