@@ -12,7 +12,9 @@ import {
   getAttachmentType,
   getContentType,
   skillLabel,
+  findSkillSlotInString,
   getSkillSlotHTML,
+  getCustomSlotAttribute,
   getSelectSlotHTML,
   getInputSlotHTML,
   AI_CHAT_INPUT_ZERO_WIDTH as ZW,
@@ -84,19 +86,16 @@ describe('ai-chat-input · buildMessageContent', () => {
 });
 
 describe('ai-chat-input · transformDocToContents', () => {
-  it('段落文本 → text content，空段丢弃', () => {
+  it('多段落合并为一个 text block，段落间插入换行（对齐 Semi transformJSONResult）', () => {
     const doc = {
       type: 'doc',
       content: [
         { type: 'paragraph', content: [{ type: 'text', text: '你好' }] },
-        { type: 'paragraph' }, // 空段
+        { type: 'paragraph' }, // 空段：仍产出一个 \n
         { type: 'paragraph', content: [{ type: 'text', text: 'world' }] },
       ],
     };
-    expect(transformDocToContents(doc)).toEqual([
-      { type: 'text', text: '你好' },
-      { type: 'text', text: 'world' },
-    ]);
+    expect(transformDocToContents(doc)).toEqual([{ type: 'text', text: '你好\n\nworld' }]);
   });
   it('hardBreak → 换行；嵌套 marks 文本连接', () => {
     const doc = {
@@ -110,16 +109,16 @@ describe('ai-chat-input · transformDocToContents', () => {
     };
     expect(transformDocToContents(doc)).toEqual([{ type: 'text', text: 'a\nb' }]);
   });
-  it('transformer 覆盖特定节点转换', () => {
+  it('transformer 为内置未覆盖的节点类型兜底转换（对齐 Semi：内置 transformMap 优先）', () => {
     const doc = {
       type: 'doc',
-      content: [{ type: 'inputSlot', attrs: { value: 'x' } }],
+      content: [{ type: 'mention', attrs: { id: 'x' } }],
     };
     const transformer = new Map<string, (n: unknown) => AIChatInputContent>([
-      ['inputSlot', (n) => ({ type: 'slot', raw: n })],
+      ['mention', (n) => ({ type: 'slot', raw: n })],
     ]);
     expect(transformDocToContents(doc, transformer)).toEqual([
-      { type: 'slot', raw: { type: 'inputSlot', attrs: { value: 'x' } } },
+      { type: 'slot', raw: { type: 'mention', attrs: { id: 'x' } } },
     ]);
   });
   it('非法/空 JSON → 空数组', () => {
@@ -266,6 +265,41 @@ describe('ai-chat-input · getSkillSlotHTML', () => {
   });
 });
 
+describe('ai-chat-input · findSkillSlotInString', () => {
+  it('从 HTML 反解析 skillSlot（对齐 Semi findSkillSlotInString）', () => {
+    const html = '<p><skill-slot data-label="总结" data-value="summarize" data-template="true"></skill-slot>正文</p>';
+    expect(findSkillSlotInString(html)).toEqual({
+      label: '总结',
+      value: 'summarize',
+      hasTemplate: true,
+    });
+  });
+  it('无 data-value 视为无效，返回 undefined', () => {
+    expect(findSkillSlotInString('<skill-slot data-label="总结"></skill-slot>')).toBeUndefined();
+  });
+  it('无 skill-slot 标签返回 undefined', () => {
+    expect(findSkillSlotInString('<p>纯文本</p>')).toBeUndefined();
+  });
+  it('缺 data-template 时结果里不带 hasTemplate 字段', () => {
+    expect(findSkillSlotInString('<skill-slot data-value="sk"></skill-slot>')).toEqual({
+      value: 'sk',
+    });
+  });
+});
+
+describe('ai-chat-input · getCustomSlotAttribute', () => {
+  it('默认值 true，parseHTML 恒真（对齐 Semi getCustomSlotAttribute）', () => {
+    const attr = getCustomSlotAttribute();
+    expect(attr.default).toBe(true);
+    expect(attr.parseHTML(null)).toBe(true);
+  });
+  it('renderHTML 依 isCustomSlot 输出 data-custom-slot', () => {
+    const attr = getCustomSlotAttribute();
+    expect(attr.renderHTML({ isCustomSlot: true })).toEqual({ 'data-custom-slot': true });
+    expect(attr.renderHTML({ isCustomSlot: false })).toEqual({ 'data-custom-slot': undefined });
+  });
+});
+
 describe('ai-chat-input · shouldOpenSkillPanel', () => {
   it('空编辑区 + 命中 skillHotKey + 有技能 → true', () => {
     expect(shouldOpenSkillPanel({ key: '/', skillHotKey: '/', isEmpty: true, skillCount: 2 })).toBe(true);
@@ -388,7 +422,7 @@ describe('ai-chat-input · getSelectSlotHTML', () => {
 });
 
 describe('ai-chat-input · transformDocToContents · 内联 slot 归一', () => {
-  it('selectSlot 取 attrs.value，skillSlot 取 label', () => {
+  it('selectSlot 拍扁进相邻文本；skillSlot 保留为独立结构化对象（对齐 Semi transformJSONResult）', () => {
     const doc = {
       type: 'doc',
       content: [
@@ -403,14 +437,17 @@ describe('ai-chat-input · transformDocToContents · 内联 slot 归一', () => 
         },
       ],
     };
-    expect(transformDocToContents(doc)).toEqual([{ type: 'text', text: '去 上海 出差，用 总结' }]);
+    expect(transformDocToContents(doc)).toEqual([
+      { type: 'text', text: '去 上海 出差，用 ' },
+      { type: 'skillSlot', value: 'sum', label: '总结' },
+    ]);
   });
-  it('skillSlot 无 label 回退 value', () => {
+  it('skillSlot 无 label 时结构化对象里不带 label 字段', () => {
     const doc = {
       type: 'doc',
       content: [{ type: 'paragraph', content: [{ type: 'skillSlot', attrs: { value: 'sk' } }] }],
     };
-    expect(transformDocToContents(doc)).toEqual([{ type: 'text', text: 'sk' }]);
+    expect(transformDocToContents(doc)).toEqual([{ type: 'skillSlot', value: 'sk' }]);
   });
 });
 

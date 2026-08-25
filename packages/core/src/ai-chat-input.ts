@@ -127,68 +127,108 @@ export function buildMessageContent(params: {
   return msg;
 }
 
+/** 零宽字符（对齐 Semi ZERO_WIDTH_CHAR）：inputSlot 空态占位锚点，归一时剔除。 */
+export const AI_CHAT_INPUT_ZERO_WIDTH = '﻿';
+
+type DocNode = {
+  type?: string;
+  text?: string;
+  content?: DocNode[];
+  attrs?: Record<string, unknown>;
+};
+
 /**
- * 把 tiptap 文档 JSON 归一为 AIChatInputContent[]（阶段 1）。
- * 阶段 1 只有段落文本：每个顶层块产出一段 `{ type:'text', text }`，空段丢弃。
- * transformer（Map<nodeType, fn>）可覆盖特定节点的转换（对齐 Semi transformer）。
- * 阶段 2+ 的 input-slot/select-slot 节点在此扩展。
+ * 单节点 → AIChatInputContent（对齐 Semi transformText/transformSelectSlot/
+ * transformSkillSlot/transformInputSlot/transformHardBreak）。
+ * 只有 skillSlot 保留为结构化对象（type/value/label/hasTemplate），
+ * 其余（text/selectSlot/inputSlot/hardBreak）一律转成 `{type:'text', text}`，
+ * 供 traverse 与相邻文本块合并。
+ */
+function transformNode(node: DocNode): AIChatInputContent | undefined {
+  switch (node.type) {
+    case 'text': {
+      const t = node.text ?? '';
+      return { type: 'text', text: t === AI_CHAT_INPUT_ZERO_WIDTH ? '' : t };
+    }
+    case 'hardBreak':
+      return { type: 'text', text: '\n' };
+    case 'selectSlot': {
+      const v = node.attrs?.value;
+      return { type: 'text', text: typeof v === 'string' ? v : '' };
+    }
+    case 'skillSlot': {
+      const { value, label, hasTemplate } = node.attrs ?? {};
+      const out: AIChatInputContent = { type: 'skillSlot' };
+      if (value !== undefined) out.value = value;
+      if (label !== undefined) out.label = label;
+      if (hasTemplate !== undefined) out.hasTemplate = hasTemplate;
+      return out;
+    }
+    case 'inputSlot': {
+      const first = node.content?.[0];
+      const text = first?.text ?? '';
+      const usePlaceholder = text === AI_CHAT_INPUT_ZERO_WIDTH || text.length === 0;
+      return { type: 'text', text: usePlaceholder ? (node.attrs?.placeholder ?? '') : text };
+    }
+    default:
+      return undefined;
+  }
+}
+
+/**
+ * 把 tiptap 文档 JSON 归一为 AIChatInputContent[]。对齐 Semi transformJSONResult：
+ * 递归遍历 doc→paragraph→叶子节点，paragraph 之间插入 `\n`（与前一个 text 块合并，
+ * 无前项则单独追加），叶子节点转换结果为 text 时与末项 text 合并、为空丢弃；
+ * skillSlot 转换结果保留为独立结构化对象，不与相邻文本合并。
+ * transformer（Map<nodeType, fn>）覆盖特定节点的转换（对齐 Semi transformer 参数，
+ * 在内置 transformMap 之后兜底，即内置类型优先——与 Semi transformJSONResult 一致）。
  */
 export function transformDocToContents(
   json: unknown,
   transformer?: Map<string, (node: unknown) => AIChatInputContent>,
 ): AIChatInputContent[] {
-  const doc = json as { content?: Array<{ type?: string; content?: unknown[] }> } | undefined;
-  if (!doc || !Array.isArray(doc.content)) return [];
-  const out: AIChatInputContent[] = [];
-  for (const block of doc.content) {
-    const t = block?.type ?? '';
-    const override = transformer?.get(t);
-    if (override) {
-      out.push(override(block));
-      continue;
+  const doc = json as DocNode | undefined;
+  if (!doc) return [];
+  const output: AIChatInputContent[] = [];
+
+  const push = (result: AIChatInputContent): void => {
+    if (result.type === 'text') {
+      const last = output[output.length - 1];
+      if (last && last.type === 'text') {
+        last.text = `${last.text as string}${result.text as string}`;
+        return;
+      }
+      if (typeof result.text === 'string') {
+        if (result.text.length > 0) output.push(result);
+        return;
+      }
+      output.push(result);
+      return;
     }
-    const text = extractText(block);
-    if (text.length > 0) out.push({ type: 'text', text });
-  }
-  return out;
-}
+    output.push(result);
+  };
 
-/** 零宽字符（对齐 Semi ZERO_WIDTH_CHAR）：inputSlot 空态占位锚点，归一时剔除。 */
-export const AI_CHAT_INPUT_ZERO_WIDTH = '﻿';
+  const traverse = (node: DocNode): void => {
+    const content = node.content ?? [];
+    if (node.type === 'doc') {
+      content.forEach(traverse);
+      return;
+    }
+    if (node.type === 'paragraph') {
+      if (output.length > 0) {
+        const last = output[output.length - 1];
+        if (last && last.type === 'text') last.text = `${last.text as string}\n`;
+        else output.push({ type: 'text', text: '\n' });
+      }
+      content.forEach(traverse);
+      return;
+    }
+    const result = transformNode(node) ?? transformer?.get(node.type ?? '')?.(node);
+    if (result) push(result);
+  };
 
-/**
- * 递归抽取一个块内的纯文本（含 hardBreak → 换行）。内联自定义 slot 节点归一：
- * - selectSlot：取 attrs.value（用户选中的选项值）。
- * - skillSlot：取 attrs.label ?? attrs.value（技能显示文本）。
- * - inputSlot：取可编辑内容文本（剔零宽字符）；为空回退 attrs.placeholder。
- * 对齐 Semi transformSelectSlot / transformSkillSlot / transformInputSlot，使 slot 内容开箱进 content。
- */
-function extractText(node: unknown): string {
-  const n = node as
-    | { type?: string; text?: string; content?: unknown[]; attrs?: Record<string, unknown> }
-    | undefined;
-  if (!n) return '';
-  if (n.type === 'text') {
-    const t = n.text ?? '';
-    return t === AI_CHAT_INPUT_ZERO_WIDTH ? '' : t;
-  }
-  if (n.type === 'hardBreak') return '\n';
-  if (n.type === 'selectSlot') {
-    const v = n.attrs?.value;
-    return typeof v === 'string' ? v : '';
-  }
-  if (n.type === 'skillSlot') {
-    const label = n.attrs?.label ?? n.attrs?.value;
-    return typeof label === 'string' ? label : '';
-  }
-  if (n.type === 'inputSlot') {
-    const inner = Array.isArray(n.content) ? n.content.map(extractText).join('') : '';
-    if (inner.length > 0) return inner;
-    const ph = n.attrs?.placeholder;
-    return typeof ph === 'string' ? ph : '';
-  }
-  if (Array.isArray(n.content)) return n.content.map(extractText).join('');
-  return '';
+  traverse(doc);
+  return output;
 }
 
 // ————————————————————————————————————————————————————————————————
@@ -326,6 +366,29 @@ export function skillLabel(skill: AIChatInputSkill): string {
 }
 
 /**
+ * 从编辑器 HTML 反解析 skillSlot（对齐 Semi findSkillSlotInString）。
+ * 供 onContentChange 时同步 currentSkill 状态——不论 skillSlot 是通过技能面板选中插入的，
+ * 还是用户直接 setContent() 注入 `<skill-slot data-value=... data-label=...>` 字符串，
+ * 内容变化后都应据此更新技能追踪状态（Semi handleContentChange 的行为）。
+ * 无 data-value 视为无效技能标记，返回 undefined。
+ */
+export function findSkillSlotInString(html: string): AIChatInputSkill | undefined {
+  const match = /<skill-slot\s+([^>]*)><\/skill-slot>/i.exec(html);
+  if (!match) return undefined;
+  const attrs: Record<string, string> = {};
+  const attrRe = /([\w-]+)=["']([^"']*)["']/g;
+  let attrMatch: RegExpExecArray | null;
+  while ((attrMatch = attrRe.exec(match[1] ?? '')) !== null) {
+    attrs[attrMatch[1] as string] = attrMatch[2] as string;
+  }
+  if (!attrs['data-value']) return undefined;
+  const skill: AIChatInputSkill = { value: attrs['data-value'] };
+  if (attrs['data-label']) skill.label = attrs['data-label'];
+  if (attrs['data-template']) skill.hasTemplate = attrs['data-template'] === 'true';
+  return skill;
+}
+
+/**
  * 生成 skillSlot 节点的 HTML（供 editor.setContent 插入）。对齐 Semi getSkillSlotString：
  * `<skill-slot data-label data-value data-template>`。属性值做 HTML 转义防注入。
  */
@@ -360,6 +423,27 @@ export function getInputSlotHTML(placeholder = '', value = ''): string {
   const ph = placeholder ? ` placeholder="${escapeAttr(placeholder)}"` : '';
   const inner = value ? escapeHTML(value) : AI_CHAT_INPUT_ZERO_WIDTH;
   return `<input-slot${ph}>${inner}</input-slot>`;
+}
+
+/**
+ * tiptap 自定义节点 `isCustomSlot` 属性描述（对齐 Semi `AIChatInput.getCustomSlotAttribute` /
+ * `getCustomSlotAttribute`）。用户自定义扩展（如 docSlot）接入 AIChatInput 的光标/零宽字符
+ * plugin 时需要这个属性标记：`addAttributes() { return { isCustomSlot: getCustomSlotAttribute() } }`。
+ * parseHTML 恒真（该类节点从 HTML 反解析时总归一为 isCustomSlot），renderHTML 输出
+ * `data-custom-slot` 供 CSS/调试选择器命中。
+ */
+export function getCustomSlotAttribute(): {
+  default: boolean;
+  parseHTML: (element: unknown) => boolean;
+  renderHTML: (attributes: { isCustomSlot?: boolean }) => Record<string, unknown>;
+} {
+  return {
+    default: true,
+    parseHTML: () => true,
+    renderHTML: (attributes) => ({
+      'data-custom-slot': attributes.isCustomSlot ? true : undefined,
+    }),
+  };
 }
 
 /** HTML 文本内容转义（元素内容上下文）。 */

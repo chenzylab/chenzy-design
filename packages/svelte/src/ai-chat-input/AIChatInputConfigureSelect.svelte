@@ -60,8 +60,11 @@
 <style>
   /* 逐条对齐 Semi aiChatInput.scss:277-294：1px 边框 + 透明底，
      文字 600 字重 + text-1；hover/focus 保持同样的边框、不换底。
-     本库此前只挂了类名（上一轮补的），一条样式都没接。 */
-  :global(.cd-ai-chat-input-footer-configure-select) {
+     Semi &-select { border; background } 挂在 .semi-select 根节点本身生效（单层结构）；
+     本库 Select 是两层结构，真正带边框/背景的是内层 .cd-select-trigger（Select.svelte
+     里 border/background 都挂在 -trigger 而非根节点 .cd-select），此前挂在无边框的
+     根节点上，规则命中空气（同 select-slot 那次踩的坑，见 SelectSlotNode.svelte）。 */
+  :global(.cd-ai-chat-input-footer-configure-select .cd-select-trigger) {
     border: var(--cd-width-ai-chat-input-footer-configure-select-border) solid
       var(--cd-color-ai-chat-input-footer-configure-select-border);
     background: transparent;
@@ -72,9 +75,9 @@
     color: var(--cd-color-ai-chat-input-footer-configure-select-text);
   }
 
-  :global(.cd-ai-chat-input-footer-configure-select:hover),
-  :global(.cd-ai-chat-input-footer-configure-select:focus) {
-    border-color: var(--cd-color-ai-chat-input-footer-configure-select-border);
-    background: transparent;
+  :global(.cd-ai-chat-input-footer-configure-select .cd-select-trigger:hover),
+  :global(.cd-ai-chat-input-footer-configure-select .cd-select-trigger:focus) {
+    border-color: var(--cd-color-ai-chat-input-footer-configure-select-border) !important;
+    background: transparent !important;
   }
 </style>

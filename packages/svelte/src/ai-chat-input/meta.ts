@@ -24,6 +24,8 @@ export const meta = {
     'AIChatInputConfigureRadioButton',
     'AIChatInputConfigureMcp',
     'AIChatInputConfigureItem',
+    'getConfigureItem',
+    'getCustomSlotAttribute',
   ],
   props: [
     { name: 'defaultContent', type: 'string', default: "''", desc: '初始内容（HTML 或纯文本，tiptap Content）' },
@@ -43,7 +45,7 @@ export const meta = {
     { name: 'topSlotPosition', type: "'top'|'middle'|'bottom'", default: "'top'", desc: 'renderTopSlot 相对引用条/附件区位置（阶段 2）' },
     { name: 'skills', type: 'AIChatInputSkill[]', default: '[]', desc: '技能列表，空编辑区按 skillHotKey 弹面板（阶段 3）' },
     { name: 'skillHotKey', type: 'string', default: "'/'", desc: '触发技能面板的按键（阶段 3）' },
-    { name: 'showTemplateButton', type: 'boolean', default: 'true', desc: '是否展示模版按钮（仅当前技能 hasTemplate 时生效，阶段 3）' },
+    { name: 'showTemplateButton', type: 'boolean', default: 'false', desc: '是否展示模版按钮；未设置时按当前技能 hasTemplate 决定，显式设置后恒展示/恒不展示' },
     { name: 'configureDefaultValue', type: 'Record<string, unknown>', default: 'undefined', desc: '配置区初始值（阶段 4）' },
     { name: 'showUploadFile', type: 'boolean', default: 'true', desc: 'top area 展示上传附件列表' },
     { name: 'popoverProps', type: 'object', default: '-', desc: '承载建议/技能/模版浮层的 Popover 配置（对齐 Semi popoverProps）' },

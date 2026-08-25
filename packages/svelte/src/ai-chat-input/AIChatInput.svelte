@@ -28,6 +28,7 @@
     getContentType,
     skillLabel,
     getSkillSlotHTML,
+    findSkillSlotInString,
     shouldOpenSkillPanel,
     setConfigureField,
     removeConfigureField,
@@ -69,6 +70,7 @@
   // Semi 把技能/建议单项拆成 skillItem.tsx / suggestionItem.tsx，本库同样拆分。
   import AIChatInputSkillItem from './AIChatInputSkillItem.svelte';
   import AIChatInputSuggestionItem from './AIChatInputSuggestionItem.svelte';
+  import AIChatInputConfigureButton from './AIChatInputConfigureButton.svelte';
   import type { UploadFileItem } from '../upload/types.js';
   import { untrack } from 'svelte';
   import { setConfigureContext } from './configure-context.js';
@@ -164,6 +166,8 @@
             {
               references: AIChatInputReference[];
               attachments: AIChatInputAttachment[];
+              /** 当前富文本内容（对齐 Semi TopSlotProps.content），随编辑区变化实时更新。 */
+              content: AIChatInputContent[];
               handleReferenceDelete: (reference: AIChatInputReference) => void;
               handleUploadFileDelete: (attachment: AIChatInputAttachment) => void;
             },
@@ -194,13 +198,22 @@
         >
       | undefined;
     /** 技能选中回调。 */
-    onSkillChange?: ((skill: AIChatInputSkill) => void) | undefined;
+    /**
+     * 技能变化回调（对齐 Semi onSkillChange）。技能消失（如用户删除了 skillSlot 节点、
+     * 或点击其删除按钮清空编辑器）时回调 undefined——Semi 运行时确有此行为
+     * （notifySkillChange(undefined)），本库类型如实反映，不同 Semi 的类型标注。
+     */
+    onSkillChange?: ((skill: AIChatInputSkill | undefined) => void) | undefined;
     /**
      * 模版面板渲染（对齐 Semi renderTemplate）：当前技能 hasTemplate 时，点击模版按钮弹出，
      * 参数 (skill, setContent)——调 setContent 把模版内容填入编辑器。
      */
     renderTemplate?: Snippet<[{ skill: AIChatInputSkill; setContent: (html: string) => void }]> | undefined;
-    /** 是否展示模版按钮（对齐 Semi showTemplateButton，默认 true；仅当前技能 hasTemplate 时生效）。 */
+    /**
+     * 是否展示模版按钮（对齐 Semi showTemplateButton，默认 false）。
+     * 未显式设置时，按当前选中技能的 hasTemplate 决定是否展示；显式设为 true 后
+     * 恒展示（不再看 hasTemplate），设为 false 则恒不展示。
+     */
     showTemplateButton?: boolean;
     /** 模版面板显隐变化回调。 */
     onTemplateVisibleChange?: ((visible: boolean) => void) | undefined;
@@ -301,7 +314,7 @@
     renderSkillItem,
     onSkillChange,
     renderTemplate,
-    showTemplateButton = true,
+    showTemplateButton = false,
     onTemplateVisibleChange,
     renderConfigureArea,
     configureDefaultValue,
@@ -346,6 +359,9 @@
   // 当前已选技能（决定是否展示模版按钮）。
   let currentSkill = $state<AIChatInputSkill>();
   let templateOpen = $state(false);
+  // 当前富文本内容（对齐 Semi TopSlotProps.content，供 renderTopSlot 渲染非文本节点，
+  // 如自定义扩展插入的 referSlot），随编辑区变化在 onContentChange 里同步更新。
+  let currentContent = $state<AIChatInputContent[]>([]);
 
   // —— 配置区状态（阶段 4）：value 供 Configure 子组件经 context 读写，发送时并入 setup ——
   // 只取初始值（untrack 表明有意不追踪后续 prop 变化——配置区值由内部/onConfigureChange 管理）。
@@ -356,7 +372,9 @@
     getValue: () => configureValue,
     setField: (patch, init = false) => {
       configureValue = setConfigureField(configureValue, patch);
-      if (!init) onConfigureChange?.(configureValue, patch);
+      // $state.snapshot：跨出响应式边界前转普通对象，避免 $state Proxy 泄漏给外部回调
+      // （用户若 console.log(value) 会触发 Svelte console_log_state 警告）。
+      if (!init) onConfigureChange?.($state.snapshot(configureValue), patch);
     },
     removeField: (field) => {
       configureValue = removeConfigureField(configureValue, field);
@@ -377,9 +395,13 @@
   const showSuggestionPanel = $derived(suggestionOpen && suggestions.length > 0);
   // 技能面板可见性：显式 open 且有技能项（skillHotKey 触发）。
   const showSkillPanel = $derived(skillPanelOpen && skills.length > 0);
-  // 模版按钮可见性：开关开、有 renderTemplate、当前技能 hasTemplate。
+  // 模版按钮可见性（对齐 Semi index.tsx:507：`(showTemplateButton || hasTemplate) &&
+  // <Configure.Button>`——是"显式开关"或"当前技能有模版"任一成立，此前误写成 AND，
+  // showTemplateButton=false 时哪怕技能 hasTemplate 也不显示，与 Semi 不符）。
+  // renderTemplate 判断是本库补充的防御性条件（Semi 没有——没有 renderTemplate 时按钮
+  // 点了也没有面板内容可展示，予以保留）。
   const showTemplate = $derived(
-    showTemplateButton && !!renderTemplate && !!currentSkill?.hasTemplate,
+    (showTemplateButton || !!currentSkill?.hasTemplate) && !!renderTemplate,
   );
 
   // —— 承载三个浮层的 Popover（对齐 Semi render()：同一个 Popover + 内容分派）——
@@ -474,6 +496,22 @@
       onBlur: (event) => onBlur?.(event),
       onEmptyChange: (v) => (isEmpty = v),
       onContentChange: (payload) => {
+        // 对齐 Semi handleContentChange：从 HTML 反解析 skillSlot 同步 currentSkill，
+        // 不论技能是通过面板选中插入的，还是用户直接 setContent() 注入
+        // `<skill-slot>` 字符串——内容变化后都据此更新技能追踪状态（影响
+        // setContentWhileSaveTool / renderTemplate 的模版按钮显隐）。
+        const hasSkillSlot = payload.html.includes('</skill-slot>');
+        if (currentSkill && !hasSkillSlot) {
+          currentSkill = undefined;
+          onSkillChange?.(undefined);
+        } else if (hasSkillSlot) {
+          const newSkill = findSkillSlotInString(payload.html);
+          if (newSkill?.value !== currentSkill?.value) {
+            currentSkill = newSkill;
+            onSkillChange?.(newSkill as AIChatInputSkill);
+          }
+        }
+        currentContent = transformDocToContents(payload.json, transformer);
         onContentChange?.(payload);
         // 内容变化会改变触发器高度，通知 Popover 重算位置（对齐 Semi reposPopover）。
         popupKey += 1;
@@ -487,7 +525,11 @@
   function handleEditorKeyDown(event: KeyboardEvent): boolean {
     if (event.isComposing) return false;
 
-    // 空编辑区按下 skillHotKey → 弹技能面板（对齐 Semi）。
+    // 空编辑区按下 skillHotKey → 弹技能面板（对齐 Semi foundation.ts handleKeyDown：
+    // 命中分支只 setState({ skillVisible: true })，不调用 preventDefault，skillHotKey
+    // 字符本身正常插入编辑器——真机可见"/"、Backspace 能删掉它退出面板（第 169 行
+    // `oldValue === skillHotKey` 判断也依赖编辑器里真的有这个字符）。此前 return true
+    // 让 tiptap 停止默认输入行为，字符被吞掉，与 Semi 不符。
     if (!showSkillPanel && shouldOpenSkillPanel({
       key: event.key,
       skillHotKey,
@@ -495,7 +537,7 @@
       skillCount: skills.length,
     })) {
       openSkillPanel();
-      return true;
+      return false;
     }
 
     if (showSkillPanel) {
@@ -517,6 +559,16 @@
       if (event.key === 'Escape') {
         closeSkillPanel();
         return true;
+      }
+      // 对齐 Semi foundation.ts:169 `(oldValue === skillHotKey || oldValue?.length === 0)
+      // && Backspace` → 关闭面板。删除动作本身不拦截（不 preventDefault，真机删掉
+      // skillHotKey 字符正常发生），只是同步收起面板状态。
+      if (event.key === 'Backspace') {
+        const currentText = editor?.getText() ?? '';
+        if (currentText === skillHotKey || currentText.length === 0) {
+          closeSkillPanel();
+        }
+        return false;
       }
     }
 
@@ -545,24 +597,39 @@
 
     if (event.key !== 'Enter') return false;
     if (generating) return false;
-    if (!isSendHotKey(event.key, event.shiftKey, sendHotKey)) return false;
-    // 自定义扩展可把 editor.storage.CdAIChatInput.allowHotKeySend 置 false 声明
-    // 「Enter 归我用」，此时不发送，避免热键冲突（对齐 Semi foundation.ts 同名判定）。
-    if (!isHotKeySendAllowed(editor)) return false;
-    event.preventDefault();
-    doSend();
-    return true;
+    if (
+      isSendHotKey(event.key, event.shiftKey, sendHotKey) &&
+      isHotKeySendAllowed(editor)
+    ) {
+      event.preventDefault();
+      doSend();
+      return true;
+    }
+    // 换行键位（sendHotKey='enter' 时是 Shift+Enter，反之是裸 Enter）：对齐 Semi
+    // foundation.ts:399-417——tiptap 默认用 <br> 实现软换行，但 <br> 在 input-slot
+    // 这类 inline-only 节点（schema content:'inline*'，不允许块级分裂）内依然能插入，
+    // 与 Semi 表现不一致（真机复现：本库在 input-slot 内 Shift+Enter 换行了，Semi 没有）。
+    // 改用 splitBlock（新建 <p>）：该命令在 schema 不允许分裂的位置会静默失败，
+    // 这才是 Semi「input-slot 内 Shift+Enter 不换行」的真正机制——不是特殊拦截，
+    // 是分裂段落这个操作本身在 inline-only 节点内不成立。
+    if (event.key === 'Enter' && (sendHotKey === 'enter' ? event.shiftKey : !event.shiftKey)) {
+      event.preventDefault();
+      editor?.chain().focus().splitBlock().run();
+      return true;
+    }
+    return false;
   }
 
   function doSend(): void {
     if (generating || !computedCanSend || !editor) return;
     const inputContents = transformDocToContents(editor.getJSON(), transformer);
     // 配置区值并入 setup（对齐 Semi getConfigureValue → MessageContent.setup）。
+    // $state.snapshot：attachments/configureValue 都是 $state，跨出响应式边界前转普通对象。
     const message = buildMessageContent({
       inputContents,
-      attachments,
+      attachments: $state.snapshot(attachments),
       references,
-      setup: configureValue,
+      setup: $state.snapshot(configureValue),
     });
     onMessageSend?.(message);
   }
@@ -579,7 +646,10 @@
     untrack(() => {
       if (suggestions.length > 0) {
         suggestionOpen = true;
-        activeSuggestionIndex = -1;
+        // 对齐 Semi index.tsx:77 activeSuggestionIndex 初始值 0（默认第一项激活，
+        // 非未激活）——同批 openSkillPanel 早已这样处理（activeSkillIndex = 0），
+        // 建议面板此前遗漏，写成 -1 导致弹出时无任何项高亮。
+        activeSuggestionIndex = 0;
       } else {
         closeSuggestions();
       }
@@ -589,7 +659,7 @@
   function openSuggestions(): void {
     if (suggestions.length === 0) return;
     suggestionOpen = true;
-    activeSuggestionIndex = -1;
+    activeSuggestionIndex = 0;
   }
   function closeSuggestions(): void {
     suggestionOpen = false;
@@ -626,29 +696,43 @@
     editor?.commands.setContent(getSkillSlotHTML(skill));
     editor?.commands.focus('end');
   }
-  function toggleTemplate(): void {
-    setTemplateVisible(!templateOpen);
-  }
   function setTemplateVisible(visible: boolean): void {
     if (templateOpen === visible) return;
     templateOpen = visible;
     onTemplateVisibleChange?.(visible);
   }
   // 模版面板里 renderTemplate 回调用的 setContent（填入模版内容并关闭面板）。
+  // 对齐 Semi md 示例 setTemplate：`element.setContentWhileSaveTool(content);
+  // element.focusEditor();`——保留已选技能标记（拼接 skill-slot + 模版正文），不是
+  // 整体覆盖式 setContent（会连技能标签一起清空）。renderTemplate 本身也没有任何
+  // 自动关闭浮层的逻辑（真机核对 Semi 官方渲染确认点击模版卡片浮层保持打开，
+  // 此前 setTemplateVisible(false) 是自造行为，予以删除）。
   function applyTemplate(html: string): void {
-    editor?.commands.setContent(html);
+    setContentWhileSaveTool(html);
     editor?.commands.focus('end');
-    setTemplateVisible(false);
   }
 
   // 点击外部关闭技能面板 / 模版面板。
+  // 浮层内容（.cd-popover）经 use:floating portal 到 document.body，不在 rootEl 子树
+  // 内——useDismiss 的 pointerdown 监听走事件捕获阶段，早于面板内选项自身的 onmousedown
+  // 处理器执行，若不显式声明 extraTargets，点击面板内任意选项都会先被误判成"外部点击"
+  // 提前关闭面板，选中逻辑因此从未真正跑到（真机复现：鼠标点选技能项无效，仅键盘
+  // Enter 能选中——Enter 走 keydown，不受这条 pointerdown 判断影响）。
   $effect(() => {
     if (!showSkillPanel || !rootEl) return;
-    return useDismiss(rootEl, { escape: false, onDismiss: () => closeSkillPanel() });
+    return useDismiss(rootEl, {
+      escape: false,
+      extraTargets: [document.querySelector<HTMLElement>('.cd-popover')],
+      onDismiss: () => closeSkillPanel(),
+    });
   });
   $effect(() => {
     if (!templateOpen || !rootEl) return;
-    return useDismiss(rootEl, { escape: true, onDismiss: () => setTemplateVisible(false) });
+    return useDismiss(rootEl, {
+      escape: true,
+      extraTargets: [document.querySelector<HTMLElement>('.cd-popover')],
+      onDismiss: () => setTemplateVisible(false),
+    });
   });
 
   // —— 引用条（阶段 2）——
@@ -668,10 +752,13 @@
   }
 
   // 点击外部关闭建议面板（Esc 已在编辑区 keydown 处理）。
+  // 同技能/模版面板：浮层 portal 到 body，需 extraTargets 声明才不会把面板内点击误判
+  // 成外部点击（否则鼠标点选建议项会被这里提前关闭，同一个 bug 类别）。
   $effect(() => {
     if (!showSuggestionPanel || !rootEl) return;
     return useDismiss(rootEl, {
       escape: false,
+      extraTargets: [document.querySelector<HTMLElement>('.cd-popover')],
       onDismiss: () => closeSuggestions(),
     });
   });
@@ -684,9 +771,28 @@
     doSend();
   }
 
+  // 对齐 Semi handleContainerMouseDown/handleContainerClick：容器（含上传/发送/配置区
+  // 等按钮）点击后主动把焦点拉回编辑器，而不是靠阻止按钮抢焦点——这才是「点击发送/
+  // 上传按钮后编辑器焦点始终不消失」的真正机制。mouseDownTarget 记录按下时的目标，
+  // 与 click 的 target 比较：富文本区域内拖拽选区、松开时若鼠标已在区域外，click 的
+  // target 会变成别的元素，这时不应误触发抢焦点（否则会打断刚建立的选区）。
+  let mouseDownTarget: EventTarget | null = null;
+  function handleContainerMouseDown(event: MouseEvent): void {
+    mouseDownTarget = event.target;
+  }
+  function handleContainerClick(event: MouseEvent): void {
+    const target = event.target;
+    if (mouseDownTarget && mouseDownTarget !== target) return;
+    if (editorHost && (editorHost === target || editorHost.contains(target as Node))) {
+      return;
+    }
+    editor?.commands.focus();
+  }
+
   function handleAttachmentChange({ fileList }: { fileList: UploadFileItem[]; currentFile: UploadFileItem }): void {
     attachments = fileList as unknown as AIChatInputAttachment[];
-    onUploadChange?.(attachments);
+    // fileList 本身是调用方传入的普通数组，不经 $state 包裹，直接传出即可。
+    onUploadChange?.(fileList as unknown as AIChatInputAttachment[]);
   }
 
   /**
@@ -746,7 +852,7 @@
   }
   /** 取当前配置区值（对齐 Semi getConfigureValue）。 */
   export function getConfigureValue(): AIChatInputConfigureValue {
-    return configureValue;
+    return $state.snapshot(configureValue);
   }
   /**
    * 删除编辑器中匹配的一段内容（对齐 Semi deleteContent）。按 content.text 精确匹配删除，
@@ -831,11 +937,21 @@
   trigger="custom"
   content={popoverContent}
 >
+<!-- svelte-ignore a11y_click_events_have_key_events -->
+<!-- svelte-ignore a11y_no_static_element_interactions -->
+<!--
+  容器级 mousedown/click 对齐 Semi handleContainerMouseDown/handleContainerClick：
+  点击容器内任意位置（按钮/配置区等）后把焦点拉回编辑器；真正的可交互元素（按钮/
+  编辑器本身）都有各自的键盘可达性，此处容器本身不需要键盘等价物（Semi 同一处用
+  eslint-disable-next-line jsx-a11y/click-events-have-key-events 表达同样的判断）。
+-->
 <div
   class="cd-ai-chat-input {className}"
   class:cd-ai-chat-input-round={round}
   {style}
   bind:this={rootEl}
+  onmousedown={handleContainerMouseDown}
+  onclick={handleContainerClick}
 >
   {#if hasReferences || hasTopSlot || hasAttachments}
     <div class="cd-ai-chat-input-top">
@@ -843,6 +959,7 @@
         {@render renderTopSlot?.({
           references,
           attachments,
+          content: currentContent,
           handleReferenceDelete: handleTopSlotReferenceDelete,
           handleUploadFileDelete: handleTopSlotUploadFileDelete,
         })}
@@ -903,6 +1020,7 @@
         {@render renderTopSlot?.({
           references,
           attachments,
+          content: currentContent,
           handleReferenceDelete: handleTopSlotReferenceDelete,
           handleUploadFileDelete: handleTopSlotUploadFileDelete,
         })}
@@ -952,14 +1070,14 @@
                   aria-label="upload progress"
                 />
               {/if}
-              <button
-                type="button"
+              <!-- 对齐 Semi：裸 IconClose 挂 onClick（非 button 元素，无 aria-label，
+                   与 Semi 逐字一致）。用户已确认接受随之而来的无障碍代价——纯键盘用户
+                   无法触达此删除控件（非可聚焦元素）。 -->
+              <IconClose
                 class="cd-ai-chat-input-attachment-delete"
-                aria-label={loc().t('AIChatInput.deleteAttachment')}
+                size="small"
                 onclick={() => void removeAttachment(attachment)}
-              >
-                <IconClose size="small" />
-              </button>
+              />
             </div>
           {/each}
         </AIChatInputHorizontalScroller>
@@ -968,6 +1086,7 @@
         {@render renderTopSlot?.({
           references,
           attachments,
+          content: currentContent,
           handleReferenceDelete: handleTopSlotReferenceDelete,
           handleUploadFileDelete: handleTopSlotUploadFileDelete,
         })}
@@ -987,17 +1106,20 @@
         {@render renderConfigureArea()}
       {/if}
       {#if showTemplate}
-        <button
-          type="button"
-          class="cd-ai-chat-input-template-btn"
-          class:cd-ai-chat-input-template-btn-active={templateOpen}
-          aria-expanded={templateOpen}
-          aria-label={loc().t('AIChatInput.template')}
-          onclick={toggleTemplate}
+        <!-- 对齐 Semi index.tsx:507-512：模板按钮就是 Configure.Button（field="template"
+             + icon={IconTemplateStroked} + onClick 接管切换），不是手写 <button>——真正
+             生效的样式（描边胶囊/padding/字重/hover）全部走 Configure.Button 基线，
+             与「联网搜索」是同一个组件。Semi ConfigureButton 内部固定"点击时 !value
+             自动 toggle，写回 context 后再调 onClick(newValue)"，changeTemplateVisible
+             接收的正是这个 toggle 后的新值，本库 onChange 同构对齐。 -->
+        <AIChatInputConfigureButton
+          field="template"
+          initValue={false}
+          icon={iconTemplateStroked}
+          onChange={setTemplateVisible}
         >
-          <IconTemplateStroked />
-          <span>{loc().t('AIChatInput.template')}</span>
-        </button>
+          {loc().t('AIChatInput.template')}
+        </AIChatInputConfigureButton>
       {/if}
     </div>
 
@@ -1019,6 +1141,8 @@
   </div>
 </div>
 </Popover>
+
+{#snippet iconTemplateStroked()}<IconTemplateStroked />{/snippet}
 
 <!--
   浮层内容：按 visible 状态分派模版 / 技能 / 建议（逐条对齐 Semi renderPopoverContent
@@ -1127,30 +1251,30 @@
 {/snippet}
 
 <style>
+  /* Semi 根节点无 gap：子元素间距完全靠各自 margin-bottom/margin-top（&-references
+     margin-bottom / &-footer margin-top 等）实现，见下方各条。这里若也加 gap 会与
+     子元素自身 margin 叠加，致间距翻倍（实测 references→editor 应 8px 变成 16px）。 */
   .cd-ai-chat-input {
     display: flex;
     flex-direction: column;
-    gap: var(--cd-ai-chat-input-gap);
     padding: var(--cd-ai-chat-input-padding);
-    background: var(--cd-ai-chat-input-bg);
     border: 1px solid var(--cd-ai-chat-input-border);
     border-radius: var(--cd-ai-chat-input-radius);
-    transition: border-color var(--cd-ai-chat-input-motion-duration) ease;
+    box-sizing: border-box;
   }
 
   .cd-ai-chat-input-round {
     border-radius: var(--cd-ai-chat-input-radius-round);
   }
 
-  .cd-ai-chat-input:focus-within {
-    border-color: var(--cd-ai-chat-input-border-focus);
-  }
-
-  /* —— top area · 引用条 / topSlot（阶段 2）—— */
+  /* —— top area · 引用条 / topSlot（阶段 2）——
+     Semi 无此 wrapper：renderTopArea 用 Fragment 把 topSlot/references/attachment
+     直接摊平渲染在根节点下（本库为了方便管理才包一层 div，纯结构容器不该带样式）。
+     子元素间距完全靠各自 margin-bottom（&-references / HorizontalScroller
+     &-scroll-wrapper）实现，此处不能再加 gap，否则与子元素自身 margin 叠加。 */
   .cd-ai-chat-input-top {
     display: flex;
     flex-direction: column;
-    gap: var(--cd-ai-chat-input-gap);
   }
 
   /* Semi: &-references —— @include font-size-small（12px + line-height 16px）+ text-2。 */
@@ -1185,6 +1309,10 @@
   }
 
   /* —— 附件卡片（showUploadFile）：逐条对齐 Semi aiChatInput.scss &-attachment —— */
+  /* Semi 未声明 box-sizing，走默认 content-box：width/height(224×36) 是内容区，
+     padding(8px) 向外撑大，最终边框盒 240×52。本库全局有 border-box reset，
+     此处显式改回 content-box 才能让边框盒尺寸真正对齐 Semi（而非把 224×36
+     误当成边框盒总尺寸，让内容区被 padding 反向挤压到 208×20）。 */
   .cd-ai-chat-input-attachment {
     position: relative;
     display: flex;
@@ -1193,6 +1321,7 @@
     border-radius: var(--cd-ai-chat-input-attachment-radius);
     background: var(--cd-ai-chat-input-attachment-bg);
     padding: var(--cd-ai-chat-input-attachment-padding);
+    box-sizing: content-box;
     width: var(--cd-ai-chat-input-attachment-width);
     height: var(--cd-ai-chat-input-attachment-height);
     overflow: hidden;
@@ -1248,18 +1377,19 @@
     text-transform: uppercase;
   }
 
-  /* Semi：删除钮默认 display:none，仅 hover 卡片时才显示在右上角。 */
-  .cd-ai-chat-input-attachment-delete {
+  /* Semi：删除钮默认 display:none，仅 hover 卡片时才显示在右上角。
+     IconClose 渲染出 Icon.svelte 的 .cd-icon（其 scoped hash 类使特异性达 0,2,0），
+     单类选择器 0,1,0 打不过——用双类选择器 :global(.cd-icon.cd-ai-chat-input-attachment-delete)
+     追平特异性（同 audioplayer-dropdown-classname-specificity-loses 记忆里的解法）。 */
+  :global(.cd-icon.cd-ai-chat-input-attachment-delete) {
     display: none;
   }
 
-  .cd-ai-chat-input-attachment:hover > .cd-ai-chat-input-attachment-delete {
+  .cd-ai-chat-input-attachment:hover > :global(.cd-icon.cd-ai-chat-input-attachment-delete) {
     cursor: pointer;
     position: absolute;
     top: 0;
     right: 0;
-    border: none;
-    padding: 0;
     background: var(--cd-ai-chat-input-attachment-delete-bg);
     color: var(--cd-ai-chat-input-attachment-delete-icon);
     border-radius: 50%;
@@ -1269,30 +1399,6 @@
     display: flex;
     align-items: center;
     justify-content: center;
-  }
-
-  /* 键盘可达：Semi 靠 hover 显示，纯键盘用户拿不到删除钮，故补 focus-within 同显。 */
-  .cd-ai-chat-input-attachment:focus-within > .cd-ai-chat-input-attachment-delete {
-    cursor: pointer;
-    position: absolute;
-    top: 0;
-    right: 0;
-    border: none;
-    padding: 0;
-    background: var(--cd-ai-chat-input-attachment-delete-bg);
-    color: var(--cd-ai-chat-input-attachment-delete-icon);
-    border-radius: 50%;
-    width: var(--cd-ai-chat-input-attachment-delete-width);
-    height: var(--cd-ai-chat-input-attachment-delete-width);
-    font-size: var(--cd-ai-chat-input-attachment-content-delete-fontSize);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .cd-ai-chat-input-attachment-delete:focus-visible {
-    outline: 2px solid var(--cd-color-primary);
-    outline-offset: 1px;
   }
 
   /* Semi：&-attachment-progress.#{$prefix}-progress-circle 绝对居中在卡片上。 */
@@ -1419,36 +1525,25 @@
   /* 建议 / 技能 / 模版三个面板的样式已随「改由 Popover 承载」迁到组件外
      （见文件末尾的 :global 段）——它们被 portal 到 body，scoped 规则匹配不到。
      技能项 / 建议项的样式则随组件拆分迁到了 AIChatInputSkillItem.svelte /
-     AIChatInputSuggestionItem.svelte。 */
+     AIChatInputSuggestionItem.svelte。模板按钮此前是自造的独立 <button>，已改为真正
+     复用 Configure.Button（对齐 Semi index.tsx:507-512），样式随之走 Button 基线，
+     这里的手写样式全部删除。 */
 
-  .cd-ai-chat-input-template-btn {
-    appearance: none;
-    border: none;
-    cursor: pointer;
-    display: inline-flex;
-    align-items: center;
-    gap: var(--cd-spacing-extra-tight);
-    padding: var(--cd-ai-chat-input-action-padding) var(--cd-spacing-tight);
-    border-radius: var(--cd-ai-chat-input-action-radius);
-    background: transparent;
-    color: var(--cd-ai-chat-input-template-color);
-    font: inherit;
-    transition: background var(--cd-ai-chat-input-motion-duration) ease;
-  }
-
-  .cd-ai-chat-input-template-btn:hover,
-  .cd-ai-chat-input-template-btn-active {
-    background: var(--cd-ai-chat-input-template-bg-hover);
-  }
-
-  .cd-ai-chat-input-template-btn:focus-visible {
-    outline: 2px solid var(--cd-color-primary);
-    outline-offset: 2px;
-  }
-
+  /* Semi &-editor-content 用「负 margin-top + 等量正 padding-top」腾出一圈缓冲区
+     （margin-top: -(select_slot_delete/2 - skill_slot-marginY) = -4px；
+     padding-top 同值取正 = 4px）：净视觉位置不变，但顶部多出 4px 可绘制区，
+     专门容纳 skill-slot 删除圆点 hover 时凸出到 wrapper 外的那一半
+     （top:0; transform:translateY(-50%)）——否则会被 overflow-y 裁掉半个圆。
+     本库此前没有这两条补偿，实测删除按钮上半截被编辑区裁切。 */
   .cd-ai-chat-input-editor-content {
     min-height: var(--cd-ai-chat-input-editor-min-height);
     max-height: var(--cd-ai-chat-input-editor-max-height);
+    margin-top: calc(
+      -1 * (var(--cd-width-ai-chat-input-rich-text-select-slot-delete) / 2 - var(--cd-spacing-ai-chat-input-rich-text-skill-slot-marginy))
+    );
+    padding-top: calc(
+      var(--cd-width-ai-chat-input-rich-text-select-slot-delete) / 2 - var(--cd-spacing-ai-chat-input-rich-text-skill-slot-marginy)
+    );
     overflow-y: auto;
     color: var(--cd-ai-chat-input-color);
     /* 对齐 Semi aiChatInput.scss:498-499（font-size + line-height 两条都是组件专属变量）。
@@ -1506,14 +1601,34 @@
     -webkit-user-select: none;
   }
 
-  /* Semi &-footer-round：统一把配置/操作各控件改成全圆角。
-     radio-button / mcp-trigger 渲染在子组件里，用 :global 打洞才够得着。 */
+  /* Semi &-footer-round：统一把配置/操作各控件改成全圆角，逐条对齐 Semi aiChatInput.scss
+     &-footer-round 选择器列表（select/button/&-footer-configure-radio-button/mcp-trigger/
+     action-button/action-upload/radio-addon-buttonRadio 共七项，radio 相关有两条：外层
+     配置容器类 + 内层每个按钮项类，两条都要变胶囊，此前只接了其中一条）。
+     select/button/radio/mcp-trigger 渲染在子组件里，用 :global 打洞才够得着；
+     configure-select 真正带 border-radius 的是内层 .cd-select-trigger（同 select-slot/
+     configure-select 边框覆盖踩过的两层结构坑，外层根节点无视觉，border-radius 不继承）；
+     radio-button：class 与 RadioGroup 自身的 .cd-radioGroup-buttonRadio（灰底容器，真正
+     带背景色）挂在同一个 DOM 节点上（非两层嵌套——`class={cls}` 直接透传给 RadioGroup
+     根节点），故用同节点选择器（无后代空格）才能命中，之前误写成后代选择器致规则从未
+     命中任何元素，灰底容器圆角实际仍是 scoped 里的默认小圆角。
+     内部每个按钮项 .cd-radio-addon-buttonRadio（真正带选中态背景色）需要嵌套后代选择器
+     （它在灰底容器内部），也要同步变胶囊，否则选中态背景与已变胶囊的灰底容器不协调。 */
   .cd-ai-chat-input-footer-round .cd-ai-chat-input-footer-action-button,
   .cd-ai-chat-input-footer-round .cd-ai-chat-input-footer-action-upload,
-  .cd-ai-chat-input-footer-round .cd-ai-chat-input-template-btn,
-  .cd-ai-chat-input-footer-round :global(.cd-ai-chat-input-footer-configure-radio-button),
+  .cd-ai-chat-input-footer-round :global(.cd-ai-chat-input-footer-configure-select .cd-select-trigger),
+  .cd-ai-chat-input-footer-round :global(.cd-ai-chat-input-footer-configure-button),
+  .cd-ai-chat-input-footer-round :global(.cd-ai-chat-input-footer-configure-radio-button .cd-radio-addon-buttonRadio),
   .cd-ai-chat-input-footer-round :global(.cd-ai-chat-input-footer-configure-mcp-trigger) {
     border-radius: var(--cd-radius-ai-chat-input-footer-round);
+  }
+
+  /* .cd-radioGroup-buttonRadio 的 scoped 圆角声明（RadioGroup.svelte 内，单类但带
+     scoped 属性选择器加权）与本处 :global() 双类后代选择器特异性打平，源码顺序判定
+     下未生效——单独拆出用 !important 稳定压过（同 select-slot/configure-button 踩过的
+     特异性坑，此前误写成三层后代选择器查询不到任何元素，问题被掩盖成"看似未生效"）。 */
+  .cd-ai-chat-input-footer-round :global(.cd-ai-chat-input-footer-configure-radio-button) {
+    border-radius: var(--cd-radius-ai-chat-input-footer-round) !important;
   }
 
   /* Semi &-footer-configure：flex + column-gap 8px */
@@ -1523,13 +1638,17 @@
     column-gap: var(--cd-spacing-ai-chat-input-footer-configure-columngap);
   }
 
-  /* Semi &-footer-action：flex + column-gap 8px，内部 button 去默认样式 */
-  .cd-ai-chat-input-footer-action {
+  /* Semi &-footer-action：flex + column-gap 8px，内部 button 去默认样式。
+     renderActionArea 自定义渲染时容器本身（class={className}）由调用方在另一个组件
+     文件里创建（如 demo 09-action-area.svelte），不带本文件的 scoped 属性哈希——scoped
+     选择器命不中，实测纵向堆叠（同批 configure-select/-button round 特异性问题的另一种
+     形态：这次是"scoped 完全够不着"而非"特异性打平"），改 :global() 才能跨文件命中。 */
+  :global(.cd-ai-chat-input-footer-action) {
     display: flex;
     align-items: center;
     column-gap: var(--cd-spacing-ai-chat-input-footer-action-columngap);
   }
-  .cd-ai-chat-input-footer-action :global(button) {
+  :global(.cd-ai-chat-input-footer-action button) {
     padding: 0;
     border: 0;
     display: flex;

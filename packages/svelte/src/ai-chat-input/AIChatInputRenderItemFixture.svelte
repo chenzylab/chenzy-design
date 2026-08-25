@@ -9,7 +9,7 @@
   interface Props {
     skills?: AIChatInputSkill[];
     suggestions?: AIChatInputSuggestion[];
-    onSkillChange?: ((skill: AIChatInputSkill) => void) | undefined;
+    onSkillChange?: ((skill: AIChatInputSkill | undefined) => void) | undefined;
     onSuggestClick?: ((s: AIChatInputSuggestion) => void) | undefined;
   }
 

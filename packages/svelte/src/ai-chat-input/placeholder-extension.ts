@@ -49,6 +49,11 @@ export interface CustomPlaceholderOptions {
   showPlaceholderWhenSkillOnly: boolean;
   emptyEditorClass: string;
   emptyNodeClass: string;
+  /**
+   * 判定为可能需要装饰的节点后是否继续下探子节点（对齐官方 tiptap Placeholder
+   * options.includeChildren，默认 false：段落层级已经够用，不必再往文本节点里下探）。
+   */
+  includeChildren: boolean;
 }
 
 /** 去掉零宽字符后是否还有内容。 */
@@ -122,6 +127,7 @@ export function createPlaceholderExtension(
         showPlaceholderWhenSkillOnly: false,
         emptyEditorClass: 'is-editor-empty',
         emptyNodeClass: 'is-empty',
+        includeChildren: false,
       } satisfies CustomPlaceholderOptions;
     },
 
@@ -166,7 +172,7 @@ export function createPlaceholderExtension(
                     }),
                   );
                 }
-                return true;
+                return options.includeChildren;
               });
 
               return DecorationSet.create(doc, decorations);

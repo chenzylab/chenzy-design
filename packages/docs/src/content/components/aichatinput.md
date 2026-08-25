@@ -37,6 +37,14 @@ brief: 基于富文本编辑器的 AI 聊天输入框，支持引用、附件、
   import topSlotSrc from '../../demos/ai-chat-input/11-top-slot.svelte?raw';
   import PlaceholderSkillOnly from '../../demos/ai-chat-input/12-placeholder-skill-only.svelte';
   import placeholderSkillOnlySrc from '../../demos/ai-chat-input/12-placeholder-skill-only.svelte?raw';
+  import SetContent from '../../demos/ai-chat-input/13-set-content.svelte';
+  import setContentSrc from '../../demos/ai-chat-input/13-set-content.svelte?raw';
+  import KeepSkill from '../../demos/ai-chat-input/14-keep-skill.svelte';
+  import keepSkillSrc from '../../demos/ai-chat-input/14-keep-skill.svelte?raw';
+  import CustomRichTextExtension from '../../demos/ai-chat-input/15-custom-rich-text-extension.svelte';
+  import customRichTextExtensionSrc from '../../demos/ai-chat-input/15-custom-rich-text-extension.svelte?raw';
+  import AddPasteRule from '../../demos/ai-chat-input/15b-add-paste-rule.svelte';
+  import addPasteRuleSrc from '../../demos/ai-chat-input/15b-add-paste-rule.svelte?raw';
 </script>
 
 ## 使用场景
@@ -98,11 +106,11 @@ tiptap 内核体积较大，本库**全程动态 import**，不进主 bundle—�
 
 ### 配置区域
 
-通过 `renderConfigureArea` 自定义底部配置区，内部放 `AIChatInputConfigureSelect` / `Button` / `Mcp` / `RadioButton` 等；其值在发送时并入消息的 `setup` 字段，变更经 `onConfigureChange` 通知。
+通过 `renderConfigureArea` 自定义底部配置区，内部放 `AIChatInput.Configure.Select` / `Button` / `Mcp` / `RadioButton`（对齐 Semi `AIChatInput.Configure` 命名空间，也可从包直接具名导入 `AIChatInputConfigureSelect` 等）；其值在发送时并入消息的 `setup` 字段，变更经 `onConfigureChange` 通知。
 
 <DemoBox code={configureSrc}><Configure /></DemoBox>
 
-如果有其他形式的配置需求，可以用 `AIChatInputConfigureItem` 将任意受控组件（如 `Cascader`）接入配置区 context（对齐 Semi `getConfigureItem`，本库为 render-prop 形态而非 HOC）。
+如果有其他形式的配置需求，可以用 `getConfigureItem` 把任意受控组件（如 `Cascader`）接入配置区 context——与 Semi `getConfigureItem(Component, opts)` 同构的运行时 HOC：Svelte 5 组件本质是 `(internals, props) => Exports` 的函数，工厂函数返回一个新组件，原样转发 `internals` 给传入的组件，自己只负责合并 `field`/`initValue`/`value`/`onChange` 等 props。另有 `AIChatInput.Configure.Item`（render-prop 形态）：模板里就地包装用它更顺手，不必先在 `<script>` 里调用工厂函数生成组件；两者按场景二选一。
 
 <DemoBox code={configureItemSrc}><ConfigureItem /></DemoBox>
 
@@ -166,25 +174,27 @@ interface ActionAreaProps {
 - 请在自定义扩展中添加 `isCustomSlot` 的属性，该属性和自定义扩展前后的光标高度有关。
 - 由于 `AIChatInput` 使用 `Enter` 作为发送热键，如果自定义扩展有使用 `Enter` 作为快捷操作，需要自行设置 `editor.storage` 中的 `CdAIChatInput.allowHotKeySend` 用于表示热键是否应该被 AIChatInput 用于发送，避免热键冲突。
 
-```js
-import { AIChatInput } from '@chenzy-design/svelte';
-import Mention from '@tiptap/extension-mention';
+自定义扩展定义及注意事项的示例如下（`@` 触发两级命令面板，选中条目插入自定义 `referSlot` 节点，`renderTopSlot` 结合 `content` 一并展示）：
 
-const transformer = new Map([['mention', (node) => ({ type: 'mention', id: node.attrs.id })]]);
-```
+<DemoBox code={customRichTextExtensionSrc}><CustomRichTextExtension /></DemoBox>
 
-```svelte
-<AIChatInput extensions={[Mention]} {transformer} />
-```
+`isCustomSlot` 属性可用 `AIChatInput.getCustomSlotAttribute()`（静态方法）生成，无需手写 `parseHTML`/`renderHTML`。
 
-自定义扩展占用 `Enter` 时，在扩展内部让路：
+> **本库补充**：Semi 官网文档页此处只有上面的 `CustomRichTextExtension` 一个 live demo；下面这个自定义粘贴规则示例并非文档页内容，而是照搬自 Semi 源码仓库 `packages/semi-ui/aiChatInput/_story/docSlot.jsx`（Semi Storybook 用的真实代码，用 `nodePasteRule` 让粘贴匹配正则的文档链接自动转换为自定义节点），补充在此处作为 `extensions` API 的另一种用法示例。
 
-```js
-// 浮层打开期间把 Enter 让给扩展自己用，关闭后交还 AIChatInput
-editor.storage.CdAIChatInput.allowHotKeySend = false;
-// …扩展浮层关闭时
-editor.storage.CdAIChatInput.allowHotKeySend = true;
-```
+<DemoBox code={addPasteRuleSrc}><AddPasteRule /></DemoBox>
+
+### 设置内容
+
+用 `setContent` 设置编辑器内容（可包含 `<skill-slot>` 等自定义节点）；后续想保留已选技能、只改正文，用 `setContentWhileSaveTool`。`getEditor()` 取 tiptap Editor 实例，可读 `getHTML()`/`getJSON()`。
+
+<DemoBox code={setContentSrc}><SetContent /></DemoBox>
+
+### 保留技能标记
+
+`keepSkillAfterSend` 开启后，`generating` 由 `false` 变 `true` 时清空输入走 `setContentWhileSaveTool`（保留已选技能标记）而非整体 `clearContent`。
+
+<DemoBox code={keepSkillSrc}><KeepSkill /></DemoBox>
 
 ### 接入对话
 
@@ -275,13 +285,30 @@ editor.storage.CdAIChatInput.allowHotKeySend = true;
 
 ### Configure.Item
 
-通用配置字段包装（对齐 Semi `getConfigureItem`），把任意受控组件接入配置区 context；本库为 render-prop 形态而非 React HOC。
+通用配置字段包装（render-prop 形态），把任意受控组件接入配置区 context——模板里就地包装，不必先调用工厂函数生成新组件。
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
 | field | 绑定的配置字段名（发送时并入消息 `setup`） | string | - |
 | initValue | 初始值（注册到配置区，不触发 onConfigureChange） | unknown | - |
 | children | 渲染受控组件，参数提供当前 value 与 onChange 写回 | `Snippet<[{ value, onChange }]>` | - |
+
+### getConfigureItem
+
+```ts
+function getConfigureItem<P>(
+  Inner: Component<P>,
+  opts?: {
+    valueKey?: string; // 内层组件读取当前值用的 prop 名，默认 'value'
+    onKeyChangeFnName?: string; // 内层组件变更回调 prop 名，默认 'onChange'
+    valuePath?: string; // onChange 回调参数里取值的路径，如 'target.value'
+    className?: string; // 追加类名（与调用方传入的 class 合并）
+    defaultProps?: Partial<P>; // 内层组件默认 props
+  },
+): Component<P & { field: string; initValue?: unknown; onChange?: (value: unknown) => void; class?: string }>;
+```
+
+工厂函数（对齐 Semi `getConfigureItem`）：接收任意 Svelte 组件，返回一个新组件，多接受 `field`/`initValue`/`onChange`/`class` 四个 props，其余透传给内层组件；写回逻辑同 `Configure.Item`。用于需要复用（如在多处 `renderConfigureArea` 里用同一个包装组件）的场景。
 
 ### Configure.Mcp
 
@@ -294,6 +321,14 @@ editor.storage.CdAIChatInput.allowHotKeySend = true;
 
 > 本库配置区各项统一由 `field` 绑定到配置对象（值经 `onConfigureChange` 上抛、
 > 发送时并入 `setup`），故用 `field` + `initValue`，而非 Semi 的受控 `value`/`defaultValue`。
+
+### AIChatInput.getCustomSlotAttribute
+
+```ts
+function getCustomSlotAttribute(): TiptapAttributeConfig;
+```
+
+静态方法：生成 tiptap 自定义节点的 `isCustomSlot` 属性描述，供用户自定义扩展接入编辑区光标/零宽字符处理逻辑（见「自定义扩展」章节）。用法：`AIChatInput.getCustomSlotAttribute()`，放进自定义 `Node.create({ addAttributes() { return { isCustomSlot: AIChatInput.getCustomSlotAttribute() } } })`。也可从包具名导入 `getCustomSlotAttribute`。
 
 ## Methods
 

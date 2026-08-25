@@ -9,6 +9,7 @@
  */
 import type { Node as TiptapNode, Extension } from '@tiptap/core';
 import type { SvelteNodeViewRenderer } from 'svelte-tiptap';
+import { getCustomSlotAttribute } from '@chenzy-design/core';
 import InputSlotNode from './InputSlotNode.svelte';
 import {
   createEnsureTrailingText,
@@ -43,11 +44,9 @@ export function createInputSlotExtension(
           parseHTML: (el: HTMLElement) => el.getAttribute('placeholder') || '',
           renderHTML: (attrs: Record<string, unknown>) => ({ placeholder: attrs.placeholder }),
         },
-        // 光标处理 plugin 靠此标记识别自定义节点（inputSlot/selectSlot/skillSlot 共用）。
-        isCustomSlot: {
-          default: true,
-          rendered: false,
-        },
+        // 光标处理 plugin 靠此标记识别自定义节点（inputSlot/selectSlot/skillSlot 共用；
+        // 对齐 Semi getCustomSlotAttribute：renderHTML 输出 data-custom-slot）。
+        isCustomSlot: getCustomSlotAttribute(),
       };
     },
 

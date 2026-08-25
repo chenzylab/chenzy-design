@@ -1895,7 +1895,6 @@
     position: relative;
     display: inline-flex;
     align-items: center;
-    width: 100%;
     min-width: var(--cd-width-cascader-trigger-min);
     min-height: var(--cd-select-height-default);
     box-sizing: border-box;

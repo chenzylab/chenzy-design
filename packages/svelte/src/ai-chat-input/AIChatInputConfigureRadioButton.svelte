@@ -62,8 +62,12 @@
 <style>
   /* 逐条对齐 Semi aiChatInput.scss:296-308：单选按钮的高/内距/字号 +
      选中态前景/底色。本库此前只挂了类名（上一轮补的），一条样式都没接。
-     RadioGroup 的内部节点 class 在子组件里，故走 :global。 */
+     RadioGroup 的内部节点 class 在子组件里，故走 :global。
+     Semi 未声明 box-sizing，走默认 content-box：height:16px 是内容区，padding 向外
+     撑大（对齐 &-attachment 等同类盒模型问题；此选择器限定在 AIChatInput 配置区内，
+     不影响独立使用的 RadioGroup）。 */
   :global(.cd-ai-chat-input-footer-configure-radio-button .cd-radio-addon-buttonRadio) {
+    box-sizing: content-box;
     height: var(--cd-height-ai-chat-input-footer-configure-radio-button);
     padding: var(--cd-spacing-ai-chat-input-footer-configure-radio-button-padding);
     font-size: var(--cd-font-ai-chat-input-footer-configure-radio-button-fontsize);
@@ -75,4 +79,5 @@
     color: var(--cd-color-ai-chat-input-footer-configure-radio-button-checked);
     background: var(--cd-color-ai-chat-input-footer-configure-radio-button-checked-bg);
   }
+
 </style>

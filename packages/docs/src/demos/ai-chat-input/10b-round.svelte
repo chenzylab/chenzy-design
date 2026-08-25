@@ -2,16 +2,7 @@
   // 对齐 Semi「底部按钮形状」段：round 控制底部配置区/操作区按钮形状，
   // 默认 true（全圆角），设为 false 即方形按钮；配上 renderConfigureArea
   // 放 Select/Button/Mcp/RadioButton，才能真正看到 round 对配置区各按钮的效果。
-  import {
-    AIChatInput,
-    Button,
-    RadioGroup,
-    Radio,
-    AIChatInputConfigureSelect,
-    AIChatInputConfigureButton,
-    AIChatInputConfigureMcp,
-    AIChatInputConfigureRadioButton,
-  } from '@chenzy-design/svelte';
+  import { AIChatInput, Button, RadioGroup, Radio } from '@chenzy-design/svelte';
   import { IconBookOpenStroked, IconFeishuLogo, IconGit, IconFigma } from '@chenzy-design/icons';
 
   const uploadProps = { action: 'https://api.semi.design/upload' };
@@ -53,15 +44,10 @@
   <div style="margin: 12px;">
     <AIChatInput placeholder="下方按钮为方形的用例" {round} {uploadProps}>
       {#snippet renderConfigureArea()}
-        <AIChatInputConfigureSelect
-          field="model"
-          options={modelOptions}
-          initValue="gpt-4o"
-          style="width: 130px;"
-        />
-        <AIChatInputConfigureButton field="onlineSearch" icon={iconBookOpen}>联网搜索</AIChatInputConfigureButton>
-        <AIChatInputConfigureMcp field="mcp" options={mcpOptions} />
-        <AIChatInputConfigureRadioButton field="thinkType" options={radioButtonProps} initValue="fast" />
+        <AIChatInput.Configure.Select field="model" options={modelOptions} initValue="gpt-4o" />
+        <AIChatInput.Configure.Button field="onlineSearch" icon={iconBookOpen}>联网搜索</AIChatInput.Configure.Button>
+        <AIChatInput.Configure.Mcp field="mcp" options={mcpOptions} />
+        <AIChatInput.Configure.RadioButton field="thinkType" options={radioButtonProps} initValue="fast" />
       {/snippet}
     </AIChatInput>
   </div>

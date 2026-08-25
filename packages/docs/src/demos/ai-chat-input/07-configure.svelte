@@ -1,11 +1,5 @@
 <script lang="ts">
-  import {
-    AIChatInput,
-    AIChatInputConfigureSelect,
-    AIChatInputConfigureButton,
-    AIChatInputConfigureMcp,
-    AIChatInputConfigureRadioButton,
-  } from '@chenzy-design/svelte';
+  import { AIChatInput } from '@chenzy-design/svelte';
   import { IconBookOpenStroked, IconFeishuLogo, IconGit, IconFigma } from '@chenzy-design/icons';
   import type {
     AIChatInputConfigureValue,
@@ -53,15 +47,10 @@
 <div style="margin: 12px;">
   <AIChatInput placeholder="用于查看左下方配置项的用例" {onConfigureChange} onMessageSend={handleSend}>
     {#snippet renderConfigureArea()}
-      <AIChatInputConfigureSelect
-        field="model"
-        options={modelOptions}
-        initValue="gpt-4o"
-        style="width: 130px;"
-      />
-      <AIChatInputConfigureButton field="onlineSearch" icon={iconBookOpen}>联网搜索</AIChatInputConfigureButton>
-      <AIChatInputConfigureMcp field="mcp" options={mcpOptions} {onConfigureButtonClick} showConfigure />
-      <AIChatInputConfigureRadioButton field="thinkType" options={radioButtonProps} initValue="fast" />
+      <AIChatInput.Configure.Select field="model" options={modelOptions} initValue="gpt-4o" />
+      <AIChatInput.Configure.Button field="onlineSearch" icon={iconBookOpen}>联网搜索</AIChatInput.Configure.Button>
+      <AIChatInput.Configure.Mcp field="mcp" options={mcpOptions} {onConfigureButtonClick} showConfigure />
+      <AIChatInput.Configure.RadioButton field="thinkType" options={radioButtonProps} initValue="fast" />
     {/snippet}
   </AIChatInput>
   <p style="margin-top: 12px; color: var(--cd-color-text-2);">

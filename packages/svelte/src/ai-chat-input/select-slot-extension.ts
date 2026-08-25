@@ -8,6 +8,7 @@
  */
 import type { Node as TiptapNode, Extension } from '@tiptap/core';
 import type { SvelteNodeViewRenderer } from 'svelte-tiptap';
+import { getCustomSlotAttribute } from '@chenzy-design/core';
 import SelectSlotNode from './SelectSlotNode.svelte';
 
 type NodeCtor = typeof TiptapNode;
@@ -39,8 +40,9 @@ export function createSelectSlotExtension(
           renderHTML: (attrs: Record<string, unknown>) =>
             attrs.options ? { options: attrs.options } : {},
         },
-        // 光标处理 plugin 靠此标记识别自定义节点（与 input-slot/skill-slot 共用锚点逻辑）。
-        isCustomSlot: { default: true, rendered: false },
+        // 光标处理 plugin 靠此标记识别自定义节点（与 input-slot/skill-slot 共用锚点逻辑；
+        // 对齐 Semi getCustomSlotAttribute：renderHTML 输出 data-custom-slot）。
+        isCustomSlot: getCustomSlotAttribute(),
       };
     },
 

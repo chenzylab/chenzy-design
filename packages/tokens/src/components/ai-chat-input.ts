@@ -20,12 +20,6 @@ export const aiChatInputTokens = {
     label: '容器描边',
     usage: '输入区容器描边色',
   },
-  'ai-chat-input-border-focus': {
-    value: 'var(--cd-color-primary)',
-    category: 'color',
-    label: '容器描边（聚焦）',
-    usage: '输入区聚焦（focus-within）描边色',
-  },
   'ai-chat-input-radius': {
     value: 'var(--cd-border-radius-medium)',
     category: 'radius',
@@ -43,12 +37,6 @@ export const aiChatInputTokens = {
     category: 'spacing',
     label: '容器内边距',
     usage: '输入区容器内边距',
-  },
-  'ai-chat-input-gap': {
-    value: 'var(--cd-spacing-tight)',
-    category: 'spacing',
-    label: '内部间距',
-    usage: '编辑区/footer/操作项之间的间距',
   },
   // 编辑区
   'ai-chat-input-color': {
@@ -109,18 +97,6 @@ export const aiChatInputTokens = {
     category: 'color',
     label: '操作图标色（悬浮）',
     usage: '操作图标悬浮色',
-  },
-  'ai-chat-input-action-padding': {
-    value: 'var(--cd-spacing-extra-tight)',
-    category: 'spacing',
-    label: '操作按钮内边距',
-    usage: '上传/发送按钮内边距',
-  },
-  'ai-chat-input-action-radius': {
-    value: 'var(--cd-border-radius-small)',
-    category: 'radius',
-    label: '操作按钮圆角',
-    usage: '上传/发送按钮圆角',
   },
   // 发送按钮
   'ai-chat-input-send-bg': {
@@ -384,19 +360,6 @@ export const aiChatInputTokens = {
     usage: 'Semi $color-aiChatInput_skill_item-bg-active',
   },
   // skill-slot 编辑器内技能 chip（阶段 3）
-  // 模版按钮（阶段 3）
-  'ai-chat-input-template-color': {
-    value: 'var(--cd-color-text-1)',
-    category: 'color',
-    label: '模版按钮文本',
-    usage: '模版按钮文本/图标色',
-  },
-  'ai-chat-input-template-bg-hover': {
-    value: 'var(--cd-color-fill-1)',
-    category: 'color',
-    label: '模版按钮背景（悬浮）',
-    usage: '模版按钮悬浮背景',
-  },
   // —— 引用条（逐条镜像 Semi $*-aiChatInput_reference* / $*-aiChatInput_references*）——
   'ai-chat-input-references-text': {
     value: 'var(--cd-color-text-2)',
