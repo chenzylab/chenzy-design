@@ -18,7 +18,8 @@
   } from './context.js';
 
   type OptionObject = {
-    label: string;
+    /** 对齐 Semi label: ReactNode——支持纯文本或自定义内容（如图标）。 */
+    label: string | Snippet;
     value: RadioValue;
     disabled?: boolean;
     extra?: string;
@@ -184,7 +185,13 @@
 >
   {#if normalizedOptions}
     {#each normalizedOptions as opt (opt.value)}
-      <Radio {...optionRadioProps(opt)}>{opt.label}</Radio>
+      <Radio {...optionRadioProps(opt)}>
+        {#if typeof opt.label === 'function'}
+          {@render opt.label()}
+        {:else}
+          {opt.label}
+        {/if}
+      </Radio>
     {/each}
   {:else}
     {@render children?.()}

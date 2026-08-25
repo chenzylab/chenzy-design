@@ -356,8 +356,12 @@ const components = [
   // 14.5 → 15.5 KB：三个浮层（建议/技能/模版）改由 Popover 承载后实测 14.7 KB
   //   （Popover 走 `../popover/` 属兄弟组件被 externalize 不计入，增量是本组件自身的
   //    浮层装配 + dropdownMatchTriggerWidth 的 ResizeObserver + rePosKey 重定位）。
+  // 15.5 → 17.25 KB：全量对齐 Semi 一轮新增实测 17.25 KB——getConfigureItem（HOC 工厂函数，
+  //   逐属性 getter 委托保持响应式）+ AIChatInput.getCustomSlotAttribute 静态方法 +
+  //   findSkillSlotInString（onContentChange 从 HTML 反解析 skillSlot 同步 currentSkill，
+  //   对齐 Semi handleContentChange）+ InputSlotNode 补齐 IME 组字期间隐藏 placeholder。
   // 预算按实测 +~5% 余量校准（对齐 perf-budgets-calibrated-from-real-measurement）。
-  ['ai-chat-input', '{ AIChatInput }', '15.5 KB'],
+  ['ai-chat-input', '{ AIChatInput }', '18.2 KB'],
 ];
 
 // JsonViewer 的内核 @douyinfe/semi-json-viewer-core 是「动态 import」惰性加载

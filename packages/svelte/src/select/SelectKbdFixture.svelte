@@ -21,6 +21,7 @@
   <Select
     {optionList}
     aria-label="Fruit"
+    placeholder="Select a fruit"
     defaultActiveFirstOption={false}
     onChange={(v) => {
       lastValue = v;

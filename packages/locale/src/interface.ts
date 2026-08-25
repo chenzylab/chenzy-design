@@ -606,8 +606,6 @@ export interface Locale {
     upload: string;
     /** delete-reference button aria-label */
     deleteReference: string;
-    /** delete-attachment button aria-label */
-    deleteAttachment: string;
     /** suggestions listbox aria-label */
     suggestions: string;
     /** skill list listbox aria-label */

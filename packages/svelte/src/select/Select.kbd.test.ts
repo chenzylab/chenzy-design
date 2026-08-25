@@ -35,15 +35,24 @@ describe('Select 键盘 e2e（aria-activedescendant 浮层导航）', () => {
     // 焦点在 combobox 上，options 不可真实聚焦（tabindex=-1）。
     expect(options.every((o) => o.tabIndex === -1)).toBe(true);
 
-    // 1. ↓ 高亮首项（activeIndex -1 → 0），aria-activedescendant 指向 opt-0。
-    await userEvent.keyboard('{ArrowDown}');
+    // 真实 chromium 行为：浮层展开时 opt-0 出现在鼠标静止的屏幕坐标下方，浏览器会对
+    // 该坐标重新 hit-test 并补发 pointerenter——点击打开后 activeIndex 已因这次真实
+    // 悬停被置为 0（非键盘操作产生，是"鼠标恰好悬停在新出现的首项上"的真实副作用，
+    // 与桌面端下拉菜单的常见体验一致）。故起点断言为 opt-0，而非 -1。
     expect(combobox.getAttribute('aria-activedescendant')).toBe(`${listId}-opt-0`);
     expect(options[0]!.classList.contains('cd-select-option-active')).toBe(true);
 
-    // 再 ↓ 移到 opt-1。
+    // 1. ↓ 移到 opt-1。
     await userEvent.keyboard('{ArrowDown}');
     expect(combobox.getAttribute('aria-activedescendant')).toBe(`${listId}-opt-1`);
 
+    // 再 ↓ 移到 opt-2。
+    await userEvent.keyboard('{ArrowDown}');
+    expect(combobox.getAttribute('aria-activedescendant')).toBe(`${listId}-opt-2`);
+
+    // ↑ 回到 opt-1。
+    await userEvent.keyboard('{ArrowUp}');
+    expect(combobox.getAttribute('aria-activedescendant')).toBe(`${listId}-opt-1`);
     // ↑ 回到 opt-0。
     await userEvent.keyboard('{ArrowUp}');
     expect(combobox.getAttribute('aria-activedescendant')).toBe(`${listId}-opt-0`);

@@ -1,8 +1,8 @@
 <!--
   SkillSlotNode — tiptap skillSlot 自定义节点的 Svelte NodeView（阶段 3）。
   对齐 Semi SkillSlotComponent：把技能渲染为编辑器内的 inline chip（label + 删除）。
-  用 svelte-tiptap 的 NodeViewWrapper 承载；删除走 deleteNode（移除该节点）。
-  props 由 SvelteNodeViewRenderer 注入（tiptap NodeViewProps：node/editor/deleteNode）。
+  用 svelte-tiptap 的 NodeViewWrapper 承载。
+  props 由 SvelteNodeViewRenderer 注入（tiptap NodeViewProps：node/editor）。
   aria-label 走 i18n；无 label/value 时不渲染（对齐 Semi 空值返回 null）。
 -->
 <script lang="ts">
@@ -10,17 +10,18 @@
   import { NodeViewWrapper } from 'svelte-tiptap';
   import { useLocale } from '../locale-provider/index.js';
 
-  let { node, deleteNode }: NodeViewProps = $props();
+  let { node, editor }: NodeViewProps = $props();
 
   const loc = useLocale();
 
   // 显示文本：label 优先，回退 value（对齐 Semi node.attrs.label ?? node.attrs.value）。
   const label = $derived((node.attrs.label as string) || (node.attrs.value as string) || '');
 
+  // 对齐 Semi onRemove：清空整个编辑器内容（不是只删这一个节点）。
   function handleRemove(e: MouseEvent): void {
     e.preventDefault();
     e.stopPropagation();
-    deleteNode();
+    editor?.commands.clearContent();
   }
 </script>
 

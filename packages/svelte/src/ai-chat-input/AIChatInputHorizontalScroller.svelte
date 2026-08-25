@@ -98,9 +98,10 @@
     /* 隐藏滚动条 */
     scrollbar-width: none; /* Firefox */
     -ms-overflow-style: none; /* IE / Edge */
+    /* Semi $spacing-aiChatInput_attachment_scroll_container 变量注释写"内间距"易误导——
+       SCSS 实际只用它做 column-gap（卡片间横向间距），&-scroll-container 本身**没有**
+       padding 声明。本库之前多加了一条同 token 的 padding，属误用，已删除。 */
     column-gap: var(--cd-ai-chat-input-attachment-scroll-container-columnGap);
-    /* Semi $spacing-aiChatInput_attachment_scroll_container：滚动区自身内间距。 */
-    padding: var(--cd-spacing-ai-chat-input-attachment-scroll-container);
   }
 
   .cd-ai-chat-input-scroll-container::-webkit-scrollbar {

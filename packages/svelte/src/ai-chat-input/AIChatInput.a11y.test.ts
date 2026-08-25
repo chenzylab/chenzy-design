@@ -536,6 +536,45 @@ describe('AIChatInput · 技能 + 模版（阶段 3）', () => {
     expect(chip?.textContent).toContain('总结');
   });
 
+  it('setContent 直接注入 skillSlot（非面板选中）也会同步 onSkillChange 与内部技能状态（对齐 Semi handleContentChange）', async () => {
+    const onSkillChange = vi.fn();
+    const rendered = render(AIChatInput, { props: { skills, onSkillChange } }) as unknown as {
+      container: Element;
+      component: { setContent: (s: string) => void; setContentWhileSaveTool: (s: string) => void };
+    };
+    const { container, component } = rendered;
+    await flush(container);
+    component.setContent(
+      '<skill-slot data-label="总结" data-value="summarize"></skill-slot>正文',
+    );
+    await flush();
+    expect(onSkillChange).toHaveBeenCalledWith(
+      expect.objectContaining({ value: 'summarize', label: '总结' }),
+    );
+    // 技能状态已同步：setContentWhileSaveTool 应保留该技能，只替换正文。
+    component.setContentWhileSaveTool('新正文');
+    await flush();
+    expect(popup('.skill-slot')?.textContent).toContain('总结');
+    const editorText = container.querySelector('.tiptap')?.textContent ?? '';
+    expect(editorText).toContain('新正文');
+  });
+
+  it('清空含 skillSlot 的内容后 onSkillChange 收到 undefined（对齐 Semi）', async () => {
+    const onSkillChange = vi.fn();
+    const rendered = render(AIChatInput, { props: { skills, onSkillChange } }) as unknown as {
+      container: Element;
+      component: { setContent: (s: string) => void };
+    };
+    const { container, component } = rendered;
+    await flush(container);
+    component.setContent('<skill-slot data-label="总结" data-value="summarize"></skill-slot>');
+    await flush();
+    onSkillChange.mockClear();
+    component.setContent('');
+    await flush();
+    expect(onSkillChange).toHaveBeenCalledWith(undefined);
+  });
+
   it('按 skillHotKey 弹出技能面板（listbox）', async () => {
     const { container } = renderWithLocale(AIChatInput, { props: { skills } });
     await flush(container);
@@ -570,7 +609,12 @@ describe('AIChatInput · 技能 + 模版（阶段 3）', () => {
     const items = popupAll('.cd-ai-chat-input-skill-item');
     await fireEvent.mouseDown(items[1]!); // 翻译（hasTemplate）
     await flush();
-    expect(popup('.cd-ai-chat-input-template-btn')).not.toBeNull();
+    // 模版按钮已改为真正复用 Configure.Button（对齐 Semi index.tsx:507-512），
+    // 类名是 .cd-ai-chat-input-footer-configure-button，非自造的 -template-btn。
+    const templateBtn = [...popupAll('.cd-ai-chat-input-footer-configure-button')].find(
+      (el) => el.textContent?.trim() === 'Template',
+    );
+    expect(templateBtn).not.toBeUndefined();
   });
 
   // 对齐 Semi skillItem.tsx：renderSkillItem 存在时**整项替换**（不再套默认外壳），
@@ -716,7 +760,10 @@ describe('AIChatInput · input-slot 可编辑节点（可选补充）', () => {
     await flush(container);
     component.setContent('<p>去 <input-slot placeholder="填城市">北京</input-slot></p>');
     await flush();
-    expect(container.querySelector('.input-slot-placeholder')).toBeNull();
+    // 对齐 Semi component.tsx：placeholder span 始终渲染（IME 组字期间需要平滑切换显隐），
+    // 有内容时用 display:none 隐藏而非从 DOM 卸载。
+    const placeholderEl = container.querySelector('.input-slot-placeholder') as HTMLElement | null;
+    expect(placeholderEl?.style.display).toBe('none');
     const sendBtn = container.querySelector('.cd-ai-chat-input-footer-action-send, .cd-ai-chat-input-footer-action-stop') as HTMLButtonElement;
     await fireEvent.click(sendBtn);
     const text = onMessageSend.mock.calls[0]![0].inputContents?.[0]?.text;
@@ -767,13 +814,21 @@ describe('AIChatInput · Configure.Mcp（可选补充）', () => {
 
   // 下拉头部（对齐 Semi mcp.tsx 的 -mcp-header）：已选计数文案 + 配置按钮。
   // 浮层被 portal 到 body，故查 document 而非 container。
+  // Semi Mcp 未显式传 trigger，走 Dropdown 默认值 hover（非 click，见组件注释）。
+  // Dropdown.svelte 的 onpointerenter 挂在外层 span.cd-dropdown-trigger 包裹容器上，
+  // 不是内部 Button 本身——pointerenter 不冒泡（enter/leave 系事件规范特性），真实浏览器
+  // 靠指针物理移动对所有祖先派发该事件，jsdom 手动 fireEvent 只派发到指定目标，故必须
+  // 直接对外层 span 触发，对内部 Button 触发永远到不了 Dropdown 的处理器。
+  // onPointerEnter 内部 setTimeout(..., mouseEnterDelay=50) 才真正 setOpen(true)，
+  // flush(container) 在编辑器已挂载后只多等 20ms，覆盖不了这段延迟，需显式多等一拍。
   it('展开后渲染头部：locale 计数文案 + 配置按钮，showConfigure=false 时隐藏按钮', async () => {
     const { container } = renderWithLocale(AIChatInputMcpFixture);
     await flush(container);
-    const trigger = container.querySelector(
-      '.cd-ai-chat-input-footer-configure-mcp-trigger',
-    ) as HTMLElement;
-    await fireEvent.click(trigger);
+    const trigger = container
+      .querySelector('.cd-ai-chat-input-footer-configure-mcp-trigger')
+      ?.closest('.cd-dropdown-trigger') as HTMLElement;
+    await fireEvent.pointerEnter(trigger);
+    await new Promise((r) => setTimeout(r, 80));
     await flush(container);
 
     const header = document.querySelector('.cd-ai-chat-input-footer-configure-mcp-header');
@@ -796,9 +851,12 @@ describe('AIChatInput · Configure.Mcp（可选补充）', () => {
       props: { onConfigureButtonClick },
     });
     await flush(container);
-    await fireEvent.click(
-      container.querySelector('.cd-ai-chat-input-footer-configure-mcp-trigger') as HTMLElement,
+    await fireEvent.pointerEnter(
+      container
+        .querySelector('.cd-ai-chat-input-footer-configure-mcp-trigger')
+        ?.closest('.cd-dropdown-trigger') as HTMLElement,
     );
+    await new Promise((r) => setTimeout(r, 80));
     await flush(container);
     await fireEvent.click(
       document.querySelector(
@@ -813,9 +871,12 @@ describe('AIChatInput · Configure.Mcp（可选补充）', () => {
       props: { showConfigure: false },
     });
     await flush(container);
-    await fireEvent.click(
-      container.querySelector('.cd-ai-chat-input-footer-configure-mcp-trigger') as HTMLElement,
+    await fireEvent.pointerEnter(
+      container
+        .querySelector('.cd-ai-chat-input-footer-configure-mcp-trigger')
+        ?.closest('.cd-dropdown-trigger') as HTMLElement,
     );
+    await new Promise((r) => setTimeout(r, 80));
     await flush(container);
     expect(
       document.querySelector('.cd-ai-chat-input-footer-configure-mcp-header'),

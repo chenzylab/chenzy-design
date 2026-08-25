@@ -1677,10 +1677,13 @@
 {/snippet}
 
 <style>
+  /* Semi .semi-select 根节点无 width 声明：display:inline-flex 天然收缩到内容宽度
+     （single 模式下即 selection 文本 + 箭头的实际宽度）。本库此前多写了 inline-size:100%，
+     与 inline-flex 的收缩语义矛盾——效果是"撑满父容器"而非"自适应内容"，在 flex 父级
+     （如 AIChatInput 配置区）里会挤占其它兄弟项的空间。 */
   .cd-select {
     position: relative;
     display: inline-flex;
-    inline-size: 100%;
     font-size: var(--cd-select-font-size);
   }
   .cd-select-trigger {
@@ -2245,19 +2248,25 @@
     transition: background-color var(--cd-transition-duration-select-option-bg)
       var(--cd-transition-function-select-option-bg) var(--cd-transition-delay-select-option-bg);
   }
+  /* 对齐 Semi option.scss `&-selected { font-weight: bold; background: transparent }`：
+     选中态本身加粗 + 透明背景，不靠色块区分。 */
+  .cd-select-option-selected {
+    color: var(--cd-select-option-color-selected);
+    background: var(--cd-select-option-bg-selected);
+    font-weight: var(--cd-font-weight-bold);
+  }
+  /* 对齐 Semi option.scss 源码顺序：`&-selected`（74 行）写在 `&-focused`（82 行）
+     之前——同一项既选中又被 hover/键盘高亮时，后写的 -focused 规则覆盖先写的
+     -selected，背景色能正常显示（"选中项 hover 也要有背景色"，真机核实 Semi 官方
+     选中项 hover 确实变色，不是只加粗不变色）。本库 -selected 曾写在 -active 之后，
+     顺序反了，选中项 hover 永远没有背景色变化。此处把 -active 移到 -selected 之后
+     以复现同样的层叠结果，而非简单靠特异性打平覆盖。 */
   .cd-select-option-active {
     background: var(--cd-select-option-bg-hover);
   }
   /* 对齐 Semi option.scss `&:active { background: bg-active }`：鼠标按下瞬时再加深一档。 */
   .cd-select-option:active {
     background: var(--cd-select-option-bg-active);
-  }
-  /* 对齐 Semi `&-selected { font-weight: bold; background: transparent }`：
-     选中态只加粗 + 透明背景，不靠色块区分（色块留给 hover/active 的 -active 类）。 */
-  .cd-select-option-selected {
-    color: var(--cd-select-option-color-selected);
-    background: var(--cd-select-option-bg-selected);
-    font-weight: var(--cd-font-weight-bold);
   }
   .cd-select-option[aria-disabled='true'] {
     color: var(--cd-color-select-option-disabled-text);
