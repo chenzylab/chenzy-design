@@ -33,7 +33,7 @@ export interface GetConfigureItemOptions<P extends Record<string, unknown>> {
   defaultProps?: Partial<P>;
 }
 
-interface ConfigureItemProps<P extends Record<string, unknown>> {
+interface ConfigureItemProps {
   /** 绑定的配置字段名。 */
   field: string;
   /** 初始值（挂载时注册到配置区，不触发 onConfigureChange）。 */
@@ -60,7 +60,7 @@ function getByPath(obj: unknown, path: string): unknown {
 export function getConfigureItem<P extends Record<string, unknown>>(
   Inner: Component<P, Record<string, unknown>, string>,
   opts: GetConfigureItemOptions<P> = {},
-): Component<P & ConfigureItemProps<P>, Record<string, unknown>, string> {
+): Component<P & ConfigureItemProps, Record<string, unknown>, string> {
   const {
     valueKey = 'value' as keyof P & string,
     onKeyChangeFnName = 'onChange',
@@ -72,7 +72,7 @@ export function getConfigureItem<P extends Record<string, unknown>>(
   function ConfigureItem(
     this: void,
     internals: ComponentInternals,
-    props: P & ConfigureItemProps<P>,
+    props: P & ConfigureItemProps,
   ) {
     const ctx = getConfigureContext();
 
@@ -129,7 +129,7 @@ export function getConfigureItem<P extends Record<string, unknown>>(
   }
 
   return ConfigureItem as unknown as Component<
-    P & ConfigureItemProps<P>,
+    P & ConfigureItemProps,
     Record<string, unknown>,
     string
   >;

@@ -125,7 +125,7 @@ export const suggestion: Partial<SuggestionOptions<TestActionItem | string, Sugg
     // 这个对象本身（Svelte 5 $state 驱动重渲染），不重新 mount——避免丢失 MentionList
     // 内部的 selectedIndex/level 状态（对齐 Semi ReactRenderer.updateProps 的语义：
     // 更新 props 而不重建组件实例）。
-    let liveProps: Record<string, unknown> = $state({});
+    const liveProps: Record<string, unknown> = $state({});
     // MentionList 实例方法（对齐 Semi ref.current 的 onKeyDown 转发）。
     let listApi: { onKeyDown: (opts: { event: KeyboardEvent; exitCb: () => void }) => boolean } | undefined;
 
