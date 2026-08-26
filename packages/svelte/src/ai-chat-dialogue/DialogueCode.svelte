@@ -72,8 +72,15 @@
 {/if}
 
 <style>
-  /* 逐条对齐 Semi aiChatDialogue.scss &-code。 */
+  /* 逐条对齐 Semi aiChatDialogue.scss &-code。
+     display:flex + flex-direction:column 是本库补的（Semi 没有，JSX 渲染不产生空白
+     文本节点不需要）：Svelte 模板里 </div> 与 <Code/> 之间的换行/缩进会编译成一个
+     空白文本节点，在 block 布局下继承 line-height:32px 会被撑成一整行可见空白
+     （真机验证到，topSlot 与代码内容之间多出 32px 间隙）。改 flex 后子节点按
+     flex item 处理，line-height 只作用于内部真正含文字处，不会被空白文本节点单独撑高。 */
   .cd-ai-chat-dialogue-code {
+    display: flex;
+    flex-direction: column;
     border-radius: var(--cd-ai-chat-dialogue-code);
     overflow: hidden;
     border: var(--cd-width-ai-chat-dialogue-code-border) solid

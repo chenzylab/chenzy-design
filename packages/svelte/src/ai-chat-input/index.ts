@@ -62,7 +62,7 @@ export {
   shouldOpenSkillPanel,
   setConfigureField,
   removeConfigureField,
-  messageToChatInput,
+  chatInputToMessage,
   chatInputToChatCompletion,
   type AIChatInputContent,
   type AIChatInputAttachment,

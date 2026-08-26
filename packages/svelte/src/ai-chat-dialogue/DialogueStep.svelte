@@ -17,12 +17,12 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
   import { untrack } from 'svelte';
-  import type { DialogueStep } from '@chenzy-design/core';
+  import type { DialogueStep as DialogueStepData } from '@chenzy-design/core';
   import { IconStoryStroked, IconChevronDown, IconChevronUp } from '@chenzy-design/icons';
   import { Collapsible } from '../collapsible/index.js';
 
   interface Props {
-    steps: DialogueStep[];
+    steps: DialogueStepData[];
     /** 自定义 action 图标渲染（Semi 的 action.icon 是 ReactNode，本库交由渲染层给 Snippet）。 */
     renderActionIcon?: Snippet<[{ icon: unknown }]> | undefined;
   }
@@ -121,8 +121,10 @@
     cursor: pointer;
   }
 
-  /* Semi: .#{$module}-content-loading { margin-top: 0 } —— 步骤内的 loading 不要上外距。 */
-  .cd-ai-chat-dialogue-step .cd-ai-chat-dialogue-content-loading {
+  /* Semi: .#{$module}-content-loading { margin-top: 0 } —— 步骤内的 loading 不要上外距。
+     content-loading 定义在 DialogueBox.svelte（跨组件），祖先链选择器须整条 :global()，
+     只给后半截打洞不够——中间的 scoped hash 对不上会静默失效。 */
+  :global(.cd-ai-chat-dialogue-step .cd-ai-chat-dialogue-content-loading) {
     margin-top: 0;
   }
 

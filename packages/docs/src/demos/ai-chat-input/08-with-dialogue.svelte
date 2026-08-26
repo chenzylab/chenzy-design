@@ -2,7 +2,7 @@
   import {
     AIChatInput,
     AIChatDialogue,
-    messageToChatInput,
+    chatInputToMessage,
   } from '@chenzy-design/svelte';
   import type {
     AIChatInputMessageContent,
@@ -10,7 +10,7 @@
     AIDialogueRoleConfig,
   } from '@chenzy-design/svelte';
 
-  // 端到端桥接：AIChatInput 的 onMessageSend 载荷经 messageToChatInput Adapter
+  // 端到端桥接：AIChatInput 的 onMessageSend 载荷经 chatInputToMessage Adapter
   // 转成 AIDialogueMessage（user 角色），push 进 AIChatDialogue 的 chats 展示。
   const roleConfig: AIDialogueRoleConfig = {
     user: { name: '我', color: '#4080ff' },
@@ -21,7 +21,7 @@
   let seq = 0;
 
   function handleSend(message: AIChatInputMessageContent): void {
-    const userMsg = messageToChatInput(message, { id: `u-${seq++}` });
+    const userMsg = chatInputToMessage(message, { id: `u-${seq++}` });
     userMsg.status = 'completed';
     chats = [...chats, userMsg];
   }

@@ -68,10 +68,10 @@
 
 AIChatInput ↔ AIChatDialogue / OpenAI API 的桥（对齐 Semi dataAdapter 反向）。**core 纯函数**（无渲染层，单测 36→42），从 svelte 包透传。
 
-- **messageToChatInput(message, opts?)** → `AIDialogueMessage`（role='user'）：把 onMessageSend 载荷转成一条 user 消息，content 为单个 `{type:'message', role:'user', content: parts}`，parts 含 `input_text`（inputContents）/`input_image`/`input_file`（attachments 按 name/url 图片扩展名分流）。opts.id（AIChatDialogue 需唯一 id，调用方提供，缺省 ''）/opts.model。→ 直接 push 进 AIChatDialogue 的 chats。
+- **chatInputToMessage(message, opts?)** → `AIDialogueMessage`（role='user'）：把 onMessageSend 载荷转成一条 user 消息，content 为单个 `{type:'message', role:'user', content: parts}`，parts 含 `input_text`（inputContents）/`input_image`/`input_file`（attachments 按 name/url 图片扩展名分流）；`references` 原样透传（对齐 Semi）。opts.id（AIChatDialogue 需唯一 id，调用方提供，缺省 ''）/opts.model。→ 直接 push 进 AIChatDialogue 的 chats。原命名 messageToChatInput 方向写反且撞 Semi 反方向函数名，已改名对齐。
 - **chatInputToChatCompletion(message)** → `{ role:'user', content: parts }`：OpenAI ChatCompletion 请求的 user message，parts 为 `text`/`image_url`/`file` 多模态。→ 直接放进 messages 喂 API。
 - **图片判定**：`AIChatInputAttachment.type` 是 `'file'|'directory'`（非 mime），故按 name/url 图片扩展名判图（不看 type）。
-- **端到端 demo**（08-with-dialogue）：AIChatInput 发送 → messageToChatInput → AIChatDialogue 展示，直观演示桥。
+- **端到端 demo**（08-with-dialogue）：AIChatInput 发送 → chatInputToMessage → AIChatDialogue 展示，直观演示桥。
 - **测试**：core 42 单测（含两 Adapter 各分支）。全量 svelte-check 0 err。
 - **阶段 5 范围外（留后）**：input-slot/select-slot 节点、Configure.Mcp 为可选补充；references 未进 Adapter 输出（Semi 也未固定其位置，留消费方按需并入）。
 
@@ -141,7 +141,7 @@ canSend / defaultContent(TiptapContent) / generating / onContentChange / onMessa
 setContent / setContentWhileSaveTool / getEditor（返回 tiptap Editor 实例）/ focusEditor / deleteContent / deleteUploadFile / changeTemplateVisible。
 
 ## 5. 与已落地组件的关系
-- **AIChatDialogue（已落地）**：AIChatInput 的 `onMessageSend` 输出 → 经 Adapter（`messageToChatInput`/`chatInputToChatCompletion`，本次未做，随 AIChatInput 补）→ 喂给 AIChatDialogue 展示。这两个 Adapter 是 AIChatInput ↔ AIChatDialogue 的桥，立项时一并做。
+- **AIChatDialogue（已落地）**：AIChatInput 的 `onMessageSend` 输出 → 经 Adapter（`chatInputToMessage`/`chatInputToChatCompletion`，本次未做，随 AIChatInput 补）→ 喂给 AIChatDialogue 展示。这两个 Adapter 是 AIChatInput ↔ AIChatDialogue 的桥，立项时一并做。
 - **Upload（已有）** / **MarkdownRender（已有）** 可复用。
 
 ## 6. 分阶段建议（立项后）
@@ -150,7 +150,7 @@ setContent / setContentWhileSaveTool / getEditor（返回 tiptap Editor 实例�
 3. ~~**阶段 2 · 引用 + 建议**~~ ✅ **已完成**：references + suggestions（类 AutoComplete）+ 自定义渲染。见 §0.2。
 4. ~~**阶段 3 · 技能 + 模版**~~ ✅ **已完成**：skill-slot + skillHotKey + renderTemplate。见 §0.3。
 5. ~~**阶段 4 · 配置区**~~ ✅ **已完成**：Configure.Select/Button/RadioButton（context+field 绑定，替代 Semi getConfigureItem HOC）+ onConfigureChange + setup。**Configure.Mcp 未做**（留后）。见 §0.4。
-6. ~~**阶段 5 · Adapter 桥**~~ ✅ **已完成**：messageToChatInput / chatInputToChatCompletion（接 AIChatDialogue / OpenAI API）。见 §0.5。
+6. ~~**阶段 5 · Adapter 桥**~~ ✅ **已完成**：chatInputToMessage / chatInputToChatCompletion（接 AIChatDialogue / OpenAI API）。见 §0.5。
 7. **收尾**：token/i18n/meta/size-limit/docs demo（对齐已落地组件 DoD）。
 > 每阶段独立可合并、独立验证，避免一次做出无法验证的巨型半成品。
 

@@ -334,7 +334,40 @@ const components = [
   // （原来只有一个 IconFile 通用图标）。
   // 14.5 → 14 KB：工具调用块按 Semi ToolCallWidget 收敛成扁平 div（删掉本库自造的
   // 折叠面板 + 10 个子类名 + 4 个 locale 键），实测 13.57 KB。
-  ['ai-chat-dialogue', '{ AIChatDialogue }', '14 KB'],
+  // 14 → 14.5 KB：补齐此前完全缺失的内部半受控状态管理（对齐 Semi
+  // DialogueFoundation.likeMessage/dislikeMessage/resetMessage/editMessage/
+  // deleteMessage/onHintClick——原来只是纯回调转发，点赞/删除/重置/提示词点击
+  // 都不会真的改变消息列表），实测 14.31 KB。
+  // 14.5 → 14.6 KB：删除确认改用 Modal.useModal + <ModalContextHolder> 声明式挂载
+  // （原全局 modal.warning() mount 到独立 host，脱离组件树读不到 LocaleProvider
+  // context，真机测出 zh-CN 页面按钮渲染成英文 Cancel/Confirm），实测 14.58 KB。
+  // 14.6 → 14.7 KB：三处真机验证到的偏差一并修：① 补 showAction 状态（对齐 Semi
+  // actionFoundation showMoreDropdown/hideMoreDropdown，下拉打开时操作区强制常显、
+  // 关闭后延迟 150ms 才收起，原来纯靠 CSS :hover 导致鼠标移开后操作区消失但下拉还开着）
+  // ② isEditing 判定去掉 `!!messageEditRender` 门禁（对齐 Semi editing 单独驱动分支切换，
+  // 原来没传 messageEditRender 时点编辑连状态切换都不发生，比 Semi「至少变空白」还弱一层）
+  // ③ 操作栏去掉 `!isLoading && !selecting && !isEditing` 门禁改无条件渲染（对齐 Semi
+  // Dialogue.tsx render() 的 actionNode() 与 contentNode() 平级、无任何门禁），实测 14.63 KB。
+  // 14.7 → 14.8 KB：renderDialogueContentItem 补两处 Semi 有但本库原来没有的能力——
+  // ① 工具调用类型（function_call/custom_tool_call/mcp_call）支持二级映射，按 item.name
+  // 精确匹配子渲染器（对齐 Semi DialogueContentItemRendererMap 联合类型第二分支）
+  // ② default 键：content 为字符串或 output_text 有值时整条改用该渲染器接管（对齐 Semi
+  // dialogueContent.tsx:345-350 textContent 判断）。同批修了 custom_call 拼写错误
+  // （改成 Semi 标准值 custom_tool_call），实测 14.79 KB。
+  // 14.8 → 15.2 KB：真机对比 semi.design 官网 DOM 发现气泡样式（背景色/圆角/padding）
+  // 实际挂在每个文本块（output_text/input_text/refusal）自己身上，不是外层容器
+  // （wrapCls，dialogueContent.tsx:158-168+204+353）——本库原来是「整条消息共用一个
+  // 外层气泡容器」的简化结构，按 Semi 真实结构重构：DialogueBox.svelte 拆分
+  // contentOuterCls（外层，仅基础类+editing）和 contentWrapCls（文本块级气泡类），
+  // ContentItemRenderer.svelte 给每个文本块各自包裹。同批修了 refusal 块渲染方式
+  // （原纯文本 div → MarkdownRender+HTML转义，对齐 Semi renderMarkdown 统一路径）+
+  // 新增悬浮引用图标（icon-reference，user 消息 + showReference 时 hover 文本块可点击，
+  // 复用 onReferenceClick 回调，对齐 Semi 而本库原来完全没有这个能力，只有文件卡有
+  // 引用入口）。renderDialogueContentItem 补齐两处真实契约缺口（dialogueContent.tsx:
+  // 195/236）：所有渲染器签名补第二参数 message；message 内部子块类型（input_text/
+  // output_text 等）也能被覆盖，不只是外层 ContentItem 类型——resolveCustomRenderer
+  // 抽成可复用函数供 {#each innerParts} 循环内再匹配一次。实测 15.28 KB。
+  ['ai-chat-dialogue', '{ AIChatDialogue }', '15.3 KB'],
   // SideBar P0+P1+P2+P4（Container 浮层壳 + 主壳 mode 路由 + Options + Annotation 引用溯源
   // + CodeContent 代码/JSON 预览）；spec §9 各阶段增量。Annotation/CodeContent 复用
   // Collapse；CodeContent 的 CodeHighlight(prismjs) 静态入壳计入、JsonViewer 内核动态

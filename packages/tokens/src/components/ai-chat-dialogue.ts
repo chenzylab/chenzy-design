@@ -92,6 +92,10 @@ export const aiChatDialogueTokens = {
     value: 'var(--cd-color-danger)',
     category: 'color',
     label: '操作区下拉菜单文本颜色',
+    // 值本身仍需镜像 Semi 该变量（check:semi-parity 依赖），但组件层不直接消费它——
+    // 删除项的红色改走 Dropdown.Item type="danger" 的语义色（同样是 --cd-color-danger），
+    // 而非用这个 token 去外部覆盖 Dropdown.Item 自带的默认文字色（那条覆盖此前特异性
+    // 不够、从未真正生效，见 DialogueAction.svelte）。
     usage: 'Semi $color-aiChatDialogue_action_dropdown-text',
   },
   'color-ai-chat-dialogue-reasoning-border': {

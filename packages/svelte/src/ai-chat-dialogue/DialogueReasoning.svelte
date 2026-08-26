@@ -30,14 +30,38 @@
     summary?: { text?: string; type?: string }[] | undefined;
     content?: { text?: string; type?: string }[] | undefined;
     markdownRenderProps?: Record<string, unknown> | undefined;
-    /** 自定义正文渲染（对齐 Semi customRenderer）。 */
+    /**
+     * 自定义正文渲染（对齐 Semi customRenderer(props: ReasoningWidgetProps)）：真实传入
+     * 组件收到的完整 props（reasoning.tsx:71 `customRenderer(props)`）。Semi 官方「自定义
+     * 渲染消息内容」demo 用 `<AIChatDialogue.Reasoning {...item} customRenderer={...}/>`
+     * 把整个 reasoning ContentItem 展开传入——ReasoningWidgetProps 类型本身没有声明
+     * annotations，但 demo 的 customRenderer 函数体里读了 `props.annotations`，这是
+     * 消费方数据自带、随展开传参一起带进来的额外字段，不是组件处理的字段。本库原来
+     * customRenderer 参数被精简成 { status, text }，读不到 annotations 等消费方自定义
+     * 字段——用 $props() 的 rest 语法接住所有未声明属性，原样透传给 customRenderer。
+     */
     customRenderer?:
-      | Snippet<[{ status: string | undefined; text: string }]>
+      | Snippet<
+          [
+            {
+              status?: string | undefined;
+              summary?: unknown;
+              content?: unknown;
+              [key: string]: unknown;
+            },
+          ]
+        >
       | undefined;
   }
 
-  let { status, summary, content, markdownRenderProps, customRenderer }: Props =
-    $props();
+  let {
+    status,
+    summary,
+    content,
+    markdownRenderProps,
+    customRenderer,
+    ...rest
+  }: Props = $props();
 
   const loc = useLocale();
 
@@ -80,7 +104,7 @@
   <Collapsible {isOpen}>
     <div class="cd-ai-chat-dialogue-reasoning-content">
       {#if customRenderer}
-        {@render customRenderer({ status, text })}
+        {@render customRenderer({ status, summary, content, ...rest })}
       {:else}
         <MarkdownRender raw={text} {...markdownRenderProps} />
       {/if}

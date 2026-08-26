@@ -21,7 +21,7 @@ import {
   shouldOpenSkillPanel,
   setConfigureField,
   removeConfigureField,
-  messageToChatInput,
+  chatInputToMessage,
   chatInputToChatCompletion,
   type AIChatInputContent,
 } from './ai-chat-input.js';
@@ -339,9 +339,9 @@ describe('ai-chat-input · removeConfigureField', () => {
   });
 });
 
-describe('ai-chat-input · messageToChatInput', () => {
+describe('ai-chat-input · chatInputToMessage', () => {
   it('inputContents → input_text，附件按类型 → input_image/input_file', () => {
-    const msg = messageToChatInput(
+    const msg = chatInputToMessage(
       {
         inputContents: [{ type: 'text', text: '你好' }],
         attachments: [
@@ -362,13 +362,13 @@ describe('ai-chat-input · messageToChatInput', () => {
     ]);
   });
   it('缺 id 默认空串；空文本段丢弃', () => {
-    const msg = messageToChatInput({ inputContents: [{ type: 'text', text: '' }] });
+    const msg = chatInputToMessage({ inputContents: [{ type: 'text', text: '' }] });
     expect(msg.id).toBe('');
     const inner = (msg.content as { content: unknown[] }[])[0]!.content;
     expect(inner).toEqual([]);
   });
   it('按 name 后缀判图（对齐 Semi isImageType，只看 name 不看 url）', () => {
-    const msg = messageToChatInput({
+    const msg = chatInputToMessage({
       attachments: [{ uid: '1', name: 'pic.webp', url: 'https://x/pic.webp' }],
     });
     const inner = (msg.content as { content: Record<string, unknown>[] }[])[0]!.content;
@@ -376,7 +376,7 @@ describe('ai-chat-input · messageToChatInput', () => {
   });
 
   it('仅 url 像图片、name 不像时不判图（Semi 同此行为）', () => {
-    const msg = messageToChatInput({ attachments: [{ uid: '1', url: 'https://x/pic.webp' }] });
+    const msg = chatInputToMessage({ attachments: [{ uid: '1', url: 'https://x/pic.webp' }] });
     const inner = (msg.content as { content: Record<string, unknown>[] }[])[0]!.content;
     expect(inner[0]!.type).toBe('input_file');
   });

@@ -140,6 +140,14 @@
     display: inline-flex;
     flex-direction: row;
     align-items: center;
+    /* Semi &-content-file 没有显式 box-sizing（跟 &-bubble 那条特意写 border-box
+       不同），靠默认 content-box 让 height:36px 只是内容区高度、padding 往外扩，
+       实际视觉总高 36+8*2=52px（图标框本身就是 36×36，刚好撑满内容区）。docs 站
+       app.css 有全局 `*{box-sizing:border-box}` reset，若组件不显式声明会被继承，
+       把 height 变成含 padding 的总高度，内容区被压缩到 20px，图标被撑破/裁切——
+       真机实测在 docs 站复现，正是「文件展示背景高度太低」的根因。宿主页面用类似
+       全局 reset 的场景很常见，不能假设宿主没有，故显式声明兜底。 */
+    box-sizing: content-box;
     height: var(--cd-height-ai-chat-dialogue-file);
     width: var(--cd-width-ai-chat-dialogue-file);
     column-gap: var(--cd-ai-chat-dialogue-file-column-gap);

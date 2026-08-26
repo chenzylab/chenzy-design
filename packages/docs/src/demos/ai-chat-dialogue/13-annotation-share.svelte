@@ -2,15 +2,25 @@
   // 覆盖三个对齐 Semi 的能力：
   //   escapeHtml —— 用户消息里的 HTML 标签被转义、不被 Markdown 当标签吞掉；
   //   onAnnotationClick —— output_text 的 annotations 渲染成可点击来源徽标（已过滤 file_citation）；
-  //   onMessageShare —— 传了该回调才在操作区渲染分享按钮（对齐 Semi shareNode）。
+  //   onMessageShare —— 分享消息回调，completed 消息的分享按钮恒渲染（对齐 Semi
+  //   shareNode 的显示条件 {completed && this.shareNode()}，与本回调是否传入无关）。
   import { AIChatDialogue } from '@chenzy-design/svelte';
   import type { AIDialogueMessage } from '@chenzy-design/svelte';
 
   let lastAction = $state('');
 
+  // avatar 对齐 Semi demo（roleConfig 各角色均配真实头像图片）。
   const roleConfig = {
-    user: { name: '我', color: 'blue' },
-    assistant: { name: '助手', color: 'grey' },
+    user: {
+      name: '我',
+      color: 'blue',
+      avatar: 'https://lf3-static.bytednsdoc.com/obj/eden-cn/ptlz_zlp/ljhwZthlaukjlkulzlp/docs-icon.png',
+    },
+    assistant: {
+      name: '助手',
+      color: 'grey',
+      avatar: 'https://lf3-static.bytednsdoc.com/obj/eden-cn/ptlz_zlp/ljhwZthlaukjlkulzlp/other/logo.png',
+    },
   };
 
   const chats: AIDialogueMessage[] = [
@@ -32,14 +42,22 @@
             {
               type: 'output_text',
               text: '这是一个 AI 会话组件，详见下方来源。',
+              // annotations 是扁平结构（title/url/logo/type 直接同级，对齐 Semi URLCitation
+              // 类型和 AnnotationWidget 的 item.title/item.logo 读取路径）；不传 logo 时头像组
+              // 是空白框（DialogueAnnotation.svelte 的 {#if item.logo} 判断），本库原来两处
+              // annotation demo 都没给 logo，真机验证到头像组渲染不出内容。
               annotations: [
                 {
                   type: 'url_citation',
-                  url_citation: { title: 'Svelte 官方文档', url: 'https://svelte.dev' },
+                  title: 'Svelte 官方文档',
+                  url: 'https://svelte.dev',
+                  logo: 'https://lf3-static.bytednsdoc.com/obj/eden-cn/ptlz_zlp/ljhwZthlaukjlkulzlp/other/logo.png',
                 },
                 {
                   type: 'url_citation',
-                  url_citation: { title: 'MDN Web Docs', url: 'https://developer.mozilla.org' },
+                  title: 'MDN Web Docs',
+                  url: 'https://developer.mozilla.org',
+                  logo: 'https://lf3-static.bytednsdoc.com/obj/eden-cn/ptlz_zlp/ljhwZthlaukjlkulzlp/other/logo.png',
                 },
                 // file_citation 会被过滤掉，不渲染
                 { type: 'file_citation', file_id: 'f-1' },

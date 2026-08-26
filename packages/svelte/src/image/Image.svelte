@@ -243,6 +243,10 @@
     </div>
   {/if}
 
+  <!-- hover 预览提示（👁 图标 + 「预览」文案）：Semi image.tsx 定义了 renderMask 方法，
+       但 render() 从未调用它——是 Semi 自己的死代码，官网实际不显示这个提示层（真机
+       实测确认）。本库明确决定保留这个实现（跟 continueSend 那次一样，Semi 有定义但
+       未启用的能力，本库按用户决策继续保留），不因 Semi 未启用而删除。 -->
   {#if showPreviewCursor}
     <div class="cd-image-mask" aria-hidden="true">
       <div class="cd-image-mask-info">

@@ -58,7 +58,13 @@
     okText,
     cancelText,
     okType,
-    hasCancel = type === 'confirm',
+    // 对齐 Semi Modal.tsx defaultProps.hasCancel=true：不分 type，命令式各静态方法
+    // （confirm/info/success/warning/error）默认都带取消按钮——withWarning/withInfo/
+    // withSuccess 等 confirm.tsx 里的装配函数都只覆盖 type/icon，不碰 hasCancel，
+    // 全部继承同一份 defaultProps。本库原来写成 `type === 'confirm'`，导致
+    // warning/info/success/error 四种类型默认少了取消按钮（真机验证到 AIChatDialogue
+    // 删除确认用 modal.warning，footer 只剩一个「Confirm」，Semi 截图有「取消」+「确定」）。
+    hasCancel = true,
     // 对齐 Semi：命令式无覆盖默认，走 Modal 默认（size small=448px、不居中、closable/maskClosable=true）。
     width = 448,
     height,

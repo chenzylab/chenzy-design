@@ -127,6 +127,27 @@ describe('ai-chat-dialogue · chatCompletionToMessage', () => {
     expect(content.some((c) => c.type === 'function_call' && c.name === 'search')).toBe(true);
   });
 
+  // 对齐 Semi MESSAGE_ITEM_TYPE.CUSTOM_TOOL_CALL（constants.ts:87）：本库原来把这个分支的
+  // type 写成 'custom_call'，拼错了标准值，渲染层用 endsWith('_call') 兜底才没被发现。
+  it('tool_calls（custom）→ custom_tool_call 块，非 custom_call', () => {
+    const cc: ChatCompletionObject = {
+      id: 'cc_5b',
+      choices: [
+        {
+          message: {
+            role: 'assistant',
+            content: '',
+            refusal: '',
+            tool_calls: [{ type: 'custom', custom: { name: 'my_tool', input: '{}' } }],
+          },
+        },
+      ],
+    };
+    const content = chatCompletionToMessage(cc)[0]!.content as ToolCallContentItem[];
+    expect(content.some((c) => c.type === 'custom_tool_call' && c.name === 'my_tool')).toBe(true);
+    expect(content.some((c) => c.type === 'custom_call')).toBe(false);
+  });
+
   it('audio → audio 块', () => {
     const cc: ChatCompletionObject = {
       id: 'cc_6',
