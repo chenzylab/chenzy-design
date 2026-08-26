@@ -74,7 +74,13 @@ describe('AIChatDialogue 布局实测（对齐 Semi）', () => {
     }
   });
 
-  it('continueSend：同角色第二条头像 visibility hidden（占位不显示）', async () => {
+  it('continueSend 恒为 false：同角色连续消息头像均 visible（对齐 Semi index.tsx:349 死代码状态）', async () => {
+    // Semi index.tsx:331 计算了 continueSend（index>0 && 同角色），但实际传给
+    // DialogueItem 的第349行硬编码 continueSend={false}（附 todo「暂时设置成
+    // false」）——是 Semi 自己从未真正启用的死代码，官网同角色连续消息每条头像
+    // 都正常显示。本库对齐这个死代码状态，AIChatDialogue.svelte 同样恒传 false，
+    // 此前这条测试断言「第二条头像 hidden」是对应旧行为
+    // （continueSend={index > 0 && role相同}）的遗留，未随该决策更新。
     const sameRole: AIDialogueMessage[] = [
       { id: 'a1', role: 'assistant', content: '第一句' },
       { id: 'a2', role: 'assistant', content: '第二句' },
@@ -84,7 +90,7 @@ describe('AIChatDialogue 布局实测（对齐 Semi）', () => {
     const avatars = document.querySelectorAll('.cd-ai-chat-dialogue-avatar');
     expect(avatars.length).toBe(2);
     expect(getComputedStyle(avatars[0] as HTMLElement).visibility).toBe('visible');
-    expect(getComputedStyle(avatars[1] as HTMLElement).visibility).toBe('hidden');
+    expect(getComputedStyle(avatars[1] as HTMLElement).visibility).toBe('visible');
   });
 });
 
