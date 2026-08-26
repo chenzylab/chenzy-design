@@ -382,7 +382,7 @@ export const en_US: Locale = {
     share: 'Share',
     like: 'Good response',
     dislike: 'Bad response',
-    loading: 'Generating…',
+    loading: 'Loading...',
     reasoning: {
       completed: 'Reasoning completed',
       thinking: 'Thinking...',

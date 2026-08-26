@@ -6,9 +6,18 @@
     AIDialogueReference,
   } from '@chenzy-design/svelte';
 
+  // avatar 对齐 Semi demo（roleConfig 各角色均配真实头像图片）。
   const roleConfig: AIDialogueRoleConfig = {
-    user: { name: '我', color: '#4080ff' },
-    assistant: { name: '助手', color: '#00b42a' },
+    user: {
+      name: '我',
+      color: '#4080ff',
+      avatar: 'https://lf3-static.bytednsdoc.com/obj/eden-cn/ptlz_zlp/ljhwZthlaukjlkulzlp/docs-icon.png',
+    },
+    assistant: {
+      name: '助手',
+      color: '#00b42a',
+      avatar: 'https://lf3-static.bytednsdoc.com/obj/eden-cn/ptlz_zlp/ljhwZthlaukjlkulzlp/other/logo.png',
+    },
   };
 
   // 通过 message.references 定义引用；showReference 开启后在 user 消息展示可引用样式，

@@ -5,11 +5,15 @@
 //  - axe 0 violations。
 // jsdom 断言静态渲染 + ARIA + axe（真实滚动/回到底部留浏览器）。
 import { describe, it, expect, vi } from 'vitest';
-import { fireEvent } from '@testing-library/svelte';
+import { tick } from 'svelte';
+import { fireEvent, render } from '@testing-library/svelte';
 import { renderWithLocale, expectNoAxeViolations } from '../test-utils/a11y.js';
 import AIChatDialogue from './AIChatDialogue.svelte';
 import AIChatDialogueEditFixture from './AIChatDialogueEditFixture.svelte';
 import AIChatDialogueCustomRendererFixture from './AIChatDialogueCustomRendererFixture.svelte';
+import AIChatDialogueRenderActionFixture from './AIChatDialogueRenderActionFixture.svelte';
+import AIChatDialogueInnerRendererFixture from './AIChatDialogueInnerRendererFixture.svelte';
+import AIChatDialogueNestedRendererFixture from './AIChatDialogueNestedRendererFixture.svelte';
 import type { AIDialogueMessage, AIDialogueRoleConfig } from '@chenzy-design/core';
 
 const roleConfig: AIDialogueRoleConfig = {
@@ -142,8 +146,18 @@ describe('AIChatDialogue a11y / 渲染', () => {
   // 并给 content 加 -content-error 修饰类；没有任何错误文案节点。
   // 本库原来渲染的是一行 locale 文案 + 自造类名 -content-failed-text，属自造。
   it('error 状态：渲染失败图标 + content 带 -content-error，无自造文案节点', async () => {
+    // content-failed 图标跟 status 直接挂钩、与是否有文本内容无关（渲染在
+    // content-wrapper 层）；content-error 是气泡修饰类，只会挂在文本块的 wrapCls
+    // 上（对齐 Semi dialogueContent.tsx wrapCls + textContent 判断）——消息若无文本
+    // 内容（如 content:[]）就没有文本块承载这个类，故这里给消息带上真实文本才能
+    // 验证 content-error 生效。
     const errorChats: AIDialogueMessage[] = [
-      { id: 'e1', role: 'assistant', content: [], status: 'failed' },
+      {
+        id: 'e1',
+        role: 'assistant',
+        content: [{ type: 'message', content: [{ type: 'output_text', text: '请求失败' }] }],
+        status: 'failed',
+      },
     ];
     const { container } = renderWithLocale(AIChatDialogue, {
       props: { chats: errorChats, roleConfig },
@@ -152,10 +166,32 @@ describe('AIChatDialogue a11y / 渲染', () => {
     expect(failed).not.toBeNull();
     // 图标而非文字。
     expect(failed?.querySelector('svg')).not.toBeNull();
-    // 默认 mode=bubble → 满足 Semi 的 -content-error 条件。
+    // 默认 mode=bubble → 满足 Semi 的 -content-error 条件，挂在文本块（非外层容器）。
     expect(container.querySelector('.cd-ai-chat-dialogue-content-error')).not.toBeNull();
     // 自造的文案节点不该再出现。
     expect(container.querySelector('.cd-ai-chat-dialogue-content-failed-text')).toBeNull();
+  });
+
+  // 对齐 Semi aiChatDialogue.scss &-content-wrapper { display:flex; align-items:end }：
+  // 失败图标须与 -content-inner 同处一个 flex 容器（横向排列、底部对齐），不是各自块级
+  // 堆叠。真机对照 Semi 截图确认图标贴气泡左下角；jsdom 不计算真实几何，这里只能断言
+  // 两者同处 -content-wrapper 直接子节点，具体对齐关系已用 ego-browser 实测 rect 验证。
+  it('失败图标与内容同处 -content-wrapper（flex 布局承载对齐）', () => {
+    const errorChats: AIDialogueMessage[] = [
+      {
+        id: 'e3',
+        role: 'assistant',
+        content: [{ type: 'message', content: [{ type: 'output_text', text: '请求失败' }] }],
+        status: 'failed',
+      },
+    ];
+    const { container } = renderWithLocale(AIChatDialogue, {
+      props: { chats: errorChats, roleConfig },
+    });
+    const wrapper = container.querySelector('.cd-ai-chat-dialogue-content-wrapper');
+    expect(wrapper).not.toBeNull();
+    expect(wrapper!.querySelector(':scope > .cd-ai-chat-dialogue-content-failed')).not.toBeNull();
+    expect(wrapper!.querySelector(':scope > .cd-ai-chat-dialogue-content-inner')).not.toBeNull();
   });
 
   // cancelled 与 failed 同样出图标（对齐 Semi 的 FAILED || CANCELLED 判定）。
@@ -167,6 +203,55 @@ describe('AIChatDialogue a11y / 渲染', () => {
       },
     });
     expect(container.querySelector('.cd-ai-chat-dialogue-content-failed')).not.toBeNull();
+  });
+
+  // 对齐 Semi dialogueContent.tsx：-content-failed 图标判断是 FAILED || CANCELLED
+  // （390 行），但 -content-error 气泡修饰类只判 FAILED（167 行），两处故意不同——
+  // cancelled 状态下应该只出图标，气泡不带 -content-error。本库原来两处共用同一个
+  // isError（failed || cancelled）变量，导致 cancelled 也误挂气泡修饰类。
+  it('cancelled 状态：有失败图标，但气泡不带 -content-error（对齐 Semi 两处不同判断）', () => {
+    const { container } = renderWithLocale(AIChatDialogue, {
+      props: {
+        chats: [{ id: 'c2', role: 'assistant', content: '已取消', status: 'cancelled' }],
+        roleConfig,
+      },
+    });
+    expect(container.querySelector('.cd-ai-chat-dialogue-content-failed')).not.toBeNull();
+    expect(container.querySelector('.cd-ai-chat-dialogue-content-error')).toBeNull();
+  });
+
+  // 对齐 Semi 官方「消息状态」demo 的真实输入形态：failed 消息 content 是纯字符串
+  // （不是结构化数组），验证失败图标 + 文本内容能同时正确渲染，不只是逻辑推断
+  // normalizeDialogueContent('请求错误') 会被安全包成文本块。MarkdownRender 编译是
+  // 异步的（惰性 import 编译器，见 markdown-render/MarkdownRender.a11y.test.ts 顶部
+  // 注释），须等一轮 microtask 才能读到真实渲染文本，同文件其它处已有先例（如 473 行）。
+  it('failed 状态 + content 为纯字符串（对齐 Semi 官方 demo 用例）：图标与文本均正确渲染', async () => {
+    const { container } = renderWithLocale(AIChatDialogue, {
+      props: {
+        chats: [{ id: 'e2', role: 'assistant', content: '请求错误', status: 'failed' }],
+        roleConfig,
+      },
+    });
+    expect(container.querySelector('.cd-ai-chat-dialogue-content-failed')).not.toBeNull();
+    await new Promise((r) => setTimeout(r, 100));
+    expect(container.textContent).toContain('请求错误');
+  });
+
+  // 对齐 Semi 官方「消息状态」demo：in_progress 消息完全不带 content 字段（不是
+  // content:[] 空数组），验证 normalizeDialogueContent(undefined) 安全兜底、
+  // loading 态照常渲染，不因缺字段而报错或掉进正常内容分支。
+  it('in_progress 状态且 content 字段完全缺失（对齐 Semi 官方 demo 用例）：仍渲染 loading 态', () => {
+    const { container } = renderWithLocale(AIChatDialogue, {
+      props: {
+        chats: [{ id: 'l2', role: 'assistant', status: 'in_progress' } as AIDialogueMessage],
+        roleConfig,
+      },
+    });
+    const loading = container.querySelector('.cd-ai-chat-dialogue-content-loading');
+    expect(loading).not.toBeNull();
+    expect(
+      loading!.querySelectorAll('.cd-ai-chat-dialogue-content-loading-item').length,
+    ).toBe(3);
   });
 });
 
@@ -201,8 +286,12 @@ describe('AIChatDialogue · 消息编辑（P1）', () => {
     expect(editor).not.toBeNull();
     // 载荷含原消息文本（dialogueMessageToInput 抽取）
     expect(editor?.textContent).toContain('原始消息');
-    // 编辑态不显示操作按钮
-    expect(container.querySelector('button[aria-label="Edit"]')).toBeNull();
+    // 操作栏对齐 Semi Dialogue.tsx render() 无条件渲染 actionNode()（不随 editing/isLoading/
+    // selecting 门禁掉），编辑按钮依然在 DOM 里（showEdit 只看 role===user，与 editing 无关，
+    // 再点一次是切换/退出编辑）。本条测试原断言「编辑态不显示操作按钮」对应本库原来多包的
+    // 一层 `!isEditing` 门禁，真机验证到会连带砍掉整个操作栏（hover 编辑中的消息整行出不来
+    // 操作区），已随之移除，此处断言相应改为「按钮仍存在」。
+    expect(container.querySelector('button[aria-label="Edit"]')).not.toBeNull();
   });
 
   it('editing 态无 axe 违规', async () => {
@@ -372,6 +461,25 @@ describe('AIChatDialogue · 代码块（DialogueCode）', () => {
     expect(block!.querySelector('.cd-ai-chat-dialogue-code-topSlot-copy-wrapper')).not.toBeNull();
   });
 
+  // 真机验证到：DialogueCode.svelte 的 `</div>\n<Code/>` 换行会被 Svelte 编译成一个
+  // 空白文本节点，插在 topSlot 与代码内容之间；外壳 line-height:32px（对齐 Semi token）
+  // 施加在这个孤立空白文本节点上会被撑成一整行可见空白（Semi JSX 渲染无此节点，不会复现）。
+  // 外壳改 display:flex 后子节点按 flex item 处理即可消除，这里钉住不回归。
+  it('topSlot 与代码内容之间无空白撑高（真机验证 gap 从 32px 消除到 0）', async () => {
+    // jsdom 不渲染 scoped <style>，display:flex 的视觉效果已真机验证（gap 从 32px→0），
+    // 这里只钉 DOM 结构：topSlot 后紧跟的下一个 element 直接是 CodeHighlight 容器，
+    // 中间不能有游离的可见占位元素（曾经的空白文本节点是文本而非元素，此断言测不到它，
+    // 但能防止未来有人在中间插入别的块级占位元素）。
+    const { container } = renderWithLocale(AIChatDialogue, {
+      props: { chats: codeChats, roleConfig },
+    });
+    await new Promise((r) => setTimeout(r, 100));
+    const block = container.querySelector('.cd-ai-chat-dialogue-code') as HTMLElement;
+    const topSlot = block.querySelector('.cd-ai-chat-dialogue-code-topSlot')!;
+    expect(topSlot.nextElementSibling?.classList.contains('cd-code-highlight')).toBe(true);
+    expect(block.childElementCount).toBe(2);
+  });
+
   // 对齐 Semi：`language ? 套壳 : code(props)` —— 无语言不套 topSlot。
   it('无语言的代码块不套 topSlot 外壳', async () => {
     const noLang: AIDialogueMessage[] = [
@@ -429,6 +537,60 @@ describe('AIChatDialogue · 操作区（DialogueAction）', () => {
     expect(r2.container.querySelector('button[aria-label="Good response"]')).toBeNull();
   });
 
+  // 对齐 Semi render()：{completed && this.shareNode()}——分享按钮只看 completed，
+  // 与 onMessageShare 是否传入无关。真机比对 Semi 截图发现本库原来判断反了
+  // （误判成「传了回调才显示」），System/User/Assistant 三种角色的按钮数都因此少了一个。
+  it('分享按钮：completed 即恒渲染，不依赖 onMessageShare 是否传入', () => {
+    // 不传 onMessageShare，completed 消息仍应有分享按钮。
+    const { container } = renderWithLocale(AIChatDialogue, { props: { chats: assistantDone, roleConfig } });
+    expect(container.querySelector('button[aria-label="Share"]')).not.toBeNull();
+
+    const inProgress: AIDialogueMessage[] = [
+      { id: 'a2', role: 'assistant', content: 'hi', status: 'in_progress' },
+    ];
+    const r2 = renderWithLocale(AIChatDialogue, { props: { chats: inProgress, roleConfig } });
+    expect(r2.container.querySelector('button[aria-label="Share"]')).toBeNull();
+  });
+
+  // 渲染顺序对齐 Semi render()：copy → reset → share → edit → like/dislike → more。
+  it('操作栏按钮顺序对齐 Semi：assistant 为 复制/重新生成/分享/点赞/点踩/更多', () => {
+    const { container } = renderWithLocale(AIChatDialogue, {
+      props: { chats: assistantDone, roleConfig, showReset: true },
+    });
+    const action = container.querySelector('.cd-ai-chat-dialogue-action')!;
+    const labels = [...action.querySelectorAll('.cd-ai-chat-dialogue-action-btn')].map((b) =>
+      b.getAttribute('aria-label'),
+    );
+    expect(labels).toEqual(['Copy', 'Regenerate', 'Share', 'Good response', 'Bad response', 'More actions']);
+  });
+
+  // 对齐 Semi render() {completed && this.copyNode()}：copy 只在 completed 时显示，
+  // 不是无条件渲染——真机对照 Semi 截图，failed 状态下操作区只有「重新生成 + 更多」，
+  // 没有复制按钮；本库原来漏了这层门禁，failed/in_progress 都会误显示复制按钮。
+  it('failed 状态：操作区无复制按钮，只有 重新生成 + 更多', () => {
+    const failedChats: AIDialogueMessage[] = [
+      { id: 'f1', role: 'assistant', content: '请求错误', status: 'failed' },
+    ];
+    const { container } = renderWithLocale(AIChatDialogue, {
+      props: { chats: failedChats, roleConfig, showReset: true },
+    });
+    const action = container.querySelector('.cd-ai-chat-dialogue-action')!;
+    const labels = [...action.querySelectorAll('.cd-ai-chat-dialogue-action-btn')].map((b) =>
+      b.getAttribute('aria-label'),
+    );
+    expect(labels).toEqual(['Regenerate', 'More actions']);
+  });
+
+  it('操作栏按钮顺序对齐 Semi：user 为 复制/分享/编辑/更多', () => {
+    const userMsg: AIDialogueMessage[] = [{ id: 'u1', role: 'user', content: 'hi', status: 'completed' }];
+    const { container } = renderWithLocale(AIChatDialogue, { props: { chats: userMsg, roleConfig } });
+    const action = container.querySelector('.cd-ai-chat-dialogue-action')!;
+    const labels = [...action.querySelectorAll('.cd-ai-chat-dialogue-action-btn')].map((b) =>
+      b.getAttribute('aria-label'),
+    );
+    expect(labels).toEqual(['Copy', 'Share', 'Edit', 'More actions']);
+  });
+
   // 对齐 Semi：删除收在「更多」下拉里，不再是操作栏上的直接按钮。
   it('删除不在操作栏直出，收在「更多」下拉里', () => {
     const { container } = renderWithLocale(AIChatDialogue, {
@@ -444,6 +606,79 @@ describe('AIChatDialogue · 操作区（DialogueAction）', () => {
       props: { chats: assistantDone, roleConfig },
     });
     await expectNoAxeViolations(container, AXE_OPTIONS);
+  });
+
+  // 对齐 Semi render() finished = status !== IN_PROGRESS && status !== INCOMPLETE：
+  // queued 不在排除列表里，跟 in_progress/incomplete 不是同一套行为——真机对照 Semi
+  // 官方 demo 实测确认，queued 状态操作区容器本身可见（不挂 -action-hidden），只是
+  // completed=false 挡掉复制/分享/点赞点踩，非最后一条时 showReset 也是 false，最终
+  // 只剩「更多」一个按钮；而 in_progress/incomplete 是整个操作区容器都隐藏，连
+  // 「更多」都看不到。三态常被当作「loading 态」一并处理，但在操作区层面 queued 是
+  // 特例，不能跟另外两个混为一谈。
+  it('queued 状态：操作区容器可见（不隐藏），非最后一条时只剩「更多」按钮', () => {
+    const queuedChats: AIDialogueMessage[] = [
+      { id: 'q1', role: 'assistant', content: 'first' },
+      { id: 'q2', role: 'assistant', content: [], status: 'queued' },
+      { id: 'q3', role: 'user', content: 'placeholder' },
+    ];
+    const { container } = renderWithLocale(AIChatDialogue, {
+      props: { chats: queuedChats, roleConfig },
+    });
+    const wrappers = container.querySelectorAll('.cd-ai-chat-dialogue-wrapper');
+    const action = wrappers[1]!.querySelector('.cd-ai-chat-dialogue-action')!;
+    expect(action.classList.contains('cd-ai-chat-dialogue-action-hidden')).toBe(false);
+    const labels = [...action.querySelectorAll('.cd-ai-chat-dialogue-action-btn')].map((b) =>
+      b.getAttribute('aria-label'),
+    );
+    expect(labels).toEqual(['More actions']);
+  });
+
+  it('in_progress / incomplete 状态：操作区容器整体隐藏（对齐 finished 判定）', () => {
+    for (const status of ['in_progress', 'incomplete'] as const) {
+      const { container } = renderWithLocale(AIChatDialogue, {
+        props: {
+          chats: [{ id: `p-${status}`, role: 'assistant', content: [], status }],
+          roleConfig,
+        },
+      });
+      const action = container.querySelector('.cd-ai-chat-dialogue-action')!;
+      expect(
+        action.classList.contains('cd-ai-chat-dialogue-action-hidden'),
+        `status=${status} 应挂 -action-hidden`,
+      ).toBe(true);
+    }
+  });
+
+  // 对齐 Semi interface.ts:119-131：DefaultActionNodeObj 真实只有 copy/like/dislike/
+  // reset/moreNode 五个字段（shareNode/editNode 是 dialogueAction.tsx 内部私有方法，
+  // 从未被塞进这个对象），RenderActionProps.defaultActions 是数组（dialogueAction.tsx:
+  // 270-292 actionNodes，completed→copy，showFeedback→like+dislike，showReset→reset，
+  // moreNode 无条件包含）。本库原来 defaultActionsObj 多给了 shareNode/editNode 两个
+  // 自造字段，且完全没有 defaultActions 数组，用户 demo 用到的
+  // `props.defaultActions[0]` 场景无法实现。
+  it('renderDialogueAction：defaultActionsObj 不含 shareNode/editNode，defaultActions 数组顺序对齐 Semi actionNodes', () => {
+    let capturedKeys: string[] = [];
+    let capturedActionsLength = -1;
+    const { container } = renderWithLocale(AIChatDialogueRenderActionFixture, {
+      props: {
+        chats: assistantDone,
+        roleConfig,
+        onCapture: (keys: string[], actionsLength: number) => {
+          capturedKeys = keys;
+          capturedActionsLength = actionsLength;
+        },
+      },
+    });
+    expect(container.querySelector('.cd-ai-chat-dialogue-action')).not.toBeNull();
+    expect(capturedKeys).not.toContain('shareNode');
+    expect(capturedKeys).not.toContain('editNode');
+    // assistantDone 只有一条消息，天然是列表里的最后一条：completed 且非 user →
+    // showFeedback=true；role='assistant' 且 isLastChat=true → showReset=true。
+    // → copy + like + dislike + reset + more，共 5 个。
+    expect(capturedKeys.sort()).toEqual(
+      ['copyNode', 'dislikeNode', 'likeNode', 'moreNode', 'resetNode'].sort(),
+    );
+    expect(capturedActionsLength).toBe(5);
   });
 });
 
@@ -558,6 +793,19 @@ describe('AIChatDialogue · hints 提示区（对齐 Semi dialogueHint）', () =
     expect(onHintClick).toHaveBeenCalledWith('换个说法');
     await expectNoAxeViolations(container, AXE_OPTIONS);
   });
+
+  // 对齐 Semi index.tsx:355-364：Hint 跟每条 DialogueItem 同级，是 -list 滚动容器内部
+  // 的最后一项，随消息内容一起滚动。本库原来把它挂在 -list 容器外部（跟 -list 平级挂在
+  // 根容器下），真机对照 Semi 截图，提示区被挤到滚动区域之外、明显偏下，不贴着最后一条
+  // 消息卡片。
+  it('提示区在 -list 滚动容器内部（对齐 Semi 结构，随消息一起滚动）', () => {
+    const { container } = renderWithLocale(AIChatDialogue, {
+      props: { chats: [], roleConfig, hints },
+    });
+    const list = container.querySelector('.cd-ai-chat-dialogue-list');
+    expect(list).not.toBeNull();
+    expect(list!.querySelector('.cd-ai-chat-dialogue-hints')).not.toBeNull();
+  });
 });
 
 // DOM 分层与右对齐。Semi Dialogue.tsx 的结构是
@@ -597,38 +845,46 @@ describe('AIChatDialogue · DOM 分层 / 右对齐（对齐 Semi Dialogue.tsx）
   });
 });
 
-// continueSend：与上一条同角色的连续发言，隐藏头像占位 + 不渲染标题。
-// 本库此前只在注释里提过这个概念，实际从未接线。
-describe('AIChatDialogue · continueSend 连续发言（对齐 Semi index.tsx:331）', () => {
+// continueSend：Semi index.tsx:331 计算了 `index>0 && 同角色`，但第349行实际传给
+// DialogueItem 的硬编码是 continueSend={false}（附 todo「暂时设置成 false，如果用户
+// 有相关需求，转为一个对外提供的 API」）——第331行是尚未启用的死代码，当前真实行为是
+// 头像/标题永远不因连续同角色隐藏。真机对照 Semi 官方截图：连续三条 Assistant 消息
+// （请求成功/请求中/请求错误），每条都带完整头像。本库原来接了第331行那行计算并让它
+// 生效，是超出 Semi 当前实现的自造行为，已改为恒传 false。
+describe('AIChatDialogue · continueSend 恒为 false（对齐 Semi index.tsx:349 当前实现）', () => {
   const sameRole: AIDialogueMessage[] = [
     { id: 'a1', role: 'assistant', content: '第一句' },
     { id: 'a2', role: 'assistant', content: '第二句' },
     { id: 'u1', role: 'user', content: '我的话' },
   ];
 
-  it('同角色第二条：头像加 -avatar-hidden 且不渲染标题', () => {
+  it('同角色连续发言：每条头像与标题都照常渲染，不隐藏', () => {
     const { container } = renderWithLocale(AIChatDialogue, {
       props: { chats: sameRole, roleConfig },
     });
     const wrappers = container.querySelectorAll('.cd-ai-chat-dialogue-wrapper');
-    // 第 1 条（首条）：正常头像 + 有标题。
-    expect(
-      wrappers[0]!.querySelector('.cd-ai-chat-dialogue-avatar-hidden'),
-    ).toBeNull();
-    expect(wrappers[0]!.querySelector('.cd-ai-chat-dialogue-title')).not.toBeNull();
-    // 第 2 条（同角色连发）：头像隐藏 + 无标题 + wrapper 带 -continue-send。
-    expect(
-      wrappers[1]!.querySelector('.cd-ai-chat-dialogue-avatar-hidden'),
-    ).not.toBeNull();
-    expect(wrappers[1]!.querySelector('.cd-ai-chat-dialogue-title')).toBeNull();
-    expect(
-      wrappers[1]!.classList.contains('cd-ai-chat-dialogue-wrapper-continue-send'),
-    ).toBe(true);
-    // 第 3 条换了角色 → 恢复正常。
-    expect(
-      wrappers[2]!.querySelector('.cd-ai-chat-dialogue-avatar-hidden'),
-    ).toBeNull();
-    expect(wrappers[2]!.querySelector('.cd-ai-chat-dialogue-title')).not.toBeNull();
+    for (const wrapper of wrappers) {
+      expect(wrapper.querySelector('.cd-ai-chat-dialogue-avatar-hidden')).toBeNull();
+      expect(wrapper.querySelector('.cd-ai-chat-dialogue-title')).not.toBeNull();
+      expect(
+        wrapper.classList.contains('cd-ai-chat-dialogue-wrapper-continue-send'),
+      ).toBe(false);
+    }
+  });
+});
+
+// 对齐 Semi dialogueTitle.tsx:14 `<span>{role?.name}</span>` 无条件渲染：role?.name
+// 为空时 span 元素仍在（只是内容为空文本），不是整个元素消失。本库原来用
+// `{#if role?.name}` 包裹整个 span，导致没有角色名时这个元素完全不出现在 DOM 里。
+describe('AIChatDialogue · 标题无条件渲染（对齐 Semi dialogueTitle.tsx）', () => {
+  it('roleConfig 未配置对应角色名时，.cd-ai-chat-dialogue-title 元素仍渲染（内容为空）', () => {
+    const noNameChats: AIDialogueMessage[] = [{ id: 'a1', role: 'assistant', content: 'hi' }];
+    const { container } = renderWithLocale(AIChatDialogue, {
+      props: { chats: noNameChats, roleConfig: {} },
+    });
+    const title = container.querySelector('.cd-ai-chat-dialogue-title');
+    expect(title).not.toBeNull();
+    expect(title!.textContent).toBe('');
   });
 });
 
@@ -648,20 +904,30 @@ describe('AIChatDialogue · 内容分层 / mode 修饰类（对齐 Semi dialogue
     expect(wrapper!.querySelector('.cd-ai-chat-dialogue-content-inner')).not.toBeNull();
   });
 
-  it('mode=bubble：content 带 -content-bubble，不带 -no-bubble', () => {
+  // 对齐 Semi dialogueContent.tsx（真机验证到 semi.design 官网 DOM）：气泡修饰类
+  // （-bubble/-userBubble/-no-bubble/-user/-error）挂在每个文本块自己身上（wrapCls），
+  // 不是外层 PREFIX_CONTENT 容器——外层容器只有基础类 + editing 类。字符串 content
+  // 归一化成单个 output_text 块后，DOM 里会有两层 .cd-ai-chat-dialogue-content：
+  // 外层（无气泡类）+ 内层文本块（带气泡类），用 querySelectorAll 取最后一个（文本块）。
+  function textBlockContent(container: HTMLElement): Element {
+    const all = container.querySelectorAll('.cd-ai-chat-dialogue-content');
+    return all[all.length - 1]!;
+  }
+
+  it('mode=bubble：文本块带 -content-bubble，不带 -no-bubble', () => {
     const { container } = renderWithLocale(AIChatDialogue, {
       props: { chats: one, roleConfig, mode: 'bubble' },
     });
-    const content = container.querySelector('.cd-ai-chat-dialogue-content')!;
+    const content = textBlockContent(container);
     expect(content.classList.contains('cd-ai-chat-dialogue-content-bubble')).toBe(true);
     expect(content.classList.contains('cd-ai-chat-dialogue-content-no-bubble')).toBe(false);
   });
 
-  it('mode=noBubble：content 带 -content-no-bubble', () => {
+  it('mode=noBubble：文本块带 -content-no-bubble', () => {
     const { container } = renderWithLocale(AIChatDialogue, {
       props: { chats: one, roleConfig, mode: 'noBubble' },
     });
-    const content = container.querySelector('.cd-ai-chat-dialogue-content')!;
+    const content = textBlockContent(container);
     expect(content.classList.contains('cd-ai-chat-dialogue-content-no-bubble')).toBe(true);
     expect(content.classList.contains('cd-ai-chat-dialogue-content-bubble')).toBe(false);
   });
@@ -678,19 +944,24 @@ describe('AIChatDialogue · 内容分层 / mode 修饰类（对齐 Semi dialogue
         mode: 'userBubble',
       },
     });
+    // 每条消息各自渲染「外层容器 + 文本块」两层 .cd-ai-chat-dialogue-content，
+    // 文本块是每条消息里的第二个（index 1 和 3）。
     const contents = container.querySelectorAll('.cd-ai-chat-dialogue-content');
-    expect(contents[0]!.classList.contains('cd-ai-chat-dialogue-content-userBubble')).toBe(true);
-    expect(contents[1]!.classList.contains('cd-ai-chat-dialogue-content-no-bubble')).toBe(true);
+    expect(contents[1]!.classList.contains('cd-ai-chat-dialogue-content-userBubble')).toBe(true);
+    expect(contents[3]!.classList.contains('cd-ai-chat-dialogue-content-no-bubble')).toBe(true);
   });
 
-  it('user 消息的 content 带 -content-user（修饰类已从 wrapper 移到 content）', () => {
+  it('user 消息的文本块带 -content-user（修饰类挂在文本块，不是 wrapper 也不是外层容器）', () => {
     const { container } = renderWithLocale(AIChatDialogue, {
       props: { chats: [{ id: 'u1', role: 'user', content: 'hi' }], roleConfig },
     });
     const wrapper = container.querySelector('.cd-ai-chat-dialogue-wrapper')!;
-    const content = container.querySelector('.cd-ai-chat-dialogue-content')!;
-    expect(content.classList.contains('cd-ai-chat-dialogue-content-user')).toBe(true);
-    // 不该再挂在 wrapper 上。
+    const contents = container.querySelectorAll('.cd-ai-chat-dialogue-content');
+    const outer = contents[0]!;
+    const textBlock = textBlockContent(container);
+    expect(textBlock.classList.contains('cd-ai-chat-dialogue-content-user')).toBe(true);
+    // 外层容器和 wrapper 都不该带这个类。
+    expect(outer.classList.contains('cd-ai-chat-dialogue-content-user')).toBe(false);
     expect(wrapper.classList.contains('cd-ai-chat-dialogue-content-user')).toBe(false);
   });
 
@@ -712,6 +983,23 @@ describe('AIChatDialogue · 内容分层 / mode 修饰类（对齐 Semi dialogue
     expect(text?.textContent?.trim()).not.toBe('AIChatDialogue.loading');
   });
 
+  // 对齐 Semi dialogueContent.tsx:320 isLoading 判定的完整三态（queued/in_progress/
+  // incomplete）：本库原来 isLoading 漏了 incomplete，导致该状态消息既不算 loading 也不算
+  // error（isError 只判 failed/cancelled），会掉进正常内容分支渲染空的 MarkdownRender。
+  it.each(['queued', 'incomplete'] as const)('loading 态覆盖 status=%s', (status) => {
+    const { container } = renderWithLocale(AIChatDialogue, {
+      props: {
+        chats: [{ id: 'l1', role: 'assistant', content: [], status }],
+        roleConfig,
+      },
+    });
+    const loading = container.querySelector('.cd-ai-chat-dialogue-content-loading');
+    expect(loading, `status=${status} 应渲染 loading 态`).not.toBeNull();
+    expect(
+      loading!.querySelectorAll('.cd-ai-chat-dialogue-content-loading-item').length,
+    ).toBe(3);
+  });
+
   // 自定义渲染必须保留 Semi 的包裹层，否则右对齐规则匹配不到。
   it('renderDialogueContentItem 自定义渲染保留 -content-custom-renderer 包裹层', () => {
     const { container } = renderWithLocale(AIChatDialogueCustomRendererFixture, {
@@ -720,6 +1008,147 @@ describe('AIChatDialogue · 内容分层 / mode 修饰类（对齐 Semi dialogue
     const custom = container.querySelector('.cd-ai-chat-dialogue-content-custom-renderer');
     expect(custom).not.toBeNull();
     expect(custom!.querySelector('[data-testid="custom-block"]')).not.toBeNull();
+  });
+
+  // 对齐 Semi dialogueContent.tsx:236 `customRenderer(i?.type, index, i)`：renderMessage
+  // 内部每个子块（input_text/output_text 等）也各自调用一次 customRenderer，
+  // renderDialogueContentItem 同时能覆盖外层 ContentItem 类型（如 'message'）和内部
+  // 子块类型（如 'input_text'），是两次独立的匹配机会。本库原来只有外层匹配，传
+  // { input_text: ... } 完全不生效。
+  it('renderDialogueContentItem 能覆盖 message 内部子块类型（如 input_text）', () => {
+    const chats: AIDialogueMessage[] = [
+      {
+        id: 'u1',
+        role: 'user',
+        content: [
+          { type: 'message', content: [{ type: 'input_text', text: '被覆盖的文本' }] },
+        ],
+      },
+    ];
+    const { container } = renderWithLocale(AIChatDialogueInnerRendererFixture, {
+      props: { chats, mode: 'inner' },
+    });
+    const custom = container.querySelector('.cd-ai-chat-dialogue-content-custom-renderer');
+    expect(custom).not.toBeNull();
+    expect(custom!.querySelector('[data-testid="inner-block"]')?.textContent).toBe(
+      '被覆盖的文本',
+    );
+  });
+
+  // 对齐 Semi dialogueContent.tsx:195/236：所有渲染器（外层与内层）真实签名都是
+  // (item, message) 两参数，第二个参数是该块所属的完整消息，常见用法是按
+  // message.role 分支渲染。本库原来 ContentItemRenderer/DefaultContentRenderer
+  // 都只有单参数，读不到 message。
+  it('renderDialogueContentItem 渲染器第二参数是完整 message（可按 role 分支）', () => {
+    const chats: AIDialogueMessage[] = [
+      {
+        id: 'u2',
+        role: 'user',
+        content: [
+          { type: 'message', content: [{ type: 'input_text', text: 'hi' }] },
+        ],
+      },
+    ];
+    const { container } = renderWithLocale(AIChatDialogueInnerRendererFixture, {
+      props: { chats, mode: 'role' },
+    });
+    expect(container.querySelector('[data-testid="role-user"]')).not.toBeNull();
+    expect(container.querySelector('[data-testid="role-assistant"]')).toBeNull();
+  });
+
+  // 对齐 Semi DialogueContentItemRendererMap：Record<string, Renderer | Record<string,
+  // Renderer>>——工具调用类型（function_call/custom_tool_call/mcp_call）支持二级映射，
+  // 按 item.name 精确匹配；未命中函数名不覆盖，走内置渲染。
+  describe('renderDialogueContentItem 二级映射（工具调用按 name 细分）', () => {
+    it('function_call 按 name 精确匹配到对应子渲染器', () => {
+      const toolChats: AIDialogueMessage[] = [
+        {
+          id: 'a1',
+          role: 'assistant',
+          status: 'completed',
+          content: [{ type: 'function_call', name: 'get_weather', arguments: '{}' }],
+        },
+      ];
+      const { container } = renderWithLocale(AIChatDialogueNestedRendererFixture, {
+        props: { chats: toolChats },
+      });
+      expect(container.querySelector('[data-testid="weather-tool"]')).not.toBeNull();
+      expect(container.querySelector('[data-testid="search-tool"]')).toBeNull();
+    });
+
+    it('function_call name 未在二级映射里命中：不覆盖，走内置渲染（非自定义块）', () => {
+      const toolChats: AIDialogueMessage[] = [
+        {
+          id: 'a1',
+          role: 'assistant',
+          status: 'completed',
+          content: [{ type: 'function_call', name: 'unmapped_tool', arguments: '{}' }],
+        },
+      ];
+      const { container } = renderWithLocale(AIChatDialogueNestedRendererFixture, {
+        props: { chats: toolChats },
+      });
+      expect(container.querySelector('[data-testid="weather-tool"]')).toBeNull();
+      expect(container.querySelector('[data-testid="search-tool"]')).toBeNull();
+      expect(container.querySelector('.cd-ai-chat-dialogue-content-custom-renderer')).toBeNull();
+    });
+  });
+
+  // 对齐 Semi dialogueContent.tsx:340-360：content 是字符串或非字符串但 output_text 有值时，
+  // default 渲染器整条接管，不再逐块渲染（即便 content 已是完整多块结构）。
+  describe('renderDialogueContentItem default 键（对齐 Semi textContent 判断）', () => {
+    it('content 为字符串：default 渲染器接管', () => {
+      const strChats: AIDialogueMessage[] = [
+        { id: 'a1', role: 'assistant', status: 'completed', content: '纯字符串内容' },
+      ];
+      const { container } = renderWithLocale(AIChatDialogueNestedRendererFixture, {
+        props: { chats: strChats },
+      });
+      const block = container.querySelector('[data-testid="default-block"]');
+      expect(block).not.toBeNull();
+      expect(block!.textContent).toContain('纯字符串内容');
+    });
+
+    it('content 为完整多块数组但 output_text 有值：default 渲染器仍整条接管', () => {
+      const mixedChats: AIDialogueMessage[] = [
+        {
+          id: 'a1',
+          role: 'assistant',
+          status: 'completed',
+          output_text: '来自 output_text',
+          content: [
+            { type: 'message', content: [{ type: 'output_text', text: '不应该被渲染' }] },
+          ],
+        },
+      ];
+      const { container } = renderWithLocale(AIChatDialogueNestedRendererFixture, {
+        props: { chats: mixedChats },
+      });
+      const block = container.querySelector('[data-testid="default-block"]');
+      expect(block).not.toBeNull();
+      expect(block!.textContent).toContain('来自 output_text');
+      expect(container.textContent).not.toContain('不应该被渲染');
+    });
+
+    it('content 为数组且无 output_text：default 不生效，走正常逐块渲染', async () => {
+      const normalChats: AIDialogueMessage[] = [
+        {
+          id: 'a1',
+          role: 'assistant',
+          status: 'completed',
+          content: [{ type: 'message', content: [{ type: 'output_text', text: '正常渲染' }] }],
+        },
+      ];
+      const { container } = renderWithLocale(AIChatDialogueNestedRendererFixture, {
+        props: { chats: normalChats },
+      });
+      expect(container.querySelector('[data-testid="default-block"]')).toBeNull();
+      // MarkdownRender 渲染 output_text 是异步的（内核动态 import），等一拍再断言文本。
+      await new Promise((r) => setTimeout(r, 100));
+      const inner = container.querySelector('.cd-ai-chat-dialogue-content-inner');
+      expect(inner).not.toBeNull();
+      expect(inner!.textContent).toContain('正常渲染');
+    });
   });
 });
 
@@ -744,6 +1173,26 @@ describe('AIChatDialogue · 引用区（对齐 Semi contentItem/reference.tsx）
     const list = container.querySelector('.cd-ai-chat-dialogue-references');
     expect(list).not.toBeNull();
     expect(list!.querySelectorAll('.cd-ai-chat-dialogue-reference').length).toBe(1);
+  });
+
+  // 对齐 Semi dialogueContent.tsx:408-414：`<div className={PREFIX_CONTENT}>
+  // {references && <ReferenceWidget/>}{node}{loadingNode}</div>`——引用区在
+  // PREFIX_CONTENT 容器内部、正文之前，不是容器外部、正文之后。本库原来顺序颠倒
+  // （正文在前引用在后）且引用区被挂在容器外——真机对照 Semi 截图，引用条应显示在
+  // 消息气泡上方。
+  it('引用区在内容容器内部、正文之前（对齐 Semi 渲染顺序）', () => {
+    const { container } = renderWithLocale(AIChatDialogue, {
+      props: { chats: withRefs, roleConfig, showReference: true },
+    });
+    const outerContent = container.querySelector('.cd-ai-chat-dialogue-content')!;
+    const refs = outerContent.querySelector('.cd-ai-chat-dialogue-references');
+    expect(refs, '引用区应在 -content 容器内部').not.toBeNull();
+    // DOM 顺序：引用区节点在文本气泡节点之前。
+    const bubble = outerContent.querySelector('.cd-ai-chat-dialogue-content-bubble');
+    expect(bubble).not.toBeNull();
+    expect(
+      refs!.compareDocumentPosition(bubble!) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
   });
 
   it('项内为 -reference-content 包裹层，里面才是 -reference-icon / -reference-name', () => {
@@ -787,6 +1236,27 @@ describe('AIChatDialogue · 图片 -img-list / -img-last（对齐 Semi ImageAtta
   const imgMsg = (parts: Record<string, unknown>[]): AIDialogueMessage[] => [
     { id: 'u1', role: 'user', content: [{ type: 'message', content: parts }] },
   ];
+
+  // 对齐 Semi ImageAttachment：用 Image 组件渲染（自带点击放大预览），不是裸 <img>。
+  // 本库原来手搓 <img>+<button>，图片完全没有点击预览能力，onclick 只转发外部回调；
+  // 真机验证到 semi.design 官网用的是 Semi 通用 Image 组件，onClick 是叠加在内置预览
+  // 能力之上的额外回调，不是唯一交互。DOM 层面用 .cd-image 类判断是否真的复用了组件
+  // （jsdom 测不出预览浮层的真实弹出效果，那部分已用 ego-browser 真机验证）。
+  it('图片用 Image 组件渲染（挂 cd-image 类，非裸 img），onImageClick 仍正常触发', async () => {
+    const onImageClick = vi.fn();
+    const { container } = renderWithLocale(AIChatDialogue, {
+      props: {
+        chats: imgMsg([{ type: 'input_image', image_url: 'a.png' }]),
+        roleConfig,
+        onImageClick,
+      },
+    });
+    const wrapper = container.querySelector('.cd-ai-chat-dialogue-content-img')!;
+    expect(wrapper.classList.contains('cd-image')).toBe(true);
+    expect(wrapper.querySelector('img')).not.toBeNull();
+    await fireEvent.click(wrapper);
+    expect(onImageClick).toHaveBeenCalled();
+  });
 
   it('单图：不加 -img-list，但仍是最后一张 → 有 -img-last', () => {
     const { container } = renderWithLocale(AIChatDialogue, {
@@ -909,5 +1379,268 @@ describe('AIChatDialogue · 引用项类型图标（对齐 Semi 的五类映射�
   it('图片类但无 url：不渲染缩略图', () => {
     const c = render1({ name: 'p.png' });
     expect(c.querySelector('.cd-ai-chat-dialogue-reference-img')).toBeNull();
+  });
+});
+
+// annotationItems（ContentItemRenderer.svelte）用 `a.url_citation ?? a` 同时兼容扁平和嵌套
+// 两种输入形态，但 logo 字段必须由数据显式提供（DialogueAnnotation.svelte 用 {#if item.logo}
+// 判断是否渲染头像）——真机验证到本库两处 demo 数据都没给 logo，头像组渲染为空白框。
+describe('AIChatDialogue · annotations（对齐 Semi dialogueContent.tsx annotationItems）', () => {
+  const withAnnotations = (annotations: Record<string, unknown>[]): AIDialogueMessage[] => [
+    {
+      id: 'a1',
+      role: 'assistant',
+      status: 'completed',
+      content: [
+        {
+          type: 'message',
+          content: [{ type: 'output_text', text: '来源见下方', annotations }],
+        },
+      ],
+    },
+  ];
+
+  it('扁平结构：title/logo 直接同级时正确渲染头像', () => {
+    const { container } = renderWithLocale(AIChatDialogue, {
+      props: {
+        chats: withAnnotations([
+          { type: 'url_citation', title: 'a', url: 'https://a.com', logo: 'https://a.com/logo.png' },
+        ]),
+        roleConfig,
+      },
+    });
+    const wrapper = container.querySelector('.cd-ai-chat-dialogue-annotation-wrapper');
+    expect(wrapper).not.toBeNull();
+    expect(wrapper!.querySelector('img')).not.toBeNull();
+  });
+
+  it('嵌套 url_citation 结构：兼容读取 title/logo', () => {
+    const { container } = renderWithLocale(AIChatDialogue, {
+      props: {
+        chats: withAnnotations([
+          { type: 'url_citation', url_citation: { title: 'a', url: 'https://a.com', logo: 'https://a.com/logo.png' } },
+        ]),
+        roleConfig,
+      },
+    });
+    const wrapper = container.querySelector('.cd-ai-chat-dialogue-annotation-wrapper');
+    expect(wrapper).not.toBeNull();
+    expect(wrapper!.querySelector('img')).not.toBeNull();
+  });
+
+  it('未传 logo：不渲染头像（但摘要文案仍正常）', () => {
+    const { container } = renderWithLocale(AIChatDialogue, {
+      props: {
+        chats: withAnnotations([{ type: 'url_citation', title: 'a', url: 'https://a.com' }]),
+        roleConfig,
+      },
+    });
+    const wrapper = container.querySelector('.cd-ai-chat-dialogue-annotation-wrapper');
+    expect(wrapper!.querySelector('img')).toBeNull();
+    expect(
+      wrapper!.querySelector('.cd-ai-chat-dialogue-annotation-content-description')?.textContent,
+    ).toContain('1');
+  });
+
+  it('file_citation / container_file_citation 被过滤，不计入摘要数量', () => {
+    const { container } = renderWithLocale(AIChatDialogue, {
+      props: {
+        chats: withAnnotations([
+          { type: 'url_citation', title: 'a', url: 'https://a.com' },
+          { type: 'file_citation', file_id: 'f-1' },
+          { type: 'container_file_citation', file_id: 'f-2' },
+        ]),
+        roleConfig,
+      },
+    });
+    const desc = container.querySelector('.cd-ai-chat-dialogue-annotation-content-description');
+    expect(desc?.textContent).toContain('1');
+  });
+
+  // 对齐 Semi annotation.tsx:20/31：onClick 真实签名带原生点击事件（第一参数），
+  // 本库原来只回传 annotation 数组，消费方拿不到事件对象，无法 e.stopPropagation()。
+  it('onAnnotationClick 回传的内部 DialogueAnnotation onClick 支持事件参数', async () => {
+    const onAnnotationClick = vi.fn();
+    const { container } = renderWithLocale(AIChatDialogue, {
+      props: {
+        chats: withAnnotations([{ type: 'url_citation', title: 'a', url: 'https://a.com' }]),
+        roleConfig,
+        onAnnotationClick,
+      },
+    });
+    const wrapper = container.querySelector('.cd-ai-chat-dialogue-annotation-wrapper')!;
+    await fireEvent.click(wrapper);
+    expect(onAnnotationClick).toHaveBeenCalledTimes(1);
+  });
+});
+
+// 内部半受控状态管理（对齐 Semi DialogueFoundation.likeMessage/dislikeMessage/
+// resetMessage/editMessage/deleteMessage/onHintClick）：这六个操作在 Semi 里都是
+// foundation 直接改 state.chats 并 notifyChatsChange，不是纯回调转发。本库原来
+// 完全没有这层，点了都不会真的改变消息列表，与 Semi 交互结果不一致。
+describe('AIChatDialogue · 内部状态管理（对齐 Semi foundation 各方法）', () => {
+  it('点赞：图标从空心切实心，联动清空 dislike，且 onChatsChange 收到新 chats', async () => {
+    const onChatsChange = vi.fn();
+    const assistantDone: AIDialogueMessage[] = [
+      { id: 'a1', role: 'assistant', content: 'hi', status: 'completed', dislike: true } as AIDialogueMessage,
+    ];
+    const { container } = renderWithLocale(AIChatDialogue, {
+      props: { chats: assistantDone, roleConfig, onChatsChange },
+    });
+    const likeBtn = container.querySelector('button[aria-label="Good response"]') as HTMLButtonElement;
+    expect(likeBtn.querySelector('.cd-icon-thumb_up_stroked')).not.toBeNull();
+    await fireEvent.click(likeBtn);
+    expect(likeBtn.querySelector('.cd-icon-like_thumb')).not.toBeNull();
+    expect(onChatsChange).toHaveBeenCalledTimes(1);
+    const next = onChatsChange.mock.calls[0]![0] as AIDialogueMessage[];
+    const updated = next[0] as AIDialogueMessage & { like?: boolean; dislike?: boolean };
+    expect(updated.like).toBe(true);
+    expect(updated.dislike).toBe(false);
+  });
+
+  it('点踩：图标从空心切实心，联动清空 like', async () => {
+    const assistantDone: AIDialogueMessage[] = [
+      { id: 'a1', role: 'assistant', content: 'hi', status: 'completed', like: true } as AIDialogueMessage,
+    ];
+    const { container } = renderWithLocale(AIChatDialogue, {
+      props: { chats: assistantDone, roleConfig },
+    });
+    const dislikeBtn = container.querySelector('button[aria-label="Bad response"]') as HTMLButtonElement;
+    await fireEvent.click(dislikeBtn);
+    expect(dislikeBtn.querySelector('.cd-icon-like_thumb')).not.toBeNull();
+    const likeBtn = container.querySelector('button[aria-label="Good response"]')!;
+    expect(likeBtn.querySelector('.cd-icon-thumb_up_stroked')).not.toBeNull();
+  });
+
+  it('重置：最后一条消息换成新的 in_progress 空消息（新 id，非原消息 id）', async () => {
+    const onChatsChange = vi.fn();
+    const onMessageReset = vi.fn();
+    const lastChat: AIDialogueMessage[] = [
+      { id: 'a1', role: 'assistant', content: 'old content', status: 'completed' },
+    ];
+    const { container } = renderWithLocale(AIChatDialogue, {
+      props: { chats: lastChat, roleConfig, showReset: true, onChatsChange, onMessageReset },
+    });
+    const resetBtn = container.querySelector('button[aria-label="Regenerate"]') as HTMLButtonElement;
+    expect(resetBtn).not.toBeNull();
+    await fireEvent.click(resetBtn);
+    expect(onMessageReset).toHaveBeenCalledTimes(1);
+    expect(onChatsChange).toHaveBeenCalledTimes(1);
+    const next = onChatsChange.mock.calls[0]![0] as AIDialogueMessage[];
+    expect(next).toHaveLength(1);
+    expect(next[0]!.id).not.toBe('a1');
+    expect(next[0]!.status).toBe('in_progress');
+    expect(next[0]!.content).toBe('');
+  });
+
+  // 对齐 Semi dialogueContent.tsx loadingNode 的 isOutputExist：判断的是原始
+  // message.content 是否为空，不是归一化后的 items.length——resetMessage 产出的
+  // content:'' 被 normalizeDialogueContent 包成长度为 1 的空文本块，若用
+  // items.length===0 判断会误判为「有内容」，走进正常渲染分支而不是 loading 态。
+  it('重置后新消息 content:\'\' 渲染三点 loading，不是空的 MarkdownRender', async () => {
+    const lastChat: AIDialogueMessage[] = [
+      { id: 'a1', role: 'assistant', content: 'old content', status: 'completed' },
+    ];
+    const { container } = renderWithLocale(AIChatDialogue, {
+      props: { chats: lastChat, roleConfig, showReset: true },
+    });
+    const resetBtn = container.querySelector('button[aria-label="Regenerate"]') as HTMLButtonElement;
+    await fireEvent.click(resetBtn);
+    const wrapper = container.querySelector('.cd-ai-chat-dialogue-wrapper')!;
+    expect(
+      wrapper.querySelectorAll('.cd-ai-chat-dialogue-content-loading-item'),
+      '应渲染三点 loading',
+    ).toHaveLength(3);
+    expect(wrapper.querySelector('.cd-markdown-render')).toBeNull();
+  });
+
+  it('删除：确认弹窗点 OK 后从 chats 移除该消息', async () => {
+    const onChatsChange = vi.fn();
+    const onMessageDelete = vi.fn();
+    const twoChats: AIDialogueMessage[] = [
+      { id: 'a1', role: 'assistant', content: 'first', status: 'completed' },
+      { id: 'a2', role: 'assistant', content: 'second', status: 'completed' },
+    ];
+    const { container } = renderWithLocale(AIChatDialogue, {
+      props: { chats: twoChats, roleConfig, onChatsChange, onMessageDelete },
+    });
+    const moreBtn = container.querySelector('button[aria-label="More actions"]') as HTMLButtonElement;
+    await fireEvent.click(moreBtn);
+    await new Promise((r) => setTimeout(r, 0));
+    const deleteItem = [...document.querySelectorAll('li[role="menuitem"]')].find((el) =>
+      el.textContent?.includes('Delete'),
+    ) as HTMLElement;
+    expect(deleteItem, '应弹出「更多」下拉，含 Delete 项').not.toBeNull();
+    await fireEvent.click(deleteItem);
+    await new Promise((r) => setTimeout(r, 0));
+    const okBtn = [...document.querySelectorAll('button')].find((b) => b.textContent?.trim() === 'Confirm');
+    expect(okBtn, '应弹出确认 Modal').not.toBeNull();
+    await fireEvent.click(okBtn!);
+    await new Promise((r) => setTimeout(r, 0));
+    expect(onMessageDelete).toHaveBeenCalledTimes(1);
+    expect(onChatsChange).toHaveBeenCalledTimes(1);
+    const next = onChatsChange.mock.calls[0]![0] as AIDialogueMessage[];
+    expect(next.map((c) => c.id)).toEqual(['a2']);
+  });
+
+  // 对齐 Semi actionFoundation registerClickOutsideHandler/unregisterClickOutsideHandler：
+  // 点击某条消息的「更多」触发器之外（含另一条消息的「更多」按钮）即关闭当前下拉。
+  // 本库原来完全没有这层——Dropdown 用 trigger="custom" 时组件自身跳过内置的点击外部
+  // 关闭逻辑（完全交给消费方），两个下拉各自独立的内部 state 互不影响，点开 A 再点 B，
+  // A 不会自动收起。
+  it('点开一条消息的「更多」后点另一条的「更多」，前一个自动关闭', async () => {
+    const twoChats: AIDialogueMessage[] = [
+      { id: 'a1', role: 'assistant', content: 'first', status: 'completed' },
+      { id: 'a2', role: 'assistant', content: 'second', status: 'completed' },
+    ];
+    const { container } = renderWithLocale(AIChatDialogue, {
+      props: { chats: twoChats, roleConfig },
+    });
+    const moreBtns = [...container.querySelectorAll('button[aria-label="More actions"]')] as HTMLButtonElement[];
+    expect(moreBtns).toHaveLength(2);
+
+    await fireEvent.click(moreBtns[0]!);
+    expect(moreBtns[0]!.getAttribute('aria-expanded')).toBe('true');
+
+    // 互斥逻辑挂在 window mousedown 监听上，click 事件本身不含 mousedown，需显式派发。
+    await fireEvent.mouseDown(moreBtns[1]!);
+    await fireEvent.click(moreBtns[1]!);
+    expect(moreBtns[0]!.getAttribute('aria-expanded'), '前一个下拉应自动关闭').toBe('false');
+    expect(moreBtns[1]!.getAttribute('aria-expanded'), '当前点击的下拉应展开').toBe('true');
+  });
+
+  it('提示词点击：作为新 user 消息插入 chats（对齐 Semi foundation.onHintClick）', async () => {
+    const onChatsChange = vi.fn();
+    const { container } = renderWithLocale(AIChatDialogue, {
+      props: { chats: [], roleConfig, hints: ['帮我总结这段'], onChatsChange },
+    });
+    await fireEvent.click(container.querySelector('.cd-ai-chat-dialogue-hint-item') as HTMLElement);
+    expect(onChatsChange).toHaveBeenCalledTimes(1);
+    const next = onChatsChange.mock.calls[0]![0] as AIDialogueMessage[];
+    expect(next).toHaveLength(1);
+    expect(next[0]!.role).toBe('user');
+    expect(next[0]!.content).toBe('帮我总结这段');
+    // 真的渲染出这条新消息（不只是回调层面）。
+    expect(container.querySelectorAll('.cd-ai-chat-dialogue-wrapper')).toHaveLength(1);
+  });
+
+  it('外部 chats prop 变化会同步覆盖内部状态（半受控闭环）', async () => {
+    // 这条不测 locale 文案，直接用 testing-library 原生 render 绕开 renderWithLocale
+    // 的 LocaleHarness 包装——LocaleHarness 自身有个叫 props 的合法字段，而
+    // testing-library 的 rerender 把任何带 `props` 键的入参都当废弃写法剥壳，
+    // 两者语义冲突，与 renderWithLocale 混用 rerender 时会取错值。
+    const { rerender, container } = render(AIChatDialogue, {
+      props: { chats: [{ id: 'a1', role: 'assistant', content: 'v1' }], roleConfig },
+    });
+    expect(container.querySelectorAll('.cd-ai-chat-dialogue-wrapper')).toHaveLength(1);
+    await rerender({
+      chats: [
+        { id: 'a1', role: 'assistant', content: 'v1' },
+        { id: 'a2', role: 'assistant', content: 'v2' },
+      ],
+      roleConfig,
+    });
+    await tick();
+    expect(container.querySelectorAll('.cd-ai-chat-dialogue-wrapper')).toHaveLength(2);
   });
 });

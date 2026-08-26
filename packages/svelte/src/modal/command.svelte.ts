@@ -19,7 +19,7 @@ export interface ModalCommandConfig {
   okText?: string;
   cancelText?: string;
   okType?: 'primary' | 'secondary' | 'tertiary' | 'warning' | 'danger';
-  /** 是否显示取消按钮（对齐 Semi hasCancel；confirm 默认 true，其余默认 false） */
+  /** 是否显示取消按钮（对齐 Semi hasCancel，默认 true，与 type 无关） */
   hasCancel?: boolean;
   width?: number | string;
   height?: number | string;
@@ -123,8 +123,9 @@ export function destroyAll(): void {
 }
 
 export const modal = {
-  confirm: (config: ModalCommandConfig): ModalCommandHandle =>
-    spawn('confirm', { hasCancel: true, ...config }),
+  // hasCancel 默认 true 已下沉到 ConfirmModal.svelte（对齐 Semi Modal.tsx
+  // defaultProps，不分 type），这里不再需要显式传。
+  confirm: (config: ModalCommandConfig): ModalCommandHandle => spawn('confirm', config),
   info: (config: ModalCommandConfig): ModalCommandHandle => spawn('info', config),
   success: (config: ModalCommandConfig): ModalCommandHandle => spawn('success', config),
   warning: (config: ModalCommandConfig): ModalCommandHandle => spawn('warning', config),

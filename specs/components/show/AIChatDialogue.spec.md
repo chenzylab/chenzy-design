@@ -19,7 +19,7 @@
   - **Adapter 转换函数**（对齐 Semi dataAdapter）：
     - **P0（本次做）**：`responseToMessage`（Response Object → Message，非流式，Semi 源码仅 322B，简单）、`chatCompletionToMessage`（ChatCompletion → Message[]，非流式）。
     - ~~**P1（本次登记为后续）**~~ **✅ 已于 2026-07-05 落地**：`streamingResponseToMessage`、`streamingChatCompletionToMessage` —— 流式增量状态机，**全功能逐条移植自 Semi**（无序缓冲 + sequence_number 顺序处理 + MAX_GAP 容错 + 20+ chunk 类型 delta 累积 / choice.index 分组 + processedCount 增量 + tool_calls 累积）。core 纯 reducer，8 单测。
-    - `messageToChatInput` / `chatInputToChatCompletion`（配合 AIChatInput，AIChatInput 落地后补）。
+    - `chatInputToMessage` / `chatInputToChatCompletion`（配合 AIChatInput，AIChatInput 落地后补）。
   - 消息增删/选择/滚动逻辑可复用 core/chat 的 helper。
 - **渲染（svelte/）**：
   - `AIChatDialogue.svelte`（容器：消息流 + 提示区 + 选择模式，复用 Chat 滚动基建）。
@@ -88,7 +88,7 @@
 ### Perf Budget
 | 指标 | 预算 |
 |---|---|
-| gzip 体积 | 7.7 KB（实测 6.71 KB + 15% buffer；含引用区 + dialogueRenderConfig） |
+| gzip 体积 | 14.5 KB（.size-limit.js 实测校准；2026-08-25 严格对齐轮实测 14.31 KB，含 defaultActionsObj/renderActionIcon 全链路透传 + Step/Reasoning/Annotation/defaultComponents 静态属性 + 内部半受控状态管理） |
 - 长会话考虑虚拟化（后续）；ContentItem 渲染按类型惰性。
 
 ## 10. AI 元数据
@@ -106,7 +106,7 @@
 
 ## 13. 本次范围与登记（务实分层）
 - **本次做**：Message/ContentItem 类型 + 非流式 Adapter（responseToMessage/chatCompletionToMessage）+ 渲染层（text/image/file/code/reasoning/annotation 分块，复用 MarkdownRender/CodeHighlight/Avatar）+ 选择/提示/操作 + a11y/i18n/token/meta/测试。
-- **已落地**：`streamingResponseToMessage` / `streamingChatCompletionToMessage`（流式 Adapter，全功能，2026-07-05，见 §13 上方）；`messageToChatInput` / `chatInputToChatCompletion`（随 AIChatInput PR #425 落地）。
+- **已落地**：`streamingResponseToMessage` / `streamingChatCompletionToMessage`（流式 Adapter，全功能，2026-07-05，见 §13 上方）；`chatInputToMessage` / `chatInputToChatCompletion`（随 AIChatInput PR #425 落地）。
 - **已落地**：消息编辑（2026-07-05）——`messageEditRender` + `message.editing`（受控，仅 user 消息）+ `onMessageEdit` + `editable`；`dialogueMessageToInput`（core，消息→MessageContent 供编辑器载入）。DialogueBox editing 态用 messageEditRender 替代内容（消费方放 AIChatInput）。demo 04 端到端。
 - **已落地**：tool_call/MCP 完整块交互（2026-07-05）——状态图标（in_progress/completed/failed）+ 折叠展开 + 参数/输入/输出 JSON 格式化 + call_id + MCP server 标识。core `formatToolArguments`/`toolCallStatus`/`toolCallView` helpers。**超越 Semi 基础展示**。
 - **P1 全部完成**：AIChatDialogue 无未实现功能（流式 Adapter + 消息编辑 + 工具块完整交互均已落地）。

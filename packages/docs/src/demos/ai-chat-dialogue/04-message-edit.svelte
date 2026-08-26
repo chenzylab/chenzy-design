@@ -8,9 +8,18 @@
 
   // 消息编辑端到端：点击 user 消息的编辑按钮 → onMessageEdit 设 message.editing=true →
   // messageEditRender 用 AIChatInput 编辑器替代内容（载入原消息文本）→ 发送保存回消息。
+  // avatar 对齐 Semi demo（roleConfig 各角色均配真实头像图片）。
   const roleConfig: AIDialogueRoleConfig = {
-    user: { name: '我', color: '#4080ff' },
-    assistant: { name: '助手', color: '#00b42a' },
+    user: {
+      name: '我',
+      color: '#4080ff',
+      avatar: 'https://lf3-static.bytednsdoc.com/obj/eden-cn/ptlz_zlp/ljhwZthlaukjlkulzlp/docs-icon.png',
+    },
+    assistant: {
+      name: '助手',
+      color: '#00b42a',
+      avatar: 'https://lf3-static.bytednsdoc.com/obj/eden-cn/ptlz_zlp/ljhwZthlaukjlkulzlp/other/logo.png',
+    },
   };
 
   let chats = $state<AIDialogueMessage[]>([

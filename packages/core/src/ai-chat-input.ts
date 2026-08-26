@@ -5,7 +5,7 @@
  * - 阶段 2：suggestion 面板键盘导航（环绕 index）、suggestion/reference 显示文本归一。
  * - 阶段 3：skill 归一 / getSkillSlotHTML / skillHotKey 判定。
  * - 阶段 4：配置区 setField/removeField（不可变）。
- * - 阶段 5：Adapter 桥（messageToChatInput / chatInputToChatCompletion）接 AIChatDialogue / OpenAI API。
+ * - 阶段 5：Adapter 桥（chatInputToMessage / chatInputToChatCompletion）接 AIChatDialogue / OpenAI API。
  * 见 specs/components/show/AIChatInput.spec.md §2/§4/§5。
  */
 import type { AIDialogueMessage, ContentItem } from './ai-chat-dialogue.js';
@@ -516,15 +516,21 @@ function isImageAttachment(att: AIChatInputAttachment): boolean {
 }
 
 /**
- * messageToChatInput —— 把 AIChatInput 的 onMessageSend 载荷转成一条 AIDialogueMessage（user 角色），
+ * chatInputToMessage —— 把 AIChatInput 的 onMessageSend 载荷转成一条 AIDialogueMessage（user 角色），
  * 供直接 push 进 AIChatDialogue 的 chats 展示。对齐 OpenAI Response 输入消息形态：
  * content 为单个 InputMessage 块，其 content 数组含 input_text / input_image / input_file。
+ * 对齐 Semi @douyinfe/semi-foundation/aiChatDialogue/dataAdapter/chatInputToMessage：Semi
+ * 返回值不含 id（调用方自己拼 `{ id, ...userMessage }`），本库同样通过 opts.id 由调用方提供。
+ *
+ * 本库原命名 messageToChatInput——函数名字面方向（Message→ChatInput）与实际行为
+ * （ChatInput→Message）恰好相反，还跟 Semi 真实存在的另一个反方向函数 messageToChatInput
+ * （Message→MessageContent，对应本库 dialogueMessageToInput）撞名，双重误导。已改名对齐 Semi。
  *
  * @param message AIChatInput onMessageSend 载荷
  * @param opts.id  消息 id（AIChatDialogue 需唯一 id；调用方应提供，缺省 ''）
  * @param opts.model 可选模型标记
  */
-export function messageToChatInput(
+export function chatInputToMessage(
   message: AIChatInputMessageContent,
   opts: { id?: string; model?: string } = {},
 ): AIDialogueMessage {
@@ -545,6 +551,10 @@ export function messageToChatInput(
   const inputMessage: ContentItem = { type: 'message', role: 'user', content: parts } as ContentItem;
   const msg: AIDialogueMessage = { id: opts.id ?? '', role: 'user', content: [inputMessage] };
   if (opts.model !== undefined) msg.model = opts.model;
+  // 对齐 Semi chatInputToMessage：references 原样透传（本库改名前的实现漏了这个字段）。
+  if (Array.isArray(message.references) && message.references.length > 0) {
+    msg.references = message.references as never;
+  }
   return msg;
 }
 

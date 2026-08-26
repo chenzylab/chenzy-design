@@ -81,6 +81,12 @@ export interface OutputMessage extends CommonContentItem {
 export interface Reasoning extends CommonContentItem {
   summary?: { type?: string; text?: string }[];
   content?: { type?: string; text?: string }[];
+  /** 对齐 Semi 官方「自定义渲染消息内容」demo：reasoning 块也可以带 annotations，
+   * ReasoningWidgetProps 类型定义本身没有声明这个字段，但 demo 里
+   * `<AIChatDialogue.Reasoning {...item} customRenderer={...}/>` 靠展开传参把
+   * 消费方数据里的 annotations 一起带进 customRenderer(props)，函数体里直接读
+   * `props.annotations`——是数据层面的透传，不是组件本身处理的字段。 */
+  annotations?: Annotation[];
 }
 
 /** 工具调用块（function / custom / file_search / web_search / image_generation / mcp 等）。 */
@@ -284,9 +290,12 @@ export function chatCompletionToMessage(chatCompletion: ChatCompletionObject): A
             type: 'function_call',
           } as ToolCallContentItem);
         } else {
+          // 对齐 Semi MESSAGE_ITEM_TYPE.CUSTOM_TOOL_CALL（constants.ts:87）：本库原来
+          // 写成 'custom_call'，拼错了标准值——渲染层用 type.endsWith('_call') 兼容了两种
+          // 写法（function_call/custom_call 都命中）才没被发现，但输出格式本身是错的。
           outputResult.push({
             ...(toolCall.custom ?? {}),
-            type: 'custom_call',
+            type: 'custom_tool_call',
           } as ToolCallContentItem);
         }
       }
@@ -858,7 +867,8 @@ export function streamingChatCompletionToMessage(
               toolCalls.push({
                 ...toolCall?.function,
                 ...toolCall?.custom,
-                type: toolCall?.function ? 'function_call' : 'custom_call',
+                // 对齐 Semi MESSAGE_ITEM_TYPE.CUSTOM_TOOL_CALL：同上处非流式 Adapter 的修正。
+                type: toolCall?.function ? 'function_call' : 'custom_tool_call',
                 id: toolCall.id,
               });
             }

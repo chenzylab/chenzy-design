@@ -360,8 +360,10 @@ export {
   type RenderTitleProps,
   type RenderContentProps,
   type RenderActionProps,
+  type DefaultActionNodeObj,
   type RenderFullDialogueProps,
   type FullDialogueNodes,
+  type AnnotationItem,
 } from './ai-chat-dialogue/index.js';
 export {
   AIChatInput,
@@ -390,7 +392,7 @@ export {
   shouldOpenSkillPanel,
   setConfigureField,
   removeConfigureField,
-  messageToChatInput,
+  chatInputToMessage,
   chatInputToChatCompletion,
   type AIChatInputContent,
   type AIChatInputAttachment,

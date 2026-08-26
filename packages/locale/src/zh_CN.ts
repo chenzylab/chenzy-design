@@ -381,7 +381,7 @@ export const zh_CN: Locale = {
     share: '分享',
     like: '有帮助',
     dislike: '无帮助',
-    loading: '生成中…',
+    loading: '请稍候...',
     reasoning: {
       completed: '已思考完成',
       thinking: '正在思考中...',
