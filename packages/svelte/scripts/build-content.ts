@@ -5,30 +5,31 @@
  * `@chenzy-design/mcp` fetches at runtime from unpkg/npmmirror.
  *
  * Sources (read-only, monorepo-relative):
- *   - packages/docs/src/content/components/<name>.md   (72 authored pages)
- *   - packages/docs/src/demos/<dir>/                   (demo .svelte + demos.ts)
- *   - dist/components.json                             (fallback for the ~12
+ *   - packages/docs/src/content/components/<name>.md   (authored pages, all
+ *     inline form — <script> imports demo components + ?raw source)
+ *   - packages/docs/src/demos/<dir>/                   (demo .svelte files)
+ *   - dist/components.json                             (fallback for
  *     components without an authored md — build:meta must run first)
  *
- * Transformations:
- *   - docMode: inline pages — strip the <script> import block, inline each
- *     `<DemoBox code={xSrc}><X /></DemoBox>` as a ```svelte fence with the
- *     demo file's source, convert <Notice> to a blockquote.
- *   - tabbed pages (no docMode) — keep prose as-is, statically parse the
- *     demo dir's demos.ts `entry(...)` calls (vite-only module, cannot be
- *     imported under node) and append a generated「代码演示」section.
- *   - components with no authored md — generate a minimal doc from
- *     components.json (marked `generated: true` in frontmatter).
+ * Transformation: strip the <script> import block, inline each
+ * `<DemoBox code={xSrc}><X /></DemoBox>` as a ```svelte fence with the demo
+ * file's source, convert <Notice> to a blockquote.
  *
  * Strictness: any docs authoring pattern this script does not recognize is a
- * hard error, not a silent skip — "docs md / demos.ts stay statically
- * parseable" is a repo convention enforced here (and by unit tests).
+ * hard error, not a silent skip — "docs md stays statically parseable" is a
+ * repo convention enforced here (and by unit tests).
  *
  * IMPORTANT build-chain ordering: `svelte-package -i src -o dist` rebuilds
  * dist from scratch, so this script MUST run last in the package `build`
  * script (after clean-dist and build:meta), or its output gets wiped.
  */
-import { mkdirSync, readdirSync, readFileSync, writeFileSync, existsSync } from 'node:fs';
+import {
+  mkdirSync,
+  readdirSync,
+  readFileSync,
+  writeFileSync,
+  existsSync,
+} from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -36,12 +37,11 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const pkgRoot = resolve(__dirname, '..');
 const docsRoot = resolve(pkgRoot, '../docs');
 const contentSrcDir = resolve(docsRoot, 'src/content/components');
-const demosRoot = resolve(docsRoot, 'src/demos');
 const componentsJsonPath = resolve(pkgRoot, 'dist/components.json');
 const outDir = resolve(pkgRoot, 'dist/content/components');
 
 // ---------------------------------------------------------------------------
-// Frontmatter（只有 title/name/category/brief/docMode 五个标量字段，正则即可）
+// Frontmatter（title/name/category/brief 四个标量字段，正则即可）
 // ---------------------------------------------------------------------------
 
 export interface Frontmatter {
@@ -49,10 +49,13 @@ export interface Frontmatter {
   name?: string;
   category?: string;
   brief?: string;
-  docMode?: string;
 }
 
-export function parseFrontmatter(md: string): { fm: Frontmatter; body: string; raw: string } {
+export function parseFrontmatter(md: string): {
+  fm: Frontmatter;
+  body: string;
+  raw: string;
+} {
   const m = md.match(/^---\n([\s\S]*?)\n---\n?/);
   if (!m) return { fm: {}, body: md, raw: '' };
   const fm: Frontmatter = {};
@@ -72,18 +75,47 @@ interface ScriptImports {
   components: Map<string, string>;
   /** ?raw 源码变量名 → demo 文件绝对路径 */
   sources: Map<string, string>;
+  /** String.fromCharCode 拼接的字面量常量：变量名 → 计算出的字符串值 */
+  literals: Map<string, string>;
+}
+
+/** `String.fromCharCode(N) + '...' + String.fromCharCode(M) + ...` 形式的常量表达式求值。 */
+function evalCharCodeLiteral(expr: string): string | null {
+  const parts = expr.split('+').map((p) => p.trim());
+  let out = '';
+  for (const part of parts) {
+    const codeMatch = part.match(/^String\.fromCharCode\((\d+)\)$/);
+    if (codeMatch) {
+      out += String.fromCharCode(Number(codeMatch[1]));
+      continue;
+    }
+    const strMatch = part.match(/^(['"`])([\s\S]*)\1$/);
+    if (strMatch) {
+      out += strMatch[2];
+      continue;
+    }
+    return null;
+  }
+  return out;
 }
 
 /**
- * 解析 inline md 的 <script> 块。只允许三类语句：
- *   1. demo 组件 import：import X from '../../demos/<dir>/<file>.svelte'
- *   2. ?raw import：      import xSrc from '../../demos/<dir>/<file>.svelte?raw'
- *   3. docs 站壳组件：     import DemoBox/Notice from '$lib/...'
+ * 解析 inline md 的 <script> 块。只允许四类语句：
+ *   1. demo 组件 import：  import X from '../../demos/<dir>/<file>.svelte'
+ *   2. ?raw import：       import xSrc from '../../demos/<dir>/<file>.svelte?raw'
+ *   3. docs 站壳组件：      import DemoBox/Notice from '$lib/...'
+ *   4. 字面量常量：         const x = String.fromCharCode(...) + '...' + ...
+ *      （正文用于展示会被 Svelte 编译器解析的字面语法，如 `{#snippet}`，
+ *      文档站侧靠此变通避开预处理；净化产物按第 4 类求值后回填正文插值处）
  * 其他任何语句都是 authoring 约定漂移 → 报错。
  */
-export function parseInlineScript(script: string, mdFile: string): ScriptImports {
+export function parseInlineScript(
+  script: string,
+  mdFile: string,
+): ScriptImports {
   const components = new Map<string, string>();
   const sources = new Map<string, string>();
+  const literals = new Map<string, string>();
 
   for (const rawLine of script.split('\n')) {
     const line = rawLine.trim();
@@ -92,7 +124,9 @@ export function parseInlineScript(script: string, mdFile: string): ScriptImports
     const libImport = line.match(/^import\s+\w+\s+from\s+'\$lib\/[^']+';?$/);
     if (libImport) continue;
 
-    const demoImport = line.match(/^import\s+(\w+)\s+from\s+'(\.\.\/\.\.\/demos\/[^']+\.svelte)(\?raw)?';?$/);
+    const demoImport = line.match(
+      /^import\s+(\w+)\s+from\s+'(\.\.\/\.\.\/demos\/[^']+\.svelte)(\?raw)?';?$/,
+    );
     if (demoImport) {
       const [, name, relPath, isRaw] = demoImport;
       // md 位于 src/content/components/，../../demos/... 即 src/demos/...
@@ -101,27 +135,46 @@ export function parseInlineScript(script: string, mdFile: string): ScriptImports
       continue;
     }
 
-    throw new Error(`[build-content] ${mdFile} <script> 含无法识别的语句（authoring 约定漂移）：\n  ${line}`);
+    const literalConst = line.match(/^const\s+(\w+)\s*=\s*(.+?);?$/);
+    if (literalConst) {
+      const value = evalCharCodeLiteral(literalConst[2]);
+      if (value !== null) {
+        literals.set(literalConst[1], value);
+        continue;
+      }
+    }
+
+    throw new Error(
+      `[build-content] ${mdFile} <script> 含无法识别的语句（authoring 约定漂移）：\n  ${line}`,
+    );
   }
-  return { components, sources };
+  return { components, sources, literals };
 }
 
 /** <Notice type=... title="T">body</Notice> → blockquote */
 export function convertNotices(body: string): string {
-  return body.replace(/<Notice\b([^>]*)>([\s\S]*?)<\/Notice>/g, (_, attrs: string, inner: string) => {
-    // title 从完整属性串里单独提取——懒惰前缀 + 可选组的组合会让可选组永远选空
-    const title = attrs.match(/title=["']([^"']*)["']/)?.[1];
-    const lines = inner.trim().split('\n');
-    const quoted = lines.map((l) => `> ${l.trim()}`.trimEnd());
-    return title ? [`> **${title}**`, '>', ...quoted].join('\n') : quoted.join('\n');
-  });
+  return body.replace(
+    /<Notice\b([^>]*)>([\s\S]*?)<\/Notice>/g,
+    (_, attrs: string, inner: string) => {
+      // title 从完整属性串里单独提取——懒惰前缀 + 可选组的组合会让可选组永远选空
+      const title = attrs.match(/title=["']([^"']*)["']/)?.[1];
+      const lines = inner.trim().split('\n');
+      const quoted = lines.map((l) => `> ${l.trim()}`.trimEnd());
+      return title
+        ? [`> **${title}**`, '>', ...quoted].join('\n')
+        : quoted.join('\n');
+    },
+  );
 }
 
 export function transformInlineMd(md: string, mdFile: string): string {
   const { body, raw } = parseFrontmatter(md);
 
   const scriptMatch = body.match(/<script>\n?([\s\S]*?)<\/script>\n?/);
-  if (!scriptMatch) throw new Error(`[build-content] ${mdFile} 标注 docMode:inline 但没有 <script> 块`);
+  if (!scriptMatch)
+    throw new Error(
+      `[build-content] ${mdFile} 没有 <script> 块（约定：所有组件文档均为 inline 形态）`,
+    );
   const imports = parseInlineScript(scriptMatch[1], mdFile);
   let out = body.replace(scriptMatch[0], '');
 
@@ -132,7 +185,9 @@ export function transformInlineMd(md: string, mdFile: string): string {
       const srcPath = imports.sources.get(srcVar);
       const compPath = imports.components.get(compName);
       if (!srcPath || !compPath) {
-        throw new Error(`[build-content] ${mdFile} DemoBox 引用了未导入的 ${srcVar}/${compName}`);
+        throw new Error(
+          `[build-content] ${mdFile} DemoBox 引用了未导入的 ${srcVar}/${compName}`,
+        );
       }
       if (srcPath !== compPath) {
         throw new Error(
@@ -146,173 +201,19 @@ export function transformInlineMd(md: string, mdFile: string): string {
 
   // 残留的 <DemoBox（形态不符上面正则）也是约定漂移
   if (out.includes('<DemoBox')) {
-    throw new Error(`[build-content] ${mdFile} 存在无法识别形态的 <DemoBox>（应为 <DemoBox code={xSrc}><X /></DemoBox>）`);
+    throw new Error(
+      `[build-content] ${mdFile} 存在无法识别形态的 <DemoBox>（应为 <DemoBox code={xSrc}><X /></DemoBox>）`,
+    );
+  }
+
+  // 正文里对字面量常量的插值引用（如 {snippetLiteral}）回填为其求值结果
+  for (const [name, value] of imports.literals) {
+    out = out.replaceAll(`{${name}}`, value);
   }
 
   out = convertNotices(out);
-  // frontmatter 原样保留（Semi content 也带 frontmatter），去掉 docMode（对产物无意义）
-  const cleanedFm = raw.replace(/^docMode:.*\n/m, '');
-  return cleanedFm + out.replace(/\n{3,}/g, '\n\n').trim() + '\n';
-}
-
-// ---------------------------------------------------------------------------
-// tabbed 模式：静态解析 demos.ts 的 entry(...) 调用
-// ---------------------------------------------------------------------------
-
-export interface ParsedDemoEntry {
-  file: string;
-  title: string;
-  description?: string;
-  /** seeAlso / pageHead 等附加信息（可选，解析失败忽略） */
-  seeAlso?: { text: string; component: string };
-}
-
-/** 找出源码中所有顶层 `entry(` 调用并做括号+字符串感知的配平扫描，返回实参文本。 */
-function scanEntryCalls(src: string): string[] {
-  const calls: string[] = [];
-  let i = 0;
-  while (true) {
-    const at = src.indexOf('entry(', i);
-    if (at === -1) break;
-    // 跳过函数定义 `function entry(`
-    const before = src.slice(Math.max(0, at - 10), at);
-    if (/function\s+$/.test(before)) {
-      i = at + 6;
-      continue;
-    }
-    let depth = 0;
-    let j = at + 5; // 指向 '('
-    let inStr: string | null = null;
-    for (; j < src.length; j++) {
-      const ch = src[j];
-      if (inStr) {
-        if (ch === '\\') j++;
-        else if (ch === inStr) inStr = null;
-        continue;
-      }
-      if (ch === "'" || ch === '"' || ch === '`') inStr = ch;
-      else if (ch === '(') depth++;
-      else if (ch === ')') {
-        depth--;
-        if (depth === 0) break;
-      }
-    }
-    calls.push(src.slice(at + 6, j));
-    i = j;
-  }
-  return calls;
-}
-
-/** 把实参文本按顶层逗号切分（字符串/花括号感知）。 */
-function splitTopLevelArgs(argsText: string): string[] {
-  const args: string[] = [];
-  let depth = 0;
-  let inStr: string | null = null;
-  let cur = '';
-  for (let i = 0; i < argsText.length; i++) {
-    const ch = argsText[i];
-    if (inStr) {
-      cur += ch;
-      if (ch === '\\') {
-        cur += argsText[++i] ?? '';
-      } else if (ch === inStr) inStr = null;
-      continue;
-    }
-    if (ch === "'" || ch === '"' || ch === '`') {
-      inStr = ch;
-      cur += ch;
-    } else if (ch === '{' || ch === '(' || ch === '[') {
-      depth++;
-      cur += ch;
-    } else if (ch === '}' || ch === ')' || ch === ']') {
-      depth--;
-      cur += ch;
-    } else if (ch === ',' && depth === 0) {
-      args.push(cur.trim());
-      cur = '';
-    } else cur += ch;
-  }
-  if (cur.trim()) args.push(cur.trim());
-  return args;
-}
-
-/** 解析单个字符串字面量（含转义）。非字符串返回 null。 */
-function parseStringLiteral(text: string): string | null {
-  const m = text.match(/^(['"`])([\s\S]*)\1$/);
-  if (!m) return null;
-  return m[2].replace(/\\(['"`\\])/g, '$1');
-}
-
-/**
- * 解析 title/description 实参：纯字符串 或 { zh: '…', en: '…' }（取 zh）。
- * 其他形态返回 null（调用方决定是报错还是忽略）。
- */
-export function parseLocalizedText(text: string): string | null {
-  const plain = parseStringLiteral(text);
-  if (plain !== null) return plain;
-  const zh = text.match(/zh:\s*(['"`])((?:\\.|(?!\1)[\s\S])*)\1/);
-  if (zh) return zh[2].replace(/\\(['"`\\])/g, '$1');
-  return null;
-}
-
-export function parseDemosTs(src: string, tsFile: string): ParsedDemoEntry[] {
-  const calls = scanEntryCalls(src);
-  if (calls.length === 0) {
-    throw new Error(`[build-content] ${tsFile} 未找到任何 entry(...) 调用（demos.ts 必须可静态解析）`);
-  }
-  return calls.map((argsText) => {
-    const args = splitTopLevelArgs(argsText);
-    const file = parseStringLiteral(args[0] ?? '');
-    const title = args[1] ? parseLocalizedText(args[1]) : null;
-    if (!file || !title) {
-      throw new Error(`[build-content] ${tsFile} entry(...) 前两参无法静态解析：entry(${argsText.slice(0, 80)}…)`);
-    }
-    const entry: ParsedDemoEntry = { file, title };
-    if (args[2]) {
-      const desc = parseLocalizedText(args[2]);
-      if (desc) entry.description = desc;
-    }
-    // 第 4 参：seeAlso（button/icon-button）或 opts { raw/pageHead }（icon）——尽力解析，失败忽略
-    if (args[3]) {
-      const text = parseLocalizedText(args[3].match(/text:\s*([\s\S]*?),\s*component/)?.[1] ?? args[3]);
-      const component = args[3].match(/component:\s*(['"`])([^'"`]*)\1/)?.[2];
-      if (text && component) entry.seeAlso = { text, component };
-    }
-    return entry;
-  });
-}
-
-export function renderDemoSection(entries: ParsedDemoEntry[], demoDir: string, tsFile: string): string {
-  const parts: string[] = ['## 代码演示'];
-  for (const e of entries) {
-    const demoPath = resolve(demoDir, e.file);
-    if (!existsSync(demoPath)) {
-      throw new Error(`[build-content] ${tsFile} entry('${e.file}') 指向不存在的 demo 文件`);
-    }
-    const code = readFileSync(demoPath, 'utf-8').trim();
-    parts.push(`### ${e.title}`);
-    if (e.description) parts.push(e.description);
-    if (e.seeAlso) parts.push(`详见 ${e.seeAlso.component} 组件（${e.seeAlso.text}）。`);
-    parts.push('```svelte\n' + code + '\n```');
-  }
-  return parts.join('\n\n');
-}
-
-export function transformTabbedMd(md: string, name: string, demoDirName: string | undefined): string {
-  const { body, raw } = parseFrontmatter(md);
-  if (body.includes('<script>') || body.includes('<DemoBox')) {
-    throw new Error(`[build-content] ${name}.md 无 docMode:inline 却含 script/DemoBox（形态矛盾）`);
-  }
-  let demoSection = '';
-  if (demoDirName) {
-    const demoDir = resolve(demosRoot, demoDirName);
-    const tsPath = resolve(demoDir, 'demos.ts');
-    if (existsSync(tsPath)) {
-      const entries = parseDemosTs(readFileSync(tsPath, 'utf-8'), `demos/${demoDirName}/demos.ts`);
-      demoSection = '\n\n' + renderDemoSection(entries, demoDir, `demos/${demoDirName}/demos.ts`);
-    }
-  }
-  return raw + convertNotices(body).trim() + demoSection + '\n';
+  // frontmatter 原样保留（Semi content 也带 frontmatter）
+  return raw + out.replace(/\n{3,}/g, '\n\n').trim() + '\n';
 }
 
 // ---------------------------------------------------------------------------
@@ -339,17 +240,26 @@ interface MetaComponent {
   examples?: { title?: string; code?: string }[];
 }
 
-function mdTable(rows: MetaProp[], headers: [string, string, string, string]): string {
+function mdTable(
+  rows: MetaProp[],
+  headers: [string, string, string, string],
+): string {
   const esc = (s = '-') => s.replace(/\|/g, '\\|').replace(/\n/g, ' ') || '-';
   const lines = [
     `| ${headers.join(' | ')} |`,
     `| ${headers.map(() => '---').join(' | ')} |`,
-    ...rows.map((r) => `| ${esc(r.name)} | ${esc(r.desc)} | ${esc(r.type)} | ${esc(r.default)} |`),
+    ...rows.map(
+      (r) =>
+        `| ${esc(r.name)} | ${esc(r.desc)} | ${esc(r.type)} | ${esc(r.default)} |`,
+    ),
   ];
   return lines.join('\n');
 }
 
-export function generateFallbackMd(kebabName: string, meta: MetaComponent): string {
+export function generateFallbackMd(
+  kebabName: string,
+  meta: MetaComponent,
+): string {
   const parts: string[] = [
     '---',
     `title: ${meta.name}`,
@@ -369,20 +279,45 @@ export function generateFallbackMd(kebabName: string, meta: MetaComponent): stri
       if (ex.code) parts.push('```svelte', ex.code.trim(), '```', '');
     }
   }
-  if (meta.props?.length) parts.push('## Props', '', mdTable(meta.props, ['属性', '说明', '类型', '默认值']), '');
-  if (meta.events?.length) parts.push('## Events', '', mdTable(meta.events, ['事件', '说明', '类型', '默认值']), '');
-  if (meta.slots?.length) parts.push('## Slots', '', mdTable(meta.slots, ['插槽', '说明', '类型', '默认值']), '');
+  if (meta.props?.length)
+    parts.push(
+      '## Props',
+      '',
+      mdTable(meta.props, ['属性', '说明', '类型', '默认值']),
+      '',
+    );
+  if (meta.events?.length)
+    parts.push(
+      '## Events',
+      '',
+      mdTable(meta.events, ['事件', '说明', '类型', '默认值']),
+      '',
+    );
+  if (meta.slots?.length)
+    parts.push(
+      '## Slots',
+      '',
+      mdTable(meta.slots, ['插槽', '说明', '类型', '默认值']),
+      '',
+    );
   if (meta.methods?.length) {
     parts.push(
       '## Methods',
       '',
-      ...meta.methods.map((m) => `- \`${m.name}${m.signature ? `: ${m.signature}` : ''}\`${m.desc ? ` — ${m.desc}` : ''}`),
+      ...meta.methods.map(
+        (m) =>
+          `- \`${m.name}${m.signature ? `: ${m.signature}` : ''}\`${m.desc ? ` — ${m.desc}` : ''}`,
+      ),
       '',
     );
   }
   if (meta.tokens?.length) {
-    const tokenLines = (meta.tokens as ({ name?: string; desc?: string } | string)[]).map((t) =>
-      typeof t === 'string' ? `- \`${t}\`` : `- \`${t.name}\`${t.desc ? ` — ${t.desc}` : ''}`,
+    const tokenLines = (
+      meta.tokens as ({ name?: string; desc?: string } | string)[]
+    ).map((t) =>
+      typeof t === 'string'
+        ? `- \`${t}\``
+        : `- \`${t.name}\`${t.desc ? ` — ${t.desc}` : ''}`,
     );
     parts.push('## Design Tokens', '', ...tokenLines, '');
   }
@@ -394,7 +329,8 @@ export function generateFallbackMd(kebabName: string, meta: MetaComponent): stri
       // 键值宽容渲染：值可能是 string / string[] / boolean
       for (const [key, value] of Object.entries(meta.a11y)) {
         if (value == null || value === false) continue;
-        if (Array.isArray(value)) lines.push(`- ${key}: ${value.map(String).join('；')}`);
+        if (Array.isArray(value))
+          lines.push(`- ${key}: ${value.map(String).join('；')}`);
         else if (value === true) lines.push(`- ${key}`);
         else lines.push(`- ${key}: ${String(value)}`);
       }
@@ -409,17 +345,26 @@ export function generateFallbackMd(kebabName: string, meta: MetaComponent): stri
 // ---------------------------------------------------------------------------
 
 export function validateOutput(name: string, content: string): void {
-  // 残留检查须先剥掉代码围栏——内联的 demo 源码里合法地含 <script>/import 等
-  const prose = content.replace(/```[\s\S]*?```/g, '');
+  // 残留检查须先剥掉代码围栏与行内代码——内联的 demo 源码里合法地含 <script>/import 等，
+  // 散文里也会用反引号提及 `<script>` 这样的字面词（如「不必先在 `<script>` 里…」）
+  const prose = content
+    .replace(/```[\s\S]*?```/g, '')
+    .replace(/`[^`\n]*`/g, '');
   const residues = ['<DemoBox', '<Notice', '<script', '?raw'];
   for (const r of residues) {
-    if (prose.includes(r)) throw new Error(`[build-content] 产物 ${name}.md 残留 ${r}`);
+    if (prose.includes(r))
+      throw new Error(`[build-content] 产物 ${name}.md 残留 ${r}`);
   }
-  if (/\{\w+Src\}/.test(prose)) throw new Error(`[build-content] 产物 ${name}.md 残留悬空 {xxxSrc} 引用`);
+  if (/\{\w+Src\}/.test(prose))
+    throw new Error(`[build-content] 产物 ${name}.md 残留悬空 {xxxSrc} 引用`);
   const fm = parseFrontmatter(content).fm;
-  if (fm.name !== name) throw new Error(`[build-content] 产物 ${name}.md frontmatter name(${fm.name}) 与文件名不符`);
+  if (fm.name !== name)
+    throw new Error(
+      `[build-content] 产物 ${name}.md frontmatter name(${fm.name}) 与文件名不符`,
+    );
   for (const block of content.matchAll(/```svelte\n([\s\S]*?)```/g)) {
-    if (!block[1].trim()) throw new Error(`[build-content] 产物 ${name}.md 存在空的 svelte 代码块`);
+    if (!block[1].trim())
+      throw new Error(`[build-content] 产物 ${name}.md 存在空的 svelte 代码块`);
   }
 }
 
@@ -429,7 +374,9 @@ export function validateOutput(name: string, content: string): void {
 
 async function main() {
   if (!existsSync(componentsJsonPath)) {
-    throw new Error('[build-content] dist/components.json 不存在，请先跑 build:meta');
+    throw new Error(
+      '[build-content] dist/components.json 不存在，请先跑 build:meta',
+    );
   }
   const manifest = JSON.parse(readFileSync(componentsJsonPath, 'utf-8')) as {
     components: Record<string, MetaComponent> | MetaComponent[];
@@ -438,32 +385,22 @@ async function main() {
     ? manifest.components
     : Object.values(manifest.components);
 
-  // docs 侧 name(kebab) → demo 目录映射（component-dir.ts 是 docs 私有映射，这里按同名目录约定 +
-  // 从 md 的 import 路径推断即可；tabbed 页 demo 目录 = md 文件名去 .md，与 demos/<dir> 同名——
-  // 亲验：72 个 md 名与 demos 目录名一致集合覆盖）
   const mdFiles = existsSync(contentSrcDir)
-    ? readdirSync(contentSrcDir).filter((f) => f.endsWith('.md') && !f.endsWith('.en.md'))
+    ? readdirSync(contentSrcDir).filter(
+        (f) => f.endsWith('.md') && !f.endsWith('.en.md'),
+      )
     : [];
 
   mkdirSync(outDir, { recursive: true });
   let inlineCount = 0;
-  let tabbedCount = 0;
   let generatedCount = 0;
   const written = new Set<string>();
 
   for (const file of mdFiles) {
     const name = file.replace(/\.md$/, '');
     const md = readFileSync(resolve(contentSrcDir, file), 'utf-8');
-    const { fm } = parseFrontmatter(md);
-    let out: string;
-    if (fm.docMode === 'inline') {
-      out = transformInlineMd(md, file);
-      inlineCount++;
-    } else {
-      const demoDirName = existsSync(resolve(demosRoot, name)) ? name : undefined;
-      out = transformTabbedMd(md, name, demoDirName);
-      tabbedCount++;
-    }
+    const out = transformInlineMd(md, file);
+    inlineCount++;
     validateOutput(name, out);
     writeFileSync(resolve(outDir, `${name}.md`), out);
     written.add(name);
@@ -478,7 +415,12 @@ async function main() {
     const name = flat(meta.name);
     if (writtenFlat.has(name)) continue;
     // 子组件 meta（如 ButtonGroup、AvatarGroup）与主组件共享文档：主组件文档已覆盖时跳过
-    const isSubComponent = metaList.some((m) => m !== meta && writtenFlat.has(flat(m.name)) && name.startsWith(flat(m.name)));
+    const isSubComponent = metaList.some(
+      (m) =>
+        m !== meta &&
+        writtenFlat.has(flat(m.name)) &&
+        name.startsWith(flat(m.name)),
+    );
     if (isSubComponent) continue;
     const out = generateFallbackMd(name, meta);
     validateOutput(name, out);
@@ -489,11 +431,13 @@ async function main() {
   }
 
   console.log(
-    `[build-content] 生成 ${written.size} 个文档（inline ${inlineCount} / tabbed ${tabbedCount} / generated ${generatedCount}）→ dist/content/components/`,
+    `[build-content] 生成 ${written.size} 个文档（inline ${inlineCount} / generated ${generatedCount}）→ dist/content/components/`,
   );
 }
 
-const isDirectRun = process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url);
+const isDirectRun =
+  process.argv[1] &&
+  resolve(process.argv[1]) === fileURLToPath(import.meta.url);
 if (isDirectRun) {
   main().catch((err) => {
     console.error(err instanceof Error ? err.message : err);
