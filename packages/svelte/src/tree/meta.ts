@@ -1,10 +1,10 @@
 /**
  * Machine-readable component metadata for AI/docs consumption.
- * Tree — see specs/components/show/Tree.spec.md
+ * Tree — see specs/components/navigation/Tree.spec.md
  */
 export const meta = {
   name: 'Tree',
-  category: 'show',
+  category: 'navigation',
   description:
     '树形控件（严格对齐 Semi）：层级展示节点，支持展开/收起、单选/多选（multiple 驱动 checkbox 父子联动含半选 mixed）、内置搜索高亮。值通道统一走 value/onChange。受控 value/expandedKeys 均不回写，仅通过 onChange/onExpand/onSelect/onSearch 通知。键盘导航遵循 WAI-ARIA APG Tree View（单一 tab stop + aria-activedescendant）。',
   exports: ['Tree'],

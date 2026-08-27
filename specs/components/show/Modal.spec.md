@@ -1,6 +1,6 @@
 # SPEC · Modal
 
-> 分类：feedback · 阶段：M5
+> 分类：show · 阶段：M5
 > 对标 Semi Modal。**示范组件**：作为「浮层/复杂 a11y」组件 SPEC 的范例。
 
 ## 1. 概述

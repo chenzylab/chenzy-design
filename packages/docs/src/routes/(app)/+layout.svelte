@@ -10,6 +10,7 @@
   import { t } from '$lib/i18n';
   import { componentNamesZh } from '$lib/component-names-zh';
   import { componentLocale } from '$lib/component-locale';
+  import { compareBySemiOrder } from '$lib/component-semi-order';
   import SidebarIcon from '$lib/components/SidebarIcon.svelte';
 
   const { children }: { children: Snippet } = $props();
@@ -40,11 +41,18 @@
     },
     {} as Record<string, { name: string; category?: string }[]>,
   );
+  // 组内顺序对齐 Semi Design 官网侧边栏（见 component-semi-order.ts）。
+  for (const list of Object.values(grouped)) {
+    list.sort(compareBySemiOrder);
+  }
 
   const categoryOrder = ['ai', 'basic', 'plus', 'input', 'navigation', 'show', 'feedback', 'other'];
 
-  // 全局文档分组（对齐 Semi 左侧「开始 / 体验增强」）。label 中英双版。
-  // icon：对齐 Semi content frontmatter 的 doc-* 图标（本库 icons-lab 具名图标名）。
+  // 全局文档分组（对齐 Semi 左侧「开始 / 设计协作 / 体验增强」三分组，src/utils/category.js
+  // start/advanced/experience；顺序与文案见对应 semi-design content/*/index.md frontmatter）。
+  // 本库暂无 Semi 的 mcp-skills / dark-mode / design-to-code / design-source 独立页面，分组内
+  // 仅列出本库已有页面，不新增内容。icon：对齐 Semi content frontmatter 的 doc-* 图标（本库
+  // icons-lab 具名图标名）。
   const guideGroups = [
     {
       titleKey: 'group.start',
@@ -55,9 +63,14 @@
       ],
     },
     {
+      titleKey: 'group.advanced',
+      items: [
+        { zh: 'Customized Themes 定制主题', en: 'Customized Themes', href: '/guide/theming', icon: 'Theming' },
+      ],
+    },
+    {
       titleKey: 'group.experience',
       items: [
-        { zh: 'Theming 主题定制', en: 'Theming', href: '/guide/theming', icon: 'Theming' },
         { zh: 'Accessibility 无障碍', en: 'Accessibility', href: '/guide/accessibility', icon: 'Accessibility' },
         { zh: 'Internationalization 国际化', en: 'Internationalization', href: '/guide/i18n', icon: 'Internationalization' },
         { zh: 'Content Guidelines 文案规范', en: 'Content Guidelines', href: '/guide/content-guidelines', icon: 'ContentGuidelines' },

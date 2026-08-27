@@ -1,5 +1,5 @@
 # SPEC · Tree
-> 分类：show · 阶段：M4
+> 分类：navigation · 阶段：M4
 > 对标 Semi：Tree
 
 ## 1. 概述
@@ -249,7 +249,7 @@ Tree（树形控件）以层级缩进的方式展示具有父子关系的结构�
 ## 10. AI 元数据
 
 提供 `component.meta.ts`，内容包含：
-- `name: 'Tree'`、`category: 'show'`、`stage: 'M4'`、`semiEquivalent: 'Tree'`。
+- `name: 'Tree'`、`category: 'navigation'`、`stage: 'M4'`、`semiEquivalent: 'Tree'`。
 - `tags: ['tree','hierarchy','checkbox','draggable','virtualized','apg-tree']`。
 - `aiHints`：何时用 Tree vs TreeSelect（需收纳到表单/下拉用 TreeSelect）vs Cascader（强单链路径选择用 Cascader）vs Menu（导航用 Menu）。
 - `propsSchema`：从 Props 表生成的 JSON Schema，标注受控/非受控配对（value↔defaultValue、checkedKeys↔defaultCheckedKeys、expandedKeys↔defaultExpandedKeys）。

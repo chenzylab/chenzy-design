@@ -1,7 +1,7 @@
 ---
 title: Dropdown 下拉菜单
 name: dropdown
-category: navigation
+category: show
 brief: 向下弹出的菜单。
 ---
 

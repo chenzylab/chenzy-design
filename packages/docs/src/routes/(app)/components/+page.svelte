@@ -3,6 +3,7 @@
   import componentsJson from '@chenzy-design/svelte/components.json';
   import { locale } from '$lib/locale.svelte';
   import { t } from '$lib/i18n';
+  import { compareBySemiOrder } from '$lib/component-semi-order';
 
   const lang = $derived(locale.value);
 
@@ -17,6 +18,10 @@
     },
     {} as Record<string, any[]>
   );
+  // 组内顺序对齐 Semi Design 官网侧边栏（见 component-semi-order.ts）。
+  for (const list of Object.values(grouped)) {
+    list.sort(compareBySemiOrder);
+  }
 </script>
 
 <svelte:head>

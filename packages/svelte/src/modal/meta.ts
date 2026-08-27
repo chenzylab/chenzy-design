@@ -4,7 +4,7 @@
  */
 export const meta = {
   name: 'Modal',
-  category: 'feedback',
+  category: 'show',
   description:
     '模态对话框，严格镜像 Semi Design。DOM：.cd-modal-fixed > .cd-modal-mask + .cd-modal-wrap(role=none 滚动/遮罩点击) > .cd-modal(尺寸壳) > .cd-modal-content(role=dialog aria-modal)。API 对齐 Semi 名：visible/closeOnEsc/getPopupContainer/afterClose/motion/okType(5 种)/size(small|medium|large|full-width)/header(Snippet)/footerFill 等。关闭按钮用 IconButton + IconClose（@chenzy-design/icons），标题用 Typography.Title heading=5。受控 visible 不回写，仅 onVisibleChange/onCancel 通知。命令式工厂 Modal.confirm/info/success/warning/error（异步 onOk 自动 loading）+ Modal.destroyAll + Modal.useModal（配合 ModalContextHolder 继承 context）。可拖拽经 modalRender + DragMove（对齐 Semi）。堆叠 z-index 由模块级计数器分配（声明式与命令式共享）。',
   exports: ['Modal', 'ModalContextHolder', 'modal', 'useModal'],

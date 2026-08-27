@@ -5,6 +5,7 @@
   import { t } from '$lib/i18n';
   import { componentNamesZh } from '$lib/component-names-zh';
   import SidebarIcon from '$lib/components/SidebarIcon.svelte';
+  import { compareBySemiOrder } from '$lib/component-semi-order';
 
   const lang = $derived(locale.value);
   const count = componentsJson.count;
@@ -19,6 +20,10 @@
     },
     {} as Record<string, { name: string; category?: string }[]>,
   );
+  // 组内顺序对齐 Semi Design 官网侧边栏（见 component-semi-order.ts）。
+  for (const list of Object.values(grouped)) {
+    list.sort(compareBySemiOrder);
+  }
 </script>
 
 <svelte:head>

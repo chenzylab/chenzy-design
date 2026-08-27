@@ -1,7 +1,7 @@
 ---
 title: Modal 模态对话框
 name: modal
-category: feedback
+category: show
 brief: 模态对话框用于等待用户响应、告知用户重要信息或在不丢失上下文的情况下展示更多信息
 ---
 

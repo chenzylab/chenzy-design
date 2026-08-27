@@ -5,7 +5,7 @@
  */
 export const meta = {
   name: 'Dropdown',
-  category: 'navigation',
+  category: 'show',
   description:
     '向下弹出的菜单，通过触发元素唤起一组可操作命令项。对齐 Semi：children 为触发器，render/menu 定义浮层内容（Dropdown.Menu/Item/Title/Divider）；hover/focus/click/custom/contextMenu 触发；12 方位；嵌套子菜单（手动嵌套 Dropdown）；showTick 勾选、type 五色语义、icon、active、disabled；键盘导航与 Esc 关闭。',
   props: [
