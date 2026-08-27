@@ -1,5 +1,11 @@
 # @chenzy-design/locale
 
+## 1.0.0
+
+### Major Changes
+
+- chore: 1.0.0 首个稳定版本发布
+
 ## 0.4.1
 
 ## 0.4.0

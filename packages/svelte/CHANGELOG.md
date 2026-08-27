@@ -1,5 +1,120 @@
 # @chenzy-design/svelte
 
+## 1.0.0
+
+### Major Changes
+
+- chore: 1.0.0 首个稳定版本发布
+
+### Minor Changes
+
+- 24d7887: feat(svelte,core): 随包发布 AI 可消费的组件文档与源码，支撑 MCP
+
+  **svelte**：新增 `build:content` 净化管线（`scripts/build-content.ts`），构建时把文档站的组件 md 蒸馏为自洽纯 markdown 发布到 `dist/content/components/<name>.md`（84 组件全覆盖）：inline 页剥离 `<script>`、把 `<DemoBox>` 内联为 ```svelte 代码块、`<Notice>`转 blockquote；tabbed 页静态解析`demos.ts`的`entry(...)`生成「代码演示」章节；12 个无人工文档的组件从`components.json`降级生成。产物随包发布，供`@chenzy-design/mcp`运行时从 unpkg/npmmirror 拉取。exports 新增`./content/\*`。
+
+  **core**：`files` 追加 `src`（排除 `*.test.ts`），随包发布 headless 层 `.ts` 源码，让 MCP / AI 能查框架无关的逻辑实现（对应 Semi 的 semi-foundation 源码查询）；`build` 追加 `clean-dist` 步骤剔除 dist 中的测试产物。
+
+### Patch Changes
+
+- 3dec738: fix(button): SplitButtonGroup 主按钮与箭头间隔对齐 Semi（5px → 1px）
+
+  `.cd-button-split` 容器由 `inline-block` 改 `inline-flex`，消除主按钮与 Dropdown 触发器 span 之间的 HTML 空白符间隙（此前叠加 1px margin 后间隔达 ~5px，与 Semi 的 1px 细缝不符）。新增 SplitButtonGroup 视觉回归测试锁住 solid/light/borderless 三组的 1px 缝 + 首尾圆角基线。
+
+  同时整页对齐 Semi 的 Button 组件文档（inline 化 + demo 逐字对齐），并修正过时的 Input 视觉基线（66px → 64px，对齐 Semi 的 32px 灰底透明边框 Input）。
+
+- eb9f4ec: feat(illustrations): 新增 @chenzy-design/illustrations 包，路径级复刻 Semi 全部 16 个插画
+
+  - 新增独立包 `@chenzy-design/illustrations`，对齐 Semi `@douyinfe/semi-illustrations`：
+    8 语义（success/failure/noAccess/noContent/notFound/noResult/construction/idle）× light/dark
+    共 16 个插画组件，路径级复刻 Semi 原始 SVG（非此前自造的简化几何占位图）
+  - 品牌色 token 化：`var(--semi-color-primary*)` → `var(--cd-color-primary*)`，其余中性色对齐
+    Semi 硬编码值；清理 Semi 源文件中残留的浏览器调试注入标记
+  - `@chenzy-design/svelte` 删除内嵌的自造占位插画，改为依赖并 re-export 新包
+  - Empty 补齐 `...rest` 属性透传到根节点，对齐 Semi `getDataAttr(rest)`
+  - docs 站 Empty 的 5 个 demo 插画 import 改为从 `@chenzy-design/illustrations` 引入，对齐 Semi
+    demo 从 `@douyinfe/semi-illustrations` 单独 import 的写法；`Empty.spec.md` 改写，删除 Semi
+    原版没有的规划态特性（role=status/size/responsive/6预设枚举/imageError事件等）
+
+- e2e2067: fix(grid): Row 响应式 gutter 触发 effect_update_depth_exceeded 无限循环
+
+  当 `Row` 的 `gutter` 为响应式对象（如 `{ xs: 16, md: 24 }`）或数组时，`registerMediaQuery` 的 `callInInit` 会在断点订阅 `$effect` 同步执行期内立即回调 `match`/`unmatch`。原实现用 `screens = { ...screens, [bp]: … }` 整体重建 —— spread 读取了整个 `screens`，使该 effect 读写同一状态，触发 Svelte `effect_update_depth_exceeded` 无限循环（页面加载与窗口缩放时均复现，控制台刷屏报错）。
+
+  改为逐键 mutate（`screens[bp] = …`）：单键写不读取整体 `screens`，切断 effect 的自依赖，循环消除。响应式断点降级与运行时窗口缩放的 gutter 自适应均保持正确（真机缩放至 xs 断点复测无报错，grid 单测 27 项全绿）。
+
+- 3dec738: fix(json-viewer): 严格对齐 Semi — DOM 结构/盒模型/搜索栏/token 公式
+
+  以 Semi 真实 DevTools DOM + jsonViewer.scss 源码为基准对齐：
+
+  - **盒模型**：height + padding(12px 0) 落在内核挂载层（对齐 Semi `.semi-json-viewer-background`），
+    外层 relative div 无 padding/overflow，搜索栏浮层可溢出编辑器完整显示（此前 overflow:hidden 裁掉替换行）
+  - **搜索栏 DOM 结构**：一比一重写为 Semi `search-bar-container > search-bar(Input + ul.search-options + ButtonGroup + close) + replace-bar(Input + replace + replaceAll)`
+  - **搜索按钮**：改用 Button(theme=light type=primary)（浅灰底方块 + 蓝图标 + 32×32）
+  - **焦点**：输入后 refocus 搜索框（对齐 Semi `searchInputRef.focus()`），可连续输入
+  - **class 命名**：全改连字符（`cd-json-viewer-search-bar-*`），去 BEM `__`
+  - **SearchControls**：补全对齐 Semi 全字段（showSearchBar/onToggleSearchBar/onSearch/onPrevSearch/onNextSearch/onReplace/onReplaceAll）
+  - **样式全走 token 公式**：padding/gap/bg/border/radius/search-options 色改用 `--cd-*-json-viewer-*` token
+    （tokens 新增 4 个 search-options-item 色 token，对齐 Semi text-2/default/primary/primary-light-default）
+
+- f733205: fix(json-viewer): 第三轮严格对齐 Semi，删除三处自造超集样式并补齐内容行/行号完整字体规则
+
+  用 ego-browser 真机逐 demo 对 Semi 官网 `semi.design/zh-CN/plus/jsonviewer` 做 computed style 精确测量，发现并修复以下自造超出 Semi 的能力：
+
+  - **编辑器容器不该有边框/圆角**：Semi `jsonViewer.scss` 里 `.semi-json-viewer` 本体只有 `padding`+`background`，无 `border`/`border-radius`；本库此前自造加了 1px 边框和圆角，已删除，`overflow` 同步由 `auto` 改回内核自身裁剪（不重复裁剪）
+  - **外层容器不该统一等宽字体**：Semi 最外层 div 继承 body 常规字体，等宽字体只作用于内容行（`-view-line`）与行号（`-line-number`），本库此前把等宽字体设在了外层容器上；已删除外层字体设置，并给 `-view-line`/`-line-number` 补齐 Semi 完整字体栈（`ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Monaco, 'Fira Code', Consolas, ...`）+ 12px + `!important` 覆盖内核内联 `white-space:pre`（否则 autoWrap 换行失效）
+  - **`delimiter-colon` 不该单独上色**：内核确实产出该 class，但 Semi scss 未定义其颜色规则（冒号继承默认文字色），本库此前误当作标点统一上蓝色，已改为仅 `delimiter-comma` 保留着色
+  - **自动补全下拉误用了工具条的圆角/背景 token**：Semi `complete-suggestions-container` 用 `border-radius-medium` + `bg-3`，与搜索/替换工具条的 `border-radius-small` + `bg-0` 不同，此前误共用同一 token，现拆分为独立的 `radius-json-viewer-complete`/`color-json-viewer-complete-bg`
+  - **`CustomRenderRule.match` 类型定义缺参数**：本库内核环境声明 `.d.ts` 里 `match` 签名少了 `tokenType` 参数、`value` 类型固定为 `string`，与内核真实契约（`(value: string|number|boolean|null, path, tokenType) => boolean`）、组件文档、demo 实际用法均不一致，已修正
+  - **文档补齐 2.96.0 行为变更说明**：`customRenderRule` 计算 `path` 时同一键值对的 key/value token 现在共享同一 `path`，需用 `tokenType` 区分——此前文档遗漏这段官方说明
+
+  删除 3 个死 token（`radius-json-viewer`/`color-json-viewer-border`/旧 `font-json-viewer-fontfamily`/`fontsize`），新增 4 个（`font-json-viewer-mono-fontfamily`/`fontsize`、`radius-json-viewer-complete`、`color-json-viewer-complete-bg`），meta.ts 同步。
+
+- 3c5e00e: fix(json-viewer): 补齐 renderTooltip/autoWrap 重排/value 重建三个行为缺口 + 文档全量对齐 Semi
+
+  以 Semi 最新 `index.tsx`/`jsonViewer.scss` 源码逐条核对，补齐此前遗漏的行为与样式差异：
+
+  - **新增 `renderTooltip` prop**：内核 hover 700ms 后 emit `hoverNode` 事件（`{value,target}`），`renderTooltip` 返回的 `HTMLElement` 经 `renderHoverNode` 事件回传内核挂载到 tooltip 容器（对齐 Semi `notifyHover`）
+  - **autoWrap 容器宽度响应式重排**：新增 `ResizeObserver` 监听编辑器容器宽度变化，rAF 防抖后清空内核测量高度缓存并重新 `layout()`（对齐 Semi `setupResizeObserver`），此前容器宽度变化（如响应式布局）不会触发重新换行
+  - **`value` 变化重建内核实例**：外部主动传入新的 `value` 字面量现在会重建整个编辑器（对齐 Semi `componentDidUpdate` 的 dispose+init），文档同步补充"不建议在 onChange 中回写 value"的说明
+  - **样式修复**：行号列补 `text-align:center`、内容容器补齐三段隐藏原生滚动条写法、错误波浪线补 `text-underline-position:under`、补齐自动补全 `-complete-*` 系列样式
+  - **token 清理**：移除 3 个全库无消费方的死 token（`toolbar-btn-hover`/`-active`/`-shadow`），meta.ts 同步纠正为组件实际消费的 `search-options-item*` 系列
+
+  文档/demo 对齐：md API 表补 `limitSearchButtonBounds`/`renderTooltip` 两行；demo 补齐 Semi 原版外层 `marginBottom:16` 包裹 div；孤儿 demo `02-readonly.svelte` 接入文档新增「只读模式」章节。
+
+  顺带修复 `ConfigProvider` 打包警告：`import.meta.env` 改用 `esm-env` 的 `DEV` 导出，避免依赖 Vite 专有全局对象。
+
+- 21fb531: feat(popover): 文档整页对齐 Semi + 补齐浮层键盘无障碍（onEscKeyDown / 方向键移焦 / initialFocusRef 内层聚焦）
+
+  Popover 文档 inline 化，9 个 demo 严格复刻 Semi（注意事项 children 类型 / 基本使用 / 12 方位 / 受控 custom / condition / showArrow / arrowPointAtCenter / 设置浮层背景色 / 初始化弹出层焦点）。demo 用 Empty + IllustrationSuccess 复刻 Semi 的 content 卡片。
+
+  同时补齐三处**跨浮层组件**（Tooltip / Popover / Popconfirm 全受益）的 Semi 键盘无障碍能力：
+
+  - **onEscKeyDown**：新增回调 prop，在 trigger 或浮层按 Esc 时触发，与 `closeOnEsc` 是否关闭相互独立（对齐 Semi）。`useDismiss` 的 `onDismiss` 回调补 event 第二参以透传原始事件。
+  - **ArrowUp/Down 键盘移焦**：浮层打开后在触发器按 ⬇️ 焦点移入浮层首个可交互元素、⬆️ 移到最后一个（对齐 Semi `_handleTriggerArrowUp/DownKeydown`），对所有 trigger 生效（hover/focus 的 tooltip 同样支持）。
+  - **initialFocusRef 内层聚焦**：`content` 函数形态的 `initialFocusRef` 绑定到自身不可聚焦的元素（如包裹 Input 组件的 span）时，聚焦其内部首个可聚焦元素（对齐 Semi ref 绑组件时聚焦真实 input 的行为）。
+
+  新增 Popover 键盘 e2e 测试覆盖方向键移焦与 onEscKeyDown 回调（closeOnEsc=false 下 Esc 触发回调但不关闭）。
+
+- f733205: fix(rating): 修复窄行高容器内星星图标被裁剪不可见的问题
+
+  `RatingItem.svelte` 模板里 `{#if allowHalf && !isEmpty}...{/if}` 与紧邻的 `<div>` 之间的换行/缩进被 Svelte 编译成孤立的空白文本节点。这个空白节点是行内内容，在 `.cd-rating-star-wrapper`（`overflow:hidden`，高度由 `size` prop 决定，如 10px）内部继承了外层容器的 `line-height`（如 JsonViewer 编辑器场景下的 20px）撑出一整行高度，把后面 `display:block` 的星星内容层挤出可视区域、被 `overflow:hidden` 完全裁掉——星星图标在 DOM 里存在、computed style 也显示可见，但实际渲染位置落在裁剪区外，肉眼完全看不到。
+
+  复现场景：`JsonViewer` 的 `customRenderRule` demo 里用 `<Rating size={10} disabled />` 渲染 JSON 值，星星在正常页面（行高较大）下正常显示，但嵌入行高仅 20px 的 JSON 编辑器行时完全不可见。
+
+  修复：清理模板里 `{#if}`/`{/if}` 与相邻块级元素之间产生孤立空白文本节点的换行，避免行内空白节点在窄行高容器里意外撑出一整行。
+
+- Updated dependencies [eb9f4ec]
+- Updated dependencies [3dec738]
+- Updated dependencies [f733205]
+- Updated dependencies [3c5e00e]
+- Updated dependencies [24d7887]
+- Updated dependencies [21fb531]
+- Updated dependencies
+  - @chenzy-design/illustrations@0.2.0
+  - @chenzy-design/tokens@1.0.0
+  - @chenzy-design/core@1.0.0
+  - @chenzy-design/locale@1.0.0
+  - @chenzy-design/icons@1.0.0
+
 ## 0.4.1
 
 ### Patch Changes
