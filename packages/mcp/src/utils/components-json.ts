@@ -37,8 +37,14 @@ export interface ComponentsManifest {
   components: Record<string, ComponentMeta>;
 }
 
-export async function getComponentsManifest(version: string): Promise<ComponentsManifest> {
-  const raw = await fetchFileContent(SVELTE_PACKAGE, version, 'dist/components.json');
+export async function getComponentsManifest(
+  version: string,
+): Promise<ComponentsManifest> {
+  const raw = await fetchFileContent(
+    SVELTE_PACKAGE,
+    version,
+    'dist/components.json',
+  );
   return JSON.parse(raw) as ComponentsManifest;
 }
 
@@ -81,7 +87,12 @@ export function resolveComponent(
     });
     if (sub) {
       const subName = typeof sub === 'string' ? sub : sub.name;
-      return { metaName, meta, docName: flatName(metaName), viaSubComponent: subName };
+      return {
+        metaName,
+        meta,
+        docName: flatName(metaName),
+        viaSubComponent: subName,
+      };
     }
   }
 
@@ -91,7 +102,11 @@ export function resolveComponent(
 /** 组件列表摘要（description 取首句） */
 export function renderComponentList(manifest: ComponentsManifest): string {
   const lines = Object.values(manifest.components)
-    .sort((a, b) => (a.category ?? '').localeCompare(b.category ?? '') || a.name.localeCompare(b.name))
+    .sort(
+      (a, b) =>
+        (a.category ?? '').localeCompare(b.category ?? '') ||
+        a.name.localeCompare(b.name),
+    )
     .map((c) => {
       const firstSentence = (c.description ?? '').split(/[。\n]/)[0];
       return `- ${c.name} (${c.category ?? 'other'})${firstSentence ? `: ${firstSentence}` : ''}`;

@@ -42,7 +42,11 @@ export function extractScriptBlocks(source: string): ScriptBlock[] {
     const contentStart = tagEnd + 1;
     const close = source.indexOf('</script>', contentStart);
     if (close === -1) break;
-    blocks.push({ content: source.slice(contentStart, close), start: contentStart, end: close });
+    blocks.push({
+      content: source.slice(contentStart, close),
+      start: contentStart,
+      end: close,
+    });
     re.lastIndex = close + '</script>'.length;
   }
   return blocks;

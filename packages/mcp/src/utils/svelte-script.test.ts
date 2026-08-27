@@ -1,5 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import { extractScriptBlocks, transformSvelteScripts } from './svelte-script.js';
+import {
+  extractScriptBlocks,
+  transformSvelteScripts,
+} from './svelte-script.js';
 
 describe('extractScriptBlocks', () => {
   it('抽取普通与 module 两个 script 块', () => {

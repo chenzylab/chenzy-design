@@ -2,8 +2,11 @@
  * get_chenzy_code_block — 按索引获取组件文档中被占位符隐藏的代码块。
  * 对齐 semi-mcp get_semi_code_block。
  */
-import type { Tool, CallToolResult } from '@modelcontextprotocol/sdk/types.js';
-import { extractCodeBlocks, getComponentDocument } from './get-chenzy-document.js';
+import type { Tool, CallToolResult } from '@modelcontextprotocol/server';
+import {
+  extractCodeBlocks,
+  getComponentDocument,
+} from './get-chenzy-document.js';
 
 export const getChenzyCodeBlockTool: Tool = {
   name: 'get_chenzy_code_block',
@@ -20,23 +23,42 @@ export const getChenzyCodeBlockTool: Tool = {
   },
 };
 
-export async function handleGetChenzyCodeBlock(args: Record<string, unknown>): Promise<CallToolResult> {
+export async function handleGetChenzyCodeBlock(
+  args: Record<string, unknown>,
+): Promise<CallToolResult> {
   const componentName = args?.componentName as string | undefined;
   const codeBlockIndex = args?.codeBlockIndex as number | undefined;
   const version = (args?.version as string | undefined) || 'latest';
 
   if (!componentName) {
-    return { content: [{ type: 'text', text: '错误: 必须提供 componentName 参数' }], isError: true };
+    return {
+      content: [{ type: 'text', text: '错误: 必须提供 componentName 参数' }],
+      isError: true,
+    };
   }
-  if (typeof codeBlockIndex !== 'number' || codeBlockIndex < 1 || !Number.isInteger(codeBlockIndex)) {
-    return { content: [{ type: 'text', text: '错误: codeBlockIndex 必须是大于等于 1 的整数' }], isError: true };
+  if (
+    typeof codeBlockIndex !== 'number' ||
+    codeBlockIndex < 1 ||
+    !Number.isInteger(codeBlockIndex)
+  ) {
+    return {
+      content: [
+        { type: 'text', text: '错误: codeBlockIndex 必须是大于等于 1 的整数' },
+      ],
+      isError: true,
+    };
   }
 
   try {
     const doc = await getComponentDocument(componentName, version);
     if (!doc) {
       return {
-        content: [{ type: 'text', text: `错误: 未找到组件 "${componentName}" 的文档 (版本 ${version})` }],
+        content: [
+          {
+            type: 'text',
+            text: `错误: 未找到组件 "${componentName}" 的文档 (版本 ${version})`,
+          },
+        ],
         isError: true,
       };
     }
@@ -45,7 +67,10 @@ export async function handleGetChenzyCodeBlock(args: Record<string, unknown>): P
     if (codeBlockIndex > blocks.length) {
       return {
         content: [
-          { type: 'text', text: `错误: 代码块索引 ${codeBlockIndex} 超出范围，文档共有 ${blocks.length} 个代码块` },
+          {
+            type: 'text',
+            text: `错误: 代码块索引 ${codeBlockIndex} 超出范围，文档共有 ${blocks.length} 个代码块`,
+          },
         ],
         isError: true,
       };
@@ -61,7 +86,12 @@ export async function handleGetChenzyCodeBlock(args: Record<string, unknown>): P
     };
   } catch (error) {
     return {
-      content: [{ type: 'text', text: `获取代码块失败: ${error instanceof Error ? error.message : String(error)}` }],
+      content: [
+        {
+          type: 'text',
+          text: `获取代码块失败: ${error instanceof Error ? error.message : String(error)}`,
+        },
+      ],
       isError: true,
     };
   }

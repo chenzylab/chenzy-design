@@ -1,19 +1,17 @@
 /**
  * chenzy-design MCP Server 共享配置。
  * 导出 MCP 服务器的配置和处理器注册逻辑，被 stdio 和 HTTP 两种入口共用。
+ * createMCPServer 是工厂函数：每次调用返回全新实例，供 serveStdio / createMcpHandler 按连接或请求各自创建实例。
  */
-import { Server } from '@modelcontextprotocol/sdk/server/index.js';
-import {
-  CallToolRequestSchema,
-  ListToolsRequestSchema,
-  ListResourcesRequestSchema,
-  ReadResourceRequestSchema,
-} from '@modelcontextprotocol/sdk/types.js';
+import { Server } from '@modelcontextprotocol/server';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { tools, toolHandlers } from './tools/index.js';
-import { getComponentsManifest, renderComponentList } from './utils/components-json.js';
+import {
+  getComponentsManifest,
+  renderComponentList,
+} from './utils/components-json.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -21,7 +19,9 @@ const __dirname = dirname(__filename);
 export function getPackageVersion(): string {
   for (const rel of ['../package.json', '../../package.json']) {
     try {
-      const pkg = JSON.parse(readFileSync(join(__dirname, rel), 'utf-8')) as { version?: string };
+      const pkg = JSON.parse(readFileSync(join(__dirname, rel), 'utf-8')) as {
+        version?: string;
+      };
       if (pkg.version) return pkg.version;
     } catch {
       // 尝试下一个路径
@@ -36,16 +36,16 @@ export function createMCPServer(): Server {
     { capabilities: { tools: {}, resources: {} } },
   );
 
-  server.setRequestHandler(ListToolsRequestSchema, async () => ({ tools }));
+  server.setRequestHandler('tools/list', async () => ({ tools }));
 
-  server.setRequestHandler(CallToolRequestSchema, async (request) => {
+  server.setRequestHandler('tools/call', async (request) => {
     const { name, arguments: args } = request.params;
     const handler = toolHandlers[name];
     if (!handler) throw new Error(`未知的工具: ${name}`);
     return handler(args || {});
   });
 
-  server.setRequestHandler(ListResourcesRequestSchema, async () => ({
+  server.setRequestHandler('resources/list', async () => ({
     resources: [
       {
         uri: 'chenzy://components',
@@ -56,13 +56,19 @@ export function createMCPServer(): Server {
     ],
   }));
 
-  server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
+  server.setRequestHandler('resources/read', async (request) => {
     const { uri } = request.params;
     if (uri.startsWith('chenzy://components')) {
       try {
         const manifest = await getComponentsManifest('latest');
         return {
-          contents: [{ uri, mimeType: 'text/plain', text: renderComponentList(manifest) }],
+          contents: [
+            {
+              uri,
+              mimeType: 'text/plain',
+              text: renderComponentList(manifest),
+            },
+          ],
         };
       } catch (error) {
         return {

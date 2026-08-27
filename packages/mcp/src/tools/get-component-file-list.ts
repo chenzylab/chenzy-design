@@ -6,19 +6,26 @@
  * 注意 dist 目录名并非统一 kebab（有 back-top 也有 iconbutton），用
  * 去连字符全小写的归一化在真实目录列表里匹配，不从组件名机械推导。
  */
-import type { Tool, CallToolResult } from '@modelcontextprotocol/sdk/types.js';
+import type { Tool, CallToolResult } from '@modelcontextprotocol/server';
 import { fetchDirectoryList, type DirEntry } from '../utils/fetch.js';
-import { SVELTE_PACKAGE, CORE_PACKAGE, flatName } from '../utils/components-json.js';
+import {
+  SVELTE_PACKAGE,
+  CORE_PACKAGE,
+  flatName,
+} from '../utils/components-json.js';
 
 /** 排除的产物/测试文件 */
 function shouldExclude(path: string): boolean {
-  return (
-    /\.test\.|\.spec\.|\.bench\.|Fixture\.svelte|__screenshots__|\.d\.ts(\.map)?$|\.js\.map$/.test(path)
+  return /\.test\.|\.spec\.|\.bench\.|Fixture\.svelte|__screenshots__|\.d\.ts(\.map)?$|\.js\.map$/.test(
+    path,
   );
 }
 
 /** svelte 包：dist/<dir>/ 下匹配组件目录 */
-async function getSvelteFiles(componentName: string, version: string): Promise<string[]> {
+async function getSvelteFiles(
+  componentName: string,
+  version: string,
+): Promise<string[]> {
   const flat = flatName(componentName);
   const entries = await fetchDirectoryList(SVELTE_PACKAGE, version, 'dist');
   // 找 dist 下一级的组件目录：/dist/<dir>/...
@@ -35,19 +42,27 @@ async function getSvelteFiles(componentName: string, version: string): Promise<s
   if (!dir) return [];
   const prefix = new RegExp(`^/?dist/${dir}/`);
   return entries
-    .filter((e) => e.type === 'file' && prefix.test(e.path) && !shouldExclude(e.path))
+    .filter(
+      (e) => e.type === 'file' && prefix.test(e.path) && !shouldExclude(e.path),
+    )
     .map((e) => `${SVELTE_PACKAGE}/${e.path.replace(/^\//, '')}`)
     .sort();
 }
 
 /** core 包：src/<name>.ts 扁平结构（<name> 是 kebab），含 <name>-*.ts 前缀族 */
-async function getCoreFiles(componentName: string, version: string): Promise<{ files: string[]; note?: string }> {
+async function getCoreFiles(
+  componentName: string,
+  version: string,
+): Promise<{ files: string[]; note?: string }> {
   const flat = flatName(componentName);
   let entries: DirEntry[];
   try {
     entries = await fetchDirectoryList(CORE_PACKAGE, version, 'src');
   } catch {
-    return { files: [], note: '（该版本 @chenzy-design/core 未随包发布 src，无法查看 headless 源码）' };
+    return {
+      files: [],
+      note: '（该版本 @chenzy-design/core 未随包发布 src，无法查看 headless 源码）',
+    };
   }
   const files = entries
     .filter((e) => {
@@ -77,19 +92,28 @@ export const getComponentFileListTool: Tool = {
   inputSchema: {
     type: 'object',
     properties: {
-      componentName: { type: 'string', description: '组件名，如 Table、DatePicker、back-top（大小写/连字符不敏感）' },
+      componentName: {
+        type: 'string',
+        description:
+          '组件名，如 Table、DatePicker、back-top（大小写/连字符不敏感）',
+      },
       version: { type: 'string', description: '版本号，默认 latest' },
     },
     required: ['componentName'],
   },
 };
 
-export async function handleGetComponentFileList(args: Record<string, unknown>): Promise<CallToolResult> {
+export async function handleGetComponentFileList(
+  args: Record<string, unknown>,
+): Promise<CallToolResult> {
   const componentName = args?.componentName as string | undefined;
   const version = (args?.version as string | undefined) || 'latest';
 
   if (!componentName) {
-    return { content: [{ type: 'text', text: '错误：请提供组件名称 (componentName)' }], isError: true };
+    return {
+      content: [{ type: 'text', text: '错误：请提供组件名称 (componentName)' }],
+      isError: true,
+    };
   }
 
   try {
@@ -100,7 +124,12 @@ export async function handleGetComponentFileList(args: Record<string, unknown>):
 
     if (svelteFiles.length === 0 && core.files.length === 0) {
       return {
-        content: [{ type: 'text', text: `未找到组件 "${componentName}" 的源码文件。请检查组件名称是否正确。` }],
+        content: [
+          {
+            type: 'text',
+            text: `未找到组件 "${componentName}" 的源码文件。请检查组件名称是否正确。`,
+          },
+        ],
         isError: true,
       };
     }
@@ -114,7 +143,9 @@ export async function handleGetComponentFileList(args: Record<string, unknown>):
       ...(svelteFiles.length ? svelteFiles : ['（无）']),
       '',
       `## ${CORE_PACKAGE}（headless 逻辑层）`,
-      ...(core.files.length ? core.files : [core.note ?? '（无——该组件可能没有 headless 层）']),
+      ...(core.files.length
+        ? core.files
+        : [core.note ?? '（无——该组件可能没有 headless 层）']),
       '',
       '提示: 使用 get_file_code 工具传入上述路径获取文件代码',
     ];
@@ -122,7 +153,12 @@ export async function handleGetComponentFileList(args: Record<string, unknown>):
     return { content: [{ type: 'text', text: output.join('\n') }] };
   } catch (error) {
     return {
-      content: [{ type: 'text', text: `获取组件文件列表失败: ${error instanceof Error ? error.message : String(error)}` }],
+      content: [
+        {
+          type: 'text',
+          text: `获取组件文件列表失败: ${error instanceof Error ? error.message : String(error)}`,
+        },
+      ],
       isError: true,
     };
   }

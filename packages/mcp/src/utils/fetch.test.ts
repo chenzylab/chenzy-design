@@ -8,10 +8,16 @@ import { fetchFileContent, fetchDirectoryList } from './fetch.js';
 let localRoot: string;
 
 function okText(body: string): Response {
-  return new Response(body, { status: 200, headers: { 'content-type': 'text/plain' } });
+  return new Response(body, {
+    status: 200,
+    headers: { 'content-type': 'text/plain' },
+  });
 }
 function okJson(body: unknown): Response {
-  return new Response(JSON.stringify(body), { status: 200, headers: { 'content-type': 'application/json' } });
+  return new Response(JSON.stringify(body), {
+    status: 200,
+    headers: { 'content-type': 'application/json' },
+  });
 }
 
 describe('fetch 层（网络模式，指定具体版本号避免 resolve-version 网络调用）', () => {
@@ -33,7 +39,11 @@ describe('fetch 层（网络模式，指定具体版本号避免 resolve-version
         return new Response('', { status: 404, statusText: 'Not Found' });
       }),
     );
-    const content = await fetchFileContent('@chenzy-design/svelte', '9.9.9', 'dist/a.md');
+    const content = await fetchFileContent(
+      '@chenzy-design/svelte',
+      '9.9.9',
+      'dist/a.md',
+    );
     expect(content).toBe('file content');
   });
 
@@ -41,11 +51,16 @@ describe('fetch 层（网络模式，指定具体版本号避免 resolve-version
     vi.stubGlobal(
       'fetch',
       vi.fn(async (url: string) => {
-        if (String(url).includes('unpkg.com')) return new Response('', { status: 500, statusText: 'ISE' });
+        if (String(url).includes('unpkg.com'))
+          return new Response('', { status: 500, statusText: 'ISE' });
         return okText('mirror content');
       }),
     );
-    const content = await fetchFileContent('@chenzy-design/svelte', '9.9.9', 'dist/b.md');
+    const content = await fetchFileContent(
+      '@chenzy-design/svelte',
+      '9.9.9',
+      'dist/b.md',
+    );
     expect(content).toBe('mirror content');
   });
 
@@ -54,15 +69,21 @@ describe('fetch 层（网络模式，指定具体版本号避免 resolve-version
       'fetch',
       vi.fn(async () => okText('<!DOCTYPE html><html>not found page</html>')),
     );
-    await expect(fetchFileContent('@chenzy-design/svelte', '9.9.9', 'dist/c.md')).rejects.toThrow(/所有数据源都失败/);
+    await expect(
+      fetchFileContent('@chenzy-design/svelte', '9.9.9', 'dist/c.md'),
+    ).rejects.toThrow(/所有数据源都失败/);
   });
 
   it('双源全失败抛聚合错误', async () => {
     vi.stubGlobal(
       'fetch',
-      vi.fn(async () => new Response('', { status: 404, statusText: 'Not Found' })),
+      vi.fn(
+        async () => new Response('', { status: 404, statusText: 'Not Found' }),
+      ),
     );
-    await expect(fetchFileContent('@chenzy-design/svelte', '9.9.9', 'dist/d.md')).rejects.toThrow(/所有数据源都失败/);
+    await expect(
+      fetchFileContent('@chenzy-design/svelte', '9.9.9', 'dist/d.md'),
+    ).rejects.toThrow(/所有数据源都失败/);
   });
 
   it('成功结果写缓存，第二次不再发请求', async () => {
@@ -73,7 +94,11 @@ describe('fetch 层（网络模式，指定具体版本号避免 resolve-version
     vi.stubGlobal('fetch', spy);
     await fetchFileContent('@chenzy-design/svelte', '9.9.9', 'dist/e.md');
     const callsAfterFirst = spy.mock.calls.length;
-    const second = await fetchFileContent('@chenzy-design/svelte', '9.9.9', 'dist/e.md');
+    const second = await fetchFileContent(
+      '@chenzy-design/svelte',
+      '9.9.9',
+      'dist/e.md',
+    );
     expect(second).toBe('cached content');
     expect(spy.mock.calls.length).toBe(callsAfterFirst); // 无新请求
   });
@@ -84,7 +109,9 @@ describe('fetch 层（网络模式，指定具体版本号避免 resolve-version
       vi.fn(async (url: string) => {
         const u = String(url);
         if (u.includes('unpkg.com')) {
-          return okJson({ files: [{ path: '/dist/a.js', type: 'text/javascript' }] });
+          return okJson({
+            files: [{ path: '/dist/a.js', type: 'text/javascript' }],
+          });
         }
         // npmmirror 返回两个文件（更全）
         return okJson({
@@ -96,7 +123,11 @@ describe('fetch 层（网络模式，指定具体版本号避免 resolve-version
         });
       }),
     );
-    const list = await fetchDirectoryList('@chenzy-design/svelte', '9.9.9', 'dist');
+    const list = await fetchDirectoryList(
+      '@chenzy-design/svelte',
+      '9.9.9',
+      'dist',
+    );
     expect(list).toHaveLength(2);
   });
 });
@@ -105,7 +136,10 @@ describe('本地模式（CHENZY_MCP_LOCAL_DIR）', () => {
   beforeEach(() => {
     localRoot = mkdtempSync(join(tmpdir(), 'chenzy-local-'));
     mkdirSync(join(localRoot, 'svelte/dist/button'), { recursive: true });
-    writeFileSync(join(localRoot, 'svelte/dist/button/Button.svelte'), '<p>local</p>');
+    writeFileSync(
+      join(localRoot, 'svelte/dist/button/Button.svelte'),
+      '<p>local</p>',
+    );
     process.env.CHENZY_MCP_LOCAL_DIR = localRoot;
   });
   afterEach(() => {
@@ -116,14 +150,26 @@ describe('本地模式（CHENZY_MCP_LOCAL_DIR）', () => {
   it('直接读本地文件，不发网络请求', async () => {
     const spy = vi.fn();
     vi.stubGlobal('fetch', spy);
-    const content = await fetchFileContent('@chenzy-design/svelte', 'latest', 'dist/button/Button.svelte');
+    const content = await fetchFileContent(
+      '@chenzy-design/svelte',
+      'latest',
+      'dist/button/Button.svelte',
+    );
     expect(content).toBe('<p>local</p>');
     expect(spy).not.toHaveBeenCalled();
     vi.unstubAllGlobals();
   });
 
   it('目录列表走本地 walk', async () => {
-    const list = await fetchDirectoryList('@chenzy-design/svelte', 'latest', 'dist');
-    expect(list.some((e) => e.path === '/dist/button/Button.svelte' && e.type === 'file')).toBe(true);
+    const list = await fetchDirectoryList(
+      '@chenzy-design/svelte',
+      'latest',
+      'dist',
+    );
+    expect(
+      list.some(
+        (e) => e.path === '/dist/button/Button.svelte' && e.type === 'file',
+      ),
+    ).toBe(true);
   });
 });

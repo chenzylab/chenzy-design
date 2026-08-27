@@ -3,7 +3,7 @@
  * 对齐 semi-mcp get_semi_document：大文档（>888 行）代码块替换为占位符，
  * 配套 get_chenzy_code_block 按索引取回。
  */
-import type { Tool, CallToolResult } from '@modelcontextprotocol/sdk/types.js';
+import type { Tool, CallToolResult } from '@modelcontextprotocol/server';
 import { fetchFileContent } from '../utils/fetch.js';
 import {
   SVELTE_PACKAGE,
@@ -22,7 +22,10 @@ export function extractCodeBlocks(content: string): string[] {
   return content.match(CODE_BLOCK_REGEX) ?? [];
 }
 
-export function replaceCodeBlocksWithPlaceholders(content: string, componentName: string): string {
+export function replaceCodeBlocksWithPlaceholders(
+  content: string,
+  componentName: string,
+): string {
   let index = 0;
   return content.replace(CODE_BLOCK_REGEX, () => {
     index++;
@@ -34,7 +37,12 @@ export function replaceCodeBlocksWithPlaceholders(content: string, componentName
 export async function getComponentDocument(
   componentName: string,
   version: string,
-): Promise<{ docName: string; metaName: string; content: string; viaSubComponent?: string } | null> {
+): Promise<{
+  docName: string;
+  metaName: string;
+  content: string;
+  viaSubComponent?: string;
+} | null> {
   const manifest = await getComponentsManifest(version);
   const resolved = resolveComponent(manifest, componentName);
   if (!resolved) return null;
@@ -47,7 +55,9 @@ export async function getComponentDocument(
     docName: resolved.docName,
     metaName: resolved.metaName,
     content,
-    ...(resolved.viaSubComponent ? { viaSubComponent: resolved.viaSubComponent } : {}),
+    ...(resolved.viaSubComponent
+      ? { viaSubComponent: resolved.viaSubComponent }
+      : {}),
   };
 }
 
@@ -72,21 +82,31 @@ export const getChenzyDocumentTool: Tool = {
   },
 };
 
-function paginate(content: string, page: number): { content: string; totalPages: number } {
+function paginate(
+  content: string,
+  page: number,
+): { content: string; totalPages: number } {
   const lines = content.split('\n');
   const totalPages = Math.ceil(lines.length / CHANGELOG_PAGE_SIZE);
   const start = (page - 1) * CHANGELOG_PAGE_SIZE;
-  return { content: lines.slice(start, start + CHANGELOG_PAGE_SIZE).join('\n'), totalPages };
+  return {
+    content: lines.slice(start, start + CHANGELOG_PAGE_SIZE).join('\n'),
+    totalPages,
+  };
 }
 
-export async function handleGetChenzyDocument(args: Record<string, unknown>): Promise<CallToolResult> {
+export async function handleGetChenzyDocument(
+  args: Record<string, unknown>,
+): Promise<CallToolResult> {
   const componentName = args?.componentName as string | undefined;
   const version = (args?.version as string | undefined) || 'latest';
 
   try {
     if (!componentName) {
       const manifest = await getComponentsManifest(version);
-      return { content: [{ type: 'text', text: renderComponentList(manifest) }] };
+      return {
+        content: [{ type: 'text', text: renderComponentList(manifest) }],
+      };
     }
 
     // changelog 分页
@@ -103,12 +123,19 @@ export async function handleGetChenzyDocument(args: Record<string, unknown>): Pr
         };
       }
       const page = parseInt(changelogMatch[1], 10);
-      const raw = await fetchFileContent(SVELTE_PACKAGE, version, 'CHANGELOG.md');
+      const raw = await fetchFileContent(
+        SVELTE_PACKAGE,
+        version,
+        'CHANGELOG.md',
+      );
       const { content, totalPages } = paginate(raw, page);
       if (page < 1 || page > totalPages) {
         return {
           content: [
-            { type: 'text', text: `页码 ${page} 超出范围，changelog 共 ${totalPages} 页（changelog-1 到 changelog-${totalPages}）` },
+            {
+              type: 'text',
+              text: `页码 ${page} 超出范围，changelog 共 ${totalPages} 页（changelog-1 到 changelog-${totalPages}）`,
+            },
           ],
           isError: true,
         };
@@ -135,14 +162,19 @@ export async function handleGetChenzyDocument(args: Record<string, unknown>): Pr
       const names = Object.keys(manifest.components).join(', ');
       return {
         content: [
-          { type: 'text', text: `未找到组件 "${componentName}"（版本 ${version}）。\n\n可用组件：${names}` },
+          {
+            type: 'text',
+            text: `未找到组件 "${componentName}"（版本 ${version}）。\n\n可用组件：${names}`,
+          },
         ],
       };
     }
 
     const header: string[] = [`===== ${doc.metaName} =====`];
     if (doc.viaSubComponent) {
-      header.push(`[提示: ${doc.viaSubComponent} 是 ${doc.metaName} 的子组件，以下为 ${doc.metaName} 的文档]`);
+      header.push(
+        `[提示: ${doc.viaSubComponent} 是 ${doc.metaName} 的子组件，以下为 ${doc.metaName} 的文档]`,
+      );
     }
     if (/^generated:\s*true$/m.test(doc.content.slice(0, 300))) {
       header.push('[提示: 此文档由组件元数据自动生成，尚无人工撰写的完整文档]');
@@ -158,10 +190,17 @@ export async function handleGetChenzyDocument(args: Record<string, unknown>): Pr
       );
     }
 
-    return { content: [{ type: 'text', text: `${header.join('\n')}\n\n${body}` }] };
+    return {
+      content: [{ type: 'text', text: `${header.join('\n')}\n\n${body}` }],
+    };
   } catch (error) {
     return {
-      content: [{ type: 'text', text: `获取文档失败: ${error instanceof Error ? error.message : String(error)}` }],
+      content: [
+        {
+          type: 'text',
+          text: `获取文档失败: ${error instanceof Error ? error.message : String(error)}`,
+        },
+      ],
       isError: true,
     };
   }

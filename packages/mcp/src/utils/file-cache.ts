@@ -66,15 +66,18 @@ async function ensureDir(dir: string): Promise<void> {
  * @param key 缓存 key
  * @returns 缓存内容，如果不存在返回 null
  */
-export async function readCache(cacheDir: string, key: string): Promise<string | null> {
+export async function readCache(
+  cacheDir: string,
+  key: string,
+): Promise<string | null> {
   try {
     const fileName = keyToFileName(key);
     const filePath = join(cacheDir, fileName);
-    
+
     if (!existsSync(filePath)) {
       return null;
     }
-    
+
     const content = await readFile(filePath, 'utf-8');
     return content;
   } catch {
@@ -88,7 +91,11 @@ export async function readCache(cacheDir: string, key: string): Promise<string |
  * @param key 缓存 key
  * @param content 缓存内容
  */
-export async function writeCache(cacheDir: string, key: string, content: string): Promise<void> {
+export async function writeCache(
+  cacheDir: string,
+  key: string,
+  content: string,
+): Promise<void> {
   try {
     await ensureDir(cacheDir);
     const fileName = keyToFileName(key);
@@ -107,10 +114,10 @@ export async function clearCacheDir(cacheDir: string): Promise<number> {
     if (!existsSync(cacheDir)) {
       return 0;
     }
-    
+
     const files = await readdir(cacheDir);
     let count = 0;
-    
+
     for (const file of files) {
       try {
         await unlink(join(cacheDir, file));
@@ -119,7 +126,7 @@ export async function clearCacheDir(cacheDir: string): Promise<number> {
         // 忽略单个文件删除失败
       }
     }
-    
+
     return count;
   } catch {
     return 0;
@@ -134,7 +141,7 @@ export async function getCacheDirSize(cacheDir: string): Promise<number> {
     if (!existsSync(cacheDir)) {
       return 0;
     }
-    
+
     const files = await readdir(cacheDir);
     return files.length;
   } catch {
@@ -154,7 +161,7 @@ export async function getCacheStats(): Promise<{
   const cacheDir = getCacheDir();
   const directoryListCount = await getCacheDirSize(getDirectoryListCacheDir());
   const fileContentCount = await getCacheDirSize(getFileContentCacheDir());
-  
+
   return {
     cacheDir,
     directoryListCount,
@@ -173,11 +180,10 @@ export async function clearAllCache(): Promise<{
 }> {
   const directoryListCleared = await clearCacheDir(getDirectoryListCacheDir());
   const fileContentCleared = await clearCacheDir(getFileContentCacheDir());
-  
+
   return {
     directoryListCleared,
     fileContentCleared,
     totalCleared: directoryListCleared + fileContentCleared,
   };
 }
-

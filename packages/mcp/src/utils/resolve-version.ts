@@ -27,7 +27,10 @@ function getCurrentDate(): string {
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 }
 
-async function fetchVersionFromRegistry(packageName: string, tag: string): Promise<string> {
+async function fetchVersionFromRegistry(
+  packageName: string,
+  tag: string,
+): Promise<string> {
   const registries = [
     `https://registry.npmmirror.com/${packageName}/${tag}`,
     `https://registry.npmjs.org/${packageName}/${tag}`,
@@ -35,7 +38,9 @@ async function fetchVersionFromRegistry(packageName: string, tag: string): Promi
   let lastError: Error | null = null;
   for (const url of registries) {
     try {
-      const response = await fetch(url, { headers: { Accept: 'application/json' } });
+      const response = await fetch(url, {
+        headers: { Accept: 'application/json' },
+      });
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       const data = (await response.json()) as { version?: string };
       if (data?.version) return data.version;
@@ -44,10 +49,15 @@ async function fetchVersionFromRegistry(packageName: string, tag: string): Promi
       lastError = error instanceof Error ? error : new Error(String(error));
     }
   }
-  throw new Error(`无法获取 ${packageName}@${tag} 的版本号: ${lastError?.message}`);
+  throw new Error(
+    `无法获取 ${packageName}@${tag} 的版本号: ${lastError?.message}`,
+  );
 }
 
-export async function resolveVersion(packageName: string, version: string): Promise<string> {
+export async function resolveVersion(
+  packageName: string,
+  version: string,
+): Promise<string> {
   if (/^\d+\.\d+\.\d+/.test(version)) {
     if (lt(version, MIN_SUPPORTED_VERSION)) {
       version = 'latest'; // 过旧版本没有 content 产物，落到 latest
@@ -71,6 +81,13 @@ export async function resolveVersion(packageName: string, version: string): Prom
   }
 
   const resolvedVersion = await fetchVersionFromRegistry(packageName, version);
-  await writeCache(cacheDir, cacheKey, JSON.stringify({ version: resolvedVersion, date: today } satisfies VersionCacheData));
+  await writeCache(
+    cacheDir,
+    cacheKey,
+    JSON.stringify({
+      version: resolvedVersion,
+      date: today,
+    } satisfies VersionCacheData),
+  );
   return resolvedVersion;
 }

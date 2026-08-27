@@ -1,5 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { flatName, resolveComponent, renderComponentList, type ComponentsManifest } from './components-json.js';
+import {
+  flatName,
+  resolveComponent,
+  renderComponentList,
+  type ComponentsManifest,
+} from './components-json.js';
 
 const manifest: ComponentsManifest = {
   version: '1.0.0',
@@ -12,7 +17,12 @@ const manifest: ComponentsManifest = {
       subComponents: [{ name: 'ButtonGroup' }, { name: 'SplitButtonGroup' }],
     },
     BackTop: { name: 'BackTop', category: 'other', description: '回到顶部。' },
-    List: { name: 'List', category: 'show', description: '列表。', subComponents: ['List.Item'] },
+    List: {
+      name: 'List',
+      category: 'show',
+      description: '列表。',
+      subComponents: ['List.Item'],
+    },
   },
 };
 

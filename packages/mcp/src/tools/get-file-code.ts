@@ -2,7 +2,7 @@
  * get_file_code — 获取文件源码。对齐 semi-mcp：.ts ≥500 行删函数体只留结构；
  * .svelte 文件仅对其 <script> 块做同样处理，模板永远保留。
  */
-import type { Tool, CallToolResult } from '@modelcontextprotocol/sdk/types.js';
+import type { Tool, CallToolResult } from '@modelcontextprotocol/server';
 import { fetchFileContent } from '../utils/fetch.js';
 import { removeFunctionBodies } from '../utils/remove-function-body.js';
 import { transformSvelteScripts } from '../utils/svelte-script.js';
@@ -11,7 +11,9 @@ import { SVELTE_PACKAGE, CORE_PACKAGE } from '../utils/components-json.js';
 /** 代码行数阈值，超过才过滤函数体 */
 const LINE_THRESHOLD = 500;
 
-export function parseFilePath(fullPath: string): { packageName: string; filePath: string } | null {
+export function parseFilePath(
+  fullPath: string,
+): { packageName: string; filePath: string } | null {
   const match = fullPath.match(/^(@chenzy-design\/(?:svelte|core))\/(.+)$/);
   if (!match?.[1] || !match[2]) return null;
   return { packageName: match[1], filePath: match[2] };
@@ -36,21 +38,32 @@ export const getFileCodeTool: Tool = {
   inputSchema: {
     type: 'object',
     properties: {
-      filePath: { type: 'string', description: `文件完整路径，如 ${SVELTE_PACKAGE}/dist/button/Button.svelte` },
+      filePath: {
+        type: 'string',
+        description: `文件完整路径，如 ${SVELTE_PACKAGE}/dist/button/Button.svelte`,
+      },
       version: { type: 'string', description: '版本号，默认 latest' },
-      fullCode: { type: 'boolean', description: '是否获取完整代码（包含函数体），默认 false' },
+      fullCode: {
+        type: 'boolean',
+        description: '是否获取完整代码（包含函数体），默认 false',
+      },
     },
     required: ['filePath'],
   },
 };
 
-export async function handleGetFileCode(args: Record<string, unknown>): Promise<CallToolResult> {
+export async function handleGetFileCode(
+  args: Record<string, unknown>,
+): Promise<CallToolResult> {
   const filePath = args?.filePath as string | undefined;
   const version = (args?.version as string | undefined) || 'latest';
   const fullCode = (args?.fullCode as boolean | undefined) || false;
 
   if (!filePath) {
-    return { content: [{ type: 'text', text: '错误：请提供文件路径 (filePath)' }], isError: true };
+    return {
+      content: [{ type: 'text', text: '错误：请提供文件路径 (filePath)' }],
+      isError: true,
+    };
   }
   const parsed = parseFilePath(filePath);
   if (!parsed) {
@@ -66,7 +79,11 @@ export async function handleGetFileCode(args: Record<string, unknown>): Promise<
   }
 
   try {
-    const content = await fetchFileContent(parsed.packageName, version, parsed.filePath);
+    const content = await fetchFileContent(
+      parsed.packageName,
+      version,
+      parsed.filePath,
+    );
     const lineCount = content.split('\n').length;
 
     let outputContent = content;
@@ -75,10 +92,14 @@ export async function handleGetFileCode(args: Record<string, unknown>): Promise<
     if (!fullCode && lineCount >= LINE_THRESHOLD) {
       if (/\.tsx?$/.test(filePath) || filePath.endsWith('.js')) {
         outputContent = removeFunctionBodies(content);
-        processInfo = '（代码较长，函数体已替换为 "{ ... }"，用 get_function_code 读取具体函数实现）';
+        processInfo =
+          '（代码较长，函数体已替换为 "{ ... }"，用 get_function_code 读取具体函数实现）';
       } else if (filePath.endsWith('.svelte')) {
-        outputContent = transformSvelteScripts(content, (script) => removeFunctionBodies(script));
-        processInfo = '（代码较长，<script> 块内函数体已替换为 "{ ... }"，模板保留；用 get_function_code 读取具体函数实现）';
+        outputContent = transformSvelteScripts(content, (script) =>
+          removeFunctionBodies(script),
+        );
+        processInfo =
+          '（代码较长，<script> 块内函数体已替换为 "{ ... }"，模板保留；用 get_function_code 读取具体函数实现）';
       }
     }
 
