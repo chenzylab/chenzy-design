@@ -1,7 +1,7 @@
 ---
 title: Tree 树形控件
 name: tree
-category: show
+category: navigation
 brief: 树型结构列表。
 ---
 

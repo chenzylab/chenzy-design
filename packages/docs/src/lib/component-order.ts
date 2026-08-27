@@ -1,7 +1,8 @@
-// 组件的线性顺序（与侧边栏一致）：按 category 分组顺序展平，组内按 components.json 出现顺序。
+// 组件的线性顺序（与侧边栏一致）：按 category 分组顺序展平，组内按 Semi Design 官网顺序排列。
 // 供页脚「上一个 / 下一个」组件导航（PrevNextNav）复用，保证导航次序与侧边栏一致。
 import componentsJson from '@chenzy-design/svelte/components.json';
 import { componentNamesZh } from './component-names-zh';
+import { compareBySemiOrder } from './component-semi-order';
 
 export interface OrderedComponent {
   /** lowercase 组件名（路由用），如 'checkbox' */
@@ -24,6 +25,10 @@ const grouped = Object.values(
   (acc[cat] ??= []).push(meta);
   return acc;
 }, {});
+// 组内顺序对齐 Semi Design 官网侧边栏（见 component-semi-order.ts）。
+for (const list of Object.values(grouped)) {
+  list.sort(compareBySemiOrder);
+}
 
 /** 展平后的有序组件列表（与侧边栏顺序一致）。 */
 export const orderedComponents: OrderedComponent[] = CATEGORY_ORDER.flatMap((cat) =>

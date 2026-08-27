@@ -18,8 +18,9 @@ const dict: Dict = {
   'search.components': { zh: '组件', en: 'Components' },
   'search.in': { zh: 'in', en: 'in' },
 
-  // 侧栏分组
-  'group.start': { zh: '开始', en: 'Getting Started' },
+  // 侧栏分组文案严格对齐 Semi 官网（src/utils/category.js：text/textUs）。
+  'group.start': { zh: '开始', en: 'Start' },
+  'group.advanced': { zh: '设计协作', en: 'Design Collaboration' },
   'group.experience': { zh: '体验增强', en: 'Experience' },
   // 分类文案严格对齐 Semi 官网（src/utils/category.js：text/textUs）。
   'cat.ai': { zh: 'AI 组件', en: 'AI Component' },

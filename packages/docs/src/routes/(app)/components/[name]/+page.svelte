@@ -177,9 +177,9 @@
   <div class="page-main">
     <div class="component-header">
       <div class="breadcrumb">
-        <a href="{base}/components">组件</a>
+        <a href="{base}/components">{t('search.components', lang)}</a>
         <span> / </span>
-        <span>{meta.category}</span>
+        <span>{t(`cat.${meta.category}`, lang)}</span>
       </div>
       <h1>{meta.name}</h1>
       <!-- 头部用 md brief（简洁，对齐 Semi 头部简介），缺省回退 meta.description。 -->

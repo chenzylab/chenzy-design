@@ -1,5 +1,5 @@
 # SPEC · Dropdown
-> 分类：navigation · 阶段：M3
+> 分类：show · 阶段：M3
 > 对标 Semi：Dropdown
 
 > ⚠️ **本组件已全面重写对齐 Semi Design（2026-07，破坏性变更，无向后兼容）。**
@@ -227,7 +227,7 @@ Dropdown 是一个轻量级浮层菜单容器，通过触发元素（按钮、�
 ## 10. AI 元数据
 
 提供 `component.meta.ts`，内容包含：
-- `name: 'Dropdown'`、`category: 'navigation'`、`stage: 'M3'`、`semiEquivalent: 'Dropdown'`。
+- `name: 'Dropdown'`、`category: 'show'`、`stage: 'M3'`、`semiEquivalent: 'Dropdown'`。
 - `subComponents`: `['Dropdown.Menu','Dropdown.Item','Dropdown.SubMenu','Dropdown.ItemGroup','Dropdown.Divider','Dropdown.Title']`。
 - `props` schema（类型、默认值、枚举、是否受控）供 AI 生成代码补全。
 - `whenToUse` / `whenNotToUse`：用 vs `Select`/`Cascader`/`Menu`/`Tooltip` 的判定。
