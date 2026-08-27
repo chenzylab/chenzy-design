@@ -1,5 +1,23 @@
 # @chenzy-design/playground
 
+## 0.0.7
+
+### Patch Changes
+
+- Updated dependencies [3dec738]
+- Updated dependencies [eb9f4ec]
+- Updated dependencies [e2e2067]
+- Updated dependencies [3dec738]
+- Updated dependencies [f733205]
+- Updated dependencies [3c5e00e]
+- Updated dependencies [24d7887]
+- Updated dependencies [21fb531]
+- Updated dependencies [f733205]
+- Updated dependencies
+  - @chenzy-design/svelte@1.0.0
+  - @chenzy-design/tokens@1.0.0
+  - @chenzy-design/unocss-preset@1.0.0
+
 ## 0.0.6
 
 ### Patch Changes

@@ -1,5 +1,19 @@
 # @chenzy-design/unocss-preset
 
+## 1.0.0
+
+### Major Changes
+
+- chore: 1.0.0 首个稳定版本发布
+
+### Patch Changes
+
+- Updated dependencies [3dec738]
+- Updated dependencies [f733205]
+- Updated dependencies [3c5e00e]
+- Updated dependencies
+  - @chenzy-design/tokens@1.0.0
+
 ## 0.4.1
 
 ### Patch Changes
