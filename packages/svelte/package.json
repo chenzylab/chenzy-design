@@ -58,6 +58,7 @@
     "@tiptap/starter-kit": "^3.0.0",
     "date-fns": "^2.30.0",
     "esm-env": "^1.2.2",
+    "lodash-es": "^4.17.21",
     "lottie-web": "^5.13.0",
     "prism-svelte": "^0.5.0",
     "prismjs": "^1.29.0",
@@ -69,6 +70,7 @@
   },
   "devDependencies": {
     "@types/hast": "^3.0.4",
+    "@types/lodash-es": "^4.17.12",
     "@types/prismjs": "^1.26.5",
     "tsx": "^4.19.2"
   },

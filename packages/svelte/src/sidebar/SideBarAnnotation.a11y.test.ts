@@ -59,7 +59,7 @@ describe('SideBarAnnotation — 分组 / 卡片渲染', () => {
     await expectNoAxeViolations(container);
   });
 
-  it('video 卡片：封面 img + 时长本地化 mm:ss + i18n 可访问文本；可点击 → <button>', () => {
+  it('video 卡片：封面 img + 时长本地化 mm:ss + i18n 可访问文本；恒用 <div>（对齐 Semi）', () => {
     const { container } = renderWithLocale(SideBarAnnotation, {
       props: { visible: true, info, activeKey: 'videos', motion: false },
     });
@@ -67,8 +67,8 @@ describe('SideBarAnnotation — 分组 / 卡片渲染', () => {
       '.cd-sidebar-annotation-item-video',
     ) as HTMLElement | null;
     expect(videoCard).not.toBeNull();
-    // 有 url → 用 button（键盘可达）。
-    expect(videoCard?.tagName).toBe('BUTTON');
+    // 对齐 Semi annotation/item.tsx：VideoItem/Item 恒用 <div onClick>，不用 button。
+    expect(videoCard?.tagName).toBe('DIV');
     // 封面图。
     expect(container.querySelector('.cd-sidebar-annotation-item-video-img')).not.toBeNull();
     // 时长 125s → 02:05（mm:ss），且 aria-label 走 i18n（en_US: "Video duration 02:05"）。
@@ -79,7 +79,7 @@ describe('SideBarAnnotation — 分组 / 卡片渲染', () => {
     expect(duration?.getAttribute('aria-label')).toBe('Video duration 02:05');
   });
 
-  it('text 卡片：标题/摘要/站点名/序号；序号有 i18n 可访问文本；无来源 → 静态非 button', () => {
+  it('text 卡片：标题/摘要/站点名/序号；序号有 i18n 可访问文本；无来源同样是 <div>（对齐 Semi 恒可点击）', () => {
     const { container } = renderWithLocale(SideBarAnnotation, {
       props: { visible: true, info, activeKey: ['texts'], motion: false },
     });
@@ -94,14 +94,11 @@ describe('SideBarAnnotation — 分组 / 卡片渲染', () => {
       '.cd-sidebar-annotation-item-footer-order',
     ) as HTMLElement | null;
     expect(order?.getAttribute('aria-label')).toBe('Citation 2');
-    // 无 url/onClick 的纯文本卡片是静态 div（不可点击）。
-    // 查 -item-static 而非 -item-text：前者才是「非交互」标记，后者是
-    // 动态类 -item-{item.type} 的产物（该 fixture 恰好 type='text' 才碰巧也命中）。
-    const staticCard = container.querySelector(
-      '.cd-sidebar-annotation-item-static',
-    ) as HTMLElement | null;
-    expect(staticCard).not.toBeNull();
-    expect(staticCard?.tagName).toBe('DIV');
+    // 对齐 Semi：无 url/onClick 的纯文本卡片也用同一种 <div onClick> 结构，
+    // 不再区分「静态卡片」分支（Semi 没有这个概念）。
+    const cards = container.querySelectorAll('.cd-sidebar-annotation-item-text');
+    expect(cards.length).toBe(2);
+    expect(cards[1]?.tagName).toBe('DIV');
   });
 
   it('点击卡片触发 onClick(e, item)（url 存在时不阻断回调）', () => {
@@ -126,12 +123,11 @@ describe('SideBarAnnotation — 分组 / 卡片渲染', () => {
     openSpy.mockRestore();
   });
 
-  it('空 info：渲染空态文案（i18n），无 axe violations', async () => {
+  it('空 info：对齐 Semi，渲染空 Collapse，无提示文案，无 axe violations', async () => {
     const { container } = renderWithLocale(SideBarAnnotation, {
       props: { visible: true, info: [], motion: false },
     });
-    // en_US 空态文案。
-    expect(container.textContent).toContain('No references');
+    expect(container.querySelector('.cd-collapse-header')).toBeNull();
     await expectNoAxeViolations(container);
   });
 

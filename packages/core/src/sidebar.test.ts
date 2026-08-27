@@ -56,9 +56,13 @@ describe('filterMcpOptions', () => {
     expect(filterMcpOptions('git', OPTS).map((o) => o.value)).toEqual(['git']);
     expect(filterMcpOptions('SEARCH', OPTS).map((o) => o.value)).toEqual(['preset']);
   });
-  it('falls back to value when label missing', () => {
-    const list: McpOptionCore[] = [{ value: 'onlyvalue' }];
-    expect(filterMcpOptions('only', list)).toHaveLength(1);
+  it('matches desc case-insensitively (aligning Semi baseFilter)', () => {
+    const list: McpOptionCore[] = [{ value: 'fs', label: 'File System', desc: 'read local files' }];
+    expect(filterMcpOptions('LOCAL', list)).toHaveLength(1);
+  });
+  it('never falls back to value (Semi baseFilter only checks label/desc)', () => {
+    const list: McpOptionCore[] = [{ value: 'onlyvalue', label: 'x', desc: 'y' }];
+    expect(filterMcpOptions('onlyvalue', list)).toHaveLength(0);
   });
   it('honors a custom filter predicate over default', () => {
     const only = filterMcpOptions('x', OPTS, (_i, o) => o.value === 'fs');

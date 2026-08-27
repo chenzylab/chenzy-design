@@ -634,8 +634,6 @@ export interface Locale {
     back: string;
     /** Annotation default panel title */
     annotationTitle: string;
-    /** Annotation empty state text */
-    annotationEmpty: string;
     /** video card duration accessible label; interpolates {duration} (mm:ss) */
     videoDuration: string;
     /** citation order accessible label; interpolates {order} */
@@ -662,8 +660,6 @@ export interface Locale {
     newMcpAdd: string;
     /** MCPConfigure custom-group empty state text */
     emptyCustomMcpInfo: string;
-    /** MCPConfigure no-search-result text */
-    mcpNoResult: string;
     /** FileContent rich-text editor aria-label */
     fileEditor: string;
     /** FileContent toolbar aria-label */

@@ -94,20 +94,34 @@ describe('SideBarCodeContent — 交互回调', () => {
     expect(btn?.getAttribute('title')).toBe('Expand');
   });
 
-  it('点击折叠头触发展开，onChange 收到 key 列表（受控不回写：DOM 展开态由传入 activeKey 决定）', () => {
+  it('点击折叠箭头触发展开，onChange 收到 key 列表（受控不回写：DOM 展开态由传入 activeKey 决定）', () => {
     const onChange = vi.fn();
     const { container } = renderWithLocale(CC, {
       props: { codes: CODES, activeKey: [], onChange },
     });
     // 初始受控 activeKey=[] → 无面板展开。
     expect(container.querySelector('.cd-collapse-item-active')).toBeNull();
-    const header = container.querySelector('.cd-collapse-header') as HTMLElement;
-    header.click();
+    // 对齐 Semi clickHeaderToExpand={false}（head 内还有展开全屏按钮，不能整个 header
+    // 可点击）：只有折叠箭头图标能触发展开，点击 header 主体不行。
+    const icon = container.querySelector('.cd-collapse-header-icon') as HTMLElement;
+    icon.click();
     // onChange 通知（含被点击项 key）。
     expect(onChange).toHaveBeenCalledTimes(1);
     expect(onChange.mock.calls[0]?.[0]).toContain('cfg');
     // 受控：DOM 未回写，仍无展开项。
     expect(container.querySelector('.cd-collapse-item-active')).toBeNull();
+  });
+
+  it('点击折叠头主体（非箭头）不触发展开（对齐 Semi clickHeaderToExpand=false）', () => {
+    const onChange = vi.fn();
+    const { container } = renderWithLocale(CC, {
+      props: { codes: CODES, activeKey: [], onChange },
+    });
+    const headerText = container.querySelector(
+      '.cd-sidebar-collapse-header-text',
+    ) as HTMLElement;
+    headerText.click();
+    expect(onChange).not.toHaveBeenCalled();
   });
 });
 

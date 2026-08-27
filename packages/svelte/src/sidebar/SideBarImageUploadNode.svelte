@@ -87,10 +87,11 @@
   });
 </script>
 
+<!-- Semi imageSlot.tsx 没传 listType（走 Upload 默认值 'list'），本库原来多传了
+     listType="picture"，与 Semi 实际渲染不符。 -->
 <NodeViewWrapper class="cd-sidebar-file-image-slot" data-status={status}>
   <Upload
     {...uploadProps}
-    listType="picture"
     draggable
     dragMainText={dragMainText()}
     onChange={handleChange}
@@ -103,5 +104,14 @@
   :global(.cd-sidebar-file-image-slot) {
     display: block;
     margin: var(--cd-sidebar-file-image-slot-margin);
+  }
+  /* Semi sidebar.scss:531-537：.tiptap-image-slot 的 uploadFail/validateFail/uploading/success
+     四态下隐藏 .semi-upload-drag-area（拖拽提示区）——上传完成/失败后不再需要展示拖拽提示。
+     本库用 data-status 属性选择器对应这四态（原来完全没有这条隐藏规则）。 */
+  :global(.cd-sidebar-file-image-slot[data-status='uploadFail'] .cd-upload-drag-area),
+  :global(.cd-sidebar-file-image-slot[data-status='validateFail'] .cd-upload-drag-area),
+  :global(.cd-sidebar-file-image-slot[data-status='uploading'] .cd-upload-drag-area),
+  :global(.cd-sidebar-file-image-slot[data-status='success'] .cd-upload-drag-area) {
+    display: none;
   }
 </style>

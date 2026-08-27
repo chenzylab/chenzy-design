@@ -51,7 +51,6 @@ export const jsonViewerTokens = {
 
   // —— 行号列（对齐 Semi line-number=grey-5） ——
   'color-json-viewer-line-number': { value: 'var(--cd-color-grey-5)', category: 'color', label: '行号', usage: 'line-number：行号文字色（对齐 Semi grey-5）' },
-  'color-json-viewer-line-number-bg': { value: 'var(--cd-color-grey-0)', category: 'color', label: '行号列背景', usage: 'line-number-container：行号列背景' },
 
   // —— 搜索命中（对齐 Semi search-result=green-2、current=yellow-4） ——
   'color-json-viewer-search-highlight': { value: 'var(--cd-color-green-2)', category: 'color', label: '搜索命中背景', usage: 'search-result：搜索命中底色（对齐 Semi green-2）' },

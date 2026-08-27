@@ -372,7 +372,15 @@ const components = [
   // + CodeContent 代码/JSON 预览）；spec §9 各阶段增量。Annotation/CodeContent 复用
   // Collapse；CodeContent 的 CodeHighlight(prismjs) 静态入壳计入、JsonViewer 内核动态
   // import（下方 ignore）。度量含各自壳；预算按实测校准（P3/P5 后续阶段各自增量）。
-  ['sidebar', '{ SideBar, SideBarContainer, SideBarAnnotation, SideBarCodeContent, SideBarMCPConfigure, SideBarFileContent }', '20 KB'],
+  // 2026-08-26 全量严格对齐 Semi 后 20.78 KB → 21.5 KB：新增 Empty + IllustrationNoContent(Dark)
+  // 插画（MCP 自定义空态）+ 多处自建裸 button/svg 改用具名图标与 Button 组件（真缺口补齐，非冗余）。
+  // 2026-08-27 21.5 KB → 22.2 KB：MCPConfigure 搜索过滤补 lodash throttle(300)（对齐 Semi
+  // mcpCofContentFoundation.ts updateShowOptions，本库原来是无节流的纯 $derived）。
+  // 2026-08-27 22.2 KB → 22.3 KB：SideBarCodeContent/SideBarFileContent 补齐 Semi
+  // sidebar.scss &-collapse 场景覆盖（item border+圆角+margin-bottom、active 态
+  // content border-top、-code 变体 content padding），本库原来完全没做这套覆盖，
+  // Collapse 组件只剩默认的 border-bottom 分隔线视觉，真缺口补齐非冗余。
+  ['sidebar', '{ SideBar, SideBarContainer, SideBarAnnotation, SideBarCodeContent, SideBarMCPConfigure, SideBarFileContent }', '22.3 KB'],
   // AIChatInput 的 tiptap 内核（@tiptap/core+starter-kit+extensions，gzip ~126KB）
   // 是「动态 import」惰性加载（见 AIChatInput.svelte，spec §0 要求内核不进主 bundle），
   // 故度量组件壳时 ignore 内核。内核体积单独在 spec §0 记录。

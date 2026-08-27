@@ -44,6 +44,15 @@ function labelsOf(container: Element) {
   ].map((n) => n.textContent);
 }
 
+/**
+ * 对齐 Semi updateShowOptions 的 lodash throttle(300)：组件挂载首次运行的
+ * $effect 已经占用节流的「首次立即执行」名额，之后 300ms 内的输入/切模式变化
+ * 要等节流窗口过去才会反映到 showOptions。测试里等够时长再断言。
+ */
+function flushThrottle(): Promise<void> {
+  return new Promise((r) => setTimeout(r, 320));
+}
+
 describe('SideBarMCPConfigure — 两模式切换', () => {
   it('默认 INNER 模式：只渲染内置列表，不渲染自定义项', () => {
     const { container } = base();
@@ -58,6 +67,7 @@ describe('SideBarMCPConfigure — 两模式切换', () => {
   it('切到 CUSTOM 模式：只渲染自定义列表，且搜索框旁出现新增按钮', async () => {
     const { container } = base();
     await switchToCustom(container);
+    await flushThrottle();
     expect(labelsOf(container)).toEqual(['My Tool']);
     // CUSTOM 且已有自定义项 → 搜索区里多一个新增按钮。
     const searchArea = container.querySelector(
@@ -66,14 +76,16 @@ describe('SideBarMCPConfigure — 两模式切换', () => {
     expect(searchArea.querySelector('button')).not.toBeNull();
   });
 
-  it('切模式清空搜索词（否则会误以为新模式里没有匹配项）', async () => {
+  it('切模式保留搜索词，沿用它过滤新模式源列表（对齐 Semi handleModeChange 不清空 inputValue）', async () => {
     const { container } = base();
     const input = container.querySelector('input[type="text"], input:not([type])') as HTMLInputElement;
     await fireEvent.input(input, { target: { value: 'git' } });
+    await flushThrottle();
     expect(labelsOf(container)).toEqual(['Git']);
     await switchToCustom(container);
-    // 搜索词已清空 → 自定义列表整份可见，而不是被 'git' 过滤成空。
-    expect(labelsOf(container)).toEqual(['My Tool']);
+    await flushThrottle();
+    // 搜索词未清空 → 'git' 过滤 CUSTOM 源列表（仅 'My Tool'）不匹配，结果为空。
+    expect(labelsOf(container)).toEqual([]);
   });
 
   // 对齐 Semi `{locale.activeMCPNumber} {n}/{总数}`：文案不含占位符，计数拼在后面。
@@ -84,23 +96,29 @@ describe('SideBarMCPConfigure — 两模式切换', () => {
     );
   });
 
-  // INNER 模式只渲染 3 个内置项（自定义那份要切模式才可见）。
-  it('每项启用开关为原生 role=switch + aria-checked 反映 active', () => {
+  // 对齐 Semi renderStatusButton：Button(theme=active?light:solid type=primary +
+  // IconMinus/IconPlus)，非开关组件。激活态用 theme=light（cd-button-light）表达，
+  // 未激活态用 theme=solid（cd-button-solid）表达。
+  it('每项启用按钮 theme 反映 active（light=已启用/solid=未启用）', () => {
     const { container } = base();
-    const switches = [...container.querySelectorAll('[role="switch"]')];
+    const buttons = [
+      ...container.querySelectorAll('[aria-label^="Enable "]'),
+    ] as HTMLButtonElement[];
     // INNER 模式只渲染 3 个内置项（自定义那份要切模式才可见）。
-    expect(switches.length).toBe(3);
-    // File System active → checked。
-    expect(switches[0]?.getAttribute('aria-checked')).toBe('true');
-    // Git inactive。
-    expect(switches[1]?.getAttribute('aria-checked')).toBe('false');
+    expect(buttons.length).toBe(3);
+    // File System active → light。
+    expect(buttons[0]?.classList.contains('cd-button-light')).toBe(true);
+    // Git inactive → solid。
+    expect(buttons[1]?.classList.contains('cd-button-solid')).toBe(true);
   });
 
-  it('disabled 预设项开关被禁用（不可切换）', () => {
+  it('disabled 预设项启用按钮被禁用（不可切换）', () => {
     const { container } = base();
-    const switches = [...container.querySelectorAll('[role="switch"]')];
+    const buttons = [
+      ...container.querySelectorAll('[aria-label^="Enable "]'),
+    ] as HTMLButtonElement[];
     // preset 项（第 3 个）disabled。
-    expect((switches[2] as HTMLButtonElement).disabled).toBe(true);
+    expect(buttons[2]?.disabled).toBe(true);
   });
 
   it('configure=true 内置项显示配置按钮', () => {
@@ -113,6 +131,7 @@ describe('SideBarMCPConfigure — 两模式切换', () => {
   it('切到 CUSTOM 模式后自定义项显示编辑按钮', async () => {
     const { container } = base();
     await switchToCustom(container);
+    await flushThrottle();
     expect(container.querySelector('[aria-label="Edit My Tool"]')).toBeTruthy();
   });
 
@@ -131,55 +150,68 @@ describe('SideBarMCPConfigure — 搜索过滤', () => {
     ) as HTMLInputElement;
     input.value = 'git';
     input.dispatchEvent(new Event('input', { bubbles: true }));
-    await Promise.resolve();
+    await flushThrottle();
     const labels = [...container.querySelectorAll('.cd-sidebar-mcp-configure-content-item-content-label')].map(
       (n) => n.textContent,
     );
     expect(labels).toEqual(['Git']);
   });
 
-  it('无匹配显示无结果提示（en_US mcpNoResult）', async () => {
+  it('无匹配时列表为空，不渲染任何提示文案（对齐 Semi renderContent：空数组即空列表）', async () => {
     const { container } = base();
     const input = container.querySelector(
       '.cd-sidebar-mcp-configure-content-search input',
     ) as HTMLInputElement;
     input.value = 'zzz-none';
     input.dispatchEvent(new Event('input', { bubbles: true }));
-    await Promise.resolve();
-    expect(container.textContent).toContain('No matching tools');
+    await flushThrottle();
+    expect(
+      container.querySelectorAll('.cd-sidebar-mcp-configure-content-item').length,
+    ).toBe(0);
+    expect(container.querySelector('.cd-sidebar-mcp-empty')).toBeNull();
   });
 });
 
 describe('SideBarMCPConfigure — 交互回调（受控不回写）', () => {
-  it('点击开关触发 onStatusChange(下一份数组, custom=false)，不回写 prop', () => {
+  it('点击启用按钮触发 onStatusChange(下一份数组, custom=false)，不回写 prop', () => {
     const onStatusChange = vi.fn();
     const { container } = base({ onStatusChange });
-    const switches = [...container.querySelectorAll('[role="switch"]')];
+    const buttons = [
+      ...container.querySelectorAll('[aria-label^="Enable "]'),
+    ] as HTMLButtonElement[];
     // 点 Git（第 2 个，当前 false）。
-    (switches[1] as HTMLElement).click();
+    buttons[1]!.click();
     expect(onStatusChange).toHaveBeenCalledTimes(1);
     const [nextList, custom] = onStatusChange.mock.calls[0] ?? [];
     expect(custom).toBe(false);
     expect(nextList.find((o: SideBarMCPOption) => o.value === 'git')?.active).toBe(true);
-    // 受控不回写：原选项 active 仍 false，DOM aria-checked 未变。
-    expect(container.querySelectorAll('[role="switch"]')[1]?.getAttribute('aria-checked')).toBe('false');
+    // 受控不回写：原选项 active 仍 false，DOM theme 未变（仍 solid）。
+    const stillButtons = [
+      ...container.querySelectorAll('[aria-label^="Enable "]'),
+    ] as HTMLButtonElement[];
+    expect(stillButtons[1]?.classList.contains('cd-button-solid')).toBe(true);
   });
 
-  it('disabled 项开关点击不触发 onStatusChange', () => {
+  it('disabled 项启用按钮点击不触发 onStatusChange', () => {
     const onStatusChange = vi.fn();
     const { container } = base({ onStatusChange });
-    const switches = [...container.querySelectorAll('[role="switch"]')];
-    (switches[2] as HTMLElement).click();
+    const buttons = [
+      ...container.querySelectorAll('[aria-label^="Enable "]'),
+    ] as HTMLButtonElement[];
+    buttons[2]!.click();
     expect(onStatusChange).not.toHaveBeenCalled();
   });
 
-  it('自定义项开关 custom=true', async () => {
+  it('自定义项启用按钮 custom=true', async () => {
     const onStatusChange = vi.fn();
     const { container } = base({ onStatusChange });
     await switchToCustom(container);
-    // CUSTOM 模式只有一项自定义工具，故取第 0 个开关。
-    const switches = [...container.querySelectorAll('[role="switch"]')];
-    (switches[0] as HTMLElement).click();
+    await flushThrottle();
+    // CUSTOM 模式只有一项自定义工具，故取第 0 个启用按钮。
+    const buttons = [
+      ...container.querySelectorAll('[aria-label^="Enable "]'),
+    ] as HTMLButtonElement[];
+    buttons[0]!.click();
     expect(onStatusChange.mock.calls[0]?.[1]).toBe(true);
   });
 
@@ -198,6 +230,7 @@ describe('SideBarMCPConfigure — 交互回调（受控不回写）', () => {
     const onEditClick = vi.fn();
     const { container } = base({ onEditClick });
     await switchToCustom(container);
+    await flushThrottle();
     const btn = container.querySelector('[aria-label="Edit My Tool"]') as HTMLElement;
     btn.click();
     expect(onEditClick).toHaveBeenCalledTimes(1);

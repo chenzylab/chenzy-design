@@ -93,7 +93,6 @@ export const meta = {
     '--cd-color-json-viewer-key',
     '--cd-color-json-viewer-keyword',
     '--cd-color-json-viewer-line-number',
-    '--cd-color-json-viewer-line-number-bg',
     '--cd-color-json-viewer-number',
     '--cd-color-json-viewer-punctuation',
     '--cd-color-json-viewer-search-current',

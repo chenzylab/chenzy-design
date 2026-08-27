@@ -20,11 +20,13 @@ describe('SideBar a11y — main / Options', () => {
     const inactive = tabs[1]!;
     expect(active.getAttribute('aria-selected')).toBe('true');
     expect(active.getAttribute('tabindex')).toBe('0');
-    expect(active.getAttribute('aria-label')).toBe('Tools');
+    // 对齐 Semi options.tsx：每项是 Button（图标 + name 可见文字），name 不再是
+    // 隐藏的 aria-label，而是可见 children——Button 自身以可见文字提供无障碍名。
+    expect(active.textContent).toContain('Tools');
     expect(inactive.getAttribute('aria-selected')).toBe('false');
     // roving：非激活项 tabindex=-1（键盘只 Tab 到激活项，方向键在组内移动）。
     expect(inactive.getAttribute('tabindex')).toBe('-1');
-    expect(inactive.getAttribute('aria-label')).toBe('References');
+    expect(inactive.textContent).toContain('References');
 
     // 主内容按 activeKey 渲染。
     expect(container.querySelector('[data-testid="main-content"]')?.textContent).toContain(
@@ -100,8 +102,8 @@ describe('SideBar a11y — detail routing', () => {
     expect(onBack.mock.calls[0]?.[1]).toBe('code');
   });
 
-  // Semi 标记的是「未选中」（-options-normal）而非「选中」——正好与本库相反。
-  // 本库保留 -option-active 表达选中态，同时补上 Semi 的 -options-normal 标记。
+  // Semi 标记的是「未选中」（-options-normal）而非「选中」——选中态即 Button 默认
+  // primary/light 外观，不叠加任何标记类；未选中态才叠加 -options-normal 压回常规文本色。
   it('Options：未选中项带 -options-normal，选中项不带', () => {
     const { container } = renderWithLocale(Fixture, {
       props: { mode: 'main', activeKey: 'tools' },
@@ -110,7 +112,6 @@ describe('SideBar a11y — detail routing', () => {
     expect(buttons.length).toBe(2);
     // activeKey=tools → 第一个选中、第二个未选中。
     expect(buttons[0]!.classList.contains('cd-sidebar-options-normal')).toBe(false);
-    expect(buttons[0]!.classList.contains('cd-sidebar-option-active')).toBe(true);
     expect(buttons[1]!.classList.contains('cd-sidebar-options-normal')).toBe(true);
   });
 

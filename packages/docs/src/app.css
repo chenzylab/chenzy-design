@@ -32,6 +32,21 @@ img[width][height] {
   height: 100%;
   object-fit: cover;
 }
+/* UnoCSS presetUno 的 reset 把 ol/ul/menu 统一清零 list-style（类 Tailwind preflight），
+   `.prose` 容器内 presetTypography 会主动补回 list-style-type，但 demo 预览区套了
+   `not-prose`（排除正文排版污染组件），typography 的补偿一并被撤销，reset 的
+   list-style:none 重新生效——组件里逐字节抄 Semi 的富文本内容（如 SideBarFileItem
+   的 <ul><li>）就会丢失圆点。组件本身对齐 Semi（Semi 的 .tiptap 同样不单独声明
+   list-style，靠浏览器 UA 默认值），这里只补 not-prose 范围内的 ul/ol，不动组件、
+   不放宽 not-prose 隔离范围。 */
+.not-prose :where(ul) {
+  list-style: disc;
+  padding-left: 1.5em;
+}
+.not-prose :where(ol) {
+  list-style: decimal;
+  padding-left: 1.5em;
+}
 /* 固定顶栏（.docs-header 高 60px，sticky top:0）下的锚点跳转留白：滚动容器统一
    scroll-padding-top，所有 scrollIntoView / hash 跳转（TOC、复制链接、meta 页与
    inline md 页标题）自动避开顶栏，无需给每个标题单独设 scroll-margin-top。 */

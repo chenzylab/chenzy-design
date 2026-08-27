@@ -26,16 +26,22 @@
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
+  import { throttle } from 'lodash-es';
   import {
     filterMcpOptions,
     toggleMcpOptionActive,
     countActiveMcpOptions,
   } from '@chenzy-design/core';
-  import { IconPlus, IconSearch } from '@chenzy-design/icons';
+  import { IconEdit, IconMinus, IconPlus, IconSearch, IconSetting } from '@chenzy-design/icons';
+  import {
+    IllustrationNoContent,
+    IllustrationNoContentDark,
+  } from '@chenzy-design/illustrations';
   import Input from '../input/Input.svelte';
-  import Switch from '../switch/Switch.svelte';
   import { Button } from '../button/index.js';
+  import Empty from '../empty/Empty.svelte';
   import { Radio, RadioGroup } from '../radio/index.js';
+  import Tooltip from '../tooltip/Tooltip.svelte';
   import { useLocale } from '../locale-provider/index.js';
   import SideBarContainer from './SideBarContainer.svelte';
   import type { SideBarMCPOption } from './types.js';
@@ -82,10 +88,6 @@
     maxWidth?: string | number;
     /** 默认尺寸。 */
     defaultSize?: { width?: string | number; height?: string | number };
-    /** 显示关闭按钮。默认 true。 */
-    showClose?: boolean;
-    /** 自定义头部（覆盖 title + 关闭按钮）。 */
-    renderHeader?: Snippet;
     /** 面板自定义类名。 */
     class?: string;
     /** 面板自定义内联样式。 */
@@ -112,8 +114,6 @@
     minWidth,
     maxWidth,
     defaultSize,
-    showClose,
-    renderHeader,
     class: className,
     style,
   }: Props = $props();
@@ -133,11 +133,22 @@
     placeholder ?? loc().t('SideBar.searchPlaceholder'),
   );
 
-  // 当前模式对应的源列表 + 过滤结果（对齐 Semi state.showOptions：
-  // 它只维护「当前模式的那一份」，不是两份并列）。
   const isCustomMode = $derived(mcpMode === 'custom');
   const sourceOptions = $derived(isCustomMode ? customOptions : options);
-  const showOptions = $derived(filterMcpOptions(inputValue, sourceOptions, filter));
+
+  // 对齐 Semi state.showOptions（mcpCofContentFoundation.ts updateShowOptions）：只维护
+  // 「当前模式的那一份」过滤结果，且更新经 lodash throttle(300) 节流——本库原来是纯 $derived
+  // 每次按键立即刷新，Semi 每 300ms 才刷新一次。节流函数只创建一次（跨调用保持时间窗口），
+  // 在受影响的输入变化时命令式调用（红线 #3：不在 $derived/$effect 里做有副作用的节流）。
+  // svelte-ignore state_referenced_locally
+  let showOptions = $state<SideBarMCPOption[]>(sourceOptions);
+  const updateShowOptions = throttle((value: string, source: SideBarMCPOption[]) => {
+    showOptions = filterMcpOptions(value, source, filter);
+  }, 300);
+  $effect(() => () => updateShowOptions.cancel());
+  $effect(() => {
+    updateShowOptions(inputValue, sourceOptions);
+  });
 
   const activeCount = $derived(countActiveMcpOptions(options, customOptions));
   const totalCount = $derived(options.length + customOptions.length);
@@ -150,9 +161,6 @@
   const hasCustom = $derived(customOptions.length > 0);
   // CUSTOM 模式且一条自定义都没有 → 走 Empty 空态（对齐 Semi renderSearch 的 else 分支）。
   const showCustomEmpty = $derived(isCustomMode && !hasCustom);
-  const noResult = $derived(
-    inputValue.trim().length > 0 && showOptions.length === 0 && !showCustomEmpty,
-  );
 
   function handleSearch(v: string): void {
     inputValue = v;
@@ -160,12 +168,11 @@
     onSearch?.(v, isCustomMode);
   }
 
-  // 切模式时清空搜索：Semi 的 showOptions 由 mode 决定源列表，
-  // 沿用上一个模式的搜索词会让人以为「新模式里没有匹配项」。
+  // 对齐 Semi handleModeChange（mcpCofContentFoundation.ts:75-80）：切模式只换源列表，
+  // 不清空 inputValue——沿用当前搜索词对新模式的源列表重新过滤（本库原来会清空搜索词，
+  // Semi 没有这个行为，已移除）。
   function handleModeChange(next: 'inner' | 'custom'): void {
-    if (next === mcpMode) return;
     mcpMode = next;
-    inputValue = '';
   }
 
   function handleStatusChange(
@@ -202,8 +209,6 @@
       minWidth,
       maxWidth,
       defaultSize,
-      showClose,
-      renderHeader,
       style,
     }),
   );
@@ -230,14 +235,19 @@
 
   {#if showCustomEmpty}
     <!-- CUSTOM 模式且无自定义项：整块换成空态 + 添加按钮（对齐 Semi renderSearch 的 else 分支，
-         此时连搜索框都不渲染）。 -->
-    <div class="cd-sidebar-mcp-configure-content-custom-empty">
-      <span>{loc().t('SideBar.emptyCustomMcpInfo')}</span>
+         此时连搜索框都不渲染）。Semi 用 Empty + IllustrationNoContent(Dark) 插画，
+         本库原来只是纯文字，没有用 Empty 组件也没有插画。 -->
+    <Empty
+      class="cd-sidebar-mcp-configure-content-custom-empty"
+      description={loc().t('SideBar.emptyCustomMcpInfo')}
+      imageSlot={emptyImage}
+      darkModeImageSlot={emptyImageDark}
+    >
       <Button theme="solid" type="primary" onclick={(e) => onAddClick?.(e)}>
         {#snippet icon()}<IconPlus />{/snippet}
         {loc().t('SideBar.newMcpAdd')}
       </Button>
-    </div>
+    </Empty>
   {:else}
     <!-- Semi 同一个 div 上挂两个类：-search（外边距）与 -search-container（列间距），
          见 mcpConfigure/content.tsx:219。本库原来只有前者。
@@ -265,19 +275,23 @@
   {/if}
 
   <!-- 单一列表：渲染当前模式对应的那一份（对齐 Semi renderContent —— 它只有
-       -item-container 一层，没有分组标题）。 -->
+       -item-container 一层，没有分组标题，无匹配结果时就是空列表，没有提示文案；
+       本库原来自造了 noResult 分支渲染「无结果」提示，Semi 没有，已移除）。 -->
   {#if !showCustomEmpty}
     <ul class="cd-sidebar-mcp-configure-content-item-container" role="list">
       {#each showOptions as option (option.value)}
         {@render itemRow(option, isCustomMode)}
       {/each}
     </ul>
-    {#if noResult}
-      <div class="cd-sidebar-mcp-empty">{loc().t('SideBar.mcpNoResult')}</div>
-    {/if}
   {/if}
 </SideBarContainer>
 
+{#snippet emptyImage()}
+  <IllustrationNoContent style="width: 150px; height: 150px;" />
+{/snippet}
+{#snippet emptyImageDark()}
+  <IllustrationNoContentDark style="width: 150px; height: 150px;" />
+{/snippet}
 
 {#snippet itemRow(option: SideBarMCPOption, custom: boolean)}
   <li class="cd-sidebar-mcp-configure-content-item" role="listitem">
@@ -307,59 +321,58 @@
       </div>
 
       {#if option.configure}
-        <button
-          type="button"
+        <!-- Semi 用 Button(theme=borderless type=tertiary) + 具名 IconSetting
+             （mcpConfigure/content.tsx），本库原为裸 button + 手写 svg。 -->
+        <Button
           class="cd-sidebar-mcp-configure-content-item-button cd-sidebar-mcp-configure-content-item-button-configure"
+          theme="borderless"
+          type="tertiary"
           aria-label={loc().t('SideBar.mcpConfigureItem', { name: option.label })}
-          title={loc().t('SideBar.mcpConfigureItem', { name: option.label })}
           onclick={(e) => onConfigureClick?.(e, option)}
         >
-          <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-            <circle cx="8" cy="8" r="2" stroke="currentColor" stroke-width="1.2" />
-            <path
-              d="M8 1.5v1.6M8 12.9v1.6M14.5 8h-1.6M3.1 8H1.5M12.6 3.4l-1.1 1.1M4.5 11.5l-1.1 1.1M12.6 12.6l-1.1-1.1M4.5 4.5 3.4 3.4"
-              stroke="currentColor"
-              stroke-width="1.2"
-              stroke-linecap="round"
-            />
-          </svg>
-        </button>
+          {#snippet icon()}<IconSetting />{/snippet}
+        </Button>
       {/if}
 
       {#if custom}
-        <button
-          type="button"
+        <!-- Semi 用具名 IconEdit（mcpConfigure/content.tsx），本库原为手写 svg。 -->
+        <Button
           class="cd-sidebar-mcp-configure-content-item-button cd-sidebar-mcp-configure-content-item-button-configure"
+          theme="borderless"
+          type="tertiary"
           aria-label={loc().t('SideBar.mcpEditItem', { name: option.label })}
-          title={loc().t('SideBar.mcpEditItem', { name: option.label })}
           onclick={(e) => onEditClick?.(e, option)}
         >
-          <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-            <path
-              d="M11 2.5 13.5 5 5.5 13H3v-2.5L11 2.5Z"
-              stroke="currentColor"
-              stroke-width="1.2"
-              stroke-linejoin="round"
-            />
-          </svg>
-        </button>
+          {#snippet icon()}<IconEdit />{/snippet}
+        </Button>
       {/if}
 
-      <span
-        class="cd-sidebar-mcp-switch"
-        {...option.disabled
-          ? { title: loc().t('SideBar.defaultMcpInfo') }
-          : {}}
-      >
-        <Switch
-          checked={option.active ?? false}
-          disabled={option.disabled ?? false}
-          aria-label={loc().t('SideBar.mcpEnable', { name: option.label })}
-          onChange={(v) => handleStatusChange(option, v, custom)}
-        />
-      </span>
+      <!-- 对齐 Semi renderStatusButton：Button(theme=active?light:solid type=primary +
+           IconMinus/IconPlus) 而非开关组件；disabled 项用 Tooltip 包裹（非裸 title）。 -->
+      {#if option.disabled}
+        <Tooltip content={loc().t('SideBar.defaultMcpInfo')}>
+          {@render statusButtonSnippet(option, custom)}
+        </Tooltip>
+      {:else}
+        {@render statusButtonSnippet(option, custom)}
+      {/if}
     {/if}
   </li>
+{/snippet}
+
+{#snippet statusButtonSnippet(option: SideBarMCPOption, custom: boolean)}
+  <Button
+    class="cd-sidebar-mcp-configure-content-item-button"
+    theme={option.active ? 'light' : 'solid'}
+    type="primary"
+    disabled={option.disabled ?? false}
+    aria-label={loc().t('SideBar.mcpEnable', { name: option.label })}
+    onclick={() => handleStatusChange(option, !option.active, custom)}
+  >
+    {#snippet icon()}
+      {#if option.active}<IconMinus />{:else}<IconPlus />{/if}
+    {/snippet}
+  </Button>
 {/snippet}
 
 <style>
@@ -381,32 +394,22 @@
     display: flex;
     column-gap: var(--cd-sidebar-mcp-search-container-column-gap);
   }
-  .cd-sidebar-mcp-configure-content-item-button:focus-visible {
-    outline: none;
-    box-shadow: var(--cd-focus-ring);
-  }
   .cd-sidebar-mcp-configure-content-item-container {
     display: flex;
     flex-direction: column;
-    gap: var(--cd-sidebar-mcp-item-gap);
     margin: 0;
     padding: 0;
     list-style: none;
   }
-  /* padding / 图标间距取 Semi 值（$spacing-sidebar_mcp_item-paddingY|X、
-     $spacing-sidebar_mcp_item_sign-marginRight）。
-     边框/圆角/底色是本库的卡片观感 —— Semi 那边是扁平行 + 一条 border-bottom。 */
+  /* 对齐 Semi sidebar.scss:129-133：扁平行 + 一条 border-bottom 分隔，无边框/圆角/背景色
+     （本库原来在裸 item 上手造了整套卡片视觉——边框/圆角/底色/悬浮底色，Semi 没有）。
+     图标容器 -sign 同样只有尺寸+间距，Semi 没有背景色/圆角（本库原来自造了灰色方块）。 */
   .cd-sidebar-mcp-configure-content-item {
     display: flex;
     align-items: center;
-    gap: var(--cd-sidebar-mcp-item-sign-margin-right);
     padding: var(--cd-sidebar-mcp-item-padding-y) var(--cd-sidebar-mcp-item-padding-x);
-    border: 1px solid var(--cd-sidebar-mcp-item-border);
-    border-radius: var(--cd-sidebar-mcp-item-radius);
-    background: var(--cd-sidebar-mcp-item-bg);
-  }
-  .cd-sidebar-mcp-configure-content-item:hover {
-    background: var(--cd-sidebar-mcp-item-bg-hover);
+    border-block-end: var(--cd-width-sidebar-mcp-item-border-bottom) solid
+      var(--cd-color-sidebar-mcp-item-border-bottom);
   }
   .cd-sidebar-mcp-configure-content-item-sign {
     display: inline-flex;
@@ -415,8 +418,7 @@
     justify-content: center;
     inline-size: var(--cd-sidebar-mcp-item-sign);
     block-size: var(--cd-sidebar-mcp-item-sign);
-    border-radius: var(--cd-sidebar-mcp-icon-radius);
-    background: var(--cd-sidebar-mcp-icon-bg);
+    margin-inline-end: var(--cd-sidebar-mcp-item-sign-margin-right);
     color: var(--cd-sidebar-mcp-label-color);
     object-fit: cover;
     overflow: hidden;
@@ -447,61 +449,20 @@
     line-clamp: 2;
     -webkit-box-orient: vertical;
   }
-  .cd-sidebar-mcp-configure-content-item-button {
-    display: inline-flex;
+  /* Semi sidebar.scss:167-178：&-item-button 只覆盖 flex-shrink + icon-only 专属尺寸
+     （&.semi-button.semi-button-with-icon-only { width/height }），圆角/背景/hover/颜色
+     全部由 Button 组件自身承担。本库原来在裸 button 上手造了整套视觉去模拟 Button——
+     现在真用 Button 组件了，这些都是多余的。 */
+  :global(.cd-sidebar-mcp-configure-content-item-button) {
     flex-shrink: 0;
-    align-items: center;
-    justify-content: center;
+  }
+  :global(.cd-sidebar-mcp-configure-content-item-button.cd-button-with-icon-only) {
     /* Semi $width-sidebar_mcp_item_button = 24px（本库原来是自造的 28px）。 */
     inline-size: var(--cd-sidebar-mcp-item-button);
     block-size: var(--cd-sidebar-mcp-item-button);
-    padding: 0;
-    border: none;
-    border-radius: var(--cd-sidebar-close-radius);
-    background: transparent;
-    color: var(--cd-sidebar-mcp-action-color);
-    cursor: pointer;
   }
-
-  /* 配置/编辑按钮右外边距（对齐 Semi &-item-button-configure）。
-     该 token 早就按 Semi 建好了，但没有任何消费方。 */
-  .cd-sidebar-mcp-configure-content-item-button-configure {
-    margin-right: var(--cd-sidebar-mcp-item-button-configure-margin-right);
-  }
-  .cd-sidebar-mcp-configure-content-item-button:hover {
-    background: var(--cd-sidebar-mcp-action-hover-bg);
-    color: var(--cd-sidebar-mcp-label-color);
-  }
-  .cd-sidebar-mcp-switch {
-    display: inline-flex;
-    flex-shrink: 0;
-    align-items: center;
-  }
-  .cd-sidebar-mcp-empty {
-    padding: var(--cd-spacing-tight, 8px) 0;
-    color: var(--cd-sidebar-mcp-empty-color);
-    font-size: var(--cd-font-size-small);
-    text-align: center;
-  }
-  .cd-sidebar-mcp-configure-content-custom-empty {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: var(--cd-spacing-tight, 8px);
-  }
-  .cd-sidebar-mcp-add-cta {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 6px 12px;
-    border: 1px solid var(--cd-sidebar-mcp-item-border);
-    border-radius: var(--cd-sidebar-mcp-item-radius);
-    background: transparent;
-    color: var(--cd-sidebar-mcp-label-color);
-    font-size: var(--cd-font-size-small);
-    cursor: pointer;
-  }
-  .cd-sidebar-mcp-add-cta:hover {
-    background: var(--cd-sidebar-mcp-item-bg-hover);
+  /* 配置/编辑按钮右外边距（对齐 Semi &-item-button-configure）。 */
+  :global(.cd-sidebar-mcp-configure-content-item-button-configure) {
+    margin-inline-end: var(--cd-sidebar-mcp-item-button-configure-margin-right);
   }
 </style>
