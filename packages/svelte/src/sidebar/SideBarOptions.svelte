@@ -1,12 +1,15 @@
 <!--
   SideBarOptions — 主视图顶部图标 tab 组（P1）。see specs/components/show/SideBar.spec.md §4.1。
-  role=tablist + roving tabindex（仅激活项 tabindex=0，其余 -1）+ 键盘 ←→/Home/End 在项间移焦并激活
-  （参照 Tabs 的 roving 实现）。每项图标以 name 作可访问名（aria-label），无障碍名不硬编码。
-  受控 activeKey（红线 #1）：不回写，仅经 onActiveOptionChange 通知。
+  对齐 Semi options.tsx：每项都是本库 Button（icon + name 文字），非激活态叠加 -options-normal
+  类把 primary/light 按钮的强调色/粗体压回常规文本色。本库在此之上叠加 role=tablist/tab +
+  roving tabindex（仅激活项 tabindex=0，其余 -1）+ 键盘 ←→/Home/End 移焦并激活（参照 Tabs 的
+  roving 实现）——这是对齐 SPEC §6「对标 Semi 的增强」，Semi 原版 Options 只是普通可点击 Button，
+  没有 tab 语义。受控 activeKey（红线 #1）：不回写，仅经 onActiveOptionChange 通知。
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
   import { useId } from '@chenzy-design/core';
+  import Button from '../button/Button.svelte';
   import type { SideBarOption } from './types.js';
 
   interface Props {
@@ -81,26 +84,24 @@
       <!-- 对齐 Semi options.tsx:15-17：renderOptionItem 命中即整项接管，不再渲染默认按钮。 -->
       {@render renderOptionItem({ option: item, onChange: setActive })}
     {:else}
-    <button
-      type="button"
-      class="cd-sidebar-options-button"
-      class:cd-sidebar-option-active={selected}
-      class:cd-sidebar-options-normal={!selected}
-      role="tab"
-      id={optionId(item.key)}
-      aria-selected={selected}
-      aria-label={item.name}
-      title={item.name}
-      tabindex={selected ? 0 : -1}
-      onclick={(e) => setActive(e, item.key)}
-      onkeydown={(e) => onKeydown(e, item)}
-    >
-      {#if item.icon}
-        <span class="cd-sidebar-options-button-icon" aria-hidden="true">{@render item.icon()}</span>
-      {:else}
-        <span class="cd-sidebar-options-button-icon" aria-hidden="true">{item.name.slice(0, 1)}</span>
-      {/if}
-    </button>
+      <!-- 对齐 Semi options.tsx:20-27：每项是一个 Button（图标 + name 可见文字），非选中态
+           叠加 -options-normal 把 primary/light 强调色压回常规文本色。role=tab/roving tabindex
+           透传到 Button 根节点（本库对标 SPEC §6 的增强，Semi 原版只是普通 Button）。 -->
+      {@const itemIcon = item.icon}
+      <Button
+        class="cd-sidebar-options-button {selected ? '' : 'cd-sidebar-options-normal'}"
+        role="tab"
+        id={optionId(item.key)}
+        aria-selected={selected}
+        tabindex={selected ? 0 : -1}
+        onclick={(e) => setActive(e, item.key)}
+        onkeydown={(e: KeyboardEvent) => onKeydown(e, item)}
+      >
+        {#if itemIcon}
+          {#snippet icon()}{@render itemIcon()}{/snippet}
+        {/if}
+        {item.name}
+      </Button>
     {/if}
   {/each}
 </div>
@@ -114,47 +115,17 @@
     padding: var(--cd-sidebar-options-padding-y) var(--cd-sidebar-options-padding-x);
     border-block-end: 1px solid var(--cd-sidebar-border);
   }
-  .cd-sidebar-options-button {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    inline-size: var(--cd-sidebar-option-size);
-    block-size: var(--cd-sidebar-option-size);
-    padding: 0;
-    border: none;
-    border-radius: var(--cd-sidebar-option-radius);
-    background: transparent;
-    color: var(--cd-sidebar-options-button-text);
-    cursor: pointer;
-    transition:
-      background-color var(--cd-motion-duration-fast, 0.1s) var(--cd-motion-ease-standard, ease),
-      color var(--cd-motion-duration-fast, 0.1s) var(--cd-motion-ease-standard, ease);
+  /* Semi options.tsx:20-27 每项是 Button（默认 type=primary theme=light，视觉全部由
+     Button 自身提供），本库不再手造尺寸/圆角/hover/focus 去模拟 Button。
+     &-button 只贴 Semi 的 -options_button-marginLeft（content-right 即图标后跟的文字）。 */
+  :global(.cd-sidebar-options-button .cd-button-content-right) {
+    margin-inline-start: var(--cd-sidebar-options-button-margin-left);
   }
-  .cd-sidebar-options-button:hover:not(.cd-sidebar-option-active) {
-    background: var(--cd-sidebar-option-bg-hover);
-    color: var(--cd-sidebar-option-color-hover);
-  }
-  /* 未选中态（对齐 Semi &-options-normal）：Semi 标记的是「未选中」而非「选中」，
-     用它把默认 Button 的 primary 色/粗体压回常规文本色。
-     本库 Options 是自建图标 tab（非 Button），仍保留 -option-active 表达选中态，
-     但同时补上 Semi 的 -options-normal 标记与其文本色/字重，保持类名契约一致。 */
-  .cd-sidebar-options-normal {
+  /* 未选中态（对齐 Semi &-options-normal { &.semi-button-primary.semi-button-light {...} }）：
+     把默认 primary/light 按钮的强调色/粗体压回常规文本色；选中态保留 Button 默认外观。
+     :global() 包裹整条复合选择器——Svelte 编译器会丢失裸复合选择器的特异性标记。 */
+  :global(.cd-sidebar-options-normal.cd-button-primary.cd-button-light) {
     color: var(--cd-sidebar-options-button-text);
     font-weight: var(--cd-font-weight-regular);
-  }
-
-  .cd-sidebar-option-active {
-    background: var(--cd-sidebar-option-bg-active);
-    color: var(--cd-sidebar-option-color-active);
-  }
-  .cd-sidebar-options-button:focus-visible {
-    outline: none;
-    box-shadow: var(--cd-focus-ring);
-  }
-  .cd-sidebar-options-button-icon {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    font-size: var(--cd-font-size-regular, 14px);
   }
 </style>

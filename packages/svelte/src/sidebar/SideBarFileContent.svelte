@@ -1,19 +1,22 @@
 <!--
-  SideBarFileContent — 富文本查看/编辑折叠列表（P5）。对齐 Semi sideBar/widget/file.js FileContent：
-  Collapse 折叠列表（clickHeaderToExpand=false，头部展开按钮触发全屏），每项一个 SideBarFileItem
-  富文本编辑器。列表项默认只读查看（editable=false，对齐 Semi）；每项可经 FileItemProps.editable
-  单独开编辑。受控 activeKey（红线 #1）：不回写，仅经 onChange 通知；Collapse 内部兜底非受控。
+  SideBarFileContent — 富文本预览折叠列表（P5）。对齐 Semi sideBar/widget/file.tsx FileContent：
+  Collapse 折叠列表（clickHeaderToExpand=false，头部展开按钮触发全屏），每项一个 SideBarFileItem。
+  Semi FileContentProps 只有 files/onExpand（+ 继承 activeKey/onChange/style/className），
+  渲染每项时硬编码 editable=false、只传 content——列表恒为只读预览，编辑能力只属于独立的
+  SideBarFileItem 组件，FileItemProps 上不暴露 editable/onContentChange/extensions/imgUploadProps
+  （本库曾经把这些字段透传下去允许列表项可编辑，Semi 没有这个能力分支，已收紧对齐）。
+  受控 activeKey（红线 #1）：不回写，仅经 onChange 通知；Collapse 内部兜底非受控。
   a11y：折叠头 aria-expanded 由 Collapse.Panel 提供；展开按钮 aria-label 走 i18n（SideBar.expand）。
-  §9.3：files 遍历为纯派生，无自循环；每项 editor 生命周期封装在 SideBarFileItem 的 $effect 内。
+  §9.3：files 遍历为纯派生，无自循环。
 -->
 <script lang="ts">
   import { IconFile, IconFullScreenStroked } from '@chenzy-design/icons';
   import { Collapse } from '../collapse/index.js';
+  import Button from '../button/Button.svelte';
   import { useLocale } from '../locale-provider/index.js';
   import SideBarFileItem from './SideBarFileItem.svelte';
-  import type { SideBarImageUploadOptions } from './file-extensions.js';
 
-  /** 单个富文本文件项。对齐 Semi FileItemProps。 */
+  /** 单个富文本文件项。对齐 Semi FileItemProps（FileContent 消费的子集，恒只读）。 */
   export interface FileItemProps {
     /** 唯一标识（折叠面板 key）。 */
     key: string;
@@ -21,19 +24,6 @@
     name?: string;
     /** 富文本内容（HTML）。 */
     content?: string;
-    /** 是否可编辑（默认 false=只读查看，对齐 Semi 列表项）。 */
-    editable?: boolean;
-    /** 内容变更回调（editor.getHTML()）。 */
-    onContentChange?: (html: string) => void;
-    /** 追加到默认扩展集末尾的自定义 tiptap 扩展。 */
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    extensions?: any[];
-    /** 图片上传配置（透传 ImageUploadNode / 内嵌 Upload）。 */
-    imgUploadProps?: SideBarImageUploadOptions;
-    /** 项自定义类名。 */
-    className?: string;
-    /** 项自定义内联样式。 */
-    style?: string;
   }
 
   interface Props {
@@ -82,8 +72,11 @@
 </script>
 
 <div class={rootCls} {style}>
+  <!-- Semi widget/file.tsx clickHeaderToExpand={false}：head 内还有展开（全屏）按钮，
+       整个 head 可点击会和按钮点击冲突，故只允许点折叠箭头。 -->
   <Collapse
     keepDOM
+    clickHeaderToExpand={false}
     {...activeKey !== undefined ? { activeKey } : {}}
     {...onChange !== undefined ? { onChange: handleChange } : {}}
   >
@@ -94,48 +87,71 @@
             <!-- 同 code：Semi 是裸 <IconFile />，无 -header-icon 包裹层。 -->
             <IconFile />
             <span class="cd-sidebar-collapse-header-text">{file.name ?? file.key}</span>
-            <!-- 展开（全屏）按钮：在 head 内自渲染，stopPropagation 不触发折叠（对齐 Semi FAQ）。 -->
-            <button
-              type="button"
+            <!-- 展开（全屏）按钮：Semi 用 Button(theme=borderless type=tertiary) + 具名
+                 IconFullScreenStroked（widget/code.tsx，file 共用 CollapseHeader），
+                 本库原为裸 button + 手写 svg。stopPropagation 不触发折叠（对齐 Semi FAQ）。 -->
+            <Button
               class="cd-sidebar-collapse-header-expand-btn"
+              theme="borderless"
+              type="tertiary"
               aria-label={expandLabel}
               title={expandLabel}
               onclick={(e) => handleExpand(e, file)}
             >
-              <!-- Semi 用具名 IconFullScreenStroked（widget/code.tsx:68），本库原为手写 svg。 -->
-              <IconFullScreenStroked />
-            </button>
+              {#snippet icon()}<IconFullScreenStroked />{/snippet}
+            </Button>
           </span>
         {/snippet}
-        <div class="cd-sidebar-file-content-body">
-          <SideBarFileItem
-            content={file.content ?? ''}
-            editable={file.editable ?? false}
-            {...file.onContentChange !== undefined ? { onContentChange: file.onContentChange } : {}}
-            {...file.extensions !== undefined ? { extensions: file.extensions } : {}}
-            {...file.imgUploadProps !== undefined ? { imgUploadProps: file.imgUploadProps } : {}}
-            {...file.className !== undefined ? { class: file.className } : {}}
-            {...file.style !== undefined ? { style: file.style } : {}}
-          />
-        </div>
+        <SideBarFileItem content={file.content ?? ''} editable={false} />
       </Collapse.Panel>
     {/each}
   </Collapse>
 </div>
 
 <style>
+  /* 对齐 Semi sidebar.scss:372-422（&-collapse 作用域，同 SideBarCodeContent）：
+     sidebar 场景下 Collapse 独立卡片观感——每项 border+圆角+非末项 margin-bottom，
+     展开时内容区顶部再叠一条 border-top；header 覆盖 padding/margin/font-weight。
+     选择器把 .cd-sidebar-collapse 重复写两次提升 specificity（同 SideBarCodeContent
+     注释：与 Collapse.svelte 里 .cd-collapse-item/-header 的 0,0,2,0 同分时，
+     不能靠打包输出顺序决胜负）。 */
+  .cd-sidebar-collapse.cd-sidebar-collapse :global(.cd-collapse-item) {
+    border: var(--cd-width-sidebar-collapse-item-border) solid
+      var(--cd-color-sidebar-collapse-item-border);
+    border-radius: var(--cd-radius-sidebar-collapse-item);
+  }
+  .cd-sidebar-collapse.cd-sidebar-collapse :global(.cd-collapse-item:not(:last-child)) {
+    margin-block-end: var(--cd-sidebar-collapse-item-margin-bottom);
+  }
+  .cd-sidebar-collapse.cd-sidebar-collapse :global(.cd-collapse-header) {
+    padding: var(--cd-sidebar-collapse-header-padding-y) var(--cd-sidebar-collapse-header-padding-x);
+    margin: 0;
+    font-weight: var(--cd-font-weight-regular);
+  }
+  /* 挂载层级对齐 Semi 真机 DOM：border-top 挂在 .collapsible-wrapper（overflow+
+     height+opacity+transition-duration 那层），本库对应 .cd-collapsible-wrapper——
+     之前挂到了 .cd-collapse-content-wrapper（往里数第 3 层，多了 collapse-content
+     那层），层级错位但因为都叫 xxx-wrapper 容易看漏。 */
+  .cd-sidebar-collapse.cd-sidebar-collapse
+    :global(.cd-collapse-item-active .cd-collapsible-wrapper) {
+    border-block-start: var(--cd-width-sidebar-collapse-item-content-border-top) solid
+      var(--cd-color-sidebar-collapse-item-content-border-top);
+  }
+  /* 同 SideBarCodeContent：Semi -header-content 是 width:100% + paddingRight，
+     -header-expand-btn 只覆盖 flex-shrink + icon-only 专属尺寸，其余归 Button 自身。 */
   .cd-sidebar-collapse-header-content {
     display: flex;
-    flex: 1 1 auto;
     align-items: center;
     gap: var(--cd-sidebar-collapse-header-content-gap);
+    inline-size: 100%;
+    padding-inline-end: var(--cd-sidebar-collapse-header-content-padding-right);
     min-inline-size: 0;
   }
-  /* 展开按钮推到 head 右端（原 extra 靠右语义），紧邻折叠箭头前。 */
-  .cd-sidebar-collapse-header-expand-btn {
-    margin-inline-start: auto;
+  .cd-sidebar-collapse-header-content :global(.cd-icon) {
+    color: var(--cd-sidebar-code-head-icon-color);
   }
   .cd-sidebar-collapse-header-text {
+    flex: 1;
     overflow: hidden;
     color: var(--cd-sidebar-code-head-color);
     font-size: var(--cd-font-size-regular);
@@ -143,31 +159,12 @@
     white-space: nowrap;
     text-overflow: ellipsis;
   }
-  .cd-sidebar-collapse-header-expand-btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    inline-size: 24px;
-    block-size: 24px;
-    padding: 0;
-    border: none;
-    border-radius: var(--cd-sidebar-close-radius);
-    background: transparent;
-    color: var(--cd-sidebar-options-button-text);
-    cursor: pointer;
-    transition:
-      background-color var(--cd-motion-duration-fast, 0.1s) var(--cd-motion-ease-standard, ease),
-      color var(--cd-motion-duration-fast, 0.1s) var(--cd-motion-ease-standard, ease);
+  :global(.cd-sidebar-collapse-header-expand-btn) {
+    flex-shrink: 0;
   }
-  .cd-sidebar-collapse-header-expand-btn:hover {
-    background: var(--cd-sidebar-code-expand-hover-bg);
-    color: var(--cd-sidebar-code-head-color);
-  }
-  .cd-sidebar-collapse-header-expand-btn:focus-visible {
-    outline: none;
-    box-shadow: var(--cd-focus-ring);
-  }
-  .cd-sidebar-file-content-body {
-    padding: var(--cd-sidebar-code-body-padding);
+  :global(.cd-sidebar-collapse-header-expand-btn.cd-button-with-icon-only) {
+    padding: var(--cd-sidebar-collapse-header-expand-btn-padding);
+    inline-size: var(--cd-sidebar-collapse-header-expand-btn);
+    block-size: var(--cd-sidebar-collapse-header-expand-btn);
   }
 </style>

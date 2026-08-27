@@ -46,9 +46,6 @@ export const sideBarTokens = {
   'sidebar-title-color': { value: 'var(--cd-color-text-0)', category: 'color', label: '标题颜色', usage: '本库自有：header 标题色（Semi 未抽变量）' },
   'sidebar-title-size': { value: 'var(--cd-font-size-regular)', category: 'font', label: '标题字号', usage: '本库自有：header 标题字号' },
   'sidebar-title-weight': { value: 'var(--cd-font-weight-bold)', category: 'font', label: '标题字重', usage: '本库自有：header 标题字重' },
-  'sidebar-close-color': { value: 'var(--cd-color-text-2)', category: 'color', label: '关闭图标色', usage: '本库自有：关闭按钮图标色（Semi 用 Button 自带态）' },
-  'sidebar-close-hover-bg': { value: 'var(--cd-color-fill-1)', category: 'color', label: '关闭悬浮背景', usage: '本库自有：关闭按钮悬浮背景' },
-  'sidebar-close-radius': { value: 'var(--cd-border-radius-small)', category: 'radius', label: '关闭按钮圆角', usage: '本库自有：关闭按钮圆角' },
   'sidebar-body-padding': { value: '16px', category: 'spacing', label: '内容区内边距', usage: '本库自有：Container 内容区内边距' },
 
 
@@ -114,22 +111,13 @@ export const sideBarTokens = {
   'sidebar-collapse-header-content-padding-right': { value: '8px', category: 'spacing', label: '折叠项头部内容右侧内边距', usage: 'Semi $spacing-sidebar_collapse_header_content_paddingRight' },
   'sidebar-collapse-header-expand-btn-padding': { value: '4px', category: 'spacing', label: '折叠项展开按钮内边距', usage: 'Semi $spacing-sidebar_collapse_header_expand_btn-padding' },
   'radius-sidebar-collapse-item': { value: '8px', category: 'radius', label: '折叠项圆角', usage: 'Semi $radius-sidebar_collapse_item' },
+  'sidebar-collapse-code-content-padding': { value: '12px 0', category: 'spacing', label: '代码折叠内容区内边距', usage: 'Semi sidebar.scss &-code .collapse-content { padding: 12px 0px }（硬编码字面量，未抽变量）' },
   'sidebar-main-collapse-file-content-max-height': { value: '400px', category: 'height', label: '主视图文件内容最大高度', usage: 'Semi $height-sidebar_main_collapse_file_content-maxHeight' },
   'sidebar-main-collapse-code-content-max-height': { value: '200px', category: 'height', label: '主视图代码内容最大高度', usage: 'Semi $height-sidebar_main_collapse_code_content-maxHeight' },
   'sidebar-main-content-padding': { value: '12px', category: 'spacing', label: '主视图内容区内边距', usage: 'Semi $spacing-sidebar_main_content-padding' },
   'sidebar-detail-header-padding': { value: '12px', category: 'spacing', label: '详情头内边距', usage: 'Semi $spacing-sidebar_detail_header-padding' },
   'sidebar-detail-header-left-column-gap': { value: '8px', category: 'spacing', label: '详情头左侧列间距', usage: 'Semi $spacing-sidebar_detail_header_left-columnGap' },
   'sidebar-detail-header-right-column-gap': { value: '4px', category: 'spacing', label: '详情头右侧列间距', usage: 'Semi $spacing-sidebar_detail_header_right-columnGap' },
-
-  // —— 以下 Option 项为**本库自有**：本库的 Options 是图标 tab（方形命中区 + hover/激活态），
-  //    Semi 的 options 是一排 Button，尺寸/圆角/三态色全归 Button 管，其 variables.scss
-  //    里只有 $color-sidebar_options_button-text 一条文本色。——
-  'sidebar-option-size': { value: '32px', category: 'other', label: 'Option 项尺寸', usage: '本库自有：图标 tab 命中区尺寸（Semi 用 Button 无此变量）' },
-  'sidebar-option-radius': { value: 'var(--cd-border-radius-medium)', category: 'radius', label: 'Option 圆角', usage: '本库自有：图标 tab 圆角' },
-  'sidebar-option-color-hover': { value: 'var(--cd-color-text-0)', category: 'color', label: 'Option hover 色', usage: '本库自有：图标 tab hover 色' },
-  'sidebar-option-bg-hover': { value: 'var(--cd-color-fill-0)', category: 'color', label: 'Option hover 背景', usage: '本库自有：图标 tab hover 背景' },
-  'sidebar-option-color-active': { value: 'var(--cd-color-primary)', category: 'color', label: 'Option 激活色', usage: '本库自有：图标 tab 激活色' },
-  'sidebar-option-bg-active': { value: 'var(--cd-color-primary-light-default)', category: 'color', label: 'Option 激活背景', usage: '本库自有：图标 tab 激活背景' },
 
   // —— 详情返回按钮（P1）——
 
@@ -178,12 +166,7 @@ export const sideBarTokens = {
   'sidebar-annotation-footer-logo-font-size': { value: '14px', category: 'font', label: '引用底部 logo 字号', usage: 'Semi $font-sidebar_annotation_footer_logo-fontSize' },
   'sidebar-annotation-video-play-icon-font-size': { value: '12px', category: 'font', label: '引用视频播放图标大小', usage: 'Semi $font-sidebar_annotation_video_play_icon-fontSize' },
 
-  // —— 以下 annotation 相关为**本库自有**：Semi 的 annotation item 只有 cursor:pointer，
-  //    卡片观感（背景/边框/圆角/hover）与文本层级色号是本库的增强，Semi 无对应变量。——
-  'sidebar-annotation-card-bg': { value: 'var(--cd-color-fill-0)', category: 'color', label: '卡片背景', usage: '本库自有：引用卡片背景（Semi item 无背景）' },
-  'sidebar-annotation-card-bg-hover': { value: 'var(--cd-color-fill-1)', category: 'color', label: '卡片悬浮背景', usage: '本库自有：引用卡片悬浮背景' },
-  'sidebar-annotation-card-border': { value: 'var(--cd-color-border)', category: 'color', label: '卡片边框', usage: '本库自有：引用卡片边框（Semi 仅 video 子卡有边框）' },
-  'sidebar-annotation-card-radius': { value: 'var(--cd-border-radius-medium)', category: 'radius', label: '卡片圆角', usage: '本库自有：引用卡片圆角' },
+  // —— 以下 annotation 相关为**本库自有**：文本层级色号，Semi 该处内联色值未抽变量。——
   'sidebar-annotation-detail-color': { value: 'var(--cd-color-text-2)', category: 'color', label: '卡片摘要色', usage: '本库自有：文本卡摘要色（Semi 该处内联 text-0）' },
   'sidebar-annotation-detail-size': { value: 'var(--cd-font-size-secondary)', category: 'font', label: '卡片摘要字号', usage: '本库自有：文本卡摘要字号' },
   'sidebar-annotation-footer-color': { value: 'var(--cd-color-text-2)', category: 'color', label: '页脚站点色', usage: '本库自有：页脚站点名色（Semi 内联 text-0）' },
@@ -197,28 +180,15 @@ export const sideBarTokens = {
   // $font-weight-regular，没有抽成 sidebar 专属变量。
   'sidebar-code-head-icon-color': { value: 'var(--cd-color-text-1)', category: 'color', label: 'CodeContent 头部图标色', usage: '本库自有：折叠头图标色（Semi 内联 text-1）' },
   'sidebar-code-head-color': { value: 'var(--cd-color-text-0)', category: 'color', label: 'CodeContent 头部文本色', usage: '本库自有：折叠头文本色（Semi 未抽变量）' },
-  'sidebar-code-expand-hover-bg': { value: 'var(--cd-color-fill-1)', category: 'color', label: 'CodeContent 展开按钮悬浮背景', usage: '本库自有：展开按钮悬浮背景（Semi 用 Button 自带态）' },
-  'sidebar-code-body-padding': { value: 'var(--cd-spacing-tight) 0', category: 'spacing', label: 'CodeContent 内容区内边距', usage: '本库自有：折叠内容区内边距' },
 
   // —— MCPConfigure MCP 工具配置面板（P3）——
   'sidebar-mcp-gap': { value: 'var(--cd-spacing-base-tight)', category: 'spacing', label: 'MCP 区块间距', usage: 'MCPConfigure 搜索/分组区块之间纵向间距（组件消费）' },
   'sidebar-mcp-count-color': { value: 'var(--cd-color-text-2)', category: 'color', label: 'MCP 计数色', usage: 'MCPConfigure 已激活计数文本颜色（组件消费）' },
   'sidebar-mcp-count-size': { value: 'var(--cd-font-size-secondary)', category: 'font', label: 'MCP 计数字号', usage: 'MCPConfigure 已激活计数字号（组件消费）' },
-  'sidebar-mcp-item-gap': { value: 'var(--cd-spacing-tight)', category: 'spacing', label: 'MCP 列表项间距', usage: 'MCPConfigure 列表项纵向间距（组件消费）' },
-  'sidebar-mcp-item-padding': { value: 'var(--cd-spacing-tight)', category: 'spacing', label: 'MCP 列表项内边距', usage: 'MCPConfigure 单个工具项内边距（组件消费）' },
-  'sidebar-mcp-item-radius': { value: 'var(--cd-border-radius-medium)', category: 'radius', label: 'MCP 列表项圆角', usage: 'MCPConfigure 工具项圆角（组件消费）' },
-  'sidebar-mcp-item-bg': { value: 'var(--cd-color-fill-0)', category: 'color', label: 'MCP 列表项背景', usage: 'MCPConfigure 工具项背景（组件消费）' },
-  'sidebar-mcp-item-bg-hover': { value: 'var(--cd-color-fill-1)', category: 'color', label: 'MCP 列表项悬浮背景', usage: 'MCPConfigure 工具项悬浮背景（组件消费）' },
-  'sidebar-mcp-item-border': { value: 'var(--cd-color-border)', category: 'color', label: 'MCP 列表项边框', usage: 'MCPConfigure 工具项边框（组件消费）' },
-  'sidebar-mcp-icon-radius': { value: 'var(--cd-border-radius-small)', category: 'radius', label: 'MCP 图标圆角', usage: 'MCPConfigure 工具项前置图标圆角（组件消费）' },
-  'sidebar-mcp-icon-bg': { value: 'var(--cd-color-fill-1)', category: 'color', label: 'MCP 图标占位背景', usage: 'MCPConfigure 工具项前置图标占位背景（组件消费）' },
   'sidebar-mcp-label-color': { value: 'var(--cd-color-text-0)', category: 'color', label: 'MCP 工具名色', usage: 'MCPConfigure 工具名文本颜色（组件消费）' },
   'sidebar-mcp-label-size': { value: 'var(--cd-font-size-regular)', category: 'font', label: 'MCP 工具名字号', usage: 'MCPConfigure 工具名字号（组件消费）' },
   'sidebar-mcp-desc-color': { value: 'var(--cd-color-text-2)', category: 'color', label: 'MCP 描述色', usage: 'MCPConfigure 工具描述文本颜色（组件消费）' },
   'sidebar-mcp-desc-size': { value: 'var(--cd-font-size-secondary)', category: 'font', label: 'MCP 描述字号', usage: 'MCPConfigure 工具描述字号（组件消费）' },
-  'sidebar-mcp-action-color': { value: 'var(--cd-color-text-2)', category: 'color', label: 'MCP 动作按钮色', usage: 'MCPConfigure 配置/编辑动作按钮图标颜色（组件消费）' },
-  'sidebar-mcp-action-hover-bg': { value: 'var(--cd-color-fill-1)', category: 'color', label: 'MCP 动作按钮悬浮背景', usage: 'MCPConfigure 配置/编辑动作按钮悬浮背景（组件消费）' },
-  'sidebar-mcp-empty-color': { value: 'var(--cd-color-text-2)', category: 'color', label: 'MCP 空态色', usage: 'MCPConfigure 自定义空态文本颜色（组件消费）' },
   // —— FileContent 富文本查看/编辑列表（P5）——
   'sidebar-file-gap': { value: 'var(--cd-spacing-tight)', category: 'spacing', label: 'FileContent 工具栏与编辑区间距', usage: 'FileItem 工具栏与编辑区之间间距（组件消费）' },
   'sidebar-file-btn-radius': { value: 'var(--cd-border-radius-small)', category: 'radius', label: 'FileContent 工具按钮圆角', usage: 'FileItem 工具栏按钮圆角（组件消费）' },

@@ -616,8 +616,15 @@
   .cd-json-viewer :global(.cd-json-viewer-comment-line) {
     color: var(--cd-color-json-viewer-comment);
   }
-  /* 折叠图标（对齐 Semi folding-icon，opacity 0.7 transition） */
+  /* 折叠图标（对齐 Semi folding-icon，opacity 0.7 transition）。
+     内核（@douyinfe/semi-json-viewer-core）硬编码生成的 SVG path 直接写死
+     fill="var(--semi-color-tertiary)"（Semi 全局变量，非本组件 token），本库
+     全局只有 --cd-* 前缀变量、从未定义这个 --semi-* 名字，导致 fill 解析失败
+     → 图标完全透明不可见（可点击命中区还在，只是看不见，功能是通的）。
+     在此补上这一个变量名，值对齐 Semi 真实来源 --semi-color-tertiary = grey-5
+     （非本库以为的 folding-icon token=blue-7，那条 color 规则传不到 SVG fill 上）。 */
   .cd-json-viewer :global(.cd-json-viewer-folding-icon) {
+    --semi-color-tertiary: var(--cd-color-tertiary);
     color: var(--cd-color-json-viewer-folding-icon);
     opacity: 0.7;
     transition: opacity 0.8s;
@@ -632,9 +639,6 @@
     user-select: none;
     word-wrap: normal !important;
     overflow-wrap: normal !important;
-  }
-  .cd-json-viewer :global(.cd-json-viewer-line-number-container) {
-    background: var(--cd-color-json-viewer-line-number-bg);
   }
   /* 隐藏原生滚动条（对齐 Semi content-container，三端写法）。 */
   .cd-json-viewer :global(.cd-json-viewer-content-container) {

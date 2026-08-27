@@ -1,9 +1,10 @@
-// SideBarFileContent a11y + 渲染（P5 · 富文本查看/编辑）。
+// SideBarFileContent a11y + 渲染（P5 · 富文本预览列表）。
 //  - tiptap 内核 + 3 扩展动态 import，编辑区（.ProseMirror）异步挂载 → 断言前需等待。
 //  - Collapse 折叠列表：每项折叠头（含展开按钮 aria-label i18n）+ 展开区一个富文本编辑器。
-//  - 只读项：editable=false，编辑区 aria-readonly=true 且不渲染工具栏。
-//  - 可编辑项：渲染 role=toolbar 格式工具栏（撤销/标题/对齐/加粗/图片等，aria-label i18n）。
-//  - 编辑区 role=textbox / aria-multiline / aria-label 走 locale。
+//  - 对齐 Semi widget/file.tsx FileContent：渲染每项时硬编码 editable=false，只消费 content——
+//    列表恒为只读预览，FileItemProps 不含 editable/onContentChange/extensions/imgUploadProps
+//    （这些字段只属于独立的 SideBarFileItem 组件）。
+//  - 编辑区 role=textbox / aria-multiline / aria-label 走 locale，恒 aria-readonly=true。
 //  - axe 0 violations。
 // jsdom 断言静态渲染 + ARIA + axe（真实编辑/光标/图片上传留浏览器，对齐 AIChatInput skip 策略）。
 import { describe, it, expect } from 'vitest';
@@ -45,8 +46,7 @@ const files: FileItemProps[] = [
   {
     key: 'a',
     name: 'a.md',
-    editable: true,
-    content: '<p>editable content</p>',
+    content: '<p>first content</p>',
   },
   {
     key: 'b',
@@ -95,21 +95,15 @@ describe('SideBarFileContent · tiptap 编辑器挂载', () => {
     expect(first.getAttribute('aria-label')).toBe('Rich text editor');
   });
 
-  it('可编辑项渲染 role=toolbar 格式工具栏（i18n aria-label）；只读项不渲染工具栏', async () => {
+  it('对齐 Semi：列表项恒只读，不渲染格式工具栏', async () => {
     const { container } = renderWithLocale(SideBarFileContent, {
       props: { files, activeKey: ['a', 'b'] },
     });
     await flush(container, 2);
-    const toolbars = container.querySelectorAll('[role="toolbar"]');
-    // 仅可编辑项（a）有工具栏。
-    expect(toolbars.length).toBe(1);
-    expect(toolbars[0]!.getAttribute('aria-label')).toBe('Formatting toolbar');
-    // 工具栏含加粗按钮（i18n aria-label）。
-    const bold = container.querySelector('[aria-label="Bold"]');
-    expect(bold).not.toBeNull();
+    expect(container.querySelectorAll('[role="toolbar"]').length).toBe(0);
   });
 
-  it('只读项编辑区标注 aria-readonly=true', async () => {
+  it('列表项编辑区恒标注 aria-readonly=true', async () => {
     const { container } = renderWithLocale(SideBarFileContent, {
       props: { files: [files[1]!], activeKey: ['b'] },
     });
@@ -123,7 +117,7 @@ describe('SideBarFileContent · tiptap 编辑器挂载', () => {
       props: { files: [files[0]!], activeKey: ['a'] },
     });
     await flush(container, 1);
-    expect(container.querySelector('.ProseMirror')?.textContent).toContain('editable content');
+    expect(container.querySelector('.ProseMirror')?.textContent).toContain('first content');
   });
 });
 

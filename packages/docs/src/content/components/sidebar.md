@@ -11,26 +11,22 @@ brief: AI 场景的侧边信息栏，承载参考来源、代码/JSON 预览、�
 
   import BasicContainer from '../../demos/sidebar/01-basic-container.svelte';
   import basicContainerSrc from '../../demos/sidebar/01-basic-container.svelte?raw';
-  import Resizable from '../../demos/sidebar/02-resizable.svelte';
-  import resizableSrc from '../../demos/sidebar/02-resizable.svelte?raw';
-  import MainOptions from '../../demos/sidebar/03-main-options.svelte';
-  import mainOptionsSrc from '../../demos/sidebar/03-main-options.svelte?raw';
-  import DetailBack from '../../demos/sidebar/04-detail-back.svelte';
-  import detailBackSrc from '../../demos/sidebar/04-detail-back.svelte?raw';
+  import MCPConfigure from '../../demos/sidebar/06-mcp-configure.svelte';
+  import mcpConfigureSrc from '../../demos/sidebar/06-mcp-configure.svelte?raw';
   import Annotation from '../../demos/sidebar/05-annotation.svelte';
   import annotationSrc from '../../demos/sidebar/05-annotation.svelte?raw';
   import CodeContent from '../../demos/sidebar/05-code-content.svelte';
   import codeContentSrc from '../../demos/sidebar/05-code-content.svelte?raw';
   import CodeList from '../../demos/sidebar/05b-code-list.svelte';
   import codeListSrc from '../../demos/sidebar/05b-code-list.svelte?raw';
-  import MCPConfigure from '../../demos/sidebar/06-mcp-configure.svelte';
-  import mcpConfigureSrc from '../../demos/sidebar/06-mcp-configure.svelte?raw';
   import FileContent from '../../demos/sidebar/07-file-content.svelte';
   import fileContentSrc from '../../demos/sidebar/07-file-content.svelte?raw';
   import FileList from '../../demos/sidebar/07b-file-list.svelte';
   import fileListSrc from '../../demos/sidebar/07b-file-list.svelte?raw';
   import DetailContent from '../../demos/sidebar/08-detail-content.svelte';
   import detailContentSrc from '../../demos/sidebar/08-detail-content.svelte?raw';
+  import FullWorkflow from '../../demos/sidebar/09-full-workflow.svelte';
+  import fullWorkflowSrc from '../../demos/sidebar/09-full-workflow.svelte?raw';
 </script>
 
 ## 使用场景
@@ -64,27 +60,15 @@ import {
 
 ### 基础容器
 
-`SideBarContainer` 是贴视口右侧的可伸缩浮层壳：`role=dialog` + `aria-labelledby(title)`，打开移焦、焦点捕获与归还、Esc 关闭。
+`SideBarContainer` 是贴视口右侧的可伸缩浮层壳：`role=dialog` + `aria-labelledby(title)`，打开移焦、焦点捕获与归还、Esc 关闭。`motion` 控制展开/收起动画，为 `false` 时等价即时显隐；`resizable` 控制宽度是否可拖拽调整（左边缘把手，受 `minWidth`/`maxWidth` 约束，支持键盘 ←→ / Home / End），为 `false` 时退化固定宽度。
 
 <DemoBox code={basicContainerSrc}><BasicContainer /></DemoBox>
 
-### 可伸缩
+### MCP 配置
 
-`resizable` 为 true 时左边缘可拖拽调宽，受 `minWidth` / `maxWidth` 约束；把手支持键盘 ←→ / Home / End。
+`SideBarMCPConfigure` 渲染 MCP 工具配置面板：顶部用单选（RadioGroup type=button）在「内置 MCP / 自定义」间切换列表，下方搜索过滤 + 启用开关 + 配置/编辑/添加动作。自定义组为空时换成 Empty 空态 + 添加按钮。
 
-<DemoBox code={resizableSrc}><Resizable /></DemoBox>
-
-### 主视图 Options 切换
-
-`SideBar` 的 `mode='main'` 渲染顶部 Options 图标 tab 组与 `renderMainContent(activeKey)`。`activeKey` 受控，仅通过 `onActiveOptionChange` 通知，不回写。
-
-<DemoBox code={mainOptionsSrc}><MainOptions /></DemoBox>
-
-### 详情返回
-
-`mode` 非 `main` 时进入详情视图，渲染返回按钮与详情内容。`onBackWard` 支持异步，await 期间按钮禁用以防重复触发。
-
-<DemoBox code={detailBackSrc}><DetailBack /></DemoBox>
+<DemoBox code={mcpConfigureSrc}><MCPConfigure /></DemoBox>
 
 ### 参考来源
 
@@ -94,7 +78,13 @@ import {
 
 ### 代码展示
 
-`SideBarCodeItem` 展示单条代码/JSON 内容（不含折叠头）：`isJson` 为 true 走 JsonViewer，否则走 CodeHighlight。
+可通过 `SideBarCodeItem` 展示代码，`SideBarCodeItem` 基于 [JsonViewer](/components/jsonviewer) 以及 [CodeHighlight](/components/codehighlight) 实现。
+
+- `content`：内容字符串
+- `isJson`：是否为 json
+- `language`：编程语言名称，同 `CodeHighlight` 的 language
+- `jsonViewerProps`：配置其他 JsonViewer 参数
+- `codeHighlightProps`：配置其他 CodeHighlight 参数
 
 <DemoBox code={codeContentSrc}><CodeContent /></DemoBox>
 
@@ -103,18 +93,6 @@ import {
 用户可通过 `SideBarCodeContent` 展示代码列表信息（可脱离 `SideBarContainer` 独立使用）。
 
 <DemoBox code={codeListSrc}><CodeList /></DemoBox>
-
-### MCP 配置
-
-`SideBarMCPConfigure` 渲染 MCP 工具配置面板：搜索过滤、内置/自定义列表、启用开关与配置/编辑/添加动作。
-
-<Notice type="primary" title="与 Semi 的差异">
-
-Semi 用单选（radio）在「内置 / 自定义」间二选一切换列表；本库改为**并列双列表**，同屏可见两组工具，减少一次切换操作。
-
-</Notice>
-
-<DemoBox code={mcpConfigureSrc}><MCPConfigure /></DemoBox>
 
 ### 富文本编辑器
 
@@ -136,28 +114,13 @@ Semi 用单选（radio）在「内置 / 自定义」间二选一切换列表；�
 
 <DemoBox code={detailContentSrc}><DetailContent /></DemoBox>
 
+### 完整工作流
+
+综合示例：`options` 顶部四项切换 `renderMainContent` 渲染的内容（参考来源用 `SideBarAnnotationContent`、文件预览用 `SideBarFileContent`、代码预览用 `SideBarCodeContent`、浏览器为图片占位）；`SideBarCodeContent`/`SideBarFileContent` 的 `onExpand` 联动 `mode` 切到详情视图（`SideBar` 按 `detailContent` 内置渲染，`imgUploadProps` 供富文本详情插入图片），`onBackWard` 返回主视图。
+
+<DemoBox code={fullWorkflowSrc}><FullWorkflow /></DemoBox>
+
 ## API 参考
-
-### SideBar
-
-| 属性 | 说明 | 类型 | 默认值 |
-| --- | --- | --- | --- |
-| activeKey | 主视图激活的 option key（受控，不回写） | string | - |
-| class | 自定义类名 | string | - |
-| detailContent | 详情区域的内容。`mode='code'` 走 CodeHighlight / JsonViewer，`mode='file'` 走可编辑富文本 | `SideBarDetailContent` | - |
-| fileEditable | 文件内容是否可编辑 | boolean | true |
-| imgUploadProps | 图片上传相关配置属性 | `SideBarImageUploadOptions` | - |
-| mode | 展示模式，可选值为 `main`、`code`、`file` 或其他自定义字符串 | string | `main` |
-| onActiveOptionChange | 激活选项变更时的回调函数 | `(e: Event, activeKey: string) => void` | - |
-| onBackWard | 返回操作的回调函数，支持异步（await 期间按钮禁用防重复触发） | `(e: Event, mode: string) => void \| Promise<void>` | - |
-| onDetailContentCopy | 详情内容复制操作的回调函数 | `(e: MouseEvent, content: string, res: boolean) => void` | - |
-| onFileContentChange | 文件内容变更时的回调函数 | `(content: string) => void` | - |
-| options | 顶部图标 tab 组 | `SideBarOption[]` | `[]` |
-| renderDetailContent | 自定义详情区域内容；传了则完全接管，不再走内置 code/file 渲染 | `Snippet<[mode]>` | - |
-| renderDetailHeader | 自定义详情区域头部（返回按钮之后） | `Snippet<[mode, detailContent]>` | - |
-| renderMainContent | 自定义主内容区域 | `Snippet<[activeKey]>` | - |
-| renderOptionItem | 自定义单个 Option 的渲染；命中即整项接管（含 role=tab / roving tabindex） | `Snippet<[{ option, onChange }]>` | - |
-| style | 自定义内联样式 | string | - |
 
 ### SideBarContainer
 
@@ -234,6 +197,36 @@ Semi 用单选（radio）在「内置 / 自定义」间二选一切换列表；�
 | type | 卡片类型，`video` 渲染视频卡片，`text`（默认）渲染文本卡片 | `'video' \| 'text'` | `text` |
 | url | 来源地址，存在时点击在新窗口打开 | string | - |
 
+### SideBarAnnotationContent
+
+`SideBarAnnotation` 的纯内容层（对齐 Semi `Annotation.AnnotationContent` 静态属性），不含浮层壳，可脱离 `SideBarContainer` 独立使用（例如嵌入 `SideBar` 的 `renderMainContent`）。参数同 [SideBarAnnotation](#sidebarannotation) 去掉 Container 相关部分，另补：
+
+| 属性 | 说明 | 类型 | 默认值 |
+| --- | --- | --- | --- |
+| class | 自定义类名 | string | - |
+| style | 自定义内联样式 | string | - |
+
+### SideBar
+
+| 属性 | 说明 | 类型 | 默认值 |
+| --- | --- | --- | --- |
+| activeKey | 主视图激活的 option key（受控，不回写） | string | - |
+| class | 自定义类名 | string | - |
+| detailContent | 详情区域的内容。`mode='code'` 走 CodeHighlight / JsonViewer，`mode='file'` 走可编辑富文本 | `SideBarDetailContent` | - |
+| fileEditable | 文件内容是否可编辑 | boolean | true |
+| imgUploadProps | 图片上传相关配置属性 | `SideBarImageUploadOptions` | - |
+| mode | 展示模式，可选值为 `main`、`code`、`file` 或其他自定义字符串 | string | `main` |
+| onActiveOptionChange | 激活选项变更时的回调函数 | `(e: Event, activeKey: string) => void` | - |
+| onBackWard | 返回操作的回调函数，支持异步（await 期间按钮禁用防重复触发） | `(e: Event, mode: string) => void \| Promise<void>` | - |
+| onDetailContentCopy | 详情内容复制操作的回调函数 | `(e: MouseEvent, content: string, res: boolean) => void` | - |
+| onFileContentChange | 文件内容变更时的回调函数 | `(content: string) => void` | - |
+| options | 顶部图标 tab 组；每项渲染为 Button（图标 + `name` 可见文字） | `SideBarOption[]` | `[]` |
+| renderDetailContent | 自定义详情区域内容；传了则完全接管，不再走内置 code/file 渲染 | `Snippet<[mode]>` | - |
+| renderDetailHeader | 自定义详情区域头部（返回按钮之后） | `Snippet<[mode, detailContent]>` | - |
+| renderMainContent | 自定义主内容区域 | `Snippet<[activeKey]>` | - |
+| renderOptionItem | 自定义单个 Option 的渲染；命中即整项接管（含 role=tab / roving tabindex） | `Snippet<[{ option, onChange }]>` | - |
+| style | 自定义内联样式 | string | - |
+
 ### SideBarCodeContent
 
 | 属性 | 说明 | 类型 | 默认值 |
@@ -281,14 +274,13 @@ Semi 用单选（radio）在「内置 / 自定义」间二选一切换列表；�
 
 #### FileItemProps
 
+列表恒为只读预览（对齐 Semi widget/file.tsx FileContent：渲染每项时硬编码 `editable={false}`），不支持 `editable`/`onContentChange`/`extensions`/`imgUploadProps`——这些能力只属于独立的 [SideBarFileItem](#sidebarfileitem)。
+
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
-| content | 编辑区域的文本/内容（HTML） | string | - |
-| editable | 是否可编辑 | boolean | false |
-| extensions | 追加的 tiptap 扩展 | `Extension[]` | - |
+| content | 富文本内容（HTML） | string | - |
 | key | 唯一标识 | string | - |
 | name | 折叠头显示名 | string | - |
-| onContentChange | 内容变更回调 | `(html: string) => void` | - |
 
 ### SideBarFileItem
 

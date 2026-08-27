@@ -4,7 +4,7 @@ import type { Snippet } from 'svelte';
 export interface SideBarOption {
   /** 图标内容。 */
   icon?: Snippet;
-  /** 可访问名 / tooltip 文案（图标 tab 的无障碍名来源）。 */
+  /** 按钮可见文字（对齐 Semi name: ReactNode，渲染在图标右侧，同时兜底作为无障碍名）。 */
   name: string;
   /** 唯一 key。 */
   key: string;

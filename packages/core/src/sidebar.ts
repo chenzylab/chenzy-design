@@ -43,10 +43,12 @@ export function clampSideBarWidth(
  * See specs/components/show/SideBar.spec.md §3/§4.
  */
 export interface McpOptionCore {
-  /** Unique identity + filter/label fallback. */
+  /** Unique identity. */
   value: string;
-  /** Human-readable label (primary filter target). */
+  /** Human-readable label (filter target). */
   label?: string;
+  /** Description (also a filter target, aligning Semi baseFilter). */
+  desc?: string;
   /** Whether the tool is enabled. */
   active?: boolean;
   /** Whether the enable switch is locked (preset tools). */
@@ -55,7 +57,8 @@ export interface McpOptionCore {
 
 /**
  * Default case-insensitive filter: match the trimmed input against `label`
- * (falling back to `value`). Empty input matches everything. A custom
+ * OR `desc` (never `value` — aligning Semi's `baseFilter`, semi-foundation/
+ * sidebar/utils.ts). Empty input matches everything. A custom
  * `filter(input, option)` predicate takes precedence when provided.
  */
 export function filterMcpOptions<T extends McpOptionCore>(
@@ -66,7 +69,9 @@ export function filterMcpOptions<T extends McpOptionCore>(
   const q = input.trim().toLowerCase();
   if (filter) return options.filter((o) => filter(input, o));
   if (!q) return [...options];
-  return options.filter((o) => (o.label ?? o.value).toLowerCase().includes(q));
+  return options.filter(
+    (o) => (o.label ?? '').toLowerCase().includes(q) || (o.desc ?? '').toLowerCase().includes(q),
+  );
 }
 
 /**

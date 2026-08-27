@@ -20,6 +20,8 @@
     clampSideBarWidth,
     type ResizeDragController,
   } from '@chenzy-design/core';
+  import { IconClose } from '@chenzy-design/icons';
+  import Button from '../button/Button.svelte';
   import { useLocale } from '../locale-provider/index.js';
   import { acquireZIndex } from '../modal/z-stack.js';
 
@@ -230,17 +232,19 @@
   // 卸载兜底：拖拽中卸载时解绑遗留全局监听（红线 #3）。
   $effect(() => () => activeDrag?.destroy());
 
-  // 键盘：把手聚焦后 ←→ 调宽（RTL 镜像）。
+  // 键盘：把手聚焦后 ←→ 调宽（RTL 镜像）。方向须跟鼠标拖拽语义一致——LTR 下面板贴右、
+  // 把手在左边缘，向左移动把手（ArrowLeft）把左边缘推得更靠左 = 加宽；向右移动（ArrowRight）
+  // 把左边缘往右收 = 减宽（对齐 handlePointerDown 213-214 行注释：左边缘把手向左拖动加宽）。
   const KEYBOARD_STEP = 10;
   function handleKeydown(event: KeyboardEvent): void {
     const rtl = isRtl();
     let dw = 0;
     switch (event.key) {
       case 'ArrowRight':
-        dw = rtl ? -KEYBOARD_STEP : KEYBOARD_STEP;
+        dw = rtl ? KEYBOARD_STEP : -KEYBOARD_STEP;
         break;
       case 'ArrowLeft':
-        dw = rtl ? KEYBOARD_STEP : -KEYBOARD_STEP;
+        dw = rtl ? -KEYBOARD_STEP : KEYBOARD_STEP;
         break;
       case 'Home':
         dw = (minPx ?? 0) - readWidth();
@@ -331,21 +335,18 @@
             <span></span>
           {/if}
           {#if showClose}
-            <button
-              type="button"
+            <!-- Semi 用 Button(theme=borderless type=tertiary size=small) + 具名 IconClose
+                 （container/index.tsx），本库原为裸 <button> + 手写 svg。 -->
+            <Button
               class="cd-sidebar-container-header-closeBtn"
+              theme="borderless"
+              type="tertiary"
+              size="small"
               aria-label={closeLabel}
               onclick={(e) => emitCancel(e)}
             >
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                <path
-                  d="M3 3l10 10M13 3L3 13"
-                  stroke="currentColor"
-                  stroke-width="1.5"
-                  stroke-linecap="round"
-                />
-              </svg>
-            </button>
+              {#snippet icon()}<IconClose />{/snippet}
+            </Button>
           {/if}
         </header>
       {/if}
@@ -470,26 +471,11 @@
     text-overflow: ellipsis;
     white-space: nowrap;
   }
-  .cd-sidebar-container-header-closeBtn {
-    display: inline-flex;
+  /* Semi sidebar.scss:49-51：&-closeBtn 只设 flex-shrink（视觉全部来自 Button 组件自身
+     size=small + theme=borderless + type=tertiary），本库原来在裸 button 上手造了整套
+     尺寸/圆角/hover/focus 去模拟 Button 视觉——现在真用 Button 组件了，这些都是多余的。 */
+  :global(.cd-sidebar-container-header-closeBtn) {
     flex-shrink: 0;
-    align-items: center;
-    justify-content: center;
-    inline-size: 28px;
-    block-size: 28px;
-    padding: 0;
-    border: none;
-    border-radius: var(--cd-sidebar-close-radius);
-    background: transparent;
-    color: var(--cd-sidebar-close-color);
-    cursor: pointer;
-  }
-  .cd-sidebar-container-header-closeBtn:hover {
-    background: var(--cd-sidebar-close-hover-bg);
-  }
-  .cd-sidebar-container-header-closeBtn:focus-visible {
-    outline: none;
-    box-shadow: var(--cd-focus-ring);
   }
   .cd-sidebar-container-content {
     flex: 1;

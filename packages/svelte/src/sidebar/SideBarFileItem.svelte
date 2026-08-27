@@ -114,6 +114,14 @@
       isAlignJustify: ed.isActive({ textAlign: 'justify' }),
       canUndo: ed.can().chain().undo().run(),
       canRedo: ed.can().chain().redo().run(),
+      // 对齐 Semi useEditorState：Bold/Italic/Strike/Code 各自用 can().chain().toggleX().run()
+      // 动态检测——tiptap schema 里 code mark 与其他 mark 互斥（excludes），光标在行内代码内时
+      // 这些命令天然返回 false。本库原来这四个按钮 disabled 恒传 false，没读这几个字段，
+      // 导致选中行内代码后其余格式按钮不会联动禁用。
+      canBold: ed.can().chain().toggleBold().run(),
+      canItalic: ed.can().chain().toggleItalic().run(),
+      canStrike: ed.can().chain().toggleStrike().run(),
+      canCode: ed.can().chain().toggleCode().run(),
     };
   }
 
@@ -287,22 +295,28 @@
     {#snippet toolBtn(
       label: string,
       onclick: () => void,
-      active?: boolean,
-      disabled?: boolean,
-      icon?: Snippet,
+      active: boolean | undefined,
+      disabled: boolean | undefined,
+      icon: Snippet,
     )}
-      <button
-        type="button"
-        class="cd-sidebar-file-menu-bar-btn"
-        class:cd-sidebar-file-item-btn-active={active}
+      <!-- 对齐 Semi ConfigureButton：真用 Button(theme=borderless type=tertiary)，
+           active 只挂 -menu-bar-btn-active 类（本库原来是裸 <button> 模拟，active
+           态背景色规则 &.semi-button-tertiary.semi-button-borderless 依赖真实 Button
+           的 class 才能命中，裸 button 上这条规则永远不生效）。 -->
+      <Button
+        theme="borderless"
+        type="tertiary"
+        class={['cd-sidebar-file-menu-bar-btn', active && 'cd-sidebar-file-menu-bar-btn-active']
+          .filter(Boolean)
+          .join(' ')}
         aria-label={label}
-        aria-pressed={active ?? undefined}
+        aria-pressed={active ?? false}
         title={label}
-        {disabled}
+        disabled={disabled ?? false}
         {onclick}
-      >
-        {#if icon}{@render icon()}{/if}
-      </button>
+        icon={iconAdapter}
+      />
+      {#snippet iconAdapter()}{@render icon()}{/snippet}
     {/snippet}
 
     <!--
@@ -344,18 +358,25 @@
       {@render toolBtn(t('SideBar.orderedList'), () => chain()?.toggleOrderedList().run(), toolbarState.isOrderedList, false, orderedIcon)}
       <!-- 对齐 Semi：这里用 setBlockquote（不是 toggle）。 -->
       {@render toolBtn(t('SideBar.blockquote'), () => chain()?.setBlockquote().run(), toolbarState.isBlockquote, false, quoteIcon)}
-      <!-- 代码块：Semi 该按钮无图标，直接显示 "CB" 文字 + -btn-codeblock 类。 -->
-      <button
-        type="button"
-        class="cd-sidebar-file-menu-bar-btn cd-sidebar-file-menu-bar-btn-codeblock"
-        class:cd-sidebar-file-menu-bar-btn-active={toolbarState.isCodeBlock}
+      <!-- 代码块：Semi 该按钮无图标，直接显示 "CB" 文字 + -btn-codeblock 类；
+           同样真用 Button(theme=borderless type=tertiary)（原为裸 button）。 -->
+      <Button
+        theme="borderless"
+        type="tertiary"
+        class={[
+          'cd-sidebar-file-menu-bar-btn',
+          'cd-sidebar-file-menu-bar-btn-codeblock',
+          toolbarState.isCodeBlock && 'cd-sidebar-file-menu-bar-btn-active',
+        ]
+          .filter(Boolean)
+          .join(' ')}
         aria-label={t('SideBar.codeBlock')}
         aria-pressed={toolbarState.isCodeBlock}
         title={t('SideBar.codeBlock')}
         onclick={() => chain()?.toggleCodeBlock().run()}
       >
         CB
-      </button>
+      </Button>
       {@render toolBtn(t('SideBar.divider'), () => chain()?.setHorizontalRule().run(), false, false, minusIcon)}
       <Divider layout="vertical" />
 
@@ -365,17 +386,22 @@
       {@render toolBtn(t('SideBar.alignJustify'), () => chain()?.setTextAlign('justify').run(), toolbarState.isAlignJustify, false, alignJustifyIcon)}
       <Divider layout="vertical" />
 
-      {@render toolBtn(t('SideBar.bold'), () => chain()?.toggleBold().run(), toolbarState.isBold, false, boldIcon)}
-      {@render toolBtn(t('SideBar.italic'), () => chain()?.toggleItalic().run(), toolbarState.isItalic, false, italicIcon)}
-      {@render toolBtn(t('SideBar.strike'), () => chain()?.toggleStrike().run(), toolbarState.isStrike, false, strikeIcon)}
-      {@render toolBtn(t('SideBar.code'), () => chain()?.toggleCode().run(), toolbarState.isCode, false, codeIcon)}
+      {@render toolBtn(t('SideBar.bold'), () => chain()?.toggleBold().run(), toolbarState.isBold, !toolbarState.canBold, boldIcon)}
+      {@render toolBtn(t('SideBar.italic'), () => chain()?.toggleItalic().run(), toolbarState.isItalic, !toolbarState.canItalic, italicIcon)}
+      {@render toolBtn(t('SideBar.strike'), () => chain()?.toggleStrike().run(), toolbarState.isStrike, !toolbarState.canStrike, strikeIcon)}
+      {@render toolBtn(t('SideBar.code'), () => chain()?.toggleCode().run(), toolbarState.isCode, !toolbarState.canCode, codeIcon)}
 
       <!--
         链接弹层（对齐 Semi）：开合时 set/unset selectionMark 保持选区可见
         （否则输入框抢焦点后编辑区选区就看不见了）。
       -->
+      <!-- 对齐 Semi trigger="click"（本库原为 trigger="custom"）：click 模式下点击外部/
+           Esc 会自动关闭并回调 onVisibleChange(false)，custom 模式完全不监听这些，
+           必须点确认/取消按钮才能关——这就是"弹出层消失逻辑没对齐"的根因。click 模式下
+           触发器点击由 Dropdown 内部 onTriggerClick 自动 setOpen(!isOpen)，故触发按钮
+           的 onclick 不能再手写 toggle（会和内部逻辑重复触发变成两次翻转）。 -->
       <Dropdown
-        trigger="custom"
+        trigger="click"
         position="bottomStart"
         className="cd-sidebar-file-menu-bar-link-dropdown"
         visible={linkVisible}
@@ -412,13 +438,7 @@
             </Button>
           </div>
         {/snippet}
-        {@render toolBtn(
-          t('SideBar.link'),
-          () => handleLinkVisibleChange(!linkVisible),
-          toolbarState.isLink,
-          false,
-          linkIcon,
-        )}
+        {@render toolBtn(t('SideBar.link'), () => {}, toolbarState.isLink, false, linkIcon)}
       </Dropdown>
       <Divider layout="vertical" />
 
@@ -500,37 +520,14 @@
     align-items: center;
     justify-content: center;
   }
-  .cd-sidebar-file-menu-bar-btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    inline-size: 26px;
-    block-size: 26px;
-    padding: 0;
-    border: none;
-    border-radius: var(--cd-sidebar-file-btn-radius);
-    background: transparent;
-    color: var(--cd-sidebar-file-btn-color);
-    cursor: pointer;
-    transition:
-      background-color var(--cd-motion-duration-fast, 0.1s) var(--cd-motion-ease-standard, ease),
-      color var(--cd-motion-duration-fast, 0.1s) var(--cd-motion-ease-standard, ease);
-  }
-  .cd-sidebar-file-menu-bar-btn:hover:not(:disabled) {
-    background: var(--cd-sidebar-file-btn-hover-bg);
-    color: var(--cd-sidebar-file-btn-color-hover);
-  }
-  .cd-sidebar-file-item-btn-active {
+  /* 对齐 Semi sidebar.scss:562-577：真用 Button(theme=borderless type=tertiary) 后，
+     基础外观（尺寸/圆角/hover/disabled/focus）全归 Button 自身，本库不再重复定义
+     （原来在裸 button 上手造了整套模拟 Button 的视觉）。active 态只覆盖背景色，且必须
+     叠加 .cd-button-tertiary.cd-button-borderless 两个真实类名才生效（对齐 Semi
+     &.semi-button-tertiary.semi-button-borderless 的挂载方式）——Semi 这里不改文字色，
+     本库原来自造了 color-active，也删除。 */
+  :global(.cd-sidebar-file-menu-bar-btn-active.cd-button-tertiary.cd-button-borderless) {
     background: var(--cd-sidebar-file-btn-active-bg);
-    color: var(--cd-sidebar-file-btn-color-active);
-  }
-  .cd-sidebar-file-menu-bar-btn:disabled {
-    opacity: 0.4;
-    cursor: not-allowed;
-  }
-  .cd-sidebar-file-menu-bar-btn:focus-visible {
-    outline: none;
-    box-shadow: var(--cd-focus-ring);
   }
   .cd-sidebar-file-editor {
     color: var(--cd-sidebar-file-editor-color);
