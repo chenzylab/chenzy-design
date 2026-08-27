@@ -12,7 +12,7 @@
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "bin": {
-    "chenzy-mcp": "./dist/stdio.js",
+    "mcp": "./dist/stdio.js",
     "chenzy-mcp-http": "./dist/http.js"
   },
   "exports": {

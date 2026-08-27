@@ -50,9 +50,9 @@
 
   // 全局文档分组（对齐 Semi 左侧「开始 / 设计协作 / 体验增强」三分组，src/utils/category.js
   // start/advanced/experience；顺序与文案见对应 semi-design content/*/index.md frontmatter）。
-  // 本库暂无 Semi 的 mcp-skills / dark-mode / design-to-code / design-source 独立页面，分组内
-  // 仅列出本库已有页面，不新增内容。icon：对齐 Semi content frontmatter 的 doc-* 图标（本库
-  // icons-lab 具名图标名）。
+  // start 分组内 MCP / Skills 是本库特有页面（Semi 无对应项，AI 集成方式不同）；本库暂无 Semi
+  // 的 dark-mode / design-to-code / design-source 独立页面，其余分组仅列出本库已有页面，不
+  // 新增内容。icon：对齐 Semi content frontmatter 的 doc-* 图标（本库 icons-lab 具名图标名）。
   const guideGroups = [
     {
       titleKey: 'group.start',
