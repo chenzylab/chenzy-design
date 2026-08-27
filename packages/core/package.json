@@ -16,10 +16,12 @@
     }
   },
   "files": [
-    "dist"
+    "dist",
+    "src",
+    "!src/*.test.ts"
   ],
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "build": "tsc -p tsconfig.json && node scripts/clean-dist.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {

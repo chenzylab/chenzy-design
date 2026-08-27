@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "meta": "pnpm --filter @chenzy-design/svelte build:meta",
+    "meta": "pnpm --filter @chenzy-design/svelte build:meta && tsx scripts/build-skills-zip.ts",
     "predev": "pnpm run meta",
     "dev": "vite dev",
     "prebuild": "pnpm run meta",
@@ -38,9 +38,11 @@
     "@unocss/preset-icons": "^66.7.2",
     "@unocss/preset-typography": "66.7.2",
     "@unocss/reset": "66.7.2",
+    "fflate": "^0.8.3",
     "lottie-web": "^5.13.0",
     "mdsvex": "^0.11.2",
     "shiki": "^1.29.2",
+    "tsx": "^4.22.4",
     "unocss": "^66.7.2"
   }
 }
