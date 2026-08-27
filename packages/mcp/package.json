@@ -1,6 +1,6 @@
 {
   "name": "@chenzy-design/mcp",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "chenzy-design MCP Server — Model Context Protocol server for chenzy-design components, docs and source code",
   "type": "module",
   "license": "MIT",
