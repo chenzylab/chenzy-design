@@ -1,6 +1,7 @@
 <script>
   import { base } from '$app/paths';
   import Notice from '$lib/components/Notice.svelte';
+  import SkillsWriter from '$lib/components/SkillsWriter.svelte';
 </script>
 
 # MCP / Skills
@@ -73,11 +74,18 @@ claude mcp add chenzy-mcp -- npx -y @chenzy-design/mcp
 
 ### HTTP 模式（可选）
 
-需要以 HTTP（Streamable）方式部署时，包内除默认的 stdio 入口外还提供了独立的 `chenzy-mcp-http` 可执行文件。因为一个包同时有两个可执行入口，`npx` 无法仅凭包名判断该运行哪一个，必须用 `--package=` 显式指定：
+需要以 HTTP（Streamable）方式部署时，包内除默认的 stdio 入口（`mcp`）外还提供了独立的 `chenzy-mcp-http` 可执行文件。`npx -y @chenzy-design/mcp` 只会解析到默认入口，运行 `chenzy-mcp-http` 必须用 `--package=` 显式指定包名：
 
 ```bash
 npx --package=@chenzy-design/mcp -- chenzy-mcp-http --port 3000
 ```
+
+可选参数：
+
+| 参数 | 说明 |
+| --- | --- |
+| `--port`, `-p` | 监听端口，默认 `3000` |
+| `--host`, `-h` | 监听地址，逗号分隔可传多个（如 `127.0.0.1,::1`），默认 `::`（IPv6 任意地址，自动兼容 IPv4） |
 
 端点：`POST /mcp`（消息）、`GET /health`（健康检查）。
 
@@ -97,9 +105,11 @@ npx --package=@chenzy-design/mcp -- chenzy-mcp-http --port 3000
 
 Skills 是三个 markdown 文件（SKILL.md / WORKFLOWS.md / BEST_PRACTICES.md），告诉 AI 如何用 MCP 工具查询本库、以及本库的关键使用约定（Svelte 5 runes、受控组件不用 `bind:` 等）。
 
-<a href="{base}/chenzy-design-skills.zip" download>下载 chenzy-design-skills.zip</a>
+下面的安装面板可以帮助你一键安装 Skills 到你的项目中。选中你使用的编程工具，点击「添加到我的项目」，选择目标目录，即可完成安装。
 
-解压到对应目录即可生效：
+<SkillsWriter />
+
+如果你的编程工具不在列表中，或浏览器不支持一键安装，可以手动下载 <a href="{base}/chenzy-design-skills.zip" download>chenzy-design-skills.zip</a>，参考下表将压缩包解压到对应目录：
 
 | 客户端 | 目录 |
 | --- | --- |
