@@ -1,5 +1,11 @@
 # @chenzy-design/theme-cli
 
+## 1.0.2
+
+### Patch Changes
+
+- @chenzy-design/tokens@1.0.2
+
 ## 1.0.1
 
 ### Patch Changes
