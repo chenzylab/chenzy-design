@@ -1,5 +1,13 @@
 # @chenzy-design/playground
 
+## 0.0.9
+
+### Patch Changes
+
+- @chenzy-design/svelte@1.0.2
+- @chenzy-design/tokens@1.0.2
+- @chenzy-design/unocss-preset@1.0.2
+
 ## 0.0.8
 
 ### Patch Changes

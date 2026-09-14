@@ -1,5 +1,15 @@
 # @chenzy-design/svelte
 
+## 1.0.2
+
+### Patch Changes
+
+- Updated dependencies [e547880]
+  - @chenzy-design/core@1.0.2
+  - @chenzy-design/locale@1.0.2
+  - @chenzy-design/tokens@1.0.2
+  - @chenzy-design/icons@1.0.2
+
 ## 1.0.1
 
 ### Patch Changes
