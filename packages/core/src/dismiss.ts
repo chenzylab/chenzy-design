@@ -35,6 +35,40 @@ export function isInsideAnyOverlay(target: Node | null): boolean {
   return false;
 }
 
+/**
+ * 全局 Escape 栈：多个 useDismiss 实例各自独立挂 document 级 keydown 监听器时，
+ * 互不知道彼此存在——嵌套场景（如 Modal 内一个 DatePicker）按一次 Escape，两个
+ * 监听器会同时响应，内层浮层和外层浮层一起关闭，而非只关最上层的那一个。
+ *
+ * 用挂载顺序（后挂载 = 逻辑上更内层/更上层）代替真实 DOM 事件冒泡：只维护一个
+ * 全局 keydown 监听器，按栈顶（最后挂载的实例）优先分发；命中栈顶后不再继续下发
+ * 给更早挂载的实例。escape=false 的实例不入栈（本就不消费 Escape）。
+ */
+const escapeStack: Array<(e: KeyboardEvent) => void> = [];
+let escapeListenerAttached = false;
+
+function globalEscapeListener(e: KeyboardEvent): void {
+  if (e.key !== 'Escape') return;
+  const top = escapeStack[escapeStack.length - 1];
+  top?.(e);
+}
+
+function pushEscapeHandler(handler: (e: KeyboardEvent) => void): () => void {
+  escapeStack.push(handler);
+  if (!escapeListenerAttached) {
+    document.addEventListener('keydown', globalEscapeListener);
+    escapeListenerAttached = true;
+  }
+  return () => {
+    const i = escapeStack.indexOf(handler);
+    if (i !== -1) escapeStack.splice(i, 1);
+    if (escapeStack.length === 0 && escapeListenerAttached) {
+      document.removeEventListener('keydown', globalEscapeListener);
+      escapeListenerAttached = false;
+    }
+  };
+}
+
 /** 关闭来源：Esc 键 / 外部点击 */
 export type DismissReason = 'esc' | 'outsideClick';
 
@@ -77,9 +111,6 @@ export function useDismiss(
     return false;
   }
 
-  function onKeydown(e: KeyboardEvent): void {
-    if (escape && e.key === 'Escape') onDismiss('esc', e);
-  }
   function onPointer(e: PointerEvent): void {
     if (!outsideClick) return;
     if (isInside(e.target as Node)) return;
@@ -92,11 +123,13 @@ export function useDismiss(
     onDismiss('outsideClick', e);
   }
 
-  document.addEventListener('keydown', onKeydown);
+  // Escape 走全局栈（见上），只有栈顶（最后挂载）的实例响应，避免嵌套浮层
+  // 一次 Escape 同时关闭多层。escape=false 的实例不入栈。
+  const popEscape = escape ? pushEscapeHandler((e) => onDismiss('esc', e)) : undefined;
   document.addEventListener('pointerdown', onPointer, true);
 
   return () => {
-    document.removeEventListener('keydown', onKeydown);
+    popEscape?.();
     document.removeEventListener('pointerdown', onPointer, true);
   };
 }
