@@ -2,3 +2,5 @@ packages:
   - 'packages/*'
 allowBuilds:
   esbuild: true
+overrides:
+  unocss: ^66.10.2

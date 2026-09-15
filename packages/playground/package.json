@@ -13,5 +13,8 @@
     "@chenzy-design/svelte": "workspace:*",
     "@chenzy-design/tokens": "workspace:*",
     "@chenzy-design/unocss-preset": "workspace:*"
+  },
+  "devDependencies": {
+    "unocss": "^66.10.2"
   }
 }
