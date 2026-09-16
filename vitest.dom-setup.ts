@@ -22,6 +22,23 @@ if (typeof globalThis.ResizeObserver === 'undefined') {
   };
 }
 
+// jsdom 缺口 polyfill：jsdom 不做真实布局，document.documentElement.clientWidth/
+// clientHeight 恒为 0（真实浏览器里是视口内容区，排除经典滚动条）。use-floating 用
+// clientWidth/clientHeight 而非 window.innerWidth/innerHeight 做溢出边界判断（对齐
+// Semi tooltip #3354，避免经典滚动条下弹层贴边被遮挡），但 jsdom 的 innerWidth/
+// innerHeight 有可靠的模拟值（默认 1024×768）而 clientWidth/clientHeight 没有。
+// 镜像过去，让浮层定位测试在 jsdom 下算出与真实浏览器一致的可用空间。
+if (typeof document !== 'undefined' && document.documentElement.clientWidth === 0) {
+  Object.defineProperty(document.documentElement, 'clientWidth', {
+    configurable: true,
+    get: () => window.innerWidth,
+  });
+  Object.defineProperty(document.documentElement, 'clientHeight', {
+    configurable: true,
+    get: () => window.innerHeight,
+  });
+}
+
 afterEach(() => {
   cleanup();
   // 兜底：清空 body，移除 portal（Modal 等 appendChild 到 body 的节点）

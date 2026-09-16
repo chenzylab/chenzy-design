@@ -110,10 +110,15 @@
     text-transform: none;
     text-rendering: optimizeLegibility;
     fill: currentColor;
-  }
-  .cd-icon :global(svg) {
+    /* 尺寸算在容器上（非 svg 自身），svg 用 100% 继承。Safari 对内联 svg 以 em
+       指定尺寸存在渲染偏差（对齐 Semi radio #3350），容器用 em、svg 用 100% 可规避。 */
     width: 1em;
     height: 1em;
+  }
+  .cd-icon :global(svg) {
+    display: block;
+    width: 100%;
+    height: 100%;
   }
   .cd-icon-extra-small {
     font-size: 8px;
