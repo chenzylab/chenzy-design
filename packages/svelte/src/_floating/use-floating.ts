@@ -194,7 +194,15 @@ export function useFloating(
     const result = computePosition({
       triggerRect,
       popupRect,
-      viewport: { width: window.innerWidth, height: window.innerHeight },
+      // clientWidth/clientHeight (viewport content box, excludes the scrollbar)
+      // rather than window.innerWidth/innerHeight (includes it): under a
+      // classic (non-overlay) scrollbar, innerWidth overstates the space
+      // actually available, letting an edge-pinned popup sit partly under the
+      // scrollbar. Aligns Semi tooltip #3354.
+      viewport: {
+        width: document.documentElement.clientWidth,
+        height: document.documentElement.clientHeight,
+      },
       placement,
       offset,
       autoAdjust,
