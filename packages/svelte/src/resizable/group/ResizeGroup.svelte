@@ -51,6 +51,12 @@
   let activeMove: ((e: PointerEvent) => void) | null = null;
   let activeUp: ((e: PointerEvent) => void) | null = null;
 
+  // 首次 initSpace 时 group 是否可测量（非 display:none）。若挂载时容器隐藏，
+  // offsetWidth/offsetHeight 恒为 0，itemPercent 从未被分配；容器变可见后需补一次
+  // 测量，但只在"首次变可测量"时触发，避免覆盖用户后续手动拖拽的结果（对齐 Semi #3336）。
+  let sizeInitialized = false;
+  let resizeObserver: ResizeObserver | null = null;
+
   function groupSize(): number {
     if (!groupEl) return 0;
     return direction === 'horizontal' ? groupEl.offsetWidth : groupEl.offsetHeight;
@@ -71,6 +77,7 @@
   // 首帧测量：按 default/min/max 分配百分比，写入 flex-basis。延后一帧纳入 cleanup。
   function initSpace(): void {
     const parent = groupSize();
+    sizeInitialized = parent > 0;
     if (parent <= 0) return;
     const its = orderedItems();
     const hs = orderedHandlers();
@@ -151,8 +158,19 @@
     const id = setTimeout(() => {
       initSpace();
     }, 0);
+
+    // display:none 容器变可见后补一次测量（仅首次变可测量时触发一次）。
+    if (groupEl && typeof ResizeObserver !== 'undefined') {
+      resizeObserver = new ResizeObserver(() => {
+        if (!sizeInitialized && groupSize() > 0) initSpace();
+      });
+      resizeObserver.observe(groupEl);
+    }
+
     return () => {
       clearTimeout(id);
+      resizeObserver?.disconnect();
+      resizeObserver = null;
       if (activeMove) document.removeEventListener('pointermove', activeMove);
       if (activeUp) document.removeEventListener('pointerup', activeUp);
     };
