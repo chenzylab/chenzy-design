@@ -33,6 +33,6 @@
     "a11y:contrast": "tsx src/contrast-check.ts"
   },
   "devDependencies": {
-    "tsx": "^4.23.13"
+    "tsx": "^4.23.15"
   }
 }

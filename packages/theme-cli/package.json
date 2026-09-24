@@ -27,6 +27,6 @@
   },
   "dependencies": {
     "@chenzy-design/tokens": "workspace:*",
-    "tsx": "^4.23.13"
+    "tsx": "^4.23.15"
   }
 }
