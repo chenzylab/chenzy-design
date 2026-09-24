@@ -2,6 +2,10 @@
 
 [English](./README.md) · **简体中文**
 
+[![CI](https://github.com/chenzylab/chenzy-design/actions/workflows/ci.yml/badge.svg)](https://github.com/chenzylab/chenzy-design/actions/workflows/ci.yml)
+[![npm](https://img.shields.io/npm/v/@chenzy-design/svelte.svg)](https://www.npmjs.com/package/@chenzy-design/svelte)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](./CONTRIBUTING.md)
 
 对标 Semi Design 的高质量 Svelte 组件库。无障碍 · 主题化 · i18n · 多框架适配 · 性能基准 · AI 友好。
 
@@ -37,6 +41,16 @@ pnpm add @chenzy-design/svelte @chenzy-design/tokens
 
 要求 Svelte 5（runes）。暗色模式：给 `<html>` 设 `data-theme="dark"`。完整接入见 [`packages/svelte/README.md`](./packages/svelte/README.md)。
 
+## 配合 AI Agent 使用（MCP）
+
+`@chenzy-design/mcp` 把组件文档、源码、Props 表暴露给任意支持 MCP 的客户端（Claude Code、Cursor 等），让 agent 能查真实的 API/DOM/token 细节，而非凭空猜测。
+
+```bash
+claude mcp add chenzy-mcp -- npx -y @chenzy-design/mcp
+```
+
+也支持 HTTP（Streamable）模式：`npx --package=@chenzy-design/mcp -- chenzy-mcp-http --port 3000`。完整工具列表与一键安装 Skills 见 [MCP/Skills 指南](./packages/docs/src/routes/(app)/guide/mcp-skills/+page.md)。
+
 ## 技术栈
 Svelte 5 · Vite · UnoCSS · pnpm monorepo · TypeScript(strict)
 
@@ -45,13 +59,16 @@ Svelte 5 · Vite · UnoCSS · pnpm monorepo · TypeScript(strict)
 packages/
   tokens/         @chenzy-design/tokens          设计令牌（源真相，三层）
   unocss-preset/  @chenzy-design/unocss-preset   token → UnoCSS theme
+  theme-cli/      @chenzy-design/theme-cli       CLI：主题配置 → theme.css（品牌包）
   core/           @chenzy-design/core            headless 原语（框架无关）
   locale/         @chenzy-design/locale          i18n 语言包与格式化
   icons/          @chenzy-design/icons           图标
   svelte/         @chenzy-design/svelte          Svelte 组件实现（主包）
+  mcp/            @chenzy-design/mcp             MCP server：给 AI agent 提供组件文档/源码
   docs/           文档/演示站（私有）
+  playground/     本地调试用脚手架（私有）
 ```
-依赖方向：`tokens → unocss-preset → core → svelte`；`icons`/`locale` 被 `svelte` 依赖。
+依赖方向：`tokens → unocss-preset → core → svelte`；`icons`/`locale` 被 `svelte` 依赖；`mcp` 读取 `svelte` 构建产物中的元数据/文档。
 
 ## 开发
 ```bash
@@ -72,13 +89,17 @@ pnpm test:visual:update   # 改动组件外观后更新基线
 
 > ⚠️ 基线带平台后缀（如 `-chromium-darwin.png`）。字体抗锯齿在 macOS / Linux 间有差异，跨平台基线不通用——基线当前在 macOS 生成，**未接入 CI 门禁**（接入需在 Linux/Docker 生成对应基线）。本地作为外观回归工具使用。
 
-## 提交与发版
+## 贡献
+
+改动一律走 **Pull Request** —— `main` 分支受保护，须经审核并通过 CI 才能合并。完整流程见 [`CONTRIBUTING.md`](./CONTRIBUTING.md)。
+
 - 提交信息遵循 Conventional Commits，且**不得包含任何 AI/助手字样**（由 `.githooks/commit-msg` 强制，规则见 AGENTS.md §7.1）。
 - 需发版的改动附 changeset：`pnpm changeset`；维护者 `pnpm version-packages` → `pnpm release`。
 - 依赖更新由 **Dependabot** 每周自动开 PR；PR 由 **labeler** 按改动路径自动打标签。
 
 ## 当前进度
 - [x] M0 基建：monorepo、tokens 三层体系（暗色 + reduced-motion）、unocss-preset、core 原语、locale（zh_CN / en_US）、CI/质量门禁
-- [x] **69 个组件**实现（基础 / 输入 / 导航 / 展示 / 反馈 / 其他），含 meta、token、a11y
+- [x] **84 个组件**实现（基础 / 输入 / 导航 / 展示 / 反馈 / 其他），含 meta、token、a11y
 - [x] 文档站（SvelteKit SSG）：API 表自动生成、调试面板、使用场景、暗色模式、Pagefind 搜索 → [在线访问](https://chenzylab.github.io/chenzy-design/)
-- [x] npm 发布：6 个包 `@chenzy-design/*`，Changesets 自动化版本管理
+- [x] MCP server（`@chenzy-design/mcp`，SDK v2，同时服务 2026-07-28 与 2025-era 旧版客户端）：通过 stdio/HTTP 向 AI agent 提供组件文档/源码/代码块
+- [x] npm 发布：7 个 `@chenzy-design/*` 包纳入统一 changeset 组，`@chenzy-design/mcp` 独立版本管理
