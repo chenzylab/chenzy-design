@@ -1,19 +1,19 @@
 /**
- * 时区转换工具 —— 照搬 Semi semi-foundation/utils/date-fns-extra.ts（方法名、逻辑一致）。
- * 底层用 date-fns-tz 的 utcToZonedTime/zonedTimeToUtc；数字/GMT± 偏移经 toIANA 映射成 IANA 标识，
- * 具名 IANA（含夏令时）原样透传。
+ * 时区转换工具 —— 照搬 Semi semi-foundation/utils/date-fns-extra.ts（方法名、逻辑一致，
+ * 但底层库随本库升到 date-fns-tz@3；Semi 至今仍在 date-fns-tz@1，函数名已改，见下）。
+ * 底层用 date-fns-tz 的 toZonedTime/fromZonedTime（v1 名为 utcToZonedTime/zonedTimeToUtc，
+ * 参数顺序/语义未变，仅改名）；数字/GMT± 偏移经 toIANA 映射成 IANA 标识，具名 IANA（含夏令时）原样透传。
  */
-// 从 /esm 子路径导入（真 ESM 版）而非 `.` 入口（CJS index.js）：core 是 ESM（type:module），
-// dev SSR 下 Node 原生 ESM loader 实例化 core dist 时，无法解析 CJS 的命名导出 → 500
-// (no export named utcToZonedTime)。date-fns-tz@1.x 的 esm/index.js 是真 ESM，具名导入可解析。
-// build(rollup)/vitest(esbuild) 对两种入口都能 interop，故此前只 docs dev SSR 暴露。
+// v3 顶层 `.` 入口本身已是真 ESM（dist/esm/index.js），不再需要 v1 时代的 /esm 子路径变通
+// （当时 CJS index.js 在 Node 原生 ESM loader 下解析不出具名导出，docs dev SSR 500）。
 import {
   toDate,
   format as dateFnsFormat,
-  utcToZonedTime as dateFnsUtcToZonedTime,
-  zonedTimeToUtc as dateFnsZonedTimeToUtc,
-  type OptionsWithTZ,
-} from 'date-fns-tz/esm';
+  toZonedTime as dateFnsUtcToZonedTime,
+  fromZonedTime as dateFnsZonedTimeToUtc,
+  type FormatOptionsWithTZ,
+  type ToDateOptionsWithTZ,
+} from 'date-fns-tz';
 import {
   parse as dateFnsParse,
   format as dateFnsBaseFormat,
@@ -21,6 +21,11 @@ import {
   isValid as dateFnsIsValid,
   type Locale,
 } from 'date-fns';
+
+// v1 的 OptionsWithTZ 在 v3 拆成 FormatOptionsWithTZ（给 format）与 ToDateOptionsWithTZ
+// （给 toDate/toZonedTime/fromZonedTime）；parse() 内部转给 date-fns 原生 parse 和 toDate，
+// 两种 options 形状都要接受，故取并集。
+type OptionsWithTZ = FormatOptionsWithTZ & ToDateOptionsWithTZ;
 
 /**
  * Need to be IANA logo without daylight saving time
@@ -183,18 +188,19 @@ const format = (date: number | Date, formatToken: string, options?: OptionsWithT
 };
 
 /**
- * Returns a Date which will format as the local time of any time zone from a specific UTC time
+ * Returns a Date which will format as the local time of any time zone from a specific UTC time.
+ * Thin wrapper over date-fns-tz's `toZonedTime` (named `utcToZonedTime` in date-fns-tz@1);
+ * kept under this name for API stability.
  *
  * @example
  * ```javascript
- * import { utcToZonedTime } from 'date-fns-tz'
  * const { isoDate, timeZone } = fetchInitialValues() // 2014-06-25T10:00:00.000Z, America/New_York
  * const date = utcToZonedTime(isoDate, timeZone) // In June 10am UTC is 6am in New York (-04:00)
  * renderDatePicker(date) // 2014-06-25 06:00:00 (in the system time zone)
  * renderTimeZoneSelect(timeZone) // America/New_York
  * ```
  *
- * @see https://github.com/marnusw/date-fns-tz#utctozonedtime
+ * @see https://github.com/marnusw/date-fns-tz#tozonedtime
  */
 const utcToZonedTime = (
   date: string | number | Date,
@@ -203,18 +209,19 @@ const utcToZonedTime = (
 ): Date => dateFnsUtcToZonedTime(date, toIANA(timeZone) as string, options);
 
 /**
- * Given a date and any time zone, returns a Date with the equivalent UTC time
+ * Given a date and any time zone, returns a Date with the equivalent UTC time.
+ * Thin wrapper over date-fns-tz's `fromZonedTime` (named `zonedTimeToUtc` in date-fns-tz@1);
+ * kept under this name for API stability.
  *
  * @example
  * ```
- * import { zonedTimeToUtc } from 'date-fns-tz'
  * const date = getDatePickerValue() // e.g. 2014-06-25 10:00:00 (picked in any time zone)
  * const timeZone = getTimeZoneValue() // e.g. America/Los_Angeles
  * const utcDate = zonedTimeToUtc(date, timeZone) // In June 10am in Los Angeles is 5pm UTC
  * postToServer(utcDate.toISOString(), timeZone) // post 2014-06-25T17:00:00.000Z, America/Los_Angeles
  * ```
  *
- * @see https://github.com/marnusw/date-fns-tz#zonedtimetoutc
+ * @see https://github.com/marnusw/date-fns-tz#fromzonedtime
  */
 const zonedTimeToUtc = (
   date: string | number | Date,

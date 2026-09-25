@@ -58,7 +58,7 @@
     "@tiptap/extensions": "^3.31.3",
     "@tiptap/pm": "^3.31.3",
     "@tiptap/starter-kit": "^3.31.3",
-    "date-fns": "^2.30.0",
+    "date-fns": "^4.4.0",
     "esm-env": "^1.2.2",
     "lodash-es": "^4.17.21",
     "lottie-web": "^5.13.0",
