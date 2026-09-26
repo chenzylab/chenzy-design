@@ -27,7 +27,7 @@
     "@tiptap/extension-mention": "^3.31.3",
     "@tiptap/suggestion": "^3.31.3",
     "copy-text-to-clipboard": "^3.2.2",
-    "date-fns": "^2.30.0",
+    "date-fns": "^4.4.0",
     "prismjs": "^1.29.0",
     "svelte-tiptap": "^3.0.1"
   },

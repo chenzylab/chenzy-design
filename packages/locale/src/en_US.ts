@@ -1,5 +1,5 @@
-// 同 zh_CN：走真 ESM 子路径，勿改回 `date-fns/locale`（CJS，断 SSR）。
-import { enUS } from 'date-fns/esm/locale/index.js';
+// 同 zh_CN：date-fns@4 起每个 locale 有独立子路径（真 ESM + 自带 types）。
+import { enUS } from 'date-fns/locale/en-US';
 import type { Locale } from './interface.js';
 
 export const en_US: Locale = {

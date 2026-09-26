@@ -1,6 +1,6 @@
-// 走 `date-fns/esm/locale` 真 ESM 子路径：date-fns@2 的 `date-fns/locale` 是 CJS，
-// Node ESM loader 解析不出（docs dev SSR 500）。同 core 里 date-fns-tz/esm 的既有修法。
-import { zhCN } from 'date-fns/esm/locale/index.js';
+// date-fns@4 每个 locale 都有独立子路径且自带 types/真 ESM，不再需要 v2 时代
+// `date-fns/esm/locale` 的变通路径（当时 `date-fns/locale` 是 CJS，Node ESM loader 解析不出）。
+import { zhCN } from 'date-fns/locale/zh-CN';
 import type { Locale } from './interface.js';
 
 export const zh_CN: Locale = {

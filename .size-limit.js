@@ -174,7 +174,11 @@ const components = [
   // 实测 8.33 KB，按实测校准留余量（对齐 memory perf-budgets-calibrated-from-real-measurement）。
   // 2026-08-12 补齐面板进出场动画（此前 motion prop 名不副实，只驱动 transition:none，
   // 面板本身无任何动画——真实功能缺口），实测 8.75 KB，预算随之上调。
-  ['time-picker', '{ TimePicker }', '8.9 KB'],
+  // 2026-09-25 date-fns 2→4 + date-fns-tz 1→3 升级：本组件是全库对 date-fns 依赖面
+  // 最窄（仅 format 一个函数）、体积余量最紧的组件，v4 内部重写后 tree-shaking 后单函数
+  // 体积不降反升，是上游库真实回归（非本次改动引入的代码膨胀，DatePicker 等依赖面更宽的
+  // 组件摊薄了同样的增量、未超限），实测 10.66 KB，预算按实测校准上调。
+  ['time-picker', '{ TimePicker }', '10.8 KB'],
   ['transfer', '{ Transfer }', '10.9 KB'],
   ['tree-select', '{ TreeSelect }', '12 KB'],
   // 13 KB → 14 KB：破坏性重写严格对齐 Semi，FileCard 拆分后按 Semi「组件调用组件」
