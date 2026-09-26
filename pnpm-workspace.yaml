@@ -7,5 +7,5 @@ minimumReleaseAgeExclude:
   - '@changesets/cli@3.0.3'
   - '@changesets/config@4.0.1'
 overrides:
-  unocss: ^66.10.2
+  unocss: ^66.10.5
   prosemirror-model: ^1.25.11
