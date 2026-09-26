@@ -9,3 +9,4 @@ minimumReleaseAgeExclude:
 overrides:
   unocss: ^66.10.5
   prosemirror-model: ^1.25.11
+  svelte: ^5.57.1
