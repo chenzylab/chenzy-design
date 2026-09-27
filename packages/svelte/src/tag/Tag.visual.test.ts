@@ -6,7 +6,7 @@ import TagVisualFixture from './TagVisualFixture.svelte';
 
 describe('Tag 视觉回归', () => {
   it('light / solid / ghost', async () => {
-    const { baseElement } = renderVisualFixture(TagVisualFixture);
+    const { baseElement } = await renderVisualFixture(TagVisualFixture);
     const root = baseElement.querySelector('[data-visual-root]') as HTMLElement;
     await expect.element(locate(root)).toMatchScreenshot('tag-default', {
       comparatorName: 'pixelmatch',

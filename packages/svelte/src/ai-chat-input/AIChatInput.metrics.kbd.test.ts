@@ -36,56 +36,56 @@ function expectMatches(selector: string, baseline: { computed: Record<string, st
 }
 
 describe('AIChatInput 视觉度量对齐 Semi', () => {
-  it('附件卡片尺寸/圆角/内边距与 Semi 一致（224×36、radius 6、padding 8、gap 8）', () => {
-    renderKbdFixture(AIChatInputMetricsKbdFixture);
+  it('附件卡片尺寸/圆角/内边距与 Semi 一致（224×36、radius 6、padding 8、gap 8）', async () => {
+    await renderKbdFixture(AIChatInputMetricsKbdFixture);
     expectMatches('.cd-ai-chat-input-attachment', AI_CHAT_INPUT_ATTACHMENT);
   });
 
-  it('附件名称行 12px/16px + 600 字重 + 单行省略（@include font-size-small 带 line-height）', () => {
-    renderKbdFixture(AIChatInputMetricsKbdFixture);
+  it('附件名称行 12px/16px + 600 字重 + 单行省略（@include font-size-small 带 line-height）', async () => {
+    await renderKbdFixture(AIChatInputMetricsKbdFixture);
     expectMatches('.cd-ai-chat-input-attachment-content-name', AI_CHAT_INPUT_ATTACHMENT_NAME);
   });
 
-  it('附件左侧图标 36×36 + radius 3px', () => {
-    renderKbdFixture(AIChatInputMetricsKbdFixture);
+  it('附件左侧图标 36×36 + radius 3px', async () => {
+    await renderKbdFixture(AIChatInputMetricsKbdFixture);
     expectMatches('.cd-ai-chat-input-attachment-icon', AI_CHAT_INPUT_ATTACHMENT_ICON);
   });
 
-  it('删除钮默认不显示，hover 卡片后才出现（对齐 Semi &:hover > &-delete）', () => {
-    renderKbdFixture(AIChatInputMetricsKbdFixture);
+  it('删除钮默认不显示，hover 卡片后才出现（对齐 Semi &:hover > &-delete）', async () => {
+    await renderKbdFixture(AIChatInputMetricsKbdFixture);
     const del = document.querySelector('.cd-ai-chat-input-attachment-delete');
     expect(del, '删除钮节点应存在').not.toBeNull();
     expect(getComputedStyle(del!).display, '未 hover 时应 display:none').toBe('none');
   });
 
   // 拆分后样式是否跟着搬走 —— 留在父组件会因 scoped CSS 静默失效。
-  it('技能项 flex + gap 8 + padding 8/20 + cursor:pointer（样式随组件拆分迁移生效）', () => {
-    renderKbdFixture(AIChatInputMetricsKbdFixture);
+  it('技能项 flex + gap 8 + padding 8/20 + cursor:pointer（样式随组件拆分迁移生效）', async () => {
+    await renderKbdFixture(AIChatInputMetricsKbdFixture);
     expectMatches('.cd-ai-chat-input-skill-item', AI_CHAT_INPUT_SKILL_ITEM);
   });
 
-  it('建议项 radius 6 + padding 8/20 + 14px/20px（样式随组件拆分迁移生效）', () => {
-    renderKbdFixture(AIChatInputMetricsKbdFixture);
+  it('建议项 radius 6 + padding 8/20 + 14px/20px（样式随组件拆分迁移生效）', async () => {
+    await renderKbdFixture(AIChatInputMetricsKbdFixture);
     expectMatches('.cd-ai-chat-input-suggestion-item', AI_CHAT_INPUT_SUGGESTION_ITEM);
   });
 
   // 引用条原值全错：padding 走 extra-tight/tight（非 8/12）、radius 回退到
   // --cd-border-radius-small=3px（Semi 是 6px）、gap 用 extra-tight（非 8px）。
-  it('引用区容器 12px/16px + 4px 双向间距 + 8px 下外距', () => {
-    renderKbdFixture(AIChatInputMetricsKbdFixture);
+  it('引用区容器 12px/16px + 4px 双向间距 + 8px 下外距', async () => {
+    await renderKbdFixture(AIChatInputMetricsKbdFixture);
     expectMatches('.cd-ai-chat-input-references', AI_CHAT_INPUT_REFERENCES);
   });
 
-  it('引用项 padding 8/12 + radius 6 + column-gap 8', () => {
-    renderKbdFixture(AIChatInputMetricsKbdFixture);
+  it('引用项 padding 8/12 + radius 6 + column-gap 8', async () => {
+    await renderKbdFixture(AIChatInputMetricsKbdFixture);
     expectMatches('.cd-ai-chat-input-reference', AI_CHAT_INPUT_REFERENCE);
   });
 
   // 浮层改由 Popover 承载后踩到的真回归：本库 Tooltip/Popover 会把触发器包进两层
   // inline-block 的 span，把这种块级输入框**收缩成内容宽度**（实测 890→106px，
   // 整页每个实例都被压扁）。Semi 侧 Popover 用 cloneElement 不加包裹层。
-  it('输入框宽度不被 Popover 触发器包裹层压缩（撑满父容器）', () => {
-    renderKbdFixture(AIChatInputMetricsKbdFixture);
+  it('输入框宽度不被 Popover 触发器包裹层压缩（撑满父容器）', async () => {
+    await renderKbdFixture(AIChatInputMetricsKbdFixture);
 
     const box = document.querySelector('[data-testid="attachment-host"] .cd-ai-chat-input')!;
     const host = document.querySelector('[data-testid="attachment-host"]')!;
@@ -97,8 +97,8 @@ describe('AIChatInput 视觉度量对齐 Semi', () => {
   });
 
   // Semi 按条数自适应 1/2/3 列，本库此前完全没有这套规则（恒为内容宽度）。
-  it('引用条按条数自适应列宽：1 条占满、3 条各约 1/3', () => {
-    renderKbdFixture(AIChatInputMetricsKbdFixture);
+  it('引用条按条数自适应列宽：1 条占满、3 条各约 1/3', async () => {
+    await renderKbdFixture(AIChatInputMetricsKbdFixture);
 
     const single = document.querySelector('[data-testid="attachment-host"] .cd-ai-chat-input-reference')!;
     const singleWrap = single.parentElement!;
@@ -124,8 +124,8 @@ describe('AIChatInput 视觉度量对齐 Semi', () => {
 // （$color-aiChatInput_ref_icon_word-*）；本库此前渲染了 -ref-icon-{type} 类名
 // 却一条样式/token 都没有 —— 七种类型全同色，而 a11y 用例只断类名存在，照样绿。
 describe('AIChatInput 文件类型图标底色（对齐 Semi）', () => {
-  it('docx 附件 → -ref-icon-word，底色是蓝 4（非透明/默认色）', () => {
-    renderKbdFixture(AIChatInputMetricsKbdFixture);
+  it('docx 附件 → -ref-icon-word，底色是蓝 4（非透明/默认色）', async () => {
+    await renderKbdFixture(AIChatInputMetricsKbdFixture);
     const icon = document.querySelector('.cd-ai-chat-input-ref-icon-word') as HTMLElement;
     expect(icon, '应渲染 word 类型图标').not.toBeNull();
     const bg = getComputedStyle(icon).backgroundColor;
@@ -146,7 +146,7 @@ describe('AIChatInput 输入插槽视觉（对齐 Semi）', () => {
     // InputSlotNode 的样式写在它自己的 <style> 里（:global），而 Svelte 组件样式
     // 随组件挂载才注入 —— 摆一份裸 markup 的话，样式能否命中取决于本文件里
     // 是否恰好有别的用例先挂过该组件，会变成用例顺序依赖（本轮因此红过两次）。
-    renderKbdFixture(AIChatInputMetricsKbdFixture);
+    await renderKbdFixture(AIChatInputMetricsKbdFixture);
     const deadline = Date.now() + 3000;
     let slot: HTMLElement | null = null;
     while (!slot && Date.now() < deadline) {
@@ -172,8 +172,8 @@ describe('AIChatInput 输入插槽视觉（对齐 Semi）', () => {
 // 删除按钮平时 display:none、hover 才浮成右上角小圆徽标（aiChatInput.scss:612-648）。
 // 本库原来是「常显药丸（有底色）+ 常显删除按钮」，且用的是自造的 -skill-* 四条 token。
 describe('AIChatInput 技能插槽视觉（对齐 Semi）', () => {
-  it('默认：纯文字无底色，删除按钮 display:none', () => {
-    renderKbdFixture(AIChatInputMetricsKbdFixture);
+  it('默认：纯文字无底色，删除按钮 display:none', async () => {
+    await renderKbdFixture(AIChatInputMetricsKbdFixture);
     const wrap = document.querySelector('[data-testid="skill-slot-host"] .skill-slot-wrapper') as HTMLElement;
     expect(wrap, 'fixture 应提供 skill-slot 结构').not.toBeNull();
     // 未 hover 时不染底（Semi 只在 :hover 才有 background-color）。
@@ -185,8 +185,8 @@ describe('AIChatInput 技能插槽视觉（对齐 Semi）', () => {
     expect(getComputedStyle(del).display, '删除按钮平时不显示').toBe('none');
   });
 
-  it('文本是主色 + 600 字重（非本库原来的 chip 前景色）', () => {
-    renderKbdFixture(AIChatInputMetricsKbdFixture);
+  it('文本是主色 + 600 字重（非本库原来的 chip 前景色）', async () => {
+    await renderKbdFixture(AIChatInputMetricsKbdFixture);
     const slot = document.querySelector('[data-testid="skill-slot-host"] .skill-slot') as HTMLElement;
     const cs = getComputedStyle(slot);
     expect(cs.fontWeight).toBe('600');
@@ -200,7 +200,7 @@ describe('AIChatInput 技能插槽视觉（对齐 Semi）', () => {
 // `font: inherit`，字号会跟着外部走，而不是 Semi 的显式 regular。
 describe('AIChatInput 编辑区字号（对齐 Semi）', () => {
   it('.ProseMirror 字号 14px / 行高 24px（非继承外部）', async () => {
-    renderKbdFixture(AIChatInputMetricsKbdFixture);
+    await renderKbdFixture(AIChatInputMetricsKbdFixture);
     const deadline = Date.now() + 3000;
     let pm: HTMLElement | null = null;
     while (!pm && Date.now() < deadline) {

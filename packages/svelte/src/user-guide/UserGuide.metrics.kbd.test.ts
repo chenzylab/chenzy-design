@@ -37,7 +37,7 @@ function centerXOf(el: Element): number {
 
 describe('UserGuide 浮层首次定位精度（对齐真实 spotlight target，不滞后一步）', () => {
   it('首次挂载：单帧结算后箭头立即精确对齐 step1 target（无需二次收敛等待）', async () => {
-    renderKbdFixture(UserGuideMetricsFixture);
+    await renderKbdFixture(UserGuideMetricsFixture);
     (document.querySelector('[data-testid="start-guide"]') as HTMLButtonElement).click();
     await settle();
 
@@ -50,7 +50,7 @@ describe('UserGuide 浮层首次定位精度（对齐真实 spotlight target，�
   });
 
   it('切步后：单帧结算后箭头立即精确对齐新 target，不残留上一步位置', async () => {
-    renderKbdFixture(UserGuideMetricsFixture);
+    await renderKbdFixture(UserGuideMetricsFixture);
     (document.querySelector('[data-testid="start-guide"]') as HTMLButtonElement).click();
     await settle();
 
@@ -69,7 +69,7 @@ describe('UserGuide 浮层首次定位精度（对齐真实 spotlight target，�
   });
 
   it('连续切三步：每步单帧结算后都立即对齐对应 target', async () => {
-    renderKbdFixture(UserGuideMetricsFixture);
+    await renderKbdFixture(UserGuideMetricsFixture);
     (document.querySelector('[data-testid="start-guide"]') as HTMLButtonElement).click();
     await settle();
 

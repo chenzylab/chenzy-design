@@ -9,7 +9,7 @@ import TagRtlFixture from './TagRtlFixture.svelte';
 
 describe('Tag RTL 镜像（真实布局坐标）', () => {
   it('关闭叉在 LTR 靠右、RTL 靠左', async () => {
-    const screen = renderKbd(TagRtlFixture as never);
+    const screen = await renderKbd(TagRtlFixture as never);
     const root = screen.baseElement;
 
     const ltrTag = root.querySelector('[data-testid="ltr"] .cd-tag') as HTMLElement;

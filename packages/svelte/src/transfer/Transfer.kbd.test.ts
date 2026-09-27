@@ -11,7 +11,7 @@ function loc(el: Element) {
 
 describe('Transfer 键盘 e2e（Checkbox 勾选即迁移）', () => {
   it('聚焦左侧 Checkbox + Space 勾选：立即迁移到右侧已选列，左侧保留该项并显示 checked（对齐 Semi：左侧始终展示全部条目）', async () => {
-    const { baseElement } = renderKbdFixture(TransferKbdFixture);
+    const { baseElement } = await renderKbdFixture(TransferKbdFixture);
 
     const checkboxes = Array.from(
       baseElement.querySelectorAll<HTMLInputElement>('.cd-transfer-left-list input[type="checkbox"]'),

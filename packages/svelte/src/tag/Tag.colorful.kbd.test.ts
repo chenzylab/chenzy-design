@@ -30,7 +30,7 @@ function expectMatchesBaseline(el: Element, baseline: MetricBaseline, label: str
 
 describe('Tag colorful 配色对齐 Semi AI 色板', () => {
   it('solid / light / ghost 三态与渐变态均与 Semi 实测逐项一致', async () => {
-    const screen = renderKbd(TagColorfulMetricsFixture as never);
+    const screen = await renderKbd(TagColorfulMetricsFixture as never);
     const root = screen.baseElement;
 
     const cases: Array<[string, MetricBaseline]> = [

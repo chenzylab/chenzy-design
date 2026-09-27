@@ -18,7 +18,7 @@ function loc(el: Element) {
 
 describe('Tabs 键盘 e2e（horizontal roving + 手动激活，对齐 Semi）', () => {
   it('roving 单停靠点 + ←→ 移动焦点 + Enter/Space 激活 + Home/End 跳首末', async () => {
-    const { baseElement } = renderKbdFixture(TabsKbdFixture);
+    const { baseElement } = await renderKbdFixture(TabsKbdFixture);
 
     const tabs = Array.from(baseElement.querySelectorAll<HTMLElement>('[role="tab"]'));
     expect(tabs.length).toBe(3);

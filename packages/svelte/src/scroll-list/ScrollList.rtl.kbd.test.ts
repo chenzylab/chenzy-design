@@ -9,7 +9,7 @@ import ScrollListRtlFixture from './ScrollListRtlFixture.svelte';
 
 describe('ScrollList RTL 镜像（真实布局坐标）', () => {
   it('列间描边 LTR 落在右侧、RTL 落在左侧', async () => {
-    const screen = renderKbd(ScrollListRtlFixture as never);
+    const screen = await renderKbd(ScrollListRtlFixture as never);
     const root = screen.baseElement;
 
     expect(root.querySelector('.cd-rtl'), '.cd-rtl 作用域应存在').toBeTruthy();

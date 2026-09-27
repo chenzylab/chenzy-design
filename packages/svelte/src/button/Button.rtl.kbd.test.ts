@@ -4,15 +4,15 @@ import { describe, it, expect } from 'vitest';
 import { renderKbd } from '../test-utils/kbd.js';
 import ButtonRtlFixture from './ButtonRtlFixture.svelte';
 
-describe('Button RTL 镜像（真实布局坐标）', () => {
-  it('.cd-rtl 作用域存在（否则用例空转）', () => {
-    const screen = renderKbd(ButtonRtlFixture as never);
+describe('Button RTL 镜像（真实布局坐标）', async () => {
+  it('.cd-rtl 作用域存在（否则用例空转）', async () => {
+    const screen = await renderKbd(ButtonRtlFixture as never);
     const root = screen.baseElement;
     expect(root.querySelector('.cd-rtl')).toBeTruthy();
   });
 
-  it('icon-only 按钮：LTR/RTL padding 左右互换（含左右不等时才有意义）', () => {
-    const screen = renderKbd(ButtonRtlFixture as never);
+  it('icon-only 按钮：LTR/RTL padding 左右互换（含左右不等时才有意义）', async () => {
+    const screen = await renderKbd(ButtonRtlFixture as never);
     const root = screen.baseElement;
     const ltrBtn = root.querySelector('[data-testid="ltr"] .cd-button-with-icon-only')!;
     const rtlBtn = root.querySelector('[data-testid="rtl"] .cd-button-with-icon-only')!;
@@ -23,8 +23,8 @@ describe('Button RTL 镜像（真实布局坐标）', () => {
     expect(rtlStyle.paddingRight).toBe(ltrStyle.paddingLeft);
   });
 
-  it('outline ButtonGroup：LTR 首末圆角在左右，RTL 应精确互换', () => {
-    const screen = renderKbd(ButtonRtlFixture as never);
+  it('outline ButtonGroup：LTR 首末圆角在左右，RTL 应精确互换', async () => {
+    const screen = await renderKbd(ButtonRtlFixture as never);
     const root = screen.baseElement;
     const ltrButtons = [...root.querySelectorAll('[data-testid="ltr"] .cd-button-group .cd-button')];
     const rtlButtons = [...root.querySelectorAll('[data-testid="rtl"] .cd-button-group .cd-button')];
@@ -49,8 +49,8 @@ describe('Button RTL 镜像（真实布局坐标）', () => {
     expect(rtlLast.borderTopRightRadius).toBe('0px');
   });
 
-  it('outline ButtonGroup：叠边挪到镜像侧（LTR 右侧透明，RTL 左侧透明）', () => {
-    const screen = renderKbd(ButtonRtlFixture as never);
+  it('outline ButtonGroup：叠边挪到镜像侧（LTR 右侧透明，RTL 左侧透明）', async () => {
+    const screen = await renderKbd(ButtonRtlFixture as never);
     const root = screen.baseElement;
     const ltrFirst = root.querySelectorAll('[data-testid="ltr"] .cd-button-group .cd-button')[0]!;
     const rtlFirst = root.querySelectorAll('[data-testid="rtl"] .cd-button-group .cd-button')[0]!;

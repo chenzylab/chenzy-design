@@ -23,7 +23,7 @@ function readWrapperStyle() {
 
 describe('Chat 输入框内层 TextArea 压平（对齐 Semi）', () => {
   it('hover 与 focus 都不改变内层底色/边框（视觉由外层 container 承担）', async () => {
-    renderKbdFixture(ChatInputBoxKbdFixture);
+    await renderKbdFixture(ChatInputBoxKbdFixture);
 
     const wrapper = document.querySelector('.cd-input-textarea-wrapper') as HTMLElement;
     expect(wrapper).not.toBeNull();

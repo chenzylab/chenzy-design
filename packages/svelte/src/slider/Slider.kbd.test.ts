@@ -13,7 +13,7 @@ function loc(el: Element) {
 
 describe('Slider 键盘 e2e（role=slider 方向键调值）', () => {
   it('单值：Tab 聚焦手柄 + ←→ 步进 + Home/End 到 min/max', async () => {
-    const { baseElement } = renderKbdFixture(SliderKbdFixture);
+    const { baseElement } = await renderKbdFixture(SliderKbdFixture);
 
     const single = baseElement.querySelector('[data-testid="single"]') as HTMLElement;
     const thumb = single.querySelector('[role="slider"]') as HTMLElement;
@@ -47,7 +47,7 @@ describe('Slider 键盘 e2e（role=slider 方向键调值）', () => {
   });
 
   it('range：两手柄各自可聚焦并各自调值', async () => {
-    const { baseElement } = renderKbdFixture(SliderKbdFixture);
+    const { baseElement } = await renderKbdFixture(SliderKbdFixture);
 
     const range = baseElement.querySelector('[data-testid="range"]') as HTMLElement;
     const thumbs = Array.from(range.querySelectorAll<HTMLElement>('[role="slider"]'));

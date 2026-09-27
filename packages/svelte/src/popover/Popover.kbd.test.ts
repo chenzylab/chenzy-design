@@ -17,7 +17,7 @@ function loc(el: Element) {
 
 describe('Popover 键盘 e2e（dialog Esc 关闭 + 焦点归还）', () => {
   it('Enter 打开焦点进浮层；Esc 关闭归还触发器', async () => {
-    const { baseElement } = renderKbdFixture(PopoverKbdFixture);
+    const { baseElement } = await renderKbdFixture(PopoverKbdFixture);
 
     // dialog 模式触发器 = role=button + tabindex=0 的 span。
     const trigger = baseElement.querySelector('.cd-tooltip-trigger') as HTMLElement;
@@ -45,7 +45,7 @@ describe('Popover 键盘 e2e（dialog Esc 关闭 + 焦点归还）', () => {
   // 回归：click 绑在触发器元素本身（对齐 Semi cloneElement 绑 children），
   // 故 children 内部子元素 stopPropagation 不影响浮层打开（曾因 click 挂最外层靠冒泡而被截断）。
   it('children 子元素 stopPropagation 时，点击仍打开浮层且不连带冒泡到外层', async () => {
-    const { baseElement } = renderKbdFixture(PopoverStopPropFixture);
+    const { baseElement } = await renderKbdFixture(PopoverStopPropFixture);
 
     const moreBtn = baseElement.querySelector('[data-testid="more"]') as HTMLElement;
     expect(moreBtn).not.toBeNull();
@@ -68,7 +68,7 @@ describe('Popover 键盘 e2e（dialog Esc 关闭 + 焦点归还）', () => {
   // ArrowDown/ArrowUp 移焦（对齐 Semi）：hover 打开后焦点仍在触发器，
   // ⬇️ 焦点移入浮层首个可交互元素、⬆️ 移到最后一个。
   it('hover 打开后 ArrowDown 焦点进首元素、ArrowUp 进末元素', async () => {
-    const { baseElement } = renderKbdFixture(PopoverArrowKeyFixture);
+    const { baseElement } = await renderKbdFixture(PopoverArrowKeyFixture);
 
     const trigger = baseElement.querySelector('[data-testid="trigger"]') as HTMLElement;
     expect(trigger).not.toBeNull();
@@ -100,7 +100,7 @@ describe('Popover 键盘 e2e（dialog Esc 关闭 + 焦点归还）', () => {
 
   // onEscKeyDown 回调独立于 closeOnEsc：closeOnEsc=false 时按 Esc 仍触发回调但不关闭。
   it('closeOnEsc=false 时 Esc 触发 onEscKeyDown 回调且浮层不关闭', async () => {
-    const { baseElement } = renderKbdFixture(PopoverArrowKeyFixture);
+    const { baseElement } = await renderKbdFixture(PopoverArrowKeyFixture);
 
     const trigger = baseElement.querySelector('[data-testid="trigger"]') as HTMLElement;
     trigger.focus();

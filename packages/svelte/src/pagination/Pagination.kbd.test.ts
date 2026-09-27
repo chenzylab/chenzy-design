@@ -25,7 +25,7 @@ async function pickPageSize(idx: number) {
 //   - prevent=true：保持 current=5（clampPage(5, 200, 20)=5，200/20=10 页内合法）。
 describe('Pagination changePageSize 页码重算（对齐 Semi）', () => {
   it('默认按当前页首条数据位置重算 currentPage', async () => {
-    const { baseElement } = renderKbdFixture(PaginationSizeFixture);
+    const { baseElement } = await renderKbdFixture(PaginationSizeFixture);
 
     // pageSizeOpts 默认 [10,20,40,100]，index 1 = 20。
     await pickPageSize(1);
@@ -37,7 +37,7 @@ describe('Pagination changePageSize 页码重算（对齐 Semi）', () => {
   });
 
   it('preventPageChangeOnPageSizeChange=true 时保持 currentPage', async () => {
-    const { baseElement } = renderKbdFixture(PaginationSizeFixture, { prevent: true });
+    const { baseElement } = await renderKbdFixture(PaginationSizeFixture, { prevent: true });
 
     await pickPageSize(1);
 

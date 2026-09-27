@@ -31,7 +31,7 @@ function knobGeometry(sw: Element): Geometry {
 
 describe('Switch RTL 镜像（真实布局坐标）', () => {
   it('LTR：off 贴左、on 贴右；RTL 应恰好镜像', async () => {
-    const screen = renderKbd(SwitchRtlFixture as never);
+    const screen = await renderKbd(SwitchRtlFixture as never);
     const root = screen.baseElement;
 
     const ltr = root.querySelector('[data-testid="ltr"]');

@@ -24,7 +24,7 @@ function activeSlide(root: HTMLElement): string | null {
 
 describe('Carousel 键盘 e2e（root 方向键切 slide）', () => {
   it('root 聚焦 + ←/→ 切换 + Home/End 首末 + 非 active 项 inert', async () => {
-    const { baseElement } = renderKbdFixture(CarouselKbdFixture);
+    const { baseElement } = await renderKbdFixture(CarouselKbdFixture);
 
     const root = baseElement.querySelector('[role="region"]') as HTMLElement;
     expect(root).not.toBeNull();

@@ -31,7 +31,7 @@ function activeNodeText(tree: HTMLElement): string | null {
 
 describe('Tree 键盘 e2e（aria-activedescendant roving + typeahead）', () => {
   it('容器聚焦 + ↑↓/Home/End 移高亮（activedescendant）', async () => {
-    const { baseElement } = renderKbdFixture(TreeKbdFixture);
+    const { baseElement } = await renderKbdFixture(TreeKbdFixture);
 
     const tree = baseElement.querySelector('[role="tree"]') as HTMLElement;
     expect(tree).not.toBeNull();
@@ -62,7 +62,7 @@ describe('Tree 键盘 e2e（aria-activedescendant roving + typeahead）', () => 
   });
 
   it('typeahead 输入字符跳到首字母匹配节点 + `*` 展开同级', async () => {
-    const { baseElement } = renderKbdFixture(TreeKbdFixture);
+    const { baseElement } = await renderKbdFixture(TreeKbdFixture);
 
     const tree = baseElement.querySelector('[role="tree"]') as HTMLElement;
     tree.focus();

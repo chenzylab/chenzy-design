@@ -27,12 +27,13 @@ export interface RenderVisualOptions {
 /**
  * 在真实浏览器里把组件包进 LocaleProvider 渲染，用于视觉回归截图。
  * 返回 vitest-browser-svelte 的 RenderResult（含 baseElement / container）。
+ * vitest-browser-svelte@3 起 render() 返回纯 Promise，须 await（同 kbd.ts）。
  *
  * 用法：
- *   const { container } = renderVisual(Button, { props: { type: 'primary' } });
+ *   const { container } = await renderVisual(Button, { props: { type: 'primary' } });
  *   await expect.element(locate(container)).toMatchScreenshot('button-default');
  */
-export function renderVisual(component: AnyComponent, options: RenderVisualOptions = {}) {
+export async function renderVisual(component: AnyComponent, options: RenderVisualOptions = {}) {
   const { props = {}, locale = 'en_US' } = options;
   return render(LocaleHarness as unknown as AnyComponent, {
     props: { component, props, locale },
@@ -44,7 +45,7 @@ export function renderVisual(component: AnyComponent, options: RenderVisualOptio
  * fixture 通常无 props，入参用宽松 Component<any> 接收。
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function renderVisualFixture(component: Component<any>, props: Record<string, unknown> = {}) {
+export async function renderVisualFixture(component: Component<any>, props: Record<string, unknown> = {}) {
   return render(component as AnyComponent, { props });
 }
 

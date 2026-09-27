@@ -6,7 +6,7 @@ import SwitchVisualFixture from './SwitchVisualFixture.svelte';
 
 describe('Switch 视觉回归', () => {
   it('on / off', async () => {
-    const { baseElement } = renderVisualFixture(SwitchVisualFixture);
+    const { baseElement } = await renderVisualFixture(SwitchVisualFixture);
     const root = baseElement.querySelector('[data-visual-root]') as HTMLElement;
     await expect.element(locate(root)).toMatchScreenshot('switch-default', {
       comparatorName: 'pixelmatch',

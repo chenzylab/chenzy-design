@@ -35,7 +35,7 @@ function dragX(handle: Element, deltaX: number): void {
 
 describe('Resizable 拖拽', () => {
   it('单体：拖右边缘把手按位移增宽，并受 maxWidth 约束', async () => {
-    renderKbdFixture(ResizableKbdFixture);
+    await renderKbdFixture(ResizableKbdFixture);
 
     const box = document
       .querySelector('[data-testid="single-content"]')!
@@ -55,7 +55,7 @@ describe('Resizable 拖拽', () => {
   });
 
   it('分栏：拖把手时两侧面板此消彼长', async () => {
-    renderKbdFixture(ResizableKbdFixture);
+    await renderKbdFixture(ResizableKbdFixture);
 
     const group = document.querySelector('.cd-resizable-group') as HTMLElement;
     const items = [...group.querySelectorAll('.cd-resizable-item')] as HTMLElement[];

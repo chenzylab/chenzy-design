@@ -14,7 +14,7 @@ function loc(el: Element) {
 
 describe('RadioGroup 键盘 e2e（原生 radio 分组，方向键即选中）', () => {
   it('Tab 落在选中项 + 方向键移动焦点即选中（wrap）+ Home/End', async () => {
-    const { baseElement } = renderKbdFixture(RadioGroupKbdFixture);
+    const { baseElement } = await renderKbdFixture(RadioGroupKbdFixture);
 
     const radios = Array.from(
       baseElement.querySelectorAll<HTMLInputElement>('input[type="radio"]'),

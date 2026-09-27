@@ -9,7 +9,7 @@ import VirtualListRtlFixture from './VirtualListRtlFixture.svelte';
 
 describe('VirtualList RTL 镜像（真实布局坐标）', () => {
   it('horizontal 首项 LTR 贴视口左边，RTL 贴视口右边', async () => {
-    const screen = renderKbd(VirtualListRtlFixture as never);
+    const screen = await renderKbd(VirtualListRtlFixture as never);
     const root = screen.baseElement;
 
     expect(root.querySelector('.cd-rtl'), '.cd-rtl 作用域应存在').toBeTruthy();

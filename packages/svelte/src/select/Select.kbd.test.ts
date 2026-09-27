@@ -15,7 +15,7 @@ import SelectDemo03RepoFixture from './SelectDemo03RepoFixture.svelte';
 
 describe('Select 键盘 e2e（aria-activedescendant 浮层导航）', () => {
   it('打开后 ↑↓ 移高亮 + Home/End 首末 + Enter 选中', async () => {
-    renderKbdFixture(SelectKbdFixture);
+    await renderKbdFixture(SelectKbdFixture);
 
     const combobox = document.querySelector('[role="combobox"]') as HTMLElement;
     expect(combobox).not.toBeNull();
@@ -73,7 +73,7 @@ describe('Select 键盘 e2e（aria-activedescendant 浮层导航）', () => {
   // small 24 / default 32 / large 40。历史 bug：小尺寸只写 min-block-size，
   // 被继承的 24.5px 行高顶穿成 26.5px（ColorPicker 的 dataPart 因此比 Semi 高 4px）。
   it('三档尺寸高度对齐 Semi（small 24 / default 32 / large 40）', async () => {
-    renderKbdFixture(SelectSizeKbdFixture);
+    await renderKbdFixture(SelectSizeKbdFixture);
 
     const heightOf = (testid: string) => {
       const host = document.querySelector(`[data-testid="${testid}"]`) as HTMLElement;
@@ -91,7 +91,7 @@ describe('Select 键盘 e2e（aria-activedescendant 浮层导航）', () => {
   // 实为 CDP 标签 document.hidden=true 导致合成点击根本没投递（裸按钮同样收不到事件），
   // 非组件问题。此用例把该组合钉在 browser project（真实 chromium、标签可见）里防回归。
   it('受控 value + onChange：真实点击选项后受控值被驱动更新', async () => {
-    renderKbdFixture(SelectControlledKbdFixture);
+    await renderKbdFixture(SelectControlledKbdFixture);
 
     const out = document.querySelector('[data-testid="value"]') as HTMLElement;
     expect(out.textContent).toBe('zh_CN');
@@ -111,7 +111,7 @@ describe('Select 键盘 e2e（aria-activedescendant 浮层导航）', () => {
   // 上一个用例的夹具是简化版（Select 在 Provider 内、子树只有一个 output），
   // 不足以证明真实拓扑没问题，故这里按 demo03 原样复刻并断言子树文案真的跟着切。
   it('demo03 拓扑（Select 在 Provider 外）：切换后受控值与子树文案同步更新', async () => {
-    renderKbdFixture(SelectDemo03RepoFixture);
+    await renderKbdFixture(SelectDemo03RepoFixture);
 
     const code = document.querySelector('[data-testid="code"]') as HTMLElement;
     expect(code.textContent).toBe('zh_CN');
@@ -132,7 +132,7 @@ describe('Select 键盘 e2e（aria-activedescendant 浮层导航）', () => {
 
   // prefix 传字符串（对齐 Semi ReactNode）时正常渲染，不影响触发器点击。
   it('prefix 传字符串：渲染在 .cd-select-prefix 内且触发器仍可打开浮层', async () => {
-    renderKbdFixture(SelectControlledKbdFixture);
+    await renderKbdFixture(SelectControlledKbdFixture);
     expect(document.querySelector('.cd-select-prefix')?.textContent?.trim()).toBe('切换语言');
 
     const combobox = document.querySelector('[role="combobox"]') as HTMLElement;

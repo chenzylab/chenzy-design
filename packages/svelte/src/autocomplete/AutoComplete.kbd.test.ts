@@ -12,7 +12,7 @@ import AutoCompleteKbdFixture from './AutoCompleteKbdFixture.svelte';
 
 describe('AutoComplete 键盘 e2e（combobox aria-activedescendant 浮层导航）', () => {
   it('输入打开 + ↑↓ 移高亮 + Enter 选中 + Esc 关闭', async () => {
-    renderKbdFixture(AutoCompleteKbdFixture);
+    await renderKbdFixture(AutoCompleteKbdFixture);
 
     const combobox = document.querySelector('[role="combobox"]') as HTMLInputElement;
     expect(combobox).not.toBeNull();

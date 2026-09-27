@@ -25,7 +25,7 @@ function sideOf(container: Element, sel: string): Side {
 
 describe('Timeline RTL 镜像（真实布局坐标）', () => {
   it('轴线与圆点在 RTL 下应整体翻到右侧', async () => {
-    const screen = renderKbd(TimelineRtlFixture as never);
+    const screen = await renderKbd(TimelineRtlFixture as never);
     const root = screen.baseElement;
 
     expect(root.querySelector('.cd-rtl'), '.cd-rtl 作用域应存在').toBeTruthy();

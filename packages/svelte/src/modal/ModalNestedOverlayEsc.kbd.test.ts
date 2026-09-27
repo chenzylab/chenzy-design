@@ -11,7 +11,7 @@ import ModalNestedOverlayEscFixture from './ModalNestedOverlayEscFixture.svelte'
 
 describe('嵌套浮层 Escape（Modal 内 DatePicker）', () => {
   it('DatePicker 面板打开时按 Escape 只关面板，Modal 保持打开；再按一次才关 Modal', async () => {
-    const { baseElement } = renderKbdFixture(ModalNestedOverlayEscFixture);
+    const { baseElement } = await renderKbdFixture(ModalNestedOverlayEscFixture);
 
     const trigger = baseElement.querySelector('[data-testid="trigger"]') as HTMLButtonElement;
     await userEvent.click(trigger);

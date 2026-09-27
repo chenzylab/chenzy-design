@@ -15,7 +15,7 @@ function loc(el: Element) {
 
 describe('Tooltip 键盘 e2e（Esc 关闭）', () => {
   it('closeOnEsc 默认 false：聚焦显示浮层后按 Esc 不关闭', async () => {
-    const { baseElement } = renderKbdFixture(TooltipDefaultEscFixture);
+    const { baseElement } = await renderKbdFixture(TooltipDefaultEscFixture);
 
     const trigger = baseElement.querySelector('[data-testid="trigger"]') as HTMLButtonElement;
     expect(trigger).not.toBeNull();
@@ -31,7 +31,7 @@ describe('Tooltip 键盘 e2e（Esc 关闭）', () => {
   });
 
   it('closeOnEsc={true}：聚焦显示浮层；Esc 关闭浮层且焦点留在触发器', async () => {
-    const { baseElement } = renderKbdFixture(TooltipKbdFixture);
+    const { baseElement } = await renderKbdFixture(TooltipKbdFixture);
 
     const trigger = baseElement.querySelector('[data-testid="trigger"]') as HTMLButtonElement;
     expect(trigger).not.toBeNull();

@@ -11,7 +11,7 @@ import VideoProgressKbdFixture from './VideoProgressKbdFixture.svelte';
 
 describe('VideoProgress 拖拽/hover', () => {
   it('拖拽经过某 marker 段时该段自动加 active class（对齐 Semi setActiveIndex）', async () => {
-    renderKbdFixture(VideoProgressKbdFixture);
+    await renderKbdFixture(VideoProgressKbdFixture);
 
     const slider = document.querySelector('.cd-videoPlayer-progress') as HTMLElement;
     const segments = slider.querySelectorAll('.cd-videoPlayer-progress-slider');
@@ -43,7 +43,7 @@ describe('VideoProgress 拖拽/hover', () => {
 
   it('hover 某段：仅当前播放值落在该段区间才让 handle 变可见', async () => {
     // fixture 初始 value=15（落在第一段 0-20 内）。
-    renderKbdFixture(VideoProgressKbdFixture);
+    await renderKbdFixture(VideoProgressKbdFixture);
 
     const slider = document.querySelector('.cd-videoPlayer-progress') as HTMLElement;
     const segments = slider.querySelectorAll('.cd-videoPlayer-progress-slider');

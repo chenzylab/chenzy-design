@@ -12,7 +12,7 @@ function loc(el: Element) {
 
 describe('CheckboxGroup 键盘 e2e（Tab 进入 + Space 切换）', () => {
   it('Tab 聚焦首个复选框 + Space 切换 checked', async () => {
-    const { baseElement } = renderKbdFixture(CheckboxGroupKbdFixture);
+    const { baseElement } = await renderKbdFixture(CheckboxGroupKbdFixture);
 
     const group = baseElement.querySelector('[role="list"]') as HTMLElement;
     expect(group).not.toBeNull();

@@ -30,7 +30,7 @@ describe('SideBarContainer 动效实测（对齐 Semi）', () => {
   // 面板在「从未打开过」时不挂载，所以关闭态要先开再关。
   // （最初写成直接 visible:false，面板压根不存在，用例是空跑——已改成真实路径。）
   it('关闭后面板：过渡 180ms + Semi 曲线，且只动 transform 不做透明度渐变', async () => {
-    const screen = render(SideBarContainer, { props: { visible: true, motion: true } });
+    const screen = await render(SideBarContainer, { props: { visible: true, motion: true } });
     await settle();
     await screen.rerender({ visible: false, motion: true });
     const panel = document.querySelector('.cd-sidebar-container-panel') as HTMLElement | null;
@@ -43,7 +43,7 @@ describe('SideBarContainer 动效实测（对齐 Semi）', () => {
   });
 
   it('打开态面板：位移归零，过渡时长走 show 档 180ms', async () => {
-    render(SideBarContainer, { props: { visible: true, motion: true } });
+    await render(SideBarContainer, { props: { visible: true, motion: true } });
     await settle();
     const panel = document.querySelector('.cd-sidebar-container-panel') as HTMLElement;
     expect(panel).not.toBeNull();
@@ -57,7 +57,7 @@ describe('SideBarContainer 动效实测（对齐 Semi）', () => {
   // 本库机制是 transition + -container-open 状态类，但把时长/曲线挂在这两个同名类上，
   // 保证类名契约一致且不是装饰性的空类。
   it('面板带 Semi 的 -animation-content_show / _hide 类，且各自承载对应档时长', async () => {
-    const screen = render(SideBarContainer, { props: { visible: true, motion: true } });
+    const screen = await render(SideBarContainer, { props: { visible: true, motion: true } });
     await settle();
     const panel = document.querySelector('.cd-sidebar-container-panel') as HTMLElement;
     expect(panel.classList.contains('cd-sidebar-animation-content_show')).toBe(true);
@@ -74,7 +74,7 @@ describe('SideBarContainer 动效实测（对齐 Semi）', () => {
 
 describe('SideBar 主壳/详情头布局实测（对齐 Semi）', () => {
   it('main-content：12px 内边距（Semi $spacing-sidebar_main_content-padding）', async () => {
-    render(SideBarA11yFixture, { props: { mode: 'main' } });
+    await render(SideBarA11yFixture, { props: { mode: 'main' } });
     await settle();
     const content = document.querySelector('.cd-sidebar-main-content') as HTMLElement;
     expect(content).not.toBeNull();
@@ -84,7 +84,7 @@ describe('SideBar 主壳/详情头布局实测（对齐 Semi）', () => {
   });
 
   it('detail-header：12px 内边距 + space-between，左右两组各自列间距 8/4px', async () => {
-    render(SideBarA11yFixture, {
+    await render(SideBarA11yFixture, {
       props: { mode: 'code', customDetailHeader: false, detailContent: { name: 'x' } },
     });
     await settle();
@@ -118,7 +118,7 @@ describe('SideBarFileItem 正文内容样式实测（对齐 Semi）', () => {
   }
 
   it('正文 14px/24px；引用块 3px 左边框 + 16px 左内距', async () => {
-    render(SideBarFileItem, {
+    await render(SideBarFileItem, {
       props: {
         content: '<p>正文</p><blockquote><p>引用</p></blockquote>',
         editable: false,
@@ -137,7 +137,7 @@ describe('SideBarFileItem 正文内容样式实测（对齐 Semi）', () => {
   });
 
   it('代码块 4px 圆角 + 1px 边框 + 非透明底；块内 code 不叠底色', async () => {
-    render(SideBarFileItem, {
+    await render(SideBarFileItem, {
       props: { content: '<pre><code>const a = 1</code></pre>', editable: false },
     });
     const pre = await waitFor('.cd-sidebar-file-editor .ProseMirror pre');

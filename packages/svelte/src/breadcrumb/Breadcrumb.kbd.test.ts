@@ -15,7 +15,7 @@ function loc(el: Element) {
 
 describe('Breadcrumb 键盘 e2e（折叠触发器就地展开）', () => {
   it('Enter 就地展开全部项，折叠触发器消失', async () => {
-    const { baseElement } = renderKbdFixture(BreadcrumbKbdFixture);
+    const { baseElement } = await renderKbdFixture(BreadcrumbKbdFixture);
 
     const trigger = baseElement.querySelector('.cd-breadcrumb-item-more') as HTMLElement;
     expect(trigger).not.toBeNull();

@@ -20,7 +20,7 @@ function counterText(): string {
 
 describe('Image 灯箱键盘 e2e（focus trap + ←→ 翻页 + Esc 归还）', () => {
   it('开灯箱焦点入内；←→ 翻页；Esc 关闭归还 trigger', async () => {
-    const { baseElement } = renderKbdFixture(ImagePreviewKbdFixture);
+    const { baseElement } = await renderKbdFixture(ImagePreviewKbdFixture);
 
     const trigger = baseElement.querySelector('[data-testid="trigger"]') as HTMLButtonElement;
     expect(trigger).not.toBeNull();

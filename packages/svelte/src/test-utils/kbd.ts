@@ -26,12 +26,14 @@ export interface RenderKbdOptions {
 /**
  * 在真实浏览器里把组件包进 LocaleProvider 渲染。
  * 返回 vitest-browser-svelte 的 RenderResult（含 baseElement / container / 各 locator 查询）。
+ * vitest-browser-svelte@3 起 render() 返回纯 Promise（v2 是 RenderResult & PromiseLike
+ * 的混合类型，可同步取属性），故本函数与调用方都须 await。
  *
  * 用法：
- *   const screen = renderKbd(Modal, { props: { open: true, title: '...' } });
+ *   const screen = await renderKbd(Modal, { props: { open: true, title: '...' } });
  *   const dialog = screen.baseElement.querySelector('[role="dialog"]');
  */
-export function renderKbd(component: AnyComponent, options: RenderKbdOptions = {}) {
+export async function renderKbd(component: AnyComponent, options: RenderKbdOptions = {}) {
   const { props = {}, locale = 'en_US' } = options;
   return render(LocaleHarness as unknown as AnyComponent, {
     props: { component, props, locale },
@@ -44,7 +46,7 @@ export function renderKbd(component: AnyComponent, options: RenderKbdOptions = {
  * 故入参用宽松的 Component<any> 接收，避免与具体 fixture 的精确 props 类型冲突。
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function renderKbdFixture(component: Component<any>, props: Record<string, unknown> = {}) {
+export async function renderKbdFixture(component: Component<any>, props: Record<string, unknown> = {}) {
   return render(component as AnyComponent, { props });
 }
 
