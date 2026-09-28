@@ -45,10 +45,10 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "oxc-parser": "^0.150.0",
+    "oxc-parser": "^0.151.0",
     "semver": "^7.8.5",
-    "@modelcontextprotocol/node": "^2.0.0",
-    "@modelcontextprotocol/server": "^2.0.0"
+    "@modelcontextprotocol/node": "^2.1.0",
+    "@modelcontextprotocol/server": "^2.1.0"
   },
   "devDependencies": {
     "@types/node": "^26.6.1",
