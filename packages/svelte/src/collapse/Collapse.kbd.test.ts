@@ -13,7 +13,7 @@ function loc(el: Element) {
 
 describe('Collapse 键盘 e2e（header role=button，对齐 Semi）', () => {
   it('Tab 依序经过各 Header（全部 tabindex=0，无 roving）', async () => {
-    const { baseElement } = renderKbdFixture(CollapseKbdFixture);
+    const { baseElement } = await renderKbdFixture(CollapseKbdFixture);
 
     const headers = Array.from(
       baseElement.querySelectorAll<HTMLElement>('.cd-collapse-header'),
@@ -41,7 +41,7 @@ describe('Collapse 键盘 e2e（header role=button，对齐 Semi）', () => {
   });
 
   it('Enter / Space 展开当前焦点 Header（aria-expanded）', async () => {
-    const { baseElement } = renderKbdFixture(CollapseKbdFixture);
+    const { baseElement } = await renderKbdFixture(CollapseKbdFixture);
 
     const headers = Array.from(
       baseElement.querySelectorAll<HTMLElement>('.cd-collapse-header'),

@@ -18,7 +18,7 @@ function loc(el: Element) {
 
 describe('Anchor 键盘 e2e（链接 roving，真实焦点）', () => {
   it('Tab 单停靠点 + 方向键移动焦点（clamp）+ Home/End + Space 激活', async () => {
-    const { baseElement } = renderKbdFixture(AnchorKbdFixture);
+    const { baseElement } = await renderKbdFixture(AnchorKbdFixture);
 
     const links = Array.from(baseElement.querySelectorAll<HTMLElement>('[data-anchor-href]'));
     expect(links.length).toBe(3);

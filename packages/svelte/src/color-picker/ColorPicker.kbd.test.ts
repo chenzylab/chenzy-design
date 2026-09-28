@@ -12,7 +12,7 @@ function loc(el: Element) {
 
 describe('ColorPicker 键盘 e2e（slider 方向键微调）', () => {
   it('hue slider 聚焦后 ArrowRight 增大 h，Home 归零', async () => {
-    const { container } = renderKbdFixture(ColorPickerKbdFixture);
+    const { container } = await renderKbdFixture(ColorPickerKbdFixture);
 
     const sliders = container.querySelectorAll<HTMLElement>('[role="slider"]');
     expect(sliders.length).toBe(3);
@@ -32,7 +32,7 @@ describe('ColorPicker 键盘 e2e（slider 方向键微调）', () => {
   });
 
   it('saturation slider ArrowRight 改变 hex（经 onChange 回填）', async () => {
-    const { container } = renderKbdFixture(ColorPickerKbdFixture);
+    const { container } = await renderKbdFixture(ColorPickerKbdFixture);
     const sat = container.querySelector<HTMLElement>('[role="slider"]')!;
     const hexOut = container.querySelector('[data-testid="hex"]')!;
     const before = hexOut.textContent;

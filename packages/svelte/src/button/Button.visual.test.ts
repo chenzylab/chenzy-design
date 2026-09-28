@@ -7,7 +7,7 @@ import ButtonVisualFixture from './ButtonVisualFixture.svelte';
 
 describe('Button 视觉回归', () => {
   it('primary / secondary / danger', async () => {
-    const { baseElement } = renderVisualFixture(ButtonVisualFixture);
+    const { baseElement } = await renderVisualFixture(ButtonVisualFixture);
     const root = baseElement.querySelector('[data-visual-root]') as HTMLElement;
     await expect.element(locate(root)).toMatchScreenshot('button-default', {
       // headless 下抗锯齿/字体微差容忍：pixelmatch + 1% 错配比例阈值。

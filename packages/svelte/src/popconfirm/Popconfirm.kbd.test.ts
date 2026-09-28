@@ -15,7 +15,7 @@ function loc(el: Element) {
 
 describe('Popconfirm 键盘 e2e（浮层焦点 + Esc 归还）', () => {
   it('Enter 打开焦点进浮层；Esc 关闭归还触发器', async () => {
-    const { baseElement } = renderKbdFixture(PopconfirmKbdFixture);
+    const { baseElement } = await renderKbdFixture(PopconfirmKbdFixture);
 
     const trigger = baseElement.querySelector('.cd-tooltip-trigger') as HTMLElement;
     expect(trigger).not.toBeNull();

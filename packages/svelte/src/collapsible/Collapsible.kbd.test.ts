@@ -12,7 +12,7 @@ import CollapsibleKbdFixture from './CollapsibleKbdFixture.svelte';
 
 describe('Collapsible 真实布局行为', () => {
   it('点击 Toggle：wrapper 由 0 撑开到内容高度，再点归零并卸载内容', async () => {
-    renderKbdFixture(CollapsibleKbdFixture);
+    await renderKbdFixture(CollapsibleKbdFixture);
 
     const wrapper = document.querySelector('.cd-collapsible-wrapper') as HTMLElement;
     expect(wrapper).not.toBeNull();

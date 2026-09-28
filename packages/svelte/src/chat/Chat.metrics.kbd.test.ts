@@ -21,9 +21,9 @@ function computedOf(el: Element, keys: string[]): Record<string, string> {
   return out;
 }
 
-describe('Chat 视觉度量对齐 Semi 实测基线', () => {
-  it('输入框 textarea 的 line-height / font-size / padding / 初始高度与 Semi 一致', () => {
-    renderKbdFixture(ChatInputBoxKbdFixture);
+describe('Chat 视觉度量对齐 Semi 实测基线', async () => {
+  it('输入框 textarea 的 line-height / font-size / padding / 初始高度与 Semi 一致', async () => {
+    await renderKbdFixture(ChatInputBoxKbdFixture);
 
     const textarea = document.querySelector('.cd-chat-inputBox-container textarea');
     expect(textarea).not.toBeNull();
@@ -32,8 +32,8 @@ describe('Chat 视觉度量对齐 Semi 实测基线', () => {
     expect(computedOf(textarea!, keys)).toEqual(CHAT_INPUT_TEXTAREA.computed);
   });
 
-  it('输入框容器 padding / align-items 与 Semi 一致', () => {
-    renderKbdFixture(ChatInputBoxKbdFixture);
+  it('输入框容器 padding / align-items 与 Semi 一致', async () => {
+    await renderKbdFixture(ChatInputBoxKbdFixture);
 
     const container = document.querySelector('.cd-chat-inputBox-container');
     expect(container).not.toBeNull();
@@ -42,8 +42,8 @@ describe('Chat 视觉度量对齐 Semi 实测基线', () => {
     expect(computedOf(container!, keys)).toEqual(CHAT_INPUT_CONTAINER.computed);
   });
 
-  it('未传 placeholder 时不显示占位符（对齐 Semi：无内置默认文案）', () => {
-    renderKbdFixture(ChatInputBoxKbdFixture);
+  it('未传 placeholder 时不显示占位符（对齐 Semi：无内置默认文案）', async () => {
+    await renderKbdFixture(ChatInputBoxKbdFixture);
 
     const textarea = document.querySelector(
       '.cd-chat-inputBox-container textarea',

@@ -27,7 +27,7 @@ function insertSkill(pm: HTMLElement): void {
 
 describe('AIChatInput showPlaceholderWhenSkillOnly', () => {
   it('空编辑器：两个实例都显示 placeholder（基线）', async () => {
-    renderKbdFixture(AIChatInputPlaceholderKbdFixture);
+    await renderKbdFixture(AIChatInputPlaceholderKbdFixture);
     await waitEditors(2);
 
     const paras = [...document.querySelectorAll('.ProseMirror p')] as HTMLElement[];
@@ -39,7 +39,7 @@ describe('AIChatInput showPlaceholderWhenSkillOnly', () => {
   });
 
   it('段落只含 skillSlot 时：开启的实例仍判为空且加 has-skill-slot 类', async () => {
-    renderKbdFixture(AIChatInputPlaceholderKbdFixture);
+    await renderKbdFixture(AIChatInputPlaceholderKbdFixture);
     await waitEditors(2);
 
     const pms = [...document.querySelectorAll('.ProseMirror')] as HTMLElement[];

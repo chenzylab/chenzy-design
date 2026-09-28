@@ -7,7 +7,7 @@ import SplitButtonGroupVisualFixture from './SplitButtonGroupVisualFixture.svelt
 
 describe('SplitButtonGroup 视觉回归', () => {
   it('solid / light / borderless', async () => {
-    const { baseElement } = renderVisualFixture(SplitButtonGroupVisualFixture);
+    const { baseElement } = await renderVisualFixture(SplitButtonGroupVisualFixture);
     const root = baseElement.querySelector('[data-visual-root]') as HTMLElement;
     // 等 use:splitClasses 的 MutationObserver 给首/末按钮打上圆角 class。
     await new Promise((r) => setTimeout(r, 100));

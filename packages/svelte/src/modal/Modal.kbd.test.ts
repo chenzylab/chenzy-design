@@ -18,7 +18,7 @@ function loc(el: Element) {
 
 describe('Modal 键盘 e2e（focus trap）', () => {
   it('打开后焦点进入对话框；Tab 循环困在 Modal 内；关闭后焦点归还 trigger', async () => {
-    const { baseElement } = renderKbdFixture(ModalKbdFixture);
+    const { baseElement } = await renderKbdFixture(ModalKbdFixture);
 
     // 先聚焦 trigger，再点击打开（点击会先聚焦该按钮，作为归还焦点的锚点）。
     const trigger = baseElement.querySelector('[data-testid="trigger"]') as HTMLButtonElement;

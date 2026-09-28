@@ -12,7 +12,7 @@ import DatePickerRtlFixture from './DatePickerRtlFixture.svelte';
 
 describe('DatePicker RTL 镜像（真实布局坐标）', () => {
   it('触发器 direction 在 LTR 为 ltr、RTL 为 rtl', async () => {
-    const screen = renderKbd(DatePickerRtlFixture as never);
+    const screen = await renderKbd(DatePickerRtlFixture as never);
     const root = screen.baseElement;
 
     expect(root.querySelector('.cd-rtl'), '.cd-rtl 作用域应存在').toBeTruthy();
@@ -27,7 +27,7 @@ describe('DatePicker RTL 镜像（真实布局坐标）', () => {
   });
 
   it('range 触发器 prefix/suffix padding 在 RTL 下左右互换', async () => {
-    const screen = renderKbd(DatePickerRtlFixture as never);
+    const screen = await renderKbd(DatePickerRtlFixture as never);
     const root = screen.baseElement;
 
     const ltrPrefix = root.querySelector('[data-testid="ltr"] .cd-datepicker-range-input-prefix') as HTMLElement;

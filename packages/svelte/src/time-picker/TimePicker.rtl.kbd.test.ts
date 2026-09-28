@@ -9,7 +9,7 @@ import TimePickerRtlFixture from './TimePickerRtlFixture.svelte';
 
 describe('TimePicker RTL 镜像（真实布局坐标）', () => {
   it('触发器 direction 在 LTR 为 ltr、RTL 为 rtl', async () => {
-    const screen = renderKbd(TimePickerRtlFixture as never);
+    const screen = await renderKbd(TimePickerRtlFixture as never);
     const root = screen.baseElement;
 
     expect(root.querySelector('.cd-rtl'), '.cd-rtl 作用域应存在').toBeTruthy();

@@ -19,7 +19,7 @@ function activeOptionText(combobox: HTMLElement): string | null {
 
 describe('Cascader 键盘 e2e（aria-activedescendant 列内 roving）', () => {
   it('打开后 ↑↓ 列内移高亮 + Home/End 列内首末', async () => {
-    renderKbdFixture(CascaderKbdFixture);
+    await renderKbdFixture(CascaderKbdFixture);
 
     const combobox = document.querySelector('[role="combobox"]') as HTMLElement;
     expect(combobox).not.toBeNull();
@@ -54,7 +54,7 @@ describe('Cascader 键盘 e2e（aria-activedescendant 列内 roving）', () => {
   });
 
   it('ArrowRight 展开下一列并进入首项，ArrowLeft 回上一列保留原高亮', async () => {
-    renderKbdFixture(CascaderKbdFixture);
+    await renderKbdFixture(CascaderKbdFixture);
     const combobox = document.querySelector('[role="combobox"]') as HTMLElement;
     await userEvent.click(combobox);
 
@@ -72,7 +72,7 @@ describe('Cascader 键盘 e2e（aria-activedescendant 列内 roving）', () => {
   });
 
   it('Enter 选中叶子节点并关闭面板', async () => {
-    renderKbdFixture(CascaderKbdFixture);
+    await renderKbdFixture(CascaderKbdFixture);
     const combobox = document.querySelector('[role="combobox"]') as HTMLElement;
     await userEvent.click(combobox);
 
@@ -87,7 +87,7 @@ describe('Cascader 键盘 e2e（aria-activedescendant 列内 roving）', () => {
   });
 
   it('Escape 关闭面板', async () => {
-    renderKbdFixture(CascaderKbdFixture);
+    await renderKbdFixture(CascaderKbdFixture);
     const combobox = document.querySelector('[role="combobox"]') as HTMLElement;
     await userEvent.click(combobox);
     expect(combobox.getAttribute('aria-expanded')).toBe('true');
@@ -97,7 +97,7 @@ describe('Cascader 键盘 e2e（aria-activedescendant 列内 roving）', () => {
   });
 
   it('Space 在多选模式下切换叶子节点勾选', async () => {
-    renderKbdFixture(CascaderKbdFixture, { multiple: true });
+    await renderKbdFixture(CascaderKbdFixture, { multiple: true });
     const combobox = document.querySelector('[role="combobox"]') as HTMLElement;
     await userEvent.click(combobox);
 
@@ -116,7 +116,7 @@ describe('Cascader 键盘 e2e（aria-activedescendant 列内 roving）', () => {
   });
 
   it('RTL：ArrowLeft 展开下一列，ArrowRight 回上一列（键义对调）', async () => {
-    renderKbdFixture(CascaderKbdFixture, { rtl: true });
+    await renderKbdFixture(CascaderKbdFixture, { rtl: true });
     const combobox = document.querySelector('[role="combobox"]') as HTMLElement;
     await userEvent.click(combobox);
 

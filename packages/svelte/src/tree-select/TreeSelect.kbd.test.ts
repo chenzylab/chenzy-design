@@ -20,7 +20,7 @@ function activeNodeText(combobox: HTMLElement): string | null {
 
 describe('TreeSelect 键盘 e2e（aria-activedescendant 浮层 roving）', () => {
   it('打开后 ↑↓ 移高亮 + Home/End 首末', async () => {
-    renderKbdFixture(TreeSelectKbdFixture);
+    await renderKbdFixture(TreeSelectKbdFixture);
 
     const combobox = document.querySelector('[role="combobox"]') as HTMLElement;
     expect(combobox).not.toBeNull();
@@ -62,7 +62,7 @@ describe('TreeSelect searchAutoFocus（真实 focus，jsdom 测不了）', () =>
   ];
 
   it('filterTreeNode + searchAutoFocus 时，点击触发器打开面板后搜索框自动获焦', async () => {
-    renderKbd(TreeSelect, {
+    await renderKbd(TreeSelect, {
       props: { treeData, filterTreeNode: true, searchAutoFocus: true, placeholder: 'Pick' },
     });
 
@@ -76,7 +76,7 @@ describe('TreeSelect searchAutoFocus（真实 focus，jsdom 测不了）', () =>
   });
 
   it('未开启 searchAutoFocus 时，打开面板不抢占焦点', async () => {
-    renderKbd(TreeSelect, {
+    await renderKbd(TreeSelect, {
       props: { treeData, filterTreeNode: true, placeholder: 'Pick' },
     });
 

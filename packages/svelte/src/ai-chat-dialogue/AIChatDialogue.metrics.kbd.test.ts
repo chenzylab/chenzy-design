@@ -36,7 +36,7 @@ const settle = () => new Promise((r) => setTimeout(r, 100));
 
 describe('AIChatDialogue 布局实测（对齐 Semi）', () => {
   it('wrapper：padding 8/16px + column-gap 16px + align-items center', async () => {
-    render(AIChatDialogue, { props: { chats, roleConfig } });
+    await render(AIChatDialogue, { props: { chats, roleConfig } });
     await settle();
     const w = document.querySelector('.cd-ai-chat-dialogue-wrapper') as HTMLElement;
     const cs = getComputedStyle(w);
@@ -48,7 +48,7 @@ describe('AIChatDialogue 布局实测（对齐 Semi）', () => {
   });
 
   it('container：column-gap 12px，user 那条 row-reverse、assistant 那条 row', async () => {
-    render(AIChatDialogue, { props: { chats, roleConfig } });
+    await render(AIChatDialogue, { props: { chats, roleConfig } });
     await settle();
     const containers = document.querySelectorAll('.cd-ai-chat-dialogue-container');
     expect(containers.length).toBe(2);
@@ -66,7 +66,7 @@ describe('AIChatDialogue 布局实测（对齐 Semi）', () => {
   });
 
   it('align=leftAlign：两条都不反转', async () => {
-    render(AIChatDialogue, { props: { chats, roleConfig, align: 'leftAlign' } });
+    await render(AIChatDialogue, { props: { chats, roleConfig, align: 'leftAlign' } });
     await settle();
     const containers = document.querySelectorAll('.cd-ai-chat-dialogue-container');
     for (const c of containers) {
@@ -85,7 +85,7 @@ describe('AIChatDialogue 布局实测（对齐 Semi）', () => {
       { id: 'a1', role: 'assistant', content: '第一句' },
       { id: 'a2', role: 'assistant', content: '第二句' },
     ];
-    render(AIChatDialogue, { props: { chats: sameRole, roleConfig } });
+    await render(AIChatDialogue, { props: { chats: sameRole, roleConfig } });
     await settle();
     const avatars = document.querySelectorAll('.cd-ai-chat-dialogue-avatar');
     expect(avatars.length).toBe(2);
@@ -103,7 +103,7 @@ describe('AIChatDialogue backBottom z-index（对齐 Semi）', () => {
       role: i % 2 ? 'assistant' : 'user',
       content: `第 ${i} 条`,
     }));
-    render(AIChatDialogue, { props: { chats: many, roleConfig } });
+    await render(AIChatDialogue, { props: { chats: many, roleConfig } });
     await settle();
     const list = document.querySelector('.cd-ai-chat-dialogue-list') as HTMLElement;
     // 必须让列表真的溢出：按钮的显隐取决于「距底距离 > 阈值」，

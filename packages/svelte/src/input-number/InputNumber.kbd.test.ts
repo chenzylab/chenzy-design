@@ -13,7 +13,7 @@ function loc(el: Element) {
 
 describe('InputNumber 键盘 e2e（role=spinbutton ↑↓ 步进）', () => {
   it('Tab 聚焦 + ↑↓ 步进 + PageUp/PageDown 大步进 + 钳到 max', async () => {
-    const { baseElement } = renderKbdFixture(InputNumberKbdFixture);
+    const { baseElement } = await renderKbdFixture(InputNumberKbdFixture);
 
     const spin = baseElement.querySelector('[role="spinbutton"]') as HTMLElement;
     expect(spin).not.toBeNull();

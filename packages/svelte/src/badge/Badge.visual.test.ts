@@ -6,7 +6,7 @@ import BadgeVisualFixture from './BadgeVisualFixture.svelte';
 
 describe('Badge 视觉回归', () => {
   it('count badge', async () => {
-    const { baseElement } = renderVisualFixture(BadgeVisualFixture);
+    const { baseElement } = await renderVisualFixture(BadgeVisualFixture);
     const root = baseElement.querySelector('[data-visual-root]') as HTMLElement;
     await expect.element(locate(root)).toMatchScreenshot('badge-default', {
       comparatorName: 'pixelmatch',

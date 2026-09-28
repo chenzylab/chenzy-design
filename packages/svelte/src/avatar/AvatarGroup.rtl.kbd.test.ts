@@ -19,7 +19,7 @@ function itemLefts(group: Element): number[] {
 
 describe('AvatarGroup RTL 层叠镜像（真实布局坐标）', () => {
   it('LTR 首个头像在最左，RTL 首个头像在最右', async () => {
-    const screen = renderKbd(AvatarGroupRtlFixture as never);
+    const screen = await renderKbd(AvatarGroupRtlFixture as never);
     const root = screen.baseElement;
 
     const ltrGroup = root.querySelector('[data-testid="ltr"] .cd-avatar-group');

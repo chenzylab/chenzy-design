@@ -15,7 +15,7 @@ function loc(el: Element) {
 
 describe('TimePicker 交互 e2e（ScrollList 点击选中）', () => {
   it('打开面板 → 点小时列项选中 → Esc 关闭', async () => {
-    const { baseElement } = renderKbdFixture(TimePickerKbdFixture);
+    const { baseElement } = await renderKbdFixture(TimePickerKbdFixture);
 
     const trigger = baseElement.querySelector('[data-testid="before"]') as HTMLButtonElement;
     expect(trigger).not.toBeNull();

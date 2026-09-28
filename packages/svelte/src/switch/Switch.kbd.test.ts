@@ -14,7 +14,7 @@ function loc(el: Element) {
 
 describe('Switch 键盘 e2e（role=switch Space 切换）', () => {
   it('Tab 聚焦 + Space 翻转 aria-checked（Enter 对 checkbox 无效）', async () => {
-    const { baseElement } = renderKbdFixture(SwitchKbdFixture);
+    const { baseElement } = await renderKbdFixture(SwitchKbdFixture);
 
     const sw = baseElement.querySelector('[role="switch"]') as HTMLElement;
     expect(sw).not.toBeNull();

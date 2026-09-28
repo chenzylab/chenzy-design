@@ -16,7 +16,7 @@ function loc(el: Element) {
 
 describe('SideSheet 键盘 e2e', () => {
   it('打开后对话框在 document；Esc 关闭移除面板', async () => {
-    const { baseElement } = renderKbdFixture(SideSheetKbdFixture);
+    const { baseElement } = await renderKbdFixture(SideSheetKbdFixture);
 
     const trigger = baseElement.querySelector('[data-testid="trigger"]') as HTMLButtonElement;
     expect(trigger).not.toBeNull();
@@ -33,7 +33,7 @@ describe('SideSheet 键盘 e2e', () => {
   });
 
   it('footer close() 关闭面板', async () => {
-    const { baseElement } = renderKbdFixture(SideSheetKbdFixture);
+    const { baseElement } = await renderKbdFixture(SideSheetKbdFixture);
 
     const trigger = baseElement.querySelector('[data-testid="trigger"]') as HTMLButtonElement;
     await userEvent.click(trigger);

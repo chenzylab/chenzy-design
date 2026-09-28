@@ -6,7 +6,7 @@ import InputVisualFixture from './InputVisualFixture.svelte';
 
 describe('Input 视觉回归', () => {
   it('default / disabled', async () => {
-    const { baseElement } = renderVisualFixture(InputVisualFixture);
+    const { baseElement } = await renderVisualFixture(InputVisualFixture);
     const root = baseElement.querySelector('[data-visual-root]') as HTMLElement;
     await expect.element(locate(root)).toMatchScreenshot('input-default', {
       comparatorName: 'pixelmatch',

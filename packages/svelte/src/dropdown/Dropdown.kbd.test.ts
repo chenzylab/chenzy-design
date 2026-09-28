@@ -17,7 +17,7 @@ function loc(el: Element) {
 
 describe('Dropdown 键盘 e2e（菜单 roving + Esc）', () => {
   it('ArrowDown 打开并聚焦首项；↑↓ 移动焦点；Esc 关闭复位 aria-expanded', async () => {
-    const { baseElement } = renderKbdFixture(DropdownKbdFixture);
+    const { baseElement } = await renderKbdFixture(DropdownKbdFixture);
 
     // 触发器根是 span.cd-dropdown-trigger（ARIA 载体，本身不可聚焦）；
     // 真实焦点落在其内用户提供的 <button>（keydown 冒泡到 span 上的处理器）。

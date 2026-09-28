@@ -13,7 +13,7 @@ function sleep(ms: number): Promise<void> {
 
 describe('ResizeGroup display:none 挂载后变可见', () => {
   it('容器从隐藏变为可见后应重新计算面板尺寸（非塌陷宽度）', async () => {
-    renderKbdFixture(ResizeGroupHiddenFixture);
+    await renderKbdFixture(ResizeGroupHiddenFixture);
 
     // 等首次 initSpace()（onMount 内 setTimeout 0，此时容器仍 display:none）先跑完并
     // 提前 return，确保后续 toggle 命中"已经挂载过、但从未成功测量"的真实场景，

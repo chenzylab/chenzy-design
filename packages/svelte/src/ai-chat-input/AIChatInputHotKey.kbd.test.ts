@@ -32,7 +32,7 @@ function countOf(testid: string): number {
 
 describe('AIChatInput allowHotKeySend', () => {
   it('默认允许：Enter 触发发送', async () => {
-    renderKbdFixture(AIChatInputHotKeyKbdFixture);
+    await renderKbdFixture(AIChatInputHotKeyKbdFixture);
     await waitEditors(2);
 
     const on = document.querySelector('[data-testid="allow-on"] .ProseMirror') as HTMLElement;
@@ -42,7 +42,7 @@ describe('AIChatInput allowHotKeySend', () => {
   });
 
   it('扩展置 allowHotKeySend=false：Enter 不发送（把热键让给扩展）', async () => {
-    renderKbdFixture(AIChatInputHotKeyKbdFixture);
+    await renderKbdFixture(AIChatInputHotKeyKbdFixture);
     await waitEditors(2);
 
     const off = document.querySelector('[data-testid="allow-off"] .ProseMirror') as HTMLElement;

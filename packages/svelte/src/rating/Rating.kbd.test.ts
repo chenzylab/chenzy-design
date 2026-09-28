@@ -19,7 +19,7 @@ function secondStar(root: Element, index: number): HTMLElement {
 
 describe('Rating 键盘 e2e（radio 星 + 方向键）', () => {
   it('Tab 聚焦当前星 + 方向键调分并搬移焦点 + 越界环绕', async () => {
-    const { baseElement } = renderKbdFixture(RatingKbdFixture);
+    const { baseElement } = await renderKbdFixture(RatingKbdFixture);
 
     const root = baseElement.querySelector('ul.cd-rating') as HTMLElement;
     expect(root).not.toBeNull();

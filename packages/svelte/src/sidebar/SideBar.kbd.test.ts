@@ -13,7 +13,7 @@ import SideBarDetailKbdFixture from './SideBarDetailKbdFixture.svelte';
 
 describe('SideBar 内置详情渲染（detailContent）', () => {
   it('详情头渲染 name + 复制按钮，点击复制回传 onDetailContentCopy', async () => {
-    renderKbdFixture(SideBarDetailKbdFixture);
+    await renderKbdFixture(SideBarDetailKbdFixture);
 
     // 详情头：返回按钮 + 标题 + 复制按钮
     expect(document.querySelector('.cd-sidebar-detail-header')).not.toBeNull();

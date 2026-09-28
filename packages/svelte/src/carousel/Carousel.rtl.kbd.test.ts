@@ -20,7 +20,7 @@ function side(container: Element, sel: string): { fromLeft: number; fromRight: n
 
 describe('Carousel RTL 镜像（真实布局坐标）', () => {
   it('cd-rtl 作用域应真的把方向切成 rtl（而非依赖 dir 属性）', async () => {
-    const screen = renderKbd(CarouselRtlFixture as never);
+    const screen = await renderKbd(CarouselRtlFixture as never);
     const root = screen.baseElement;
 
     const ltr = root.querySelector('[data-testid="ltr"] .cd-carousel');
@@ -34,7 +34,7 @@ describe('Carousel RTL 镜像（真实布局坐标）', () => {
   });
 
   it('prev/next 箭头在 RTL 下应左右互换', async () => {
-    const screen = renderKbd(CarouselRtlFixture as never);
+    const screen = await renderKbd(CarouselRtlFixture as never);
     const root = screen.baseElement;
 
     const ltr = root.querySelector('[data-testid="ltr"] .cd-carousel') as HTMLElement;
