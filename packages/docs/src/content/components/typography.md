@@ -6,8 +6,8 @@ brief: 文字，图片，段落，数值的基本格式。
 ---
 
 <script>
-  import DemoBox from '$lib/components/DemoBox.svelte';
-  import Notice from '$lib/components/Notice.svelte';
+  import DemoBox from '#lib/components/DemoBox.svelte';
+  import Notice from '#lib/components/Notice.svelte';
 
   import Title from '../../demos/typography/01-title.svelte';
   import titleSrc from '../../demos/typography/01-title.svelte?raw';

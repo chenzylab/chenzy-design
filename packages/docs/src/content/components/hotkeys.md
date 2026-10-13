@@ -6,7 +6,7 @@ brief: 用于方便用户自定义快捷键及相关操作。
 ---
 
 <script>
-  import DemoBox from '$lib/components/DemoBox.svelte';
+  import DemoBox from '#lib/components/DemoBox.svelte';
 
   import Basic from '../../demos/hot-keys/01-basic.svelte';
   import basicSrc from '../../demos/hot-keys/01-basic.svelte?raw';

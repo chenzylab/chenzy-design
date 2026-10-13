@@ -6,7 +6,7 @@ brief: 通知用于主动向用户发出消息通知。
 ---
 
 <script>
-  import DemoBox from '$lib/components/DemoBox.svelte';
+  import DemoBox from '#lib/components/DemoBox.svelte';
 
   import Basic from '../../demos/notification/01-basic.svelte';
   import basicSrc from '../../demos/notification/01-basic.svelte?raw';

@@ -6,8 +6,8 @@ brief: 复选框允许用户选中多个选项。
 ---
 
 <script>
-  import DemoBox from '$lib/components/DemoBox.svelte';
-  import Notice from '$lib/components/Notice.svelte';
+  import DemoBox from '#lib/components/DemoBox.svelte';
+  import Notice from '#lib/components/Notice.svelte';
 
   import Basic from '../../demos/checkbox/01-basic.svelte';
   import basicSrc from '../../demos/checkbox/01-basic.svelte?raw';

@@ -6,8 +6,8 @@ brief: 表格用于呈现结构化的数据内容，通常会伴随提供对数�
 ---
 
 <script>
-  import DemoBox from '$lib/components/DemoBox.svelte';
-  import Notice from '$lib/components/Notice.svelte';
+  import DemoBox from '#lib/components/DemoBox.svelte';
+  import Notice from '#lib/components/Notice.svelte';
 
   import Basic from '../../demos/table/01-basic.svelte';
   import basicSrc from '../../demos/table/01-basic.svelte?raw';

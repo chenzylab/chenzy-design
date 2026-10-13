@@ -5,7 +5,7 @@
   // 解压用 fflate（本库 zip 构建脚本 build-skills-zip.ts 同款，无需引入 jszip）。
   import { unzipSync } from 'fflate';
   import { Checkbox, CheckboxGroup, Button, Card } from '@chenzy-design/svelte';
-  import { base } from '$app/paths';
+  import { base } from '#lib/base';
 
   interface ClientOption {
     id: string;

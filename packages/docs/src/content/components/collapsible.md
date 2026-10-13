@@ -6,7 +6,7 @@ brief: 行为组件，是一个用于展开或折叠内容的容器。
 ---
 
 <script>
-  import DemoBox from '$lib/components/DemoBox.svelte';
+  import DemoBox from '#lib/components/DemoBox.svelte';
 
   import Basic from '../../demos/collapsible/01-basic.svelte';
   import basicSrc from '../../demos/collapsible/01-basic.svelte?raw';

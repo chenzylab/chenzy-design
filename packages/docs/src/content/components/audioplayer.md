@@ -6,7 +6,7 @@ brief: 用于播放音频
 ---
 
 <script>
-  import DemoBox from '$lib/components/DemoBox.svelte';
+  import DemoBox from '#lib/components/DemoBox.svelte';
 
   import Basic from '../../demos/audio-player/01-basic.svelte';
   import basicSrc from '../../demos/audio-player/01-basic.svelte?raw';

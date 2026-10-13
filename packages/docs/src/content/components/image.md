@@ -6,7 +6,7 @@ brief: 用于展示和预览图片。
 ---
 
 <script>
-  import DemoBox from '$lib/components/DemoBox.svelte';
+  import DemoBox from '#lib/components/DemoBox.svelte';
 
   import Basic from '../../demos/image/01-basic.svelte';
   import basicSrc from '../../demos/image/01-basic.svelte?raw';

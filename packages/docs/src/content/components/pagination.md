@@ -6,7 +6,7 @@ brief: 采用分页的形式分隔长列表，每次只加载一个页面。
 ---
 
 <script>
-  import DemoBox from '$lib/components/DemoBox.svelte';
+  import DemoBox from '#lib/components/DemoBox.svelte';
 
   import Basic from '../../demos/pagination/01-basic.svelte';
   import basicSrc from '../../demos/pagination/01-basic.svelte?raw';

@@ -6,7 +6,7 @@ brief: 24 栅格系统。
 ---
 
 <script>
-  import DemoBox from '$lib/components/DemoBox.svelte';
+  import DemoBox from '#lib/components/DemoBox.svelte';
 
   import Basic from '../../demos/grid/01-basic.svelte';
   import basicSrc from '../../demos/grid/01-basic.svelte?raw';

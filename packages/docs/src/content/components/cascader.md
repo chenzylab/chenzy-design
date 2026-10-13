@@ -6,7 +6,7 @@ brief: 用于选择多级分类下的某个选项。
 ---
 
 <script>
-  import DemoBox from '$lib/components/DemoBox.svelte';
+  import DemoBox from '#lib/components/DemoBox.svelte';
 
   import Basic from '../../demos/cascader/01-basic.svelte';
   import basicSrc from '../../demos/cascader/01-basic.svelte?raw';

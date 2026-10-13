@@ -6,7 +6,7 @@ brief: 展示评分的组件。
 ---
 
 <script>
-  import DemoBox from '$lib/components/DemoBox.svelte';
+  import DemoBox from '#lib/components/DemoBox.svelte';
 
   import Basic from '../../demos/rating/01-basic.svelte';
   import basicSrc from '../../demos/rating/01-basic.svelte?raw';

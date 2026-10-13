@@ -6,8 +6,8 @@ brief: 开关是用于切换两种互斥状态的交互形式。
 ---
 
 <script>
-  import DemoBox from '$lib/components/DemoBox.svelte';
-  import Notice from '$lib/components/Notice.svelte';
+  import DemoBox from '#lib/components/DemoBox.svelte';
+  import Notice from '#lib/components/Notice.svelte';
 
   import Basic from '../../demos/switch/01-basic.svelte';
   import basicSrc from '../../demos/switch/01-basic.svelte?raw';

@@ -6,7 +6,7 @@ brief: 头像，支持图片或字符展示。
 ---
 
 <script>
-  import DemoBox from '$lib/components/DemoBox.svelte';
+  import DemoBox from '#lib/components/DemoBox.svelte';
 
   import Size from '../../demos/avatar/01-size.svelte';
   import sizeSrc from '../../demos/avatar/01-size.svelte?raw';

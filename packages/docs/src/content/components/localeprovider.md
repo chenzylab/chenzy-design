@@ -6,8 +6,8 @@ brief: 国际化组件，为组件提供多语言支持。
 ---
 
 <script>
-  import DemoBox from '$lib/components/DemoBox.svelte';
-  import Notice from '$lib/components/Notice.svelte';
+  import DemoBox from '#lib/components/DemoBox.svelte';
+  import Notice from '#lib/components/Notice.svelte';
 
   import Basic from '../../demos/locale-provider/01-basic.svelte';
   import basicSrc from '../../demos/locale-provider/01-basic.svelte?raw';

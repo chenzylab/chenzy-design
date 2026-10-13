@@ -6,7 +6,7 @@ brief: 描述列表用于键值对的呈现。
 ---
 
 <script>
-  import DemoBox from '$lib/components/DemoBox.svelte';
+  import DemoBox from '#lib/components/DemoBox.svelte';
 
   import Basic from '../../demos/descriptions/01-basic.svelte';
   import basicSrc from '../../demos/descriptions/01-basic.svelte?raw';

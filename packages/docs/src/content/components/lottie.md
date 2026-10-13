@@ -6,7 +6,7 @@ brief: 在网页中展示 Lottie 动画。
 ---
 
 <script>
-  import DemoBox from '$lib/components/DemoBox.svelte';
+  import DemoBox from '#lib/components/DemoBox.svelte';
 
   import Basic from '../../demos/lottie/01-basic.svelte';
   import basicSrc from '../../demos/lottie/01-basic.svelte?raw';

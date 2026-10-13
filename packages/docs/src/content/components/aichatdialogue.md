@@ -6,8 +6,8 @@ brief: AI 对话消息流，支持多种消息类型、引用标注、选择模�
 ---
 
 <script>
-  import DemoBox from '$lib/components/DemoBox.svelte';
-  import Notice from '$lib/components/Notice.svelte';
+  import DemoBox from '#lib/components/DemoBox.svelte';
+  import Notice from '#lib/components/Notice.svelte';
 
   import Basic from '../../demos/ai-chat-dialogue/01-basic.svelte';
   import basicSrc from '../../demos/ai-chat-dialogue/01-basic.svelte?raw';

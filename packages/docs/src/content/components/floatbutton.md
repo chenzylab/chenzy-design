@@ -6,7 +6,7 @@ brief: 悬浮按钮是可以悬浮在页面上的可操作按钮。
 ---
 
 <script>
-  import DemoBox from '$lib/components/DemoBox.svelte';
+  import DemoBox from '#lib/components/DemoBox.svelte';
 
   import Basic from '../../demos/float-button/01-basic.svelte';
   import basicSrc from '../../demos/float-button/01-basic.svelte?raw';

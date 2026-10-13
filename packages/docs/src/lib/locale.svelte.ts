@@ -1,6 +1,6 @@
 // 文档站语言状态（zh / en）。用 runes 模块级 $state 做全局单例，
 // localStorage 持久化，顶栏切换。SSR 阶段默认 zh，客户端 mount 后同步。
-import { browser } from '$app/environment';
+import { browser } from '$app/env';
 
 export type Lang = 'zh' | 'en';
 

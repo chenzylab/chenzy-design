@@ -6,7 +6,7 @@ brief: 可以展开或折叠展示内容区域。
 ---
 
 <script>
-  import DemoBox from '$lib/components/DemoBox.svelte';
+  import DemoBox from '#lib/components/DemoBox.svelte';
 
   import Basic from '../../demos/collapse/01-basic.svelte';
   import basicSrc from '../../demos/collapse/01-basic.svelte?raw';

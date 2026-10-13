@@ -6,7 +6,7 @@ brief: 根据语法高亮页面中的代码块
 ---
 
 <script>
-  import DemoBox from '$lib/components/DemoBox.svelte';
+  import DemoBox from '#lib/components/DemoBox.svelte';
 
   import Basic from '../../demos/code-highlight/01-basic.svelte';
   import basicSrc from '../../demos/code-highlight/01-basic.svelte?raw';

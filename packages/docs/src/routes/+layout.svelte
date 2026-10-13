@@ -1,7 +1,7 @@
 <script lang="ts">
-  import { page } from '$app/stores';
-  import { base } from '$app/paths';
-  import { browser } from '$app/environment';
+  import { page } from '$app/state';
+  import { base } from '#lib/base';
+  import { browser } from '$app/env';
   import type { Snippet } from 'svelte';
   // 浏览器样式 reset 打底（对齐 Semi 官网架构：reset 全局归一 + presetTypography 局部
   // 加回正文排版）。tailwind-compat 变体不覆盖 button 背景等，与组件库最兼容。必须在
@@ -11,9 +11,9 @@
   import '@chenzy-design/tokens/tokens.css';
   import 'uno.css';
   import '../app.css';
-  import Search from '$lib/components/Search.svelte';
-  import { locale } from '$lib/locale.svelte';
-  import { t } from '$lib/i18n';
+  import Search from '#lib/components/Search.svelte';
+  import { locale } from '#lib/locale.svelte';
+  import { t } from '#lib/i18n';
 
   const { children }: { children: Snippet } = $props();
 
@@ -21,7 +21,7 @@
 
   // 首页（/）走全宽无侧边栏；其余路由由 (app) 分组 layout 套上侧边栏两栏布局
   const isHome = $derived(
-    $page.url.pathname === base || $page.url.pathname === `${base}/`,
+    page.url.pathname === base || page.url.pathname === `${base}/`,
   );
 
   let theme = $state('light');
@@ -97,7 +97,7 @@
     <nav class="docs-header-nav">
       <!-- 顶部一级导航对齐 Semi 官网（组件/主题/设计转代码/模板/数据可视化/博客）。
            组件已实现（可点）；其余页面暂未实现，保持灰色占位（对齐 Semi 项，功能后续补）。 -->
-      <a href="{base}/components" class:active={$page.url.pathname.startsWith(`${base}/components`)}>
+      <a href="{base}/components" class:active={page.url.pathname.startsWith(`${base}/components`)}>
         {t('nav.components', lang)}
       </a>
       <span class="nav-placeholder">{lang === 'zh' ? '主题' : 'Theme'}</span>

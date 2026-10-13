@@ -6,8 +6,8 @@ brief: 可从屏幕边沿滑出的浮层面板，通常用于承载二级操作�
 ---
 
 <script>
-  import DemoBox from '$lib/components/DemoBox.svelte';
-  import Notice from '$lib/components/Notice.svelte';
+  import DemoBox from '#lib/components/DemoBox.svelte';
+  import Notice from '#lib/components/Notice.svelte';
 
   import Basic from '../../demos/side-sheet/01-basic.svelte';
   import basicSrc from '../../demos/side-sheet/01-basic.svelte?raw';

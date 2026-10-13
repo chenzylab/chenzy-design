@@ -6,7 +6,7 @@ brief: 标签是图形化标记界面上的元素的组件，达到快速识别�
 ---
 
 <script>
-  import DemoBox from '$lib/components/DemoBox.svelte';
+  import DemoBox from '#lib/components/DemoBox.svelte';
 
   import Basic from '../../demos/tag/01-basic.svelte';
   import basicSrc from '../../demos/tag/01-basic.svelte?raw';

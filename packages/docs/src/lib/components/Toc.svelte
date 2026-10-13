@@ -1,7 +1,7 @@
 <script lang="ts">
-  import { locale } from '$lib/locale.svelte';
-  import { t } from '$lib/i18n';
-  import { saveScrollSection } from '$lib/scroll-restore';
+  import { locale } from '#lib/locale.svelte';
+  import { t } from '#lib/i18n';
+  import { saveScrollSection } from '#lib/scroll-restore';
 
   const lang = $derived(locale.value);
 

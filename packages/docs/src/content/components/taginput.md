@@ -6,7 +6,7 @@ brief: 标签输入框能够将输入的内容生成标签。
 ---
 
 <script>
-  import DemoBox from '$lib/components/DemoBox.svelte';
+  import DemoBox from '#lib/components/DemoBox.svelte';
 
   import Basic from '../../demos/tag-input/01-basic.svelte';
   import basicSrc from '../../demos/tag-input/01-basic.svelte?raw';

@@ -6,7 +6,7 @@ brief: 列表控件，用于展示一组结构、样式类似的数据。
 ---
 
 <script>
-  import DemoBox from '$lib/components/DemoBox.svelte';
+  import DemoBox from '#lib/components/DemoBox.svelte';
 
   import Basic from '../../demos/list/01-basic.svelte';
   import basicSrc from '../../demos/list/01-basic.svelte?raw';

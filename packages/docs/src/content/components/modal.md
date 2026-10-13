@@ -6,8 +6,8 @@ brief: 模态对话框用于等待用户响应、告知用户重要信息或在�
 ---
 
 <script>
-  import DemoBox from '$lib/components/DemoBox.svelte';
-  import Notice from '$lib/components/Notice.svelte';
+  import DemoBox from '#lib/components/DemoBox.svelte';
+  import Notice from '#lib/components/Notice.svelte';
   import Basic from '../../demos/modal/01-basic.svelte';
   import basicRaw from '../../demos/modal/01-basic.svelte?raw';
   import FooterFill from '../../demos/modal/02-footer-fill.svelte';

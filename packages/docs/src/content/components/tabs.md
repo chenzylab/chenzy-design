@@ -6,7 +6,7 @@ brief: 选项卡切换组件，用于让用户在不同的视图中进行切换�
 ---
 
 <script>
-  import DemoBox from '$lib/components/DemoBox.svelte';
+  import DemoBox from '#lib/components/DemoBox.svelte';
 
   import Basic from '../../demos/tabs/01-basic.svelte';
   import basicSrc from '../../demos/tabs/01-basic.svelte?raw';

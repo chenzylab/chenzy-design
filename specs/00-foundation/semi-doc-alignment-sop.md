@@ -21,7 +21,7 @@
 1. **md 内联驱动整页（唯一渲染路径）**：md 本身就是整页（单页纵向流、无 tab、复刻 Semi）。逻辑在 `routes/(app)/components/[name]/+page.ts` 和 `+page.svelte`。
    > 历史：这曾是 `docMode: inline` frontmatter 控制的两套路径之一。71/71 对齐完成后（2026-07-30 收尾清理）开关与旧 meta 驱动双 tab 路径已整体删除，**新页无需再写任何 docMode 标记**。
 2. **`lib/components/Notice.svelte`**：注意事项提示块，严格对齐 Semi（primary / warning / danger 三态）。md 里写 `<Notice type="primary" title="注意事项">…</Notice>`。
-3. **锚点 rehype 插件**（`packages/docs/svelte.config.js` 的 `rehypeSemiAnchor`）：md 标题自动生成与 Semi `makeAnchorId` 一致的 id（分享链接锚点逐字节对齐）。
+3. **锚点 rehype 插件**（`packages/docs/rehype-plugins.js` 的 `rehypeSemiAnchor`）：md 标题自动生成与 Semi `makeAnchorId` 一致的 id（分享链接锚点逐字节对齐）。
 4. **TOC 一级平铺**：从「代码演示」标题起收集、平铺不分树、无「本页目录」标题（已全局去掉）。
 5. **i18n 双 md**：`+page.ts` 同时加载 `<name>.md`（中）+ `<name>.en.md`（英），`+page.svelte` 按 `locale.value` 客户端切换，en 缺失回退 zh。**英文整份后补**，每轮先做中文。
 
@@ -226,7 +226,7 @@ AIChatInput 的两个专属行高变量本库没有对应 token，已补建后�
 设 error 会误杀），所以**同页断链只是一条被淹没的警告**；**跨页断链连警告都没有**
 （爬虫只在链接被访问到时校验）。收尾时靠此脚本一次性查出 8 处。
 
-锚点 id 由 `svelte.config.js` 的 `makeAnchorId` 生成，**逐字节对齐 Semi**，别凭直觉手写：
+锚点 id 由 `packages/docs/rehype-plugins.js` 的 `makeAnchorId` 生成，**逐字节对齐 Semi**，别凭直觉手写：
 
 | 标题 | 真实 id | 易错写法 |
 |---|---|---|

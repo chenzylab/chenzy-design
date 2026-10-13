@@ -6,7 +6,7 @@ brief: 面包屑是用户界面中的一种辅助导航，可以显示当前页�
 ---
 
 <script>
-  import DemoBox from '$lib/components/DemoBox.svelte';
+  import DemoBox from '#lib/components/DemoBox.svelte';
 
   import Basic from '../../demos/breadcrumb/01-basic.svelte';
   import basicSrc from '../../demos/breadcrumb/01-basic.svelte?raw';

@@ -6,7 +6,7 @@ brief: 一个更直观高效的多选选择器，可以露出更多选项的信�
 ---
 
 <script>
-  import DemoBox from '$lib/components/DemoBox.svelte';
+  import DemoBox from '#lib/components/DemoBox.svelte';
 
   import Basic from '../../demos/transfer/01-basic.svelte';
   import basicSrc from '../../demos/transfer/01-basic.svelte?raw';

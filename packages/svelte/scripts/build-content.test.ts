@@ -29,9 +29,9 @@ describe('parseFrontmatter', () => {
 });
 
 describe('parseInlineScript', () => {
-  it('解析成对 demo import 与 $lib import', () => {
+  it('解析成对 demo import 与 #lib import', () => {
     const script = `
-  import DemoBox from '$lib/components/DemoBox.svelte';
+  import DemoBox from '#lib/components/DemoBox.svelte';
   import Type from '../../demos/button/01-type.svelte';
   import typeSrc from '../../demos/button/01-type.svelte?raw';
 `;

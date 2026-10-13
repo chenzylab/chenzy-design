@@ -6,8 +6,8 @@ brief: AI 场景的侧边信息栏，承载参考来源、代码/JSON 预览、�
 ---
 
 <script>
-  import DemoBox from '$lib/components/DemoBox.svelte';
-  import Notice from '$lib/components/Notice.svelte';
+  import DemoBox from '#lib/components/DemoBox.svelte';
+  import Notice from '#lib/components/Notice.svelte';
 
   import BasicContainer from '../../demos/sidebar/01-basic-container.svelte';
   import basicContainerSrc from '../../demos/sidebar/01-basic-container.svelte?raw';

@@ -6,7 +6,7 @@ brief: 向下弹出的菜单。
 ---
 
 <script>
-  import DemoBox from '$lib/components/DemoBox.svelte';
+  import DemoBox from '#lib/components/DemoBox.svelte';
 
   import Basic from '../../demos/dropdown/01-basic.svelte';
   import basicSrc from '../../demos/dropdown/01-basic.svelte?raw';

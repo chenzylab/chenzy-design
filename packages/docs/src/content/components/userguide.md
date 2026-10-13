@@ -6,8 +6,8 @@ brief: 用于页面对新用户进行功能引导
 ---
 
 <script>
-  import DemoBox from '$lib/components/DemoBox.svelte';
-  import Notice from '$lib/components/Notice.svelte';
+  import DemoBox from '#lib/components/DemoBox.svelte';
+  import Notice from '#lib/components/Notice.svelte';
 
   import Basic from '../../demos/user-guide/01-basic.svelte';
   import basicSrc from '../../demos/user-guide/01-basic.svelte?raw';

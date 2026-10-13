@@ -6,8 +6,8 @@ brief: Toast 提示是对用户的操作做出及时反馈，由用户的操作�
 ---
 
 <script>
-  import DemoBox from '$lib/components/DemoBox.svelte';
-  import Notice from '$lib/components/Notice.svelte';
+  import DemoBox from '#lib/components/DemoBox.svelte';
+  import Notice from '#lib/components/Notice.svelte';
 
   import Basic from '../../demos/toast/01-basic.svelte';
   import basicSrc from '../../demos/toast/01-basic.svelte?raw';

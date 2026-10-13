@@ -6,7 +6,7 @@ brief: 用于展示用户操作的当前进度和状态，一般在操作耗时�
 ---
 
 <script>
-  import DemoBox from '$lib/components/DemoBox.svelte';
+  import DemoBox from '#lib/components/DemoBox.svelte';
 
   import Line from '../../demos/progress/01-line.svelte';
   import lineSrc from '../../demos/progress/01-line.svelte?raw';

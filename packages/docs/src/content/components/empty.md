@@ -6,7 +6,7 @@ brief: 空状态时的展示占位图。
 ---
 
 <script>
-  import DemoBox from '$lib/components/DemoBox.svelte';
+  import DemoBox from '#lib/components/DemoBox.svelte';
 
   import Basic from '../../demos/empty/01-basic.svelte';
   import basicSrc from '../../demos/empty/01-basic.svelte?raw';

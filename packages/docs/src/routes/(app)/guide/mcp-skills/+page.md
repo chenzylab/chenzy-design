@@ -1,7 +1,7 @@
 <script>
-  import { base } from '$app/paths';
-  import Notice from '$lib/components/Notice.svelte';
-  import SkillsWriter from '$lib/components/SkillsWriter.svelte';
+  import { base } from '#lib/base';
+  import Notice from '#lib/components/Notice.svelte';
+  import SkillsWriter from '#lib/components/SkillsWriter.svelte';
 </script>
 
 # MCP / Skills

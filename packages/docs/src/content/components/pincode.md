@@ -6,7 +6,7 @@ brief: 用于便捷直观地输入验证码。
 ---
 
 <script>
-  import DemoBox from '$lib/components/DemoBox.svelte';
+  import DemoBox from '#lib/components/DemoBox.svelte';
 
   import Basic from '../../demos/pincode/01-basic.svelte';
   import basicSrc from '../../demos/pincode/01-basic.svelte?raw';

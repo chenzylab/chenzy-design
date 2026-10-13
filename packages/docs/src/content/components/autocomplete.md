@@ -6,7 +6,7 @@ brief: 输入框自动填充。
 ---
 
 <script>
-  import DemoBox from '$lib/components/DemoBox.svelte';
+  import DemoBox from '#lib/components/DemoBox.svelte';
 
   import Basic from '../../demos/autocomplete/01-basic.svelte';
   import basicSrc from '../../demos/autocomplete/01-basic.svelte?raw';

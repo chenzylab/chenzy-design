@@ -1,9 +1,9 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
   import { LocaleProvider, CodeHighlight } from '@chenzy-design/svelte';
-  import { locale } from '$lib/locale.svelte';
-  import { componentLocale } from '$lib/component-locale';
-  import { t } from '$lib/i18n';
+  import { locale } from '#lib/locale.svelte';
+  import { componentLocale } from '#lib/component-locale';
+  import { t } from '#lib/i18n';
 
   const lang = $derived(locale.value);
   // demo 内组件的内置文案跟随文档站语言。虽然全站已套 LocaleProvider，DemoBox 作为可复用

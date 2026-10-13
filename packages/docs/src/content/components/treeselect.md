@@ -6,7 +6,7 @@ brief: 树选择器用于多层级树形数据的结构化展示 & 选取，例�
 ---
 
 <script>
-  import DemoBox from '$lib/components/DemoBox.svelte';
+  import DemoBox from '#lib/components/DemoBox.svelte';
 
   import Basic from '../../demos/tree-select/01-basic.svelte';
   import basicSrc from '../../demos/tree-select/01-basic.svelte?raw';

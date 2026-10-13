@@ -6,8 +6,8 @@ brief: 输入框是最基本的接收用户文本输入的组件。
 ---
 
 <script>
-  import DemoBox from '$lib/components/DemoBox.svelte';
-  import Notice from '$lib/components/Notice.svelte';
+  import DemoBox from '#lib/components/DemoBox.svelte';
+  import Notice from '#lib/components/Notice.svelte';
 
   import Basic from '../../demos/input/01-basic.svelte';
   import basicSrc from '../../demos/input/01-basic.svelte?raw';

@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { Component } from 'svelte';
   import * as IconsLab from '@chenzy-design/icons-lab';
-  import { componentIcons, categoryColor } from '$lib/component-icons';
+  import { componentIcons, categoryColor } from '#lib/component-icons';
 
   // name：lowercase 组件名（路由/配色/别名键）；displayName：原始驼峰组件名（图标名匹配，
   // 如 InputNumber → IconInputNumber，避免 lowercase 丢驼峰导致匹配失败）。

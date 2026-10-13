@@ -6,7 +6,7 @@ brief: 分割线是一个呈线状的轻量化组件，用于有逻辑的组织�
 ---
 
 <script>
-  import DemoBox from '$lib/components/DemoBox.svelte';
+  import DemoBox from '#lib/components/DemoBox.svelte';
 
   import Basic from '../../demos/divider/01-basic.svelte';
   import basicSrc from '../../demos/divider/01-basic.svelte?raw';

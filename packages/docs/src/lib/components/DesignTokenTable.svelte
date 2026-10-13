@@ -1,8 +1,8 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
   import { Table, Tabs, type PlainTab } from '@chenzy-design/svelte';
-  import { locale } from '$lib/locale.svelte';
-  import { t } from '$lib/i18n';
+  import { locale } from '#lib/locale.svelte';
+  import { t } from '#lib/i18n';
   // 数据源：tokens 包构建产出的结构化 manifest（从 TS token 源直接生成，
   // 取代旧 build-tokens-detail.ts 的正则事后解析）。见 dsm.spec.md §地基1。
   import manifest from '@chenzy-design/tokens/token-manifest.json';

@@ -1,6 +1,6 @@
 // 搜索面板空态的用户偏好：搜索历史 + 最近浏览。localStorage 持久化，跨会话保留。
 // 对齐 Semi 搜索面板：未输入时展示「搜索历史 / 最近浏览 / 快速访问」引导区。
-import { browser } from '$app/environment';
+import { browser } from '$app/env';
 
 const HISTORY_KEY = 'cd-docs:search-history';
 const RECENT_KEY = 'cd-docs:recent-components';

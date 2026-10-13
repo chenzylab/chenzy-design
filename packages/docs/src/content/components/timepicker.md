@@ -6,8 +6,8 @@ brief: 用户使用时间选择器可以方便地选择某一符合要求的、�
 ---
 
 <script>
-  import DemoBox from '$lib/components/DemoBox.svelte';
-  import Notice from '$lib/components/Notice.svelte';
+  import DemoBox from '#lib/components/DemoBox.svelte';
+  import Notice from '#lib/components/Notice.svelte';
 
   import Basic from '../../demos/time-picker/01-basic.svelte';
   import basicSrc from '../../demos/time-picker/01-basic.svelte?raw';

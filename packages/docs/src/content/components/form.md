@@ -6,8 +6,8 @@ brief: Form 是表单容器组件，负责承载并编排一组输入控件，�
 ---
 
 <script>
-  import DemoBox from '$lib/components/DemoBox.svelte';
-  import Notice from '$lib/components/Notice.svelte';
+  import DemoBox from '#lib/components/DemoBox.svelte';
+  import Notice from '#lib/components/Notice.svelte';
 
   import Basic from '../../demos/form/01-basic.svelte';
   import basicSrc from '../../demos/form/01-basic.svelte?raw';

@@ -1,7 +1,7 @@
 <script lang="ts">
-  import { highlight } from '$lib/highlight';
-  import { locale } from '$lib/locale.svelte';
-  import { t } from '$lib/i18n';
+  import { highlight } from '#lib/highlight';
+  import { locale } from '#lib/locale.svelte';
+  import { t } from '#lib/i18n';
 
   const lang = $derived(locale.value);
 

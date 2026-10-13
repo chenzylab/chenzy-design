@@ -6,7 +6,7 @@ brief: 滚动列表。
 ---
 
 <script>
-  import DemoBox from '$lib/components/DemoBox.svelte';
+  import DemoBox from '#lib/components/DemoBox.svelte';
 
   import Basic from '../../demos/scroll-list/01-basic.svelte';
   import basicSrc from '../../demos/scroll-list/01-basic.svelte?raw';
