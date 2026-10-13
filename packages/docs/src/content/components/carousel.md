@@ -6,7 +6,7 @@ brief: 轮播图是一种媒体组件，可以在可视化应用中展示多张�
 ---
 
 <script>
-  import DemoBox from '$lib/components/DemoBox.svelte';
+  import DemoBox from '#lib/components/DemoBox.svelte';
 
   import Basic from '../../demos/carousel/01-basic.svelte';
   import basicSrc from '../../demos/carousel/01-basic.svelte?raw';

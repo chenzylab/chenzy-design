@@ -6,7 +6,7 @@ brief: 语义化的矢量图形。
 ---
 
 <script>
-  import DemoBox from '$lib/components/DemoBox.svelte';
+  import DemoBox from '#lib/components/DemoBox.svelte';
 
   import IconList from '../../demos/icon/10-icon-list.svelte';
   import Basic from '../../demos/icon/07-named-basic.svelte';

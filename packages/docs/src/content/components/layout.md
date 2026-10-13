@@ -6,8 +6,8 @@ brief: 用于快捷划分页面整体布局。
 ---
 
 <script>
-  import DemoBox from '$lib/components/DemoBox.svelte';
-  import Notice from '$lib/components/Notice.svelte';
+  import DemoBox from '#lib/components/DemoBox.svelte';
+  import Notice from '#lib/components/Notice.svelte';
 
   import ThreeRows from '../../demos/layout/01-three-rows.svelte';
   import threeRowsSrc from '../../demos/layout/01-three-rows.svelte?raw';

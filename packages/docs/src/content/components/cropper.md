@@ -6,7 +6,7 @@ brief: 用于裁切图片，支持自定义裁切框样式，可拖动调整裁�
 ---
 
 <script>
-  import DemoBox from '$lib/components/DemoBox.svelte';
+  import DemoBox from '#lib/components/DemoBox.svelte';
 
   import Basic from '../../demos/cropper/01-basic.svelte';
   import basicSrc from '../../demos/cropper/01-basic.svelte?raw';

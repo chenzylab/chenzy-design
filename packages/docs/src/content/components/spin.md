@@ -6,7 +6,7 @@ brief: 加载器组件用于告知用户内容正在加载且需要一段不确�
 ---
 
 <script>
-  import DemoBox from '$lib/components/DemoBox.svelte';
+  import DemoBox from '#lib/components/DemoBox.svelte';
 
   import Basic from '../../demos/spin/01-basic.svelte';
   import basicSrc from '../../demos/spin/01-basic.svelte?raw';

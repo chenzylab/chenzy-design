@@ -6,8 +6,8 @@ brief: 快速便捷地选择颜色，并提供滴管工具取色
 ---
 
 <script>
-  import DemoBox from '$lib/components/DemoBox.svelte';
-  import Notice from '$lib/components/Notice.svelte';
+  import DemoBox from '#lib/components/DemoBox.svelte';
+  import Notice from '#lib/components/Notice.svelte';
 
   import PopoverDemo from '../../demos/color-picker/01-popover.svelte';
   import popoverSrc from '../../demos/color-picker/01-popover.svelte?raw';

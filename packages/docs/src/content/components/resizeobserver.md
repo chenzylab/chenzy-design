@@ -6,7 +6,7 @@ brief: 无渲染尺寸监听工具组件，封装浏览器原生 ResizeObserver�
 ---
 
 <script>
-  import DemoBox from '$lib/components/DemoBox.svelte';
+  import DemoBox from '#lib/components/DemoBox.svelte';
 
   import Basic from '../../demos/resize-observer/01-basic.svelte';
   import basicSrc from '../../demos/resize-observer/01-basic.svelte?raw';

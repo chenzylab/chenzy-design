@@ -6,8 +6,8 @@ brief: 用户使用按钮来触发一个操作或者进行跳转。
 ---
 
 <script>
-  import DemoBox from '$lib/components/DemoBox.svelte';
-  import Notice from '$lib/components/Notice.svelte';
+  import DemoBox from '#lib/components/DemoBox.svelte';
+  import Notice from '#lib/components/Notice.svelte';
 
   import Type from '../../demos/button/01-type.svelte';
   import typeSrc from '../../demos/button/01-type.svelte?raw';

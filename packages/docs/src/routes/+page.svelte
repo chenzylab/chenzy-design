@@ -1,8 +1,8 @@
 <script lang="ts">
-  import { base } from '$app/paths';
+  import { base } from '#lib/base';
   import componentsJson from '@chenzy-design/svelte/components.json';
-  import { locale } from '$lib/locale.svelte';
-  import { t } from '$lib/i18n';
+  import { locale } from '#lib/locale.svelte';
+  import { t } from '#lib/i18n';
 
   const lang = $derived(locale.value);
   const count = componentsJson.count;

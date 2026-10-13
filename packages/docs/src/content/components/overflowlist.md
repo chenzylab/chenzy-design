@@ -6,7 +6,7 @@ brief: OverflowList 是一个行为组件，用于展示列表，并支持自适
 ---
 
 <script>
-  import DemoBox from '$lib/components/DemoBox.svelte';
+  import DemoBox from '#lib/components/DemoBox.svelte';
 
   import Collapse from '../../demos/overflow-list/01-collapse.svelte';
   import collapseSrc from '../../demos/overflow-list/01-collapse.svelte?raw';

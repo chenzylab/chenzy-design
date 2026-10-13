@@ -6,7 +6,7 @@ brief: 用于收集用户对产品或功能的反馈。
 ---
 
 <script>
-  import DemoBox from '$lib/components/DemoBox.svelte';
+  import DemoBox from '#lib/components/DemoBox.svelte';
 
   import Basic from '../../demos/feedback/01-basic.svelte';
   import basicSrc from '../../demos/feedback/01-basic.svelte?raw';

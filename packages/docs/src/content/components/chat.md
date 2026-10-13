@@ -6,7 +6,7 @@ brief: 用于普通会话、AI 会话等场景的对话组件。
 ---
 
 <script>
-  import DemoBox from '$lib/components/DemoBox.svelte';
+  import DemoBox from '#lib/components/DemoBox.svelte';
 
   import Basic from '../../demos/chat/01-basic.svelte';
   import basicSrc from '../../demos/chat/01-basic.svelte?raw';

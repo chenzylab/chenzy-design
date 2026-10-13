@@ -6,7 +6,7 @@ brief: 工具提示用于对一个元素进行标识或者附上少量辅助信�
 ---
 
 <script>
-  import DemoBox from '$lib/components/DemoBox.svelte';
+  import DemoBox from '#lib/components/DemoBox.svelte';
 
   import ChildrenTypes from '../../demos/tooltip/01-children-types.svelte';
   import childrenTypesSrc from '../../demos/tooltip/01-children-types.svelte?raw';

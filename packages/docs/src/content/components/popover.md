@@ -6,7 +6,7 @@ brief: 点击/鼠标移入元素，弹出气泡式的卡片浮层。
 ---
 
 <script>
-  import DemoBox from '$lib/components/DemoBox.svelte';
+  import DemoBox from '#lib/components/DemoBox.svelte';
 
   import ChildrenTypes from '../../demos/popover/01-children-types.svelte';
   import childrenTypesSrc from '../../demos/popover/01-children-types.svelte?raw';

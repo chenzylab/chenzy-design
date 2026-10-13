@@ -6,8 +6,8 @@ brief: 基于富文本编辑器的 AI 聊天输入框，支持引用、附件、
 ---
 
 <script>
-  import DemoBox from '$lib/components/DemoBox.svelte';
-  import Notice from '$lib/components/Notice.svelte';
+  import DemoBox from '#lib/components/DemoBox.svelte';
+  import Notice from '#lib/components/Notice.svelte';
 
   import Basic from '../../demos/ai-chat-input/01-basic.svelte';
   import basicSrc from '../../demos/ai-chat-input/01-basic.svelte?raw';

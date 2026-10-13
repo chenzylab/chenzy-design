@@ -6,8 +6,8 @@ brief: 用户使用单选框来从少量的选项集合中选择单个选项。
 ---
 
 <script>
-  import DemoBox from '$lib/components/DemoBox.svelte';
-  import Notice from '$lib/components/Notice.svelte';
+  import DemoBox from '#lib/components/DemoBox.svelte';
+  import Notice from '#lib/components/Notice.svelte';
 
   import Basic from '../../demos/radio/01-basic.svelte';
   import basicSrc from '../../demos/radio/01-basic.svelte?raw';

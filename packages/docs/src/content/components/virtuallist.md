@@ -6,7 +6,7 @@ brief: 虚拟滚动列表底座，渲染大数据量时只渲染视口内的可�
 ---
 
 <script>
-  import DemoBox from '$lib/components/DemoBox.svelte';
+  import DemoBox from '#lib/components/DemoBox.svelte';
 
   import Basic from '../../demos/virtual-list/01-basic.svelte';
   import basicSrc from '../../demos/virtual-list/01-basic.svelte?raw';

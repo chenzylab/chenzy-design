@@ -6,8 +6,8 @@ brief: 日期选择器用于帮助用户选择一个符合要求的、格式化�
 ---
 
 <script>
-  import DemoBox from '$lib/components/DemoBox.svelte';
-  import Notice from '$lib/components/Notice.svelte';
+  import DemoBox from '#lib/components/DemoBox.svelte';
+  import Notice from '#lib/components/Notice.svelte';
 
   import Basic from '../../demos/date-picker/01-basic.svelte';
   import basicSrc from '../../demos/date-picker/01-basic.svelte?raw';

@@ -1,20 +1,20 @@
 <script lang="ts">
-  import { browser } from '$app/environment';
-  import { base } from '$app/paths';
+  import { browser } from '$app/env';
+  import { base } from '#lib/base';
   import { goto } from '$app/navigation';
   import componentsJson from '@chenzy-design/svelte/components.json';
   import { Modal, HotKeys, Input, Tag, Button } from '@chenzy-design/svelte';
   import { IconSearch } from '@chenzy-design/icons';
-  import { locale } from '$lib/locale.svelte';
-  import { t } from '$lib/i18n';
-  import { searchSite, searchDocs, type SearchResult } from '$lib/search-index';
+  import { locale } from '#lib/locale.svelte';
+  import { t } from '#lib/i18n';
+  import { searchSite, searchDocs, type SearchResult } from '#lib/search-index';
   import {
     searchHistory,
     clearSearchHistory,
     removeSearchHistory,
     pushSearchHistory,
     recentComponents,
-  } from '$lib/search-prefs.svelte';
+  } from '#lib/search-prefs.svelte';
   import SidebarIcon from './SidebarIcon.svelte';
 
   const lang = $derived(locale.value);

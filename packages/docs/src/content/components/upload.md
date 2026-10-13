@@ -6,8 +6,8 @@ brief: 文件选择上传。
 ---
 
 <script>
-  import DemoBox from '$lib/components/DemoBox.svelte';
-  import Notice from '$lib/components/Notice.svelte';
+  import DemoBox from '#lib/components/DemoBox.svelte';
+  import Notice from '#lib/components/Notice.svelte';
 
   import Basic from '../../demos/upload/01-basic.svelte';
   import basicSrc from '../../demos/upload/01-basic.svelte?raw';

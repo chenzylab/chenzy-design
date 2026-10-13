@@ -6,7 +6,7 @@ brief: 目标元素的操作需要用户进一步的确认时使用。与 Popove
 ---
 
 <script>
-  import DemoBox from '$lib/components/DemoBox.svelte';
+  import DemoBox from '#lib/components/DemoBox.svelte';
 
   import Basic from '../../demos/popconfirm/01-basic.svelte';
   import basicSrc from '../../demos/popconfirm/01-basic.svelte?raw';

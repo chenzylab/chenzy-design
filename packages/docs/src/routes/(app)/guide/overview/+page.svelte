@@ -1,11 +1,11 @@
 <script lang="ts">
-  import { base } from '$app/paths';
+  import { base } from '#lib/base';
   import componentsJson from '@chenzy-design/svelte/components.json';
-  import { locale } from '$lib/locale.svelte';
-  import { t } from '$lib/i18n';
-  import { componentNamesZh } from '$lib/component-names-zh';
-  import SidebarIcon from '$lib/components/SidebarIcon.svelte';
-  import { compareBySemiOrder } from '$lib/component-semi-order';
+  import { locale } from '#lib/locale.svelte';
+  import { t } from '#lib/i18n';
+  import { componentNamesZh } from '#lib/component-names-zh';
+  import SidebarIcon from '#lib/components/SidebarIcon.svelte';
+  import { compareBySemiOrder } from '#lib/component-semi-order';
 
   const lang = $derived(locale.value);
   const count = componentsJson.count;

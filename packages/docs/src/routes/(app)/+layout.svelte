@@ -1,17 +1,17 @@
 <script lang="ts">
-  import { page } from '$app/stores';
-  import { base } from '$app/paths';
+  import { page } from '$app/state';
+  import { base } from '#lib/base';
   import type { Snippet } from 'svelte';
   import componentsJson from '@chenzy-design/svelte/components.json';
   import { Nav, LocaleProvider } from '@chenzy-design/svelte';
   import type { NavItemDef, NavSelectData } from '@chenzy-design/svelte';
   import { goto } from '$app/navigation';
-  import { locale } from '$lib/locale.svelte';
-  import { t } from '$lib/i18n';
-  import { componentNamesZh } from '$lib/component-names-zh';
-  import { componentLocale } from '$lib/component-locale';
-  import { compareBySemiOrder } from '$lib/component-semi-order';
-  import SidebarIcon from '$lib/components/SidebarIcon.svelte';
+  import { locale } from '#lib/locale.svelte';
+  import { t } from '#lib/i18n';
+  import { componentNamesZh } from '#lib/component-names-zh';
+  import { componentLocale } from '#lib/component-locale';
+  import { compareBySemiOrder } from '#lib/component-semi-order';
+  import SidebarIcon from '#lib/components/SidebarIcon.svelte';
 
   const { children }: { children: Snippet } = $props();
 
@@ -145,7 +145,7 @@
 
   // 选中项 key = 当前路由对应的 itemKey；展开所有分类（对齐 Semi docs 侧栏全展开）。
   const currentKey = $derived.by(() => {
-    const path = $page.url.pathname;
+    const path = page.url.pathname;
     for (const sub of navItems) {
       for (const leaf of sub.items as NavLeaf[]) {
         if (leaf.link === path) return leaf.itemKey;

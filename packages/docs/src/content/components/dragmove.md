@@ -6,8 +6,8 @@ brief: 可通过拖拽改变位置
 ---
 
 <script>
-  import DemoBox from '$lib/components/DemoBox.svelte';
-  import Notice from '$lib/components/Notice.svelte';
+  import DemoBox from '#lib/components/DemoBox.svelte';
+  import Notice from '#lib/components/Notice.svelte';
 
   import Basic from '../../demos/drag-move/01-basic.svelte';
   import basicSrc from '../../demos/drag-move/01-basic.svelte?raw';

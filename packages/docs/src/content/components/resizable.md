@@ -6,8 +6,8 @@ brief: 通过拖拽改变元素尺寸，支持单体伸缩与分栏组合两种�
 ---
 
 <script>
-  import DemoBox from '$lib/components/DemoBox.svelte';
-  import Notice from '$lib/components/Notice.svelte';
+  import DemoBox from '#lib/components/DemoBox.svelte';
+  import Notice from '#lib/components/Notice.svelte';
 
   import Basic from '../../demos/resizable/01-basic.svelte';
   import basicSrc from '../../demos/resizable/01-basic.svelte?raw';

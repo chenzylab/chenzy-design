@@ -6,8 +6,8 @@ brief: 为组件提供统一的全局化配置。
 ---
 
 <script>
-  import DemoBox from '$lib/components/DemoBox.svelte';
-  import Notice from '$lib/components/Notice.svelte';
+  import DemoBox from '#lib/components/DemoBox.svelte';
+  import Notice from '#lib/components/Notice.svelte';
 
   import TimeZone from '../../demos/config-provider/01-timezone.svelte';
   import timeZoneSrc from '../../demos/config-provider/01-timezone.svelte?raw';

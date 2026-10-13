@@ -6,8 +6,8 @@ brief: 渲染 Markdown 纯文本为符合设计规范的富文本内容。
 ---
 
 <script>
-  import DemoBox from '$lib/components/DemoBox.svelte';
-  import Notice from '$lib/components/Notice.svelte';
+  import DemoBox from '#lib/components/DemoBox.svelte';
+  import Notice from '#lib/components/Notice.svelte';
 
   import Basic from '../../demos/markdown-render/01-basic.svelte';
   import basicSrc from '../../demos/markdown-render/01-basic.svelte?raw';

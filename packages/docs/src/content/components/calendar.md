@@ -6,8 +6,8 @@ brief: 日历组件，允许以日/周/月视图展示对应事件
 ---
 
 <script>
-  import DemoBox from '$lib/components/DemoBox.svelte';
-  import Notice from '$lib/components/Notice.svelte';
+  import DemoBox from '#lib/components/DemoBox.svelte';
+  import Notice from '#lib/components/Notice.svelte';
 
   import Day from '../../demos/calendar/01-day.svelte';
   import daySrc from '../../demos/calendar/01-day.svelte?raw';

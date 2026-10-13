@@ -6,7 +6,7 @@ brief: 滑动选择器，使用拖动交互快速选择数值或数值范围，�
 ---
 
 <script>
-  import DemoBox from '$lib/components/DemoBox.svelte';
+  import DemoBox from '#lib/components/DemoBox.svelte';
 
   import Basic from '../../demos/slider/01-basic.svelte';
   import basicSrc from '../../demos/slider/01-basic.svelte?raw';

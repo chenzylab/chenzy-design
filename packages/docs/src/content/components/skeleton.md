@@ -6,7 +6,7 @@ brief: 在需要等待加载内容的位置提供的占位组件。
 ---
 
 <script>
-  import DemoBox from '$lib/components/DemoBox.svelte';
+  import DemoBox from '#lib/components/DemoBox.svelte';
 
   import Basic from '../../demos/skeleton/01-basic.svelte';
   import basicSrc from '../../demos/skeleton/01-basic.svelte?raw';

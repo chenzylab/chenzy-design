@@ -6,7 +6,7 @@ brief: 返回页面顶部的操作按钮。
 ---
 
 <script>
-  import DemoBox from '$lib/components/DemoBox.svelte';
+  import DemoBox from '#lib/components/DemoBox.svelte';
 
   import Basic from '../../demos/back-top/01-basic.svelte';
   import basicSrc from '../../demos/back-top/01-basic.svelte?raw';

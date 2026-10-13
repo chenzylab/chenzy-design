@@ -1,9 +1,9 @@
 <script lang="ts">
-  import { base } from '$app/paths';
+  import { base } from '#lib/base';
   import { IconChevronLeft, IconChevronRight } from '@chenzy-design/icons';
   import SidebarIcon from './SidebarIcon.svelte';
-  import { locale } from '$lib/locale.svelte';
-  import { getPrevNext, type OrderedComponent } from '$lib/component-order';
+  import { locale } from '#lib/locale.svelte';
+  import { getPrevNext, type OrderedComponent } from '#lib/component-order';
 
   // name：当前组件 lowercase 名。据此在有序组件列表中取前后邻居（对齐 Semi PrevAndNext）。
   const { name }: { name: string } = $props();

@@ -6,8 +6,8 @@ brief: 通过鼠标或键盘，输入范围内的数值，与 Input 不同的是
 ---
 
 <script>
-  import DemoBox from '$lib/components/DemoBox.svelte';
-  import Notice from '$lib/components/Notice.svelte';
+  import DemoBox from '#lib/components/DemoBox.svelte';
+  import Notice from '#lib/components/Notice.svelte';
 
   import Basic1 from '../../demos/input-number/01-basic.svelte';
   import basic1Src from '../../demos/input-number/01-basic.svelte?raw';

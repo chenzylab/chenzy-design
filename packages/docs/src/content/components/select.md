@@ -6,8 +6,8 @@ brief: 用户可以通过 Select 选择器从一个选项集合中去选中一�
 ---
 
 <script>
-  import DemoBox from '$lib/components/DemoBox.svelte';
-  import Notice from '$lib/components/Notice.svelte';
+  import DemoBox from '#lib/components/DemoBox.svelte';
+  import Notice from '#lib/components/Notice.svelte';
 
   import Basic from '../../demos/select/01-basic.svelte';
   import basicSrc from '../../demos/select/01-basic.svelte?raw';

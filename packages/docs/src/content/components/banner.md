@@ -6,7 +6,7 @@ brief: 横幅通常用于标识全页的状态或通知等。它通常是常驻�
 ---
 
 <script>
-  import DemoBox from '$lib/components/DemoBox.svelte';
+  import DemoBox from '#lib/components/DemoBox.svelte';
 
   import Basic from '../../demos/banner/01-basic.svelte';
   import basicSrc from '../../demos/banner/01-basic.svelte?raw';

@@ -1,11 +1,11 @@
 <script lang="ts">
   import type { PageData } from './$types';
-  import { base } from '$app/paths';
+  import { base } from '#lib/base';
   import componentsJson from '@chenzy-design/svelte/components.json';
-  import DesignTokenTable from '$lib/components/DesignTokenTable.svelte';
-  import { locale } from '$lib/locale.svelte';
-  import { t } from '$lib/i18n';
-  import { resolveTokenPrefix } from '$lib/token-prefix';
+  import DesignTokenTable from '#lib/components/DesignTokenTable.svelte';
+  import { locale } from '#lib/locale.svelte';
+  import { t } from '#lib/i18n';
+  import { resolveTokenPrefix } from '#lib/token-prefix';
 
   const { data }: { data: PageData } = $props();
   const meta = $derived(data.meta);

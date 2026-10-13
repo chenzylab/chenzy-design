@@ -6,8 +6,8 @@ brief: 用于展示和编辑 JSON 数据。
 ---
 
 <script>
-  import DemoBox from '$lib/components/DemoBox.svelte';
-  import Notice from '$lib/components/Notice.svelte';
+  import DemoBox from '#lib/components/DemoBox.svelte';
+  import Notice from '#lib/components/Notice.svelte';
 
   import Basic from '../../demos/json-viewer/01-basic.svelte';
   import basicSrc from '../../demos/json-viewer/01-basic.svelte?raw';

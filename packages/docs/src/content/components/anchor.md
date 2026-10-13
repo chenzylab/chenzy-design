@@ -6,8 +6,8 @@ brief: 创建超链接导航栏。
 ---
 
 <script>
-  import DemoBox from '$lib/components/DemoBox.svelte';
-  import Notice from '$lib/components/Notice.svelte';
+  import DemoBox from '#lib/components/DemoBox.svelte';
+  import Notice from '#lib/components/Notice.svelte';
 
   import Basic from '../../demos/anchor/01-basic.svelte';
   import basicSrc from '../../demos/anchor/01-basic.svelte?raw';

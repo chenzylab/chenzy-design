@@ -6,7 +6,7 @@ brief: 常规的卡片容器，可以承载标题、段落、图片、列表等�
 ---
 
 <script>
-  import DemoBox from '$lib/components/DemoBox.svelte';
+  import DemoBox from '#lib/components/DemoBox.svelte';
 
   import Basic from '../../demos/card/01-basic.svelte';
   import basicSrc from '../../demos/card/01-basic.svelte?raw';

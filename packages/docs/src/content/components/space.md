@@ -6,7 +6,7 @@ brief: 设置组件之间的间距。
 ---
 
 <script>
-  import DemoBox from '$lib/components/DemoBox.svelte';
+  import DemoBox from '#lib/components/DemoBox.svelte';
 
   import Basic from '../../demos/space/01-basic.svelte';
   import basicSrc from '../../demos/space/01-basic.svelte?raw';

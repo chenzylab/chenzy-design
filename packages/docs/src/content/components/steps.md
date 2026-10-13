@@ -6,7 +6,7 @@ brief: 将复杂任务或存在先后关系的任务分解，使用步骤组件�
 ---
 
 <script>
-  import DemoBox from '$lib/components/DemoBox.svelte';
+  import DemoBox from '#lib/components/DemoBox.svelte';
 
   import Fill from '../../demos/steps/01-fill.svelte';
   import fillSrc from '../../demos/steps/01-fill.svelte?raw';

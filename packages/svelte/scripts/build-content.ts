@@ -103,7 +103,7 @@ function evalCharCodeLiteral(expr: string): string | null {
  * 解析 inline md 的 <script> 块。只允许四类语句：
  *   1. demo 组件 import：  import X from '../../demos/<dir>/<file>.svelte'
  *   2. ?raw import：       import xSrc from '../../demos/<dir>/<file>.svelte?raw'
- *   3. docs 站壳组件：      import DemoBox/Notice from '$lib/...'
+ *   3. docs 站壳组件：      import DemoBox/Notice from '#lib/...'
  *   4. 字面量常量：         const x = String.fromCharCode(...) + '...' + ...
  *      （正文用于展示会被 Svelte 编译器解析的字面语法，如 `{#snippet}`，
  *      文档站侧靠此变通避开预处理；净化产物按第 4 类求值后回填正文插值处）
@@ -121,7 +121,7 @@ export function parseInlineScript(
     const line = rawLine.trim();
     if (!line || line.startsWith('//')) continue;
 
-    const libImport = line.match(/^import\s+\w+\s+from\s+'\$lib\/[^']+';?$/);
+    const libImport = line.match(/^import\s+\w+\s+from\s+'#lib\/[^']+';?$/);
     if (libImport) continue;
 
     const demoImport = line.match(

@@ -6,7 +6,7 @@ brief: 时间轴是用于对一系列信息进行时间排序时，垂直展示�
 ---
 
 <script>
-  import DemoBox from '$lib/components/DemoBox.svelte';
+  import DemoBox from '#lib/components/DemoBox.svelte';
 
   import Basic from '../../demos/timeline/01-basic.svelte';
   import basicSrc from '../../demos/timeline/01-basic.svelte?raw';

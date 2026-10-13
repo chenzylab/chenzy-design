@@ -1,5 +1,5 @@
 <script>
-  import { base } from '$app/paths';
+  import { base } from '#lib/base';
 </script>
 
 # AIComponent AI 组件能力介绍

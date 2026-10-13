@@ -6,8 +6,8 @@ brief: 高亮特定内容。
 ---
 
 <script>
-  import DemoBox from '$lib/components/DemoBox.svelte';
-  import Notice from '$lib/components/Notice.svelte';
+  import DemoBox from '#lib/components/DemoBox.svelte';
+  import Notice from '#lib/components/Notice.svelte';
 
   import Basic from '../../demos/highlight/01-basic.svelte';
   import basicSrc from '../../demos/highlight/01-basic.svelte?raw';

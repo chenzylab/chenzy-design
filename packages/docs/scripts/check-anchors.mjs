@@ -7,7 +7,7 @@
  * 而**跨页**断链（如 modal.md 指向 button 页的锚点）连警告都不会出——
  * 爬虫只在链接被访问到时校验。收尾清理时靠本脚本一次性查出 8 处断链。
  *
- * id 规则必须与 svelte.config.js 的 makeAnchorId 保持一致（后者逐字节对齐 Semi）。
+ * id 规则必须与 rehype-plugins.js 的 makeAnchorId 保持一致（后者逐字节对齐 Semi）。
  * 注意 `(` `)` 各转成 `aaa` 不是笔误，Semi 原样如此。
  *
  * 用法：node packages/docs/scripts/check-anchors.mjs
@@ -22,7 +22,7 @@ const DIR = path.resolve(
   '../src/content/components',
 );
 
-// 与 svelte.config.js 的 makeAnchorId 同源，改一处必须同步另一处。
+// 与 rehype-plugins.js 的 makeAnchorId 同源，改一处必须同步另一处。
 function makeAnchorId(id) {
   if (!id) return null;
   return id

@@ -68,8 +68,8 @@ packages/docs/
 │       │   ├── TypeDemo.svelte
 │       │   └── index.ts            # export { BasicDemo, TypeDemo }
 │       └── .../                    # 每组件一个目录（Phase 2 拆分）
-├── svelte.config.js                # SvelteKit + MDsveX + adapter-static
-├── vite.config.ts                  # UnoCSS + presetChenzy（沿用）
+├── rehype-plugins.js               # MDsveX 的 rehype 插件（Semi 锚点 id、站内链接 base 前缀）
+├── vite.config.ts                  # sveltekit({...}) 配置（SvelteKit 3 起不再读 svelte.config.js）+ UnoCSS
 ├── package.json
 └── static/
     └── components.json             # 构建时从 @chenzy-design/svelte dist/ 拷入
@@ -343,18 +343,16 @@ pnpm --filter @chenzy-design/docs build
 ### 预渲染配置
 
 ```js
-// svelte.config.js
+// vite.config.ts（SvelteKit 3：配置平铺传给 sveltekit()，无 kit 命名空间）
 import adapter from '@sveltejs/adapter-static';
 
-export default {
-  kit: {
-    adapter: adapter({ fallback: '404.html' }),
-    prerender: {
-      // 所有组件页在 build 时预渲染（从 components.json 动态生成条目列表）
-      entries: ['*'],
-    },
+sveltekit({
+  adapter: adapter({ fallback: '404.html' }),
+  prerender: {
+    // 所有组件页在 build 时预渲染（从 components.json 动态生成条目列表）
+    entries: ['*'],
   },
-};
+});
 ```
 
 ---

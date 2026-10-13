@@ -6,7 +6,7 @@ brief: 为网页和应用提供导航的菜单列表，支持垂直、水平两�
 ---
 
 <script>
-  import DemoBox from '$lib/components/DemoBox.svelte';
+  import DemoBox from '#lib/components/DemoBox.svelte';
 
   import Basic from '../../demos/nav/01-basic.svelte';
   import basicSrc from '../../demos/nav/01-basic.svelte?raw';

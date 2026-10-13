@@ -6,7 +6,7 @@ brief: 树型结构列表。
 ---
 
 <script>
-  import DemoBox from '$lib/components/DemoBox.svelte';
+  import DemoBox from '#lib/components/DemoBox.svelte';
 
   import Basic from '../../demos/tree/01-basic.svelte';
   import basicSrc from '../../demos/tree/01-basic.svelte?raw';
