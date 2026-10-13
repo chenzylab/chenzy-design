@@ -34,7 +34,7 @@
   "devDependencies": {
     "@iconify-json/lucide": "^1.2.138",
     "@sveltejs/adapter-static": "^3.0.10",
-    "@sveltejs/kit": "^2.70.3",
+    "@sveltejs/kit": "^3.0.1",
     "@unocss/preset-icons": "^66.10.5",
     "@unocss/preset-typography": "66.10.5",
     "@unocss/reset": "66.10.5",
