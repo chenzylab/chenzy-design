@@ -32,10 +32,10 @@
     "copy-text-to-clipboard": "^3.2.2",
     "date-fns": "^4.4.0",
     "prismjs": "^1.29.0",
-    "svelte-tiptap": "^3.0.1"
+    "svelte-tiptap": "^3.0.2"
   },
   "devDependencies": {
-    "@iconify-json/lucide": "^1.2.138",
+    "@iconify-json/lucide": "^1.2.142",
     "@sveltejs/adapter-static": "^4.0.0",
     "@sveltejs/kit": "^3.0.0",
     "@unocss/preset-icons": "^66.10.5",
